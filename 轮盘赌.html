@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f5f5f5">
+
+    <title>俄罗斯轮盘赌卡牌游戏助手</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .game-area {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .btn-load {
+            background: #4CAF50;
+            color: white;
+            font-size: 22px;
+            padding: 15px 30px;
+            width: 200px;
+            height: 80px;
+        }
+        
+        .btn-shoot {
+            background: #FF5722;
+            color: white;
+            font-size: 30px;
+            padding: 15px 30px;
+            width: 200px;
+            height: 80px;
+        }
+        
+        .result {
+            font-size: 32px;
+            text-align: center;
+            height: 60px;
+            color: #2196F3;
+            transition: color 0.3s;
+        }
+        
+        .history-area {
+            flex: 1;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            overflow-y: auto;
+        }
+        
+        .history-log {
+            font-size: 16px;
+            line-height: 1.5;
+            white-space: pre-line;
+            color: #666;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            z-index: 1000;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spinning {
+            animation: spin 0.8s cubic-bezier(0.1, 0.7, 0.1, 1);
+        }
+        
+        .cylinder {
+            display: flex;
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 20px 0;
+        }
+        
+        .chamber {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #666;
+            border: 2px solid #ccc;
+            transition: all 0.3s;
+        }
+        
+        .chamber.current {
+            background: #ffeb3b;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.7);
+        }
+        
+        .gun-image {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 15px;
+            user-select: none;
+        }
+
+        /* 默认隐藏横屏布局 */
+        .landscape-layout {
+            display: none;
+        }
+        
+        /* 默认显示竖屏布局 */
+        .portrait-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 横屏布局样式 */
+        @media (orientation: landscape) {
+            .container {
+                max-width: 90%;
+                height: 80vh;
+            }
+            
+            /* 隐藏竖屏布局 */
+            .portrait-layout {
+                display: none;
+            }
+            
+            /* 显示横屏布局 */
+            .landscape-layout {
+                display: flex;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .left-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                padding-right: 20px;
+                border-right: 1px solid #eee;
+            }
+            
+            .right-panel {
+                flex: 2;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding-left: 20px;
+            }
+            
+            .controls {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .landscape-layout .btn-load,
+            .landscape-layout .btn-shoot {
+                width: 100%;
+                height: 60px;
+            }
+            
+            .landscape-layout .history-area {
+                flex: 1;
+                margin-top: 10px;
+                border-top: 1px solid #eee;
+                padding-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toast" id="toast"></div>
+    <div class="container" id="mainContainer">
+        <!-- 竖屏布局 (原始布局) -->
+        <div class="portrait-layout">
+            <div class="header">
+                <button id="btnReset-portrait">🔄 重置</button>
+                <h2>俄罗斯轮盘赌</h2>
+            </div>
+            
+            <div class="game-area">
+                <button id="btnLoad-portrait" class="btn-load">🔩 装弹</button>
+                
+                <div class="cylinder" id="cylinder-portrait">
+                    <!-- 膛室将被动态添加 -->
+                </div>
+                
+                <div class="result" id="result-portrait">🎲</div>
+                
+                <button id="btnShoot-portrait" class="btn-shoot" disabled>💩🔫</button>
+            </div>
+            
+            <div class="history-area">
+                <div class="history-log" id="historyView-portrait"></div>
+            </div>
+        </div>
+        
+        <!-- 横屏布局 -->
+        <div class="landscape-layout">
+            <div class="left-panel">
+                <div class="header">
+                    <button id="btnReset-landscape">🔄 重置</button>
+                    <h2>俄罗斯轮盘赌</h2>
+                </div>
+                
+                <div class="controls">
+                    <button id="btnLoad-landscape" class="btn-load">🔩 装弹</button>
+                    <button id="btnShoot-landscape" class="btn-shoot" disabled>💩🔫</button>
+                </div>
+                
+                <div class="history-area">
+                    <div class="history-log" id="historyView-landscape"></div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="cylinder" id="cylinder-landscape">
+                    <!-- 膛室将被动态添加 -->
+                </div>
+                
+                <div class="result" id="result-landscape">🎲</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态管理
+        let bulletPos = 0;
+        let currentChamber = 1;
+        let isBulletLoaded = false;
+        let historyData = [];
+        let lastToast = null;
+        const originalTextColor = "#2196F3";
+        let currentOrientation = 'portrait'; // 初始方向
+        
+        // 同步两个布局的DOM元素 - 根据当前方向返回活动元素
+        function getActiveElement(portraitId, landscapeId) {
+            return currentOrientation === 'portrait' ? 
+                document.getElementById(portraitId) : 
+                document.getElementById(landscapeId);
+        }
+        
+        // 获取当前活动的DOM元素
+        function getElements() {
+            return {
+                btnReset: getActiveElement('btnReset-portrait', 'btnReset-landscape'),
+                btnLoad: getActiveElement('btnLoad-portrait', 'btnLoad-landscape'),
+                btnShoot: getActiveElement('btnShoot-portrait', 'btnShoot-landscape'),
+                result: getActiveElement('result-portrait', 'result-landscape'),
+                historyView: getActiveElement('historyView-portrait', 'historyView-landscape'),
+                cylinder: getActiveElement('cylinder-portrait', 'cylinder-landscape')
+            };
+        }
+        
+        // 检测屏幕方向并调整布局
+        function checkOrientation() {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            currentOrientation = isLandscape ? 'landscape' : 'portrait';
+            
+            // 同步两个布局之间的状态
+            syncLayoutStates();
+        }
+        
+        // 同步两个布局的状态
+        function syncLayoutStates() {
+            // 同步按钮状态
+            document.getElementById('btnShoot-portrait').disabled = 
+                document.getElementById('btnShoot-landscape').disabled = !isBulletLoaded;
+            
+            // 同步结果显示
+            document.getElementById('result-portrait').textContent = 
+                document.getElementById('result-landscape').textContent;
+            
+            document.getElementById('result-portrait').style.color = 
+                document.getElementById('result-landscape').style.color = 
+                    isBulletLoaded ? originalTextColor : originalTextColor;
+            
+            // 同步历史记录
+            document.getElementById('historyView-portrait').textContent = 
+                document.getElementById('historyView-landscape').textContent = 
+                    historyData.join('\n');
+                    
+            // 重新创建膛室
+            createChambers('cylinder-portrait');
+            createChambers('cylinder-landscape');
+            
+            // 更新高亮
+            updateChamberHighlight('cylinder-portrait');
+            updateChamberHighlight('cylinder-landscape');
+        }
+        
+        // 屏幕方向变化时检测
+        window.addEventListener('resize', checkOrientation);
+        
+        // 创建膛室元素
+        function createChambers(cylinderId) {
+            const cylinderElement = document.getElementById(cylinderId);
+            cylinderElement.innerHTML = '';
+            const centerX = 90;
+            const centerY = 90;
+            const radius = 60;
+            
+            for (let i = 1; i <= 6; i++) {
+                const angle = (i - 1) * 60 * (Math.PI / 180);
+                const x = centerX + radius * Math.cos(angle) - 20;
+                const y = centerY + radius * Math.sin(angle) - 20;
+                
+                const chamber = document.createElement('div');
+                chamber.className = 'chamber';
+                chamber.id = `${cylinderId}-chamber-${i}`;
+                chamber.textContent = i;
+                chamber.style.left = `${x}px`;
+                chamber.style.top = `${y}px`;
+                
+                cylinderElement.appendChild(chamber);
+            }
+        }
+        
+        // 更新当前膛室高亮
+        function updateChamberHighlight(cylinderId) {
+            const cylinderElement = document.getElementById(cylinderId);
+            cylinderElement.querySelectorAll('.chamber').forEach(element => {
+                element.classList.remove('current');
+            });
+            
+            if (currentChamber <= 6) {
+                const currentElement = document.getElementById(`${cylinderId}-chamber-${currentChamber}`);
+                if (currentElement) {
+                    currentElement.classList.add('current');
+                }
+            }
+        }
+        
+        // 模拟振动使用动画
+        function vibrate(duration) {
+            const mainContainer = document.getElementById('mainContainer');
+            const originalPosition = mainContainer.style.position;
+            
+            mainContainer.style.position = 'relative';
+            
+            let start = null;
+            function shake(timestamp) {
+                if (!start) start = timestamp;
+                const elapsed = timestamp - start;
+                
+                if (elapsed < duration) {
+                    const x = Math.random() * 5 - 2.5;
+                    const y = Math.random() * 5 - 2.5;
+                    mainContainer.style.transform = `translate(${x}px, ${y}px)`;
+                    requestAnimationFrame(shake);
+                } else {
+                    mainContainer.style.transform = 'translate(0, 0)';
+                    mainContainer.style.position = originalPosition;
+                }
+            }
+            
+            requestAnimationFrame(shake);
+        }
+        
+        // 显示提示消息
+        function showToast(message, duration = 2000) {
+            clearTimeout(lastToast);
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            
+            lastToast = setTimeout(() => {
+                toast.style.opacity = '0';
+            }, duration);
+        }
+        
+        // 更新历史记录
+        function updateHistory(text) {
+            if (historyData.length >= 5) {
+                historyData.shift();
+            }
+            
+            const now = new Date();
+            const time = now.toTimeString().substr(0, 8);
+            historyData.push(`${time} → ${text}`);
+            
+            // 更新两个布局的历史视图
+            document.getElementById('historyView-portrait').textContent = 
+                document.getElementById('historyView-landscape').textContent = 
+                    historyData.join('\n');
+            
+            // 两个布局都自动滚动到底部
+            document.getElementById('historyView-portrait').scrollTop = 
+                document.getElementById('historyView-portrait').scrollHeight;
+            document.getElementById('historyView-landscape').scrollTop = 
+                document.getElementById('historyView-landscape').scrollHeight;
+        }
+        
+        // 初始化游戏
+        function initGame() {
+            bulletPos = 0;
+            currentChamber = 1;
+            isBulletLoaded = false;
+            
+            // 更新两个布局的状态
+            document.getElementById('btnShoot-portrait').disabled = 
+                document.getElementById('btnShoot-landscape').disabled = true;
+            document.getElementById('btnLoad-portrait').disabled = 
+                document.getElementById('btnLoad-landscape').disabled = false;
+            document.getElementById('result-portrait').textContent = 
+                document.getElementById('result-landscape').textContent = "🎲";
+            document.getElementById('result-portrait').style.color = 
+                document.getElementById('result-landscape').style.color = originalTextColor;
+            
+            historyData = [];
+            document.getElementById('historyView-portrait').textContent = 
+                document.getElementById('historyView-landscape').textContent = "";
+            
+            // 重新创建膛室
+            createChambers('cylinder-portrait');
+            createChambers('cylinder-landscape');
+            updateChamberHighlight('cylinder-portrait');
+            updateChamberHighlight('cylinder-landscape');
+        }
+        
+        // 装弹
+        function loadBullet() {
+            bulletPos = Math.floor(Math.random() * 6) + 1; // 随机膛室1-6
+            currentChamber = 1; // 从第一个膛室开始
+            
+            isBulletLoaded = true;
+            document.getElementById('btnShoot-portrait').disabled = 
+                document.getElementById('btnShoot-landscape').disabled = false;
+            
+            // 反馈
+            vibrate(10);
+            showToast(`子弹已装入膛室：${bulletPos}`);
+            updateChamberHighlight('cylinder-portrait');
+            updateChamberHighlight('cylinder-landscape');
+        }
+        
+        // 开火
+        function fire() {
+            // 获取当前活动的射击按钮
+            const btnShoot = currentOrientation === 'portrait' ? 
+                document.getElementById('btnShoot-portrait') : 
+                document.getElementById('btnShoot-landscape');
+                
+            btnShoot.classList.add('spinning');
+            setTimeout(() => {
+                btnShoot.classList.remove('spinning');
+            }, 800);
+            
+            if (!isBulletLoaded) {
+                vibrate(100);
+                showToast("警告：还没有装弹！");
+                return;
+            }
+            
+            vibrate(100);
+            
+            if (currentChamber === bulletPos) {
+                // 更新两个布局的结果显示
+                document.getElementById('result-portrait').textContent = 
+                    document.getElementById('result-landscape').textContent = "💥 砰！";
+                document.getElementById('result-portrait').style.color = 
+                    document.getElementById('result-landscape').style.color = "#F44336";
+                
+                document.getElementById('btnShoot-portrait').disabled = 
+                    document.getElementById('btnShoot-landscape').disabled = true;
+                isBulletLoaded = false;
+                updateHistory(`第${currentChamber}枪：中弹！`);
+                showToast(`第${currentChamber}发中弹！`, 3000);
+                
+                // 添加爆炸效果
+                const explosion = document.createElement('div');
+                explosion.style.position = 'absolute';
+                explosion.style.top = '40%';
+                explosion.style.left = '50%';
+                explosion.style.transform = 'translate(-50%, -50%)';
+                explosion.style.fontSize = '100px';
+                explosion.style.zIndex = '100';
+                explosion.textContent = '💥';
+                explosion.style.animation = 'explosion 1s forwards';
+                document.getElementById('mainContainer').appendChild(explosion);
+                
+                // 添加爆炸CSS动画
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes explosion {
+                        0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+                        50% { transform: translate(-50%, -50%) scale(2); opacity: 1; }
+                        100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                setTimeout(() => {
+                    explosion.remove();
+                    style.remove();
+                }, 1000);
+            } else {
+                // 更新两个布局的结果显示
+                document.getElementById('result-portrait').textContent = 
+                    document.getElementById('result-landscape').textContent = `💨 ${currentChamber}`;
+                
+                updateHistory(`第${currentChamber}枪：空弹！`);
+                currentChamber++;
+                updateChamberHighlight('cylinder-portrait');
+                updateChamberHighlight('cylinder-landscape');
+                
+                if (currentChamber > 6) {
+                    showToast("所有膛室射击完毕，你幸存了！", 3000);
+                    isBulletLoaded = false;
+                    document.getElementById('btnShoot-portrait').disabled = 
+                        document.getElementById('btnShoot-landscape').disabled = true;
+                } else if (currentChamber === 6) {
+                    showToast("最后一次机会！", 2000);
+                }
+            }
+        }
+        
+        // 事件监听器 - 重置按钮
+        document.getElementById('btnReset-portrait').addEventListener('click', function() {
+            initGame();
+            vibrate(50);
+        });
+        
+        document.getElementById('btnReset-landscape').addEventListener('click', function() {
+            initGame();
+            vibrate(50);
+        });
+        
+        // 事件监听器 - 装弹按钮
+        document.getElementById('btnLoad-portrait').addEventListener('click', function() {
+            if (isBulletLoaded) {
+                vibrate(150);
+                document.getElementById('result-portrait').textContent = 
+                    document.getElementById('result-landscape').textContent = "💢 实弹还在膛内！";
+                showToast("实弹还在膛内！请先完成本轮游戏。", 3000);
+                return;
+            }
+            loadBullet();
+            updateHistory("装入新弹匣");
+        });
+        
+        document.getElementById('btnLoad-landscape').addEventListener('click', function() {
+            if (isBulletLoaded) {
+                vibrate(150);
+                document.getElementById('result-portrait').textContent = 
+                    document.getElementById('result-landscape').textContent = "💢 实弹还在膛内！";
+                showToast("实弹还在膛内！请先完成本轮游戏。", 3000);
+                return;
+            }
+            loadBullet();
+            updateHistory("装入新弹匣");
+        });
+        
+        // 事件监听器 - 射击按钮
+        document.getElementById('btnShoot-portrait').addEventListener('click', fire);
+        document.getElementById('btnShoot-landscape').addEventListener('click', fire);
+        
+        // 页面加载时初始化
+        window.addEventListener('load', function() {
+            initGame();
+            checkOrientation(); // 初始检查屏幕方向
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给栗子的康复祝福</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial Rounded MT Bold', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #fef6f6;
+            color: #5a5a5a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .header {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #ff7bac;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            color: #8a8a8a;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .progress-container {
+            width: 90%;
+            max-width: 400px;
+            background-color: #f0f0f0;
+            border-radius: 20px;
+            padding: 3px;
+            margin: 1rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .progress-bar {
+            height: 24px;
+            border-radius: 20px;
+            background: linear-gradient(to right, #ff9fcb, #ff7bac);
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .progress-text {
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .buttons-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 400px;
+            margin: 1.5rem 0;
+        }
+        
+        .wish-btn {
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .wish-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .wish-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .tips-container {
+            background-color: white;
+            border-radius: 15px;
+            padding: 1rem;
+            margin: 1rem 0;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tips-title {
+            color: #ff7bac;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tips-title:before {
+            content: "💡";
+            margin-right: 0.5rem;
+        }
+        
+        .tips-list {
+            list-style-type: none;
+        }
+        
+        .tips-list li {
+            margin: 0.5rem 0;
+            padding-left: 1rem;
+            position: relative;
+            font-size: 0.9rem;
+        }
+        
+        .tips-list li:before {
+            content: "•";
+            color: #ff7bac;
+            position: absolute;
+            left: 0;
+        }
+        
+        .floating-element {
+            position: absolute;
+            pointer-events: none;
+            animation: float 10s linear infinite;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        
+        .special-wish {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s;
+        }
+        
+        .special-wish.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .congratulation {
+            font-size: 1.6rem;
+            color: #ff7bac;
+            text-align: center;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+        
+        .wish-message {
+            font-size: 1.1rem;
+            color: #5a5a5a;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+        
+        .close-btn {
+            background-color: #ff7bac;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .celebration {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .btn-label {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            text-align: center;
+            color: #8a8a8a;
+        }
+        
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .flying-item {
+            position: absolute;
+            bottom: -50px;
+            font-size: 24px;
+            pointer-events: none;
+            animation: flyUp 3s ease-out;
+            z-index: 100;
+        }
+        
+        @keyframes flyUp {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0.8;
+            }
+            20% {
+                opacity: 1;
+            }
+            80% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-80vh) scale(1.5);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>栗子的康复小天地</h1>
+        <p class="subtitle">在此小空城送上满满的祝福<br>以加快栗子的恢复！</p>
+    </div>
+    
+    <div class="progress-container">
+        <div class="progress-bar">
+            <span class="progress-text">0%</span>
+        </div>
+    </div>
+    
+    <div class="buttons-container">
+        <div class="btn-container">
+            <button class="wish-btn" id="flower-btn">🌸</button>
+            <div class="btn-label">送朵花花</div>
+        </div>
+        <div class="btn-container">
+            <button class="wish-btn" id="sun-btn">☀️</button>
+            <div class="btn-label">送颗阳光</div>
+        </div>
+        <div class="btn-container">
+            <button class="wish-btn" id="heart-btn">❤️</button>
+            <div class="btn-label">送个心心</div>
+        </div>
+    </div>
+    
+    <div class="tips-container">
+        <h3 class="tips-title">小空城の康复小贴士</h3>
+        <ul class="tips-list">
+        <li>建议适量饮用温水啦，帮助维持身体水分平衡～</li>
+        <li>尽量保持规律作息哦，让身体好好休息恢复元气呢～</li>
+        <li>要记得按时服药哟，医生开的药量可别自己调整呀～</li>
+        <li>天气好的时候呀，开个小窗透透气也挺舒服的嘛～</li>
+        <li>保持好心情最重要啦，听听喜欢的歌<Br>或者聊聊天解解闷（ 比如和我嘿嘿）都挺好哒！</li>
+        </ul>
+    </div>
+    
+    <div class="special-wish" id="special-wish">
+        <h2 class="congratulation">🎉 康复成功！🎉</h2>
+        <p class="wish-message">恭喜栗子你成功康复啦！虽然这次五一不能和朋友们一起出游，但我相信，很快栗子你就能重新活跃在校园里，和朋友们一起创造更多美好回忆！祝栗子永远健康、快乐、充满活力！</p>
+        <button class="close-btn" id="close-wish">继续收集祝福</button>
+    </div>
+<audio id="bgm" loop>
+  <source src="https://pan.suyanw.cn/view.php/0a696a8e6fdf4346c655ffd7abac042e.mp3" type="audio/mp3">
+</audio>
+
+<div class="btn-container" style="position:fixed; bottom:20px; right:20px;">
+  <button class="wish-btn" id="music-btn" style="width:50px; height:50px; font-size:1.2rem;">🎵</button>
+  <div class="btn-label">播放音乐</div>
+</div>
+
+    <script>
+        // 初始化变量
+        let progress = 0;
+        const progressBar = document.querySelector('.progress-bar');
+        const progressText = document.querySelector('.progress-text');
+        const specialWish = document.getElementById('special-wish');
+        const closeWishBtn = document.getElementById('close-wish');
+        
+        // 创建漂浮元素
+        function createFloatingElements() {
+            const elements = ['🔆','🧡', '✨', '🌟', '💫', '🍀', '🌺', '🌼', '🌻'];
+            const count = 15;
+            
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const element = document.createElement('div');
+                    element.className = 'floating-element';
+                    element.textContent = elements[Math.floor(Math.random() * elements.length)];
+                    element.style.left = `${Math.random() * 100}%`;
+                    element.style.fontSize = `${Math.random() * 15 + 10}px`;
+                    element.style.opacity = `${Math.random() * 0.5 + 0.3}`;
+                    element.style.animationDuration = `${Math.random() * 15 + 10}s`;
+                    document.body.appendChild(element);
+                    
+                    // 移除元素以防止DOM过载
+                    setTimeout(() => {
+                        element.remove();
+                    }, 5000);
+                }, i * 500);
+            }
+            
+            // 定期更新漂浮元素
+            setTimeout(createFloatingElements, 10000);
+        }
+        
+        // 创建飞起的祝福元素
+        function createFlyingItem(emoji, x) {
+            const item = document.createElement('div');
+            item.className = 'flying-item';
+            item.textContent = emoji;
+            item.style.left = `${x}px`;
+            document.body.appendChild(item);
+            
+            // 动画结束后移除元素
+            setTimeout(() => {
+                item.remove();
+            }, 3000);
+        }
+        
+        // 更新进度条
+        function updateProgress(increment) {
+            progress += increment;
+            if (progress > 100) progress = 100;
+            
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `${Math.floor(progress)}%`;
+            
+            // 当进度达到100%时，显示特别祝福
+            if (progress === 100) {
+                setTimeout(() => {
+                    specialWish.classList.add('show');
+                    createCelebration();
+                }, 1000);
+            }
+        }
+        
+        // 创建庆祝动画
+        function createCelebration() {
+            const colors = ['#ff7bac', '#ffb347', '#a5dff9', '#b5e8a5', '#d5b8ff'];
+            
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const celebration = document.createElement('div');
+                    celebration.className = 'celebration';
+                    celebration.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    celebration.style.top = `${Math.random() * 100}%`;
+                    celebration.style.left = `${Math.random() * 100}%`;
+                    
+                    specialWish.appendChild(celebration);
+                    
+                    // 添加动画
+                    const animationDuration = Math.random() * 2 + 1;
+                    celebration.animate([
+                        { opacity: 1, transform: 'scale(0)' },
+                        { opacity: 1, transform: 'scale(1.5)' },
+                        { opacity: 0, transform: 'scale(0)' }
+                    ], {
+                        duration: animationDuration * 1000,
+                        easing: 'ease-out'
+                    });
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        celebration.remove();
+                    }, animationDuration * 1000);
+                }, i * 50);
+            }
+        }
+        
+        // 按钮点击事件
+        document.getElementById('flower-btn').addEventListener('click', function(e) {
+            createFlyingItem('🌸', e.clientX);
+            updateProgress(5);
+            this.animate([
+                { transform: 'scale(1)' },
+                { transform: 'scale(0.9)' },
+                { transform: 'scale(1.1)' },
+                { transform: 'scale(1)' }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            });
+        });
+        
+        document.getElementById('sun-btn').addEventListener('click', function(e) {
+            createFlyingItem('☀️', e.clientX);
+            updateProgress(5);
+            this.animate([
+                { transform: 'scale(1)' },
+                { transform: 'scale(0.9)' },
+                { transform: 'scale(1.1)' },
+                { transform: 'scale(1)' }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            });
+        });
+        
+        document.getElementById('heart-btn').addEventListener('click', function(e) {
+            createFlyingItem('❤️', e.clientX);
+            updateProgress(5);
+            this.animate([
+                { transform: 'scale(1)' },
+                { transform: 'scale(0.9)' },
+                { transform: 'scale(1.1)' },
+                { transform: 'scale(1)' }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            });
+        });
+  //音乐控制
+  const bgm = document.getElementById("bgm");
+  let isPlaying = false;
+  
+  document.getElementById("music-btn").addEventListener("click", function() {
+    if (isPlaying) {
+      bgm.pause();
+      this.textContent = "🎵";
+    } else {
+      bgm.play().catch(() => { /* 处理自动播放限制 */ });
+      this.textContent = "⏸";
+    }
+    isPlaying = !isPlaying;
+  });
+        
+        
+        // 关闭特别祝福
+        closeWishBtn.addEventListener('click', function() {
+            specialWish.classList.remove('show');
+            progress = 0;
+            updateProgress(0);
+        });
+        
+        // 初始化
+        window.addEventListener('load', function() {
+            createFloatingElements();
+            updateProgress(0);
+        });
+    </script>
+</body>
+</html>

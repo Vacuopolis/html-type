@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亮灯游戏</title>
+    <style>
+        /* --- 基本样式重置和全局设置 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #fff;
+            transition: background 0.5s;
+            padding: 20px 0;
+        }
+        body.dark-theme { background: linear-gradient(135deg, #2c3e50, #4a5568); }
+
+        /* --- 主要容器样式 --- */
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 600px; /* 稍微增大最大宽度以适应可能的更大棋盘 */
+            width: 90%;
+        }
+
+        /* --- 标题和说明 --- */
+        h1 { text-align: center; margin-bottom: 10px; font-size: 2rem; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .instructions { text-align: center; margin-bottom: 20px; font-size: 0.9rem; opacity: 0.9; }
+
+        /* --- 游戏信息 (步数, 时间) --- */
+        .game-info { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 1rem; }
+
+        /* --- 选项设置区域 (尺寸和难度) --- */
+        .options-select {
+            display: flex;
+            flex-wrap: wrap; /* 允许换行 */
+            gap: 15px; /* 增大间距 */
+            margin-top: 15px;
+            margin-bottom: 15px; /* 添加下边距 */
+            align-items: center; /* 垂直居中对齐 */
+        }
+        .options-select > div { flex: 1; min-width: 120px; } /* 每个选项组占一份，设置最小宽度 */
+        .options-select label { display: block; margin-bottom: 5px; font-size: 0.9rem; }
+        /* 输入框和下拉框通用样式 */
+        .options-select input[type="number"],
+        .options-select select {
+            width: 100%;
+            padding: 8px; /* 调整内边距 */
+            border-radius: 5px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #333;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        /* 数字输入框特定样式 */
+        .options-select input[type="number"] { cursor: text; }
+        /* 暗黑模式下的输入框/下拉框文字颜色 */
+        body.dark-theme .options-select input[type="number"],
+        body.dark-theme .options-select select { color: white; }
+        /* 下拉框箭头 (保持原样) */
+        .options-select select {
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px auto;
+            padding-right: 30px;
+        }
+        /* 下拉选项样式 (保持原样) */
+        .options-select select option { background-color: #555; color: white; }
+        body:not(.dark-theme) .options-select select option { background-color: white; color: #333; }
+
+        /* --- 游戏棋盘 --- */
+        .game-board {
+            display: grid;
+            /* grid-template-columns 由 JS 动态设置 */
+            gap: 8px; /* 稍微减小间距 */
+            margin-bottom: 20px;
+            max-width: 100%; /* 确保棋盘不会超出容器 */
+            margin-left: auto; /* 居中 */
+            margin-right: auto; /* 居中 */
+        }
+
+        /* --- 格子样式 --- */
+        .cell {
+            width: 100%;
+            aspect-ratio: 1; /* 保持正方形 */
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem; /* 可以考虑根据格子数量动态调整字体 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .cell:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); }
+        .cell.on { background: linear-gradient(135deg, #ffdd00, #ffcc00); box-shadow: 0 0 15px #ffdd00; color: #333; }
+        .cell.off { background: linear-gradient(135deg, #333, #555); color: #fff; }
+        .cell.clicking { transform: scale(0.95); }
+        .cell.hint-active { animation: hint-pulse 1s infinite alternate; }
+        @keyframes hint-pulse {
+            0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); transform: scale(1); } /* 改为白色半透明 */
+            100% { box-shadow: 0 0 25px rgba(255, 255, 255, 1); transform: scale(1.08); } /* 改为白色不透明 */
+        }
+
+        /* --- 控制按钮区域 --- */
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
+        button { padding: 10px 15px; border: none; border-radius: 5px; background-color: #4CAF50; color: white; font-size: 1rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
+        button:active { transform: translateY(1px); }
+        button:disabled { background-color: #aaa; cursor: not-allowed; transform: none; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+        button.primary { background-color: #4CAF50; }
+        button.secondary { background-color: #2196F3; }
+        button.tertiary { background-color: #9C27B0; }
+        .hint-btn { background-color: #FF9800; }
+
+        /* --- 获胜消息 --- */
+        .win-message { font-size: 1.5rem; color: #4CAF50; margin-top: 20px; text-align: center; opacity: 0; transform: translateY(-20px); transition: all 0.5s; }
+        .win-message.show { opacity: 1; transform: translateY(0); }
+
+        /* --- 庆祝动画容器 --- */
+        .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 1000; }
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #f00; opacity: 0; pointer-events: none; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+        /* --- 主题切换开关 --- */
+        .theme-toggle { margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .theme-toggle label { cursor: pointer; }
+        .theme-toggle input { display: none; }
+        .theme-toggle .slider { position: relative; width: 50px; height: 24px; background: #ccc; border-radius: 34px; transition: .4s; cursor: pointer; }
+        .theme-toggle .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; border-radius: 50%; transition: .4s; }
+        .theme-toggle input:checked + .slider { background-color: #2196F3; }
+        .theme-toggle input:checked + .slider:before { transform: translateX(26px); }
+
+        /* --- 计时器 --- */
+        .timer { font-size: 1.2rem; font-weight: bold; }
+
+        /* --- 历史记录 --- */
+        .history { margin-top: 15px; max-height: 100px; overflow-y: auto; padding: 10px; background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; font-size: 0.8rem; line-height: 1.4; }
+        .history::-webkit-scrollbar { width: 8px; }
+        .history::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }
+        .history::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.3); border-radius: 4px; }
+        .history::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.5); }
+        body.dark-theme .history::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
+        body.dark-theme .history::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); }
+        body.dark-theme .history::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+
+        /* --- 响应式设计 (小屏幕) --- */
+        @media (max-width: 600px) { /* 调整断点 */
+            .container { padding: 15px; width: 95%; }
+            h1 { font-size: 1.8rem; }
+            .game-board { gap: 5px; }
+            .cell { font-size: 1.2rem; border-radius: 5px; } /* 减小圆角 */
+            .controls { gap: 8px; }
+            button { padding: 8px 12px; font-size: 0.9rem; }
+            .game-info, .timer { font-size: 0.9rem; }
+            .history { font-size: 0.75rem; }
+            .theme-toggle span { font-size: 0.9rem; }
+            .options-select { gap: 10px; } /* 减小选项间距 */
+            .options-select > div { min-width: 100px; } /* 调整最小宽度 */
+            .options-select input[type="number"],
+            .options-select select { font-size: 0.9rem; padding: 6px; }
+        }
+        /* 音效开关样式 (类似主题切换) */
+.sound-toggle { 
+    margin-top: 10px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 10px; 
+}
+.sound-toggle label { cursor: pointer; }
+.sound-toggle input { display: none; }
+.sound-toggle .slider { 
+    position: relative; 
+    width: 50px; 
+    height: 24px; 
+    background: #ccc; 
+    border-radius: 34px; 
+    transition: .4s; 
+    cursor: pointer; 
+}
+.sound-toggle .slider:before { 
+    position: absolute; 
+    content: ""; 
+    height: 16px; 
+    width: 16px; 
+    left: 4px; 
+    bottom: 4px; 
+    background-color: white; 
+    border-radius: 50%; 
+    transition: .4s; 
+}
+.sound-toggle input:checked + .slider { background-color: #4CAF50; }
+.sound-toggle input:checked + .slider:before { transform: translateX(26px); }
+    </style>
+</head>
+<body>
+    <!-- 庆祝动画容器 -->
+    <div class="confetti-container" id="confetti-container"></div>
+    <!-- 主要游戏容器 -->
+    <div class="container">
+        <h1>亮灯游戏</h1>
+
+        <!-- 游戏说明 -->
+        <div class="instructions">
+            <p>目标：通过点击格子使所有格子变亮</p>
+            <p>规则：点击一个格子会改变该格子及其上下左右相邻格子的状态，行列数可修改2-10</p>
+            
+        </div>
+
+        <!-- 游戏信息：步数和计时器 -->
+        <div class="game-info">
+            <div class="moves">步数：<span id="move-count">0</span></div>
+            <div class="timer">时间：<span id="timer">00:00</span></div>
+        </div>
+
+        <!-- **修改**: 选项设置：自定义尺寸和难度 -->
+        <div class="options-select">
+            <!-- 行数输入 -->
+            <div class="rows-input-group">
+                <label for="rows-input">行数:</label>
+                <input type="number" id="rows-input" value="3" min="2" max="10"> <!-- 默认3行, 最小2, 最大10 (可调整) -->
+            </div>
+            <!-- 列数输入 -->
+            <div class="cols-input-group">
+                <label for="cols-input">列数:</label>
+                <input type="number" id="cols-input" value="3" min="2" max="10"> <!-- 默认3列, 最小2, 最大10 (可调整) -->
+            </div>
+            <!-- 难度选择 -->
+            <div class="level-select">
+                 <label for="level-select">难度:</label>
+                <select id="level-select">
+                    <option value="easy">简单</option>
+                    <option value="medium" selected>中等</option>
+                    <option value="hard">困难</option>
+                    <option value="expert">专家</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 游戏棋盘 (格子由JS生成) -->
+        <div class="game-board" id="board"></div>
+
+        <!-- 主题切换开关 -->
+        <div class="theme-toggle">
+            <label>
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+            <span id="theme-label">暗黑模式</span>
+        </div>
+        <!-- 音效控制 -->
+        <div class="sound-toggle">
+    <label>
+        <input type="checkbox" id="sound-toggle" checked>
+        <span class="slider"></span>
+    </label>
+    <span id="sound-label">音效开启</span>
+</div>
+        <!-- 历史记录显示区域 -->
+        <div class="history" id="history">
+            历史记录：
+        </div>
+
+        <!-- 获胜提示消息 -->
+        <div class="win-message" id="win-message">恭喜！你赢了！</div>
+
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button class="primary" id="reset-btn">重新开始</button>
+            <button class="secondary" id="undo-btn">撤销</button>
+            <button class="secondary hint-btn" id="hint-btn">提示</button>
+            <button class="tertiary" id="solution-btn">显示解法</button>
+        </div>
+
+    </div> <!-- container 结束 -->
+
+    <script>
+        // 游戏状态对象
+        const gameState = {
+            boardRows: 3,       // **修改**: 棋盘行数
+            boardCols: 3,       // **修改**: 棋盘列数
+            board: [],          // 当前棋盘状态 (二维数组)
+            initialBoard: [],   // 本局开始时的棋盘状态
+            moves: 0,
+            timer: 0,
+            timerInterval: null,
+            gameStarted: false,
+            showingSolution: false,
+            solutionTimer: null,
+            hintedCellElement: null,
+            hintTimeout: null,
+            currentLevel: 'medium',
+            history: [],
+            moveHistory: [], // 存储每一步操作的位置
+            boardHistory: [], // 存储每一步操作后的棋盘状态
+            highScores: {}
+        };
+
+        // DOM 元素引用
+        const boardElement = document.getElementById('board');
+        const moveCountElement = document.getElementById('move-count');
+        const timerElement = document.getElementById('timer');
+        const winMessageElement = document.getElementById('win-message');
+        const historyElement = document.getElementById('history');
+        const rowsInput = document.getElementById('rows-input'); // **新增**: 行数输入框引用
+        const colsInput = document.getElementById('cols-input'); // **新增**: 列数输入框引用
+        const levelSelect = document.getElementById('level-select');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeLabel = document.getElementById('theme-label');
+        const resetBtn = document.getElementById('reset-btn');
+        const hintBtn = document.getElementById('hint-btn');
+        const solutionBtn = document.getElementById('solution-btn');
+        const confettiContainer = document.getElementById('confetti-container');
+
+        // 音效对象 (保持不变)
+        const sounds = {
+            click: new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'),
+            win: new Audio('data:audio/wav;base64,UklGRkQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhQAAAAAAA//8=')
+        };
+        function unlockAudio() { /* ... (保持不变) ... */
+             Object.values(sounds).forEach(sound => {
+                sound.volume = 0; sound.play().catch(() => {}); sound.pause(); sound.currentTime = 0; sound.volume = 1;
+            });
+            document.body.removeEventListener('click', unlockAudio); document.body.removeEventListener('touchstart', unlockAudio);
+        }
+        document.body.addEventListener('click', unlockAudio, { once: true });
+        document.body.addEventListener('touchstart', unlockAudio, { once: true });
+        
+        // 计算分数的函数
+        function calculateScore() {
+    // 基础分数与步数成反比，与时间成反比
+    const baseScore = 1000;
+    const sizeBonus = gameState.boardRows * gameState.boardCols * 10; // 棋盘越大，基础分越高
+    
+    // 难度系数
+    let difficultyMultiplier = 1;
+    switch(gameState.currentLevel) {
+        case 'easy': difficultyMultiplier = 1; break;
+        case 'medium': difficultyMultiplier = 1.5; break;
+        case 'hard': difficultyMultiplier = 2; break;
+        case 'expert': difficultyMultiplier = 3; break;
+    }
+    
+    // 步数和时间因子 - 步数越少、时间越短分数越高
+    const optimalSteps = gameState.boardRows * gameState.boardCols * 0.7; // 估算最优步数
+    const stepsFactor = Math.max(0.1, optimalSteps / Math.max(1, gameState.moves));
+    
+    // 时间因子 (每分钟递减)
+    const timeMinutes = gameState.timer / 60;
+    const timeFactor = Math.max(0.1, 1 / (1 + timeMinutes * 0.1));
+    
+    // 最终分数计算
+    const finalScore = Math.round((baseScore + sizeBonus) * difficultyMultiplier * stepsFactor * timeFactor);
+    return finalScore;
+}
+
+
+                // 初始化游戏函数
+        function initGame() {
+            console.log("Initializing game...");
+            // --- 清理工作 ---
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            if (gameState.solutionTimer) clearInterval(gameState.solutionTimer); // 清理解法演示计时器
+            if (gameState.hintTimeout) clearTimeout(gameState.hintTimeout);    // 清理提示计时器
+            boardElement.innerHTML = '';
+            // confettiContainer.innerHTML = ''; // 不需要手动清空
+
+            // --- 重置游戏状态 ---
+            gameState.moves = 0;
+            gameState.timer = 0;
+            gameState.timerInterval = null;
+            gameState.gameStarted = false;
+            gameState.showingSolution = false;
+            gameState.solutionTimer = null;
+            gameState.hintTimeout = null;
+            gameState.hintedCellElement = null; // 重置时清除提示状态
+            gameState.board = [];
+            gameState.initialBoard = [];
+            gameState.moveHistory = [];
+            gameState.boardHistory = [];
+            gameState.highScores = JSON.parse(localStorage.getItem('lightsOutHighScores') || '{}');
+
+
+            // **修改**: 从输入框读取选择的棋盘尺寸，并进行基本验证
+            let rows = parseInt(rowsInput.value, 10);
+            let cols = parseInt(colsInput.value, 10);
+            // 验证输入值，确保是大于等于2的整数，提供默认值
+            gameState.boardRows = (Number.isInteger(rows) && rows >= 2 && rows <= 10) ? rows : 3; // 添加上限检查
+            gameState.boardCols = (Number.isInteger(cols) && cols >= 2 && cols <= 10) ? cols : 3; // 添加上限检查
+            // 如果输入无效或超出范围，更新输入框的值为使用的默认/边界值
+            if (String(rows) !== String(gameState.boardRows)) rowsInput.value = gameState.boardRows;
+            if (String(cols) !== String(gameState.boardCols)) colsInput.value = gameState.boardCols;
+
+            gameState.currentLevel = levelSelect.value;
+
+            // --- 更新 UI 显示 ---
+            moveCountElement.textContent = gameState.moves;
+            timerElement.textContent = '00:00';
+            winMessageElement.classList.remove('show');
+            hintBtn.disabled = false;
+            solutionBtn.disabled = false;
+
+            // --- 创建棋盘 ---
+            boardElement.style.gridTemplateColumns = `repeat(${gameState.boardCols}, 1fr)`;
+
+            for (let i = 0; i < gameState.boardRows; i++) {
+                gameState.board[i] = [];
+                gameState.initialBoard[i] = []; // initialBoard 仍需记录用于可能的“重置到初始”功能或调试
+                for (let j = 0; j < gameState.boardCols; j++) {
+                    // **重要**: 初始状态设为全灭 (false) 可能更符合直觉，然后随机化
+                    // 或者保持全亮 (true) 然后随机化也可以，只要 randomizeBoard 逻辑对应即可
+                    // 这里保持原样 (全亮)
+                    gameState.board[i][j] = true;
+                    gameState.initialBoard[i][j] = true; // 初始设为全亮
+
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${gameState.board[i][j] ? 'on' : 'off'}`;
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+
+                    // --- 添加交互效果 (保持不变) ---
+                    const handlePress = (e) => { if (!gameState.showingSolution) e.target.classList.add('clicking'); };
+                    const handleRelease = (e) => e.target.classList.remove('clicking');
+                    const handleLeave = (e) => e.target.classList.remove('clicking');
+                    cell.addEventListener('mousedown', handlePress);
+                    cell.addEventListener('mouseup', handleRelease);
+                    cell.addEventListener('mouseleave', handleLeave);
+                    cell.addEventListener('touchstart', handlePress, { passive: true });
+                    cell.addEventListener('touchend', handleRelease);
+
+                    // --- 核心点击事件 (保持不变) ---
+                    cell.addEventListener('click', () => {
+                        if (!gameState.showingSolution) {
+                           handleCellClick(i, j);
+                        }
+                    });
+                    boardElement.appendChild(cell);
+                }
+            }
+
+             // --- 生成谜题 ---
+             // randomizeBoard 会修改 gameState.board 状态
+             randomizeBoard(); // 这个函数现在只负责打乱棋盘状态
+
+             // 将 randomizeBoard 之后的状态（即谜题初始状态）复制到 initialBoard
+             // 这样 initialBoard 保存的就是这一局开始时的样子
+             for(let r = 0; r < gameState.boardRows; r++) {
+                 if (gameState.board[r] === undefined) { // 防御性检查
+                     console.error(`Error copying state: gameState.board[${r}] is undefined during init.`);
+                     gameState.board[r] = Array(gameState.boardCols).fill(false); // 应急处理
+                 }
+                 // 确保 initialBoard 行存在
+                 if (gameState.initialBoard[r] === undefined) {
+                     gameState.initialBoard[r] = [];
+                 }
+                 for(let c = 0; c < gameState.boardCols; c++) {
+                     // 再次检查 board 单元格
+                     if(gameState.board[r][c] === undefined) {
+                         console.error(`Error copying state: gameState.board[${r}][${c}] is undefined during init.`);
+                         gameState.board[r][c] = false; // 应急处理
+                     }
+                     gameState.initialBoard[r][c] = gameState.board[r][c]; // 复制谜题初始状态
+                 }
+             }
+
+
+             // --- 更新 UI ---
+             updateBoardUI(); // 根据最终的 gameState.board 更新显示
+
+             // --- 记录历史 ---
+            updateHistory(`开始新游戏 - ${gameState.boardRows}x${gameState.boardCols} - 难度: ${getLevelName(gameState.currentLevel)}`);
+            console.log("Game initialized. Board size:", `${gameState.boardRows}x${gameState.boardCols}`, "Level:", gameState.currentLevel);
+            // console.log("Solution steps generated:", gameState.solution); // <-- 删除这行
+            console.log("Initial board state recorded.");
+        } // initGame 函数结束
+
+
+        // 开始计时器 (在玩家第一次点击格子时调用)
+        function startTimer() {
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval); // 确保只有一个计时器
+            gameState.gameStarted = true;
+            console.log("Timer started.");
+            gameState.timerInterval = setInterval(() => {
+                gameState.timer++;
+                const minutes = Math.floor(gameState.timer / 60).toString().padStart(2, '0');
+                const seconds = (gameState.timer % 60).toString().padStart(2, '0');
+                timerElement.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+                // 根据难度和棋盘大小随机化棋盘
+        function randomizeBoard() {
+            let clicks;
+            const totalCells = gameState.boardRows * gameState.boardCols;
+            const sizeFactor = Math.sqrt(totalCells) / 2.5;
+
+            switch (gameState.currentLevel) {
+                case 'easy':   clicks = Math.round(3 * sizeFactor); break;
+                case 'medium': clicks = Math.round(5 * sizeFactor); break;
+                case 'hard':   clicks = Math.round(8 * sizeFactor); break;
+                case 'expert': clicks = Math.round(12 * sizeFactor); break;
+                default:       clicks = Math.round(5 * sizeFactor);
+            }
+            clicks = Math.max(1, clicks);
+            clicks = Math.min(clicks, totalCells * 2);
+
+
+            console.log(`Randomizing board (${gameState.boardRows}x${gameState.boardCols}, ${gameState.currentLevel}) with ${clicks} simulated clicks.`);
+
+            // 模拟点击生成谜题状态
+            for (let i = 0; i < clicks; i++) {
+                const row = Math.floor(Math.random() * gameState.boardRows);
+                const col = Math.floor(Math.random() * gameState.boardCols);
+
+                // **重要**: 只更新内部 gameState.board 状态
+                toggleCellState(row, col); // 直接修改当前棋盘状态
+            }
+
+            // **注意**: 不再需要将生成的谜题状态复制到 initialBoard，
+            // 因为 initGame 会在 randomizeBoard 调用 *之后* 再进行一次复制，
+            // 将最终的谜题状态存入 initialBoard。
+
+             console.log("Board randomized. Current board state reflects the puzzle.");
+        }
+
+
+        // 获取难度等级的中文名称
+        function getLevelName(level) {
+            const names = { 'easy': '简单', 'medium': '中等', 'hard': '困难', 'expert': '专家' };
+            return names[level] || '未知';
+        }
+
+                // 处理玩家点击格子的逻辑
+        function handleCellClick(row, col) {
+    if (gameState.showingSolution) return; // 演示解法时忽略点击
+    
+    // 清除提示效果
+    if (gameState.hintedCellElement && 
+        gameState.hintedCellElement === boardElement.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`)) {
+        clearTimeout(gameState.hintTimeout);
+        gameState.hintedCellElement.classList.remove('hint-active');
+        gameState.hintedCellElement.style.background = '';
+        gameState.hintedCellElement.style.color = '';
+        gameState.hintedCellElement = null;
+        gameState.hintTimeout = null;
+    }
+    
+    // 在执行操作前，保存当前棋盘状态
+    const currentBoardCopy = [];
+    for (let r = 0; r < gameState.boardRows; r++) {
+        currentBoardCopy[r] = [...gameState.board[r]];
+    }
+    gameState.boardHistory.push(currentBoardCopy);
+    gameState.moveHistory.push({row, col});
+    
+    if (!gameState.gameStarted) {
+        startTimer();
+    }
+    
+    playSound(sounds.click);
+    
+    toggleCellState(row, col);
+    updateBoardUI();
+    gameState.moves++;
+    moveCountElement.textContent = gameState.moves;
+    updateHistory(`点击了 (${row + 1}, ${col + 1})`);
+    
+    if (checkWin()) {
+        handleWin();
+    }
+}
+
+// 添加撤销功能函数
+function undoLastMove() {
+    if (gameState.showingSolution) return; // 演示解法时不允许撤销
+    if (gameState.moveHistory.length === 0) {
+        updateHistory("没有操作可以撤销");
+        return;
+    }
+    
+    // 获取上一步的棋盘状态
+    const previousBoard = gameState.boardHistory.pop();
+    const undoneMove = gameState.moveHistory.pop();
+    
+    // 恢复棋盘状态
+    for (let r = 0; r < gameState.boardRows; r++) {
+        for (let c = 0; c < gameState.boardCols; c++) {
+            gameState.board[r][c] = previousBoard[r][c];
+        }
+    }
+    
+    // 更新界面
+    updateBoardUI();
+    gameState.moves--;
+    moveCountElement.textContent = gameState.moves;
+    updateHistory(`撤销了点击 (${undoneMove.row + 1}, ${undoneMove.col + 1})`);
+}
+
+        // 核心游戏逻辑：切换指定格子及其相邻格子的状态
+        function toggleCellState(row, col) {
+            const toggle = (r, c) => {
+                // **修改**: 使用 boardRows 和 boardCols 进行边界检查
+                if (r >= 0 && r < gameState.boardRows && c >= 0 && c < gameState.boardCols) {
+                    // 确保行存在
+                    if (gameState.board[r] !== undefined) {
+                       gameState.board[r][c] = !gameState.board[r][c]; // 切换状态
+                    } else {
+                        console.error(`toggleCellState: Attempted to access non-existent row ${r}`);
+                    }
+                }
+            };
+
+            toggle(row, col);     // 点击的格子
+            toggle(row - 1, col); // 上
+            toggle(row + 1, col); // 下
+            toggle(row, col - 1); // 左
+            toggle(row, col + 1); // 右
+        }
+
+
+        // 更新整个棋盘的 UI 显示
+        function updateBoardUI() {
+            const cells = boardElement.querySelectorAll('.cell');
+            // **修改**: 使用 boardRows 和 boardCols 计算总数
+            const totalCells = gameState.boardRows * gameState.boardCols;
+            if (cells.length !== totalCells) {
+                console.error("Cell count mismatch! Expected:", totalCells, "Found:", cells.length, "Attempting re-init.");
+                // 如果格子数量严重不匹配，可能需要强制重新初始化以修复
+                initGame();
+                return; // 重新初始化后，当前函数不再继续执行
+            }
+            // **修改**: 使用 boardRows 和 boardCols 遍历
+            for (let i = 0; i < gameState.boardRows; i++) {
+                for (let j = 0; j < gameState.boardCols; j++) {
+                    // **修改**: 使用 boardCols 计算索引
+                    const index = i * gameState.boardCols + j;
+                    const cell = cells[index];
+                    if (cell) {
+                        cell.classList.remove('on', 'off', 'hint-active');
+                        // 健壮性检查：确保状态数组对应位置有值
+                        if (gameState.board[i] !== undefined && gameState.board[i][j] !== undefined) {
+                            cell.classList.add(gameState.board[i][j] ? 'on' : 'off');
+                        } else {
+                            console.error(`Board state missing for cell (${i}, ${j}) during UI update.`);
+                            cell.classList.add('off'); // 如果状态丢失，默认显示为 'off'
+                        }
+                    } else {
+                         console.error(`Cell DOM element at index ${index} (row ${i}, col ${j}) not found!`);
+                    }
+                }
+            }
+            // console.log("Board UI updated.");
+        }
+
+        // 检查是否所有格子都已点亮
+        function checkWin() {
+            // **修改**: 使用 boardRows 和 boardCols 遍历
+            for (let i = 0; i < gameState.boardRows; i++) {
+                 // 健壮性检查：确保行存在
+                 if (gameState.board[i] === undefined) {
+                     console.error(`Checking win condition: Row ${i} is missing.`);
+                     return false; // 无法判断胜利
+                 }
+                for (let j = 0; j < gameState.boardCols; j++) {
+                    // 健壮性检查：确保单元格状态存在
+                    if (gameState.board[i][j] === undefined) {
+                         console.error(`Checking win condition: Cell (${i}, ${j}) state is missing.`);
+                         return false; // 无法判断胜利
+                    }
+                    if (!gameState.board[i][j]) { // 找到一个灭灯的，则未获胜
+                        return false;
+                    }
+                }
+            }
+            return true; // 所有灯都亮
+        }
+
+        // 处理获胜时的逻辑
+        function handleWin() {
+    console.log("Win condition met!");
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+    }
+    
+    playSound(sounds.win);
+    winMessageElement.classList.add('show');
+    
+    // 计算分数
+    const score = calculateScore();
+    
+    // 构建键名，用于存储高分 (格式: "rows-cols-difficulty")
+    const scoreKey = `${gameState.boardRows}-${gameState.boardCols}-${gameState.currentLevel}`;
+    
+    // 检查是否为新高分
+    let isNewHighScore = false;
+    const savedHighScores = JSON.parse(localStorage.getItem('lightsOutHighScores') || '{}');
+    
+    if (!savedHighScores[scoreKey] || savedHighScores[scoreKey] < score) {
+        // 保存新高分
+        savedHighScores[scoreKey] = score;
+        localStorage.setItem('lightsOutHighScores', JSON.stringify(savedHighScores));
+        isNewHighScore = true;
+        
+        // 更新游戏状态中的高分
+        gameState.highScores = savedHighScores;
+    }
+    
+    // 更新胜利消息以包含分数
+    const time = timerElement.textContent;
+    winMessageElement.innerHTML = `恭喜！你赢了！<br>得分: ${score}` + 
+                                 (isNewHighScore ? '<br><span style="color: gold;">新高分！</span>' : '');
+    
+    // 更新历史记录
+    updateHistory(`恭喜！完成游戏 (${gameState.boardRows}x${gameState.boardCols}, ${getLevelName(gameState.currentLevel)}) - 步数: ${gameState.moves}, 时间: ${time}, 得分: ${score}` + 
+                 (isNewHighScore ? ' - 新高分！' : ''));
+    
+    hintBtn.disabled = true;
+    solutionBtn.disabled = true;
+    createConfetti();
+}
+
+                // 创建五彩纸屑庆祝动画
+        function createConfetti() {
+            // 扩展后的颜色调色板 (包含更多颜色)
+            const colors = [
+                // --- 初始加的颜色 ---
+                '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3',
+                '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
+                '#FFEB3B', '#FFC107', '#FF9800', '#FF5722',
+                // --- 新增的颜色 ---
+                '#1E90FF', // 道奇蓝
+                '#32CD32', // 酸橙绿
+                '#FF69B4', // 亮粉色
+                '#DA70D6', // 兰花紫
+                '#FFD700', // 金色
+                '#FFA07A', // 浅珊瑚色
+                '#00FFFF', // 水色/青色
+                '#FFFFFF', // 白色
+                '#7FFFD4', // 海蓝宝石色
+                '#FF4500', // 橙红色
+                '#ADFF2F', // 绿黄色
+                '#BA55D3', // 中兰花紫
+                '#F0E68C', // 卡其色
+                '#ADD8E6', // 浅蓝色
+                '#FFB6C1', // 浅粉色
+                '#90EE90', // 淡绿色
+                '#8A2BE2', // 蓝紫色
+                '#7FFF00', // 黄绿色/查特酒绿
+                '#FF7F50', // 珊瑚色
+                '#6495ED', // 矢车菊蓝
+                '#DC143C', // 猩红
+                '#00008B', // 深蓝色
+                '#B8860B', // 暗金杖色
+                '#FF1493', // 深粉色
+                '#FF8C00', // 暗橙色
+                '#9932CC', // 暗兰花紫
+                '#8B0000', // 暗红色
+                '#E9967A', // 暗鲑肉色
+                '#483D8B', // 暗岩蓝
+                '#00CED1', // 暗绿松石色
+                '#9400D3', // 暗紫罗兰色
+                '#FFC0CB', // 粉色 (经典)
+                '#DDA0DD', // 紫红色
+                '#B0E0E6', // 粉蓝色
+                '#800080', // 紫色
+                '#FA8072', // 鲑肉色
+                '#F4A460', // 沙棕色
+                '#2E8B57', // 海绿色
+                '#C0C0C0', // 银色
+                '#87CEEB', // 天蓝色
+                '#FF6347', // 番茄色
+                '#40E0D0', // 绿松石色
+                '#EE82EE', // 紫罗兰
+                '#F5F5DC', // 米色 (增加一些浅色调)
+                '#F5DEB3', // 小麦色
+                '#FFFFE0'  // 象牙白 (接近白色，提供对比)
+            ];
+            // 可以稍微根据格子数量调整纸屑密度
+            const confettiCount = Math.min(300, 50 + gameState.boardRows * gameState.boardCols * 1.8);
+
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                // 从数组中随机选择颜色
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = -(Math.random() * 30 + 20) + 'px';
+                confetti.style.opacity = Math.random() * 0.8 + 0.2;
+                const size = Math.random() * 8 + 5;
+                confetti.style.width = size + 'px';
+                confetti.style.height = size + 'px';
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                confettiContainer.appendChild(confetti);
+
+                const animationDuration = Math.random() * 3.5 + 3; 
+                const animationDelay = Math.random() * 2; 
+                confetti.style.animation = `fall ${animationDuration}s linear ${animationDelay}s forwards`;
+
+                // 确保纸屑在动画结束后被移除
+                setTimeout(() => {
+                    if (confetti.parentNode) {
+                       confetti.remove();
+                    }
+                }, (animationDuration + animationDelay + 0.5) * 1000);
+            }
+        } // createConfetti 函数结束
+
+
+                        // 显示解法演示 (优化版：从当前状态动态计算解法并演示)
+        function showSolution() {
+            // 检查是否已在演示、游戏是否已获胜
+            if (gameState.showingSolution) {
+                updateHistory("已在演示解法中...");
+                return;
+            }
+            if (checkWin()) {
+                updateHistory("游戏已经完成，无需显示解法。");
+                return;
+            }
+            // 检查当前棋盘状态是否存在 (健壮性)
+            if (!gameState.board || gameState.board.length !== gameState.boardRows) {
+                 updateHistory("错误：无法获取当前棋盘状态，无法计算解法。请尝试重新开始。");
+                 console.error("Cannot show solution: Current board state is missing or invalid.");
+                 return;
+            }
+
+            console.log("Calculating and showing solution from CURRENT board state...");
+            gameState.showingSolution = true; // 设置演示状态标志
+            let currentSolutionStepIndex = 0; // 演示步骤索引 (局部变量)
+
+            // 暂停计时器 (如果正在运行)
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+                console.log("Timer paused for solution display.");
+            }
+
+            // 禁用提示和解法按钮，格子点击已在事件监听器中根据 showingSolution 阻止
+            hintBtn.disabled = true;
+            solutionBtn.disabled = true;
+
+            // --- 关键步骤：调用求解器计算从 *当前* gameState.board 到全亮的步骤 ---
+            updateHistory("正在计算解法步骤...");
+            const stepsToSolve = solveLightsOut(gameState.board); // *** 注意：传入的是当前状态 ***
+
+            // 检查求解器结果
+            if (stepsToSolve === null) {
+                console.error("Solver returned null (no solution or error).");
+                updateHistory("错误：无法计算出解法步骤（可能此状态无解或计算出错）。");
+                gameState.showingSolution = false;
+                hintBtn.disabled = false; // 恢复按钮
+                solutionBtn.disabled = false;
+                // 如果计时器之前在运行，考虑是否恢复？通常失败后用户会重开或自己玩
+                if (gameState.gameStarted && !gameState.timerInterval) {
+                    // 可以选择不恢复计时，让用户决定
+                    console.log("Solver failed, timer remains paused.");
+                }
+                return;
+            }
+            if (stepsToSolve.length === 0) {
+                 console.log("Solver returned 0 steps. Board is likely already solved or requires no action.");
+                 updateHistory("提示：根据计算，当前棋盘已经是解决状态或无需操作。");
+                 gameState.showingSolution = false;
+                 hintBtn.disabled = false; // 恢复按钮
+                 solutionBtn.disabled = false;
+                 // 检查一下是否真的赢了
+                 if (checkWin()) handleWin();
+                 return;
+            }
+
+            updateHistory(`计算完成，共 ${stepsToSolve.length} 步。开始从当前状态演示...`);
+
+            // --- 按时间间隔执行计算出的解法步骤 ---
+            gameState.solutionTimer = setInterval(() => {
+                // 再次检查，防止在 interval 回调执行前状态改变
+                if (!gameState.showingSolution || currentSolutionStepIndex >= stepsToSolve.length) {
+                    clearInterval(gameState.solutionTimer);
+                    gameState.solutionTimer = null;
+                    gameState.showingSolution = false;
+                    // 如果是意外停止且未获胜，恢复按钮
+                    if (!checkWin()) {
+                        hintBtn.disabled = false;
+                        solutionBtn.disabled = false;
+                    }
+                    console.log("Solution interval cleared (finished or stopped).");
+                    // 演示结束后，如果之前计时器暂停了，可以选择不自动恢复，让用户控制
+                    if (gameState.gameStarted && !gameState.timerInterval && !checkWin()) {
+                       console.log("Solution demo finished/stopped, timer remains paused.");
+                    }
+                    return;
+                }
+
+                // 获取当前要演示的步骤
+                const { row, col } = stepsToSolve[currentSolutionStepIndex];
+                // 查找对应的 DOM 元素
+                const cellElement = boardElement.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+
+                if (cellElement) {
+                    // 短暂高亮模拟点击
+                    cellElement.classList.add('clicking');
+
+                    // 使用 setTimeout 模拟点击效果和执行操作
+                    setTimeout(() => {
+                        // 再次检查状态，确保在 setTimeout 回调时演示仍在进行
+                        if (!gameState.showingSolution) {
+                            if (cellElement.classList.contains('clicking')) {
+                                cellElement.classList.remove('clicking');
+                            }
+                            return;
+                        }
+
+                        cellElement.classList.remove('clicking'); // 移除高亮
+
+                        // *** 核心操作：在当前棋盘上执行解法步骤 ***
+                        toggleCellState(row, col); // 修改 gameState.board
+                        updateBoardUI();           // 更新界面
+
+                        // 更新演示步数 (可选：可以不更新全局 moves，或用单独计数器)
+                        // gameState.moves++; // 如果希望演示也算步数，取消注释
+                        // moveCountElement.textContent = gameState.moves;
+                        updateHistory(`解法步骤 ${currentSolutionStepIndex + 1}/${stepsToSolve.length}: 点击 (${row + 1}, ${col + 1})`);
+
+                        // 移动到下一步
+                        currentSolutionStepIndex++;
+
+                        // --- 检查演示是否完成 ---
+                        if (currentSolutionStepIndex === stepsToSolve.length) {
+                            clearInterval(gameState.solutionTimer); // 清除计时器
+                            gameState.solutionTimer = null;
+                            gameState.showingSolution = false; // 结束演示状态
+                            updateHistory("解法演示完毕。");
+
+                            // --- 验证演示结果 ---
+                            if (checkWin()) {
+                                console.log("Solution demonstration resulted in a win state.");
+                                handleWin(); // 触发获胜逻辑 (停止计时器、显示消息、放礼花)
+                            } else {
+                                console.warn("Solution demonstration did NOT result in a win state! Check solver or game logic.");
+                                updateHistory("警告：解法演示后棋盘未全部点亮，可能存在逻辑问题。");
+                                // 即使未获胜，演示也结束了，恢复按钮
+                                hintBtn.disabled = false;
+                                solutionBtn.disabled = false;
+                                // 计时器状态保持演示结束时的状态（可能已暂停）
+                            }
+                        }
+                    }, 300); // 高亮持续时间 (毫秒)
+
+                } else {
+                    // 如果找不到对应的格子元素，这是个严重错误
+                    console.error(`Solution step ${currentSolutionStepIndex}: Cell element at (${row}, ${col}) not found! Stopping demonstration.`);
+                    clearInterval(gameState.solutionTimer);
+                    gameState.solutionTimer = null;
+                    gameState.showingSolution = false;
+                    updateHistory(`错误：演示解法时找不到格子(${row + 1}, ${col + 1})，演示已中止。`);
+                    // 恢复按钮
+                    hintBtn.disabled = false;
+                    solutionBtn.disabled = false;
+                    // 计时器状态保持演示结束时的状态
+                }
+            }, 800); // 每个解法步骤之间的间隔时间 (毫秒)
+        }
+
+
+
+                // --- 新增：线性代数求解器 (高斯消元法 mod 2) ---
+        function solveLightsOut(currentBoardState) {
+            const rows = gameState.boardRows;
+            const cols = gameState.boardCols;
+            const N = rows * cols;
+            if (N === 0) return null; // 空棋盘
+
+            // 1. 构建增广矩阵 [A | b] (N x N+1)
+            const matrix = [];
+            for (let i = 0; i < N; i++) {
+                matrix[i] = new Array(N + 1).fill(0);
+            }
+
+            // 填充 A 矩阵 (切换矩阵)
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const index = r * cols + c;
+                    const neighbors = [
+                        { nr: r, nc: c },     // 自身
+                        { nr: r - 1, nc: c }, // 上
+                        { nr: r + 1, nc: c }, // 下
+                        { nr: r, nc: c - 1 }, // 左
+                        { nr: r, nc: c + 1 }  // 右
+                    ];
+                    neighbors.forEach(({ nr, nc }) => {
+                        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                            const neighborIndex = nr * cols + nc;
+                            matrix[neighborIndex][index] = 1; // 点击 (r,c) 会影响 (nr,nc)
+                        }
+                    });
+                }
+            }
+
+            // 填充 b 向量 (目标状态 XOR 当前状态)
+            // 目标是全亮 (true/1)。我们需要找到点击 x 使得 Ax = target ^ current
+            // 如果当前是 off (false/0)，我们需要点击使它变成 on (1)，所以 b = 1 ^ 0 = 1
+            // 如果当前是 on (true/1)，我们需要点击使它保持 on (1)，所以 b = 1 ^ 1 = 0
+            // 因此，b[i] = 1 当且仅当 currentBoardState[r][c] 是 false
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const index = r * cols + c;
+                     // 健壮性检查
+                    if (currentBoardState[r] === undefined || currentBoardState[r][c] === undefined) {
+                         console.error(`solveLightsOut: Missing board state at (${r}, ${c})`);
+                         // 可以选择返回 null 或假设一个状态，这里返回 null 表示无法求解
+                         return null;
+                    }
+                    matrix[index][N] = currentBoardState[r][c] ? 0 : 1;
+                }
+            }
+
+            // 2. 高斯消元 (Forward Elimination)
+            let rank = 0;
+            for (let j = 0; j < N && rank < N; j++) { // 遍历列 (变量)
+                // 寻找主元 (pivot)
+                let pivotRow = rank;
+                while (pivotRow < N && matrix[pivotRow][j] === 0) {
+                    pivotRow++;
+                }
+
+                if (pivotRow < N) { // 找到主元
+                    // 交换行，将主元行换到当前行 (rank)
+                    [matrix[rank], matrix[pivotRow]] = [matrix[pivotRow], matrix[rank]];
+
+                    // 将其他行的第 j 列消为 0
+                    for (let i = 0; i < N; i++) {
+                        if (i !== rank && matrix[i][j] === 1) {
+                            // 将主元行 (rank) 加到 (异或到) 第 i 行
+                            for (let k = j; k <= N; k++) {
+                                matrix[i][k] = matrix[i][k] ^ matrix[rank][k]; // mod 2 加法就是 XOR
+                            }
+                        }
+                    }
+                    rank++;
+                }
+                 // else: 这一列没有主元，是自由变量，继续下一列
+            }
+
+            // 3. 检查解的存在性 (可选，但对于标准LightsOut通常有解)
+            for (let i = rank; i < N; i++) {
+                if (matrix[i][N] === 1) {
+                    console.warn("Lights Out Solver: System has no solution!");
+                    return null; // 方程 0 = 1 无解
+                }
+            }
+
+            // 4. 回代 (Back Substitution) - 对于行简化阶梯形更简单
+            // 这里我们已经得到了行阶梯形，可以直接求解或进一步简化为行简化阶梯形
+            // 为了简单起见，我们直接从行阶梯形回代（虽然对自由变量处理稍复杂，但LightsOut通常有唯一解或特定解空间）
+            // 假设唯一解（如果 rank == N）
+            const solution = new Array(N).fill(0);
+            for (let i = N - 1; i >= 0; i--) {
+                 let pivotCol = -1;
+                 for(let j=0; j < N; j++) {
+                     if (matrix[i][j] === 1) {
+                         pivotCol = j;
+                         break;
+                     }
+                 }
+
+                 if (pivotCol !== -1) { // 找到该行的主元列
+                     let sum = matrix[i][N]; // b'
+                     for (let j = pivotCol + 1; j < N; j++) {
+                         sum = sum ^ (matrix[i][j] * solution[j]); // 累加已知解的部分 (mod 2)
+                     }
+                     solution[pivotCol] = sum; // 因为 matrix[i][pivotCol] 总是 1
+                 }
+                 // else: 全零行，或者自由变量对应的行，在标准LightsOut中不应出现无解情况
+            }
+
+
+            // 5. 转换解为 {row, col} 格式
+            const clicks = [];
+            for (let i = 0; i < N; i++) {
+                if (solution[i] === 1) {
+                    const r = Math.floor(i / cols);
+                    const c = i % cols;
+                    clicks.push({ row: r, col: c });
+                }
+            }
+
+            return clicks;
+        }
+
+
+                // 提供提示功能 (修改为智能提示 + 背景变白)
+        function showHint() {
+            // 检查是否能提供提示
+            if (gameState.showingSolution || checkWin() || gameState.hintTimeout || gameState.hintedCellElement) {
+                // 如果已有提示在进行中，则不执行新的提示
+                return;
+            }
+
+            console.log("Calculating smart hint based on current board state...");
+            const solutionSteps = solveLightsOut(gameState.board);
+
+            if (solutionSteps === null) {
+                updateHistory("错误：无法计算提示步骤（可能无解或计算出错）。");
+                console.error("Hint calculation failed or returned no solution.");
+                return;
+            }
+            if (solutionSteps.length === 0) {
+                updateHistory("提示：棋盘已经解开或无需操作。");
+                console.log("Hint: Solver returned zero steps.");
+                return;
+            }
+
+            const hintIndex = Math.floor(Math.random() * solutionSteps.length);
+            const { row, col } = solutionSteps[hintIndex];
+            const cell = boardElement.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+
+            if (cell) {
+                console.log(`Smart Hint: Suggesting click at (${row + 1}, ${col + 1}). Applying effects.`);
+
+                // --- 应用提示效果 ---
+                gameState.hintedCellElement = cell; // 记录提示的元素
+                cell.classList.add('hint-active'); // 应用高亮动画 (边框发光)
+                cell.style.background = '#FFFFFF'; // **新增：直接设置背景为白色**
+                cell.style.color = '#333'; // **新增：确保文字在白色背景上可见 (可选)**
+
+                updateHistory(`智能提示: 尝试点击 (${row + 1}, ${col + 1}) 可能会有帮助。`);
+
+                // --- 设置定时器移除效果 ---
+                gameState.hintTimeout = setTimeout(() => {
+                    // 检查提示是否仍然是当前这个单元格且未被中途取消
+                    if (gameState.hintedCellElement === cell) {
+                        console.log("Hint timeout reached. Removing effects.");
+                        cell.classList.remove('hint-active');
+                        cell.style.background = ''; // **移除内联背景样式，恢复CSS控制**
+                        cell.style.color = '';      // **移除内联文字颜色样式 (如果添加了)**
+                        gameState.hintedCellElement = null; // 清除记录
+                    }
+                    gameState.hintTimeout = null; // 清除超时 ID
+                }, 2000); // 提示持续时间
+
+            } else {
+                 console.error(`Hint error: Cell for calculated hint step (${row}, ${col}) not found.`);
+                 updateHistory("错误：无法显示提示，找不到计算出的对应格子。");
+            }
+        }
+
+
+
+        // 更新历史记录区域的显示
+        function updateHistory(message) {
+            const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            // 插入新记录到顶部
+            if (historyElement.firstChild) {
+                historyElement.insertBefore(logEntry, historyElement.firstChild);
+            } else {
+                historyElement.appendChild(logEntry); // 如果是第一条记录
+            }
+
+            const maxHistoryItems = 50;
+            while (historyElement.children.length > maxHistoryItems) {
+                historyElement.removeChild(historyElement.lastChild);
+            }
+            historyElement.scrollTop = 0; // 滚动到顶部
+        }
+
+        // 切换浅色/暗黑主题
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            const isDarkMode = document.body.classList.contains('dark-theme');
+            themeLabel.textContent = isDarkMode ? '浅色模式' : '暗黑模式';
+            localStorage.setItem('lightsOutTheme', isDarkMode ? 'dark' : 'light');
+            console.log(`Theme toggled to: ${isDarkMode ? 'Dark' : 'Light'}`);
+        }
+
+        // 应用本地存储中保存的主题偏好
+        function applySavedTheme() {
+            const savedTheme = localStorage.getItem('lightsOutTheme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeToggle.checked = true;
+                themeLabel.textContent = '浅色模式';
+            } else {
+                document.body.classList.remove('dark-theme');
+                themeToggle.checked = false;
+                themeLabel.textContent = '暗黑模式';
+            }
+        }
+
+
+        // --- 事件监听器设置 ---
+
+                // 清理活动并重新开始的辅助函数
+        function stopActivitiesAndReset() {
+            console.log("Stopping activities and resetting...");
+            // --- 停止解法演示 ---
+            if (gameState.showingSolution && gameState.solutionTimer) {
+                clearInterval(gameState.solutionTimer);
+                gameState.solutionTimer = null;
+                gameState.showingSolution = false;
+                updateHistory("操作中断了进行中的解法演示。");
+                hintBtn.disabled = false;
+                solutionBtn.disabled = false;
+            }
+
+            // --- 停止提示效果 (包括背景和状态) ---
+            if (gameState.hintTimeout) {
+                clearTimeout(gameState.hintTimeout); // 清除定时器
+                gameState.hintTimeout = null;
+            }
+            if (gameState.hintedCellElement) { // 如果有单元格正处于提示状态
+                console.log("Reset/Change occurred during hint. Removing hint effects.");
+                gameState.hintedCellElement.classList.remove('hint-active'); // 移除边框动画类
+                gameState.hintedCellElement.style.background = ''; // **移除内联白色背景**
+                gameState.hintedCellElement.style.color = '';      // **移除内联文字颜色 (如果添加了)**
+                gameState.hintedCellElement = null; // 清除提示状态记录
+            }
+            // --- 结束停止提示效果 ---
+
+            // --- 停止计时器 ---
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+                gameState.timerInterval = null;
+                gameState.gameStarted = false;
+            }
+
+            // --- 重新初始化游戏 ---
+            initGame();
+        }
+
+
+        // “重新开始”按钮
+        resetBtn.addEventListener('click', () => {
+            console.log("Reset button clicked.");
+            stopActivitiesAndReset();
+        });
+
+        // “提示”按钮
+        hintBtn.addEventListener('click', () => {
+            console.log("Hint button clicked.");
+            showHint();
+        });
+
+        // “显示解法”按钮
+        solutionBtn.addEventListener('click', () => {
+            console.log("Solution button clicked.");
+            showSolution();
+        });
+
+        // **新增**: 行数输入框变化事件 (使用 'change' 事件，在失焦或回车后触发)
+        rowsInput.addEventListener('change', (e) => {
+            const newRows = parseInt(e.target.value, 10);
+            // 基本验证：确保是数字且在合理范围 (例如 2-20)
+            const minRows = 2;
+            const maxRows = 10; // 可调整最大值
+            if (isNaN(newRows) || newRows < minRows || newRows > maxRows) {
+                console.warn(`Invalid rows input: ${e.target.value}. Resetting to ${gameState.boardRows}.`);
+                e.target.value = gameState.boardRows; // 恢复到当前有效值
+                updateHistory(`无效的行数输入，已恢复为 ${gameState.boardRows}。`);
+                return; // 不进行游戏重置
+            }
+            if (newRows !== gameState.boardRows) { // 只有在值确实改变时才重置
+                console.log(`Rows changed to: ${newRows}`);
+                stopActivitiesAndReset(); // 尺寸变化，重置游戏
+            }
+        });
+
+        // **新增**: 列数输入框变化事件
+        colsInput.addEventListener('change', (e) => {
+            const newCols = parseInt(e.target.value, 10);
+            const minCols = 2;
+            const maxCols = 10; // 可调整最大值
+            if (isNaN(newCols) || newCols < minCols || newCols > maxCols) {
+                console.warn(`Invalid cols input: ${e.target.value}. Resetting to ${gameState.boardCols}.`);
+                e.target.value = gameState.boardCols; // 恢复到当前有效值
+                updateHistory(`无效的列数输入，已恢复为 ${gameState.boardCols}。`);
+                return;
+            }
+             if (newCols !== gameState.boardCols) { // 只有在值确实改变时才重置
+                console.log(`Cols changed to: ${newCols}`);
+                stopActivitiesAndReset(); // 尺寸变化，重置游戏
+            }
+        });
+
+        // 难度选择下拉框变化事件
+        levelSelect.addEventListener('change', (e) => {
+            console.log(`Level changed to: ${e.target.value}`);
+            // 难度变化，也重置游戏
+            stopActivitiesAndReset();
+        });
+
+        // 主题切换开关变化事件
+        themeToggle.addEventListener('change', toggleTheme);
+
+
+        // --- 页面加载完成后的初始化操作 ---
+        window.onload = () => {
+    console.log("Window loaded. Starting initialization.");
+    applySavedTheme();           // 应用保存的主题
+    applySavedSoundSettings();   // 应用保存的音效设置
+    initGame();                  // 初始化第一局游戏
+    console.log("Initialization complete.");
+};
+        
+        // 音效控制功能
+const soundToggle = document.getElementById('sound-toggle');
+const soundLabel = document.getElementById('sound-label');
+const undoBtn = document.getElementById('undo-btn');
+
+// 音效状态对象
+const soundSettings = {
+    enabled: true // 默认开启音效
+};
+
+// 切换音效功能
+function toggleSound() {
+    soundSettings.enabled = soundToggle.checked;
+    soundLabel.textContent = soundSettings.enabled ? '音效开启' : '音效关闭';
+    localStorage.setItem('lightsOutSoundEnabled', soundSettings.enabled ? 'true' : 'false');
+    console.log(`Sound ${soundSettings.enabled ? 'enabled' : 'disabled'}`);
+}
+
+// 应用已保存的音效设置
+function applySavedSoundSettings() {
+    const savedSoundEnabled = localStorage.getItem('lightsOutSoundEnabled');
+    if (savedSoundEnabled === 'false') {
+        soundSettings.enabled = false;
+        soundToggle.checked = false;
+        soundLabel.textContent = '音效关闭';
+    } else {
+        soundSettings.enabled = true;
+        soundToggle.checked = true;
+        soundLabel.textContent = '音效开启';
+    }
+}
+
+// 修改播放音效的函数，考虑音效状态
+function playSound(sound) {
+    if (soundSettings.enabled) {
+        sound.currentTime = 0;
+        sound.play().catch(e => console.warn("Audio play failed:", e));
+    }
+}
+
+// 添加事件监听器
+soundToggle.addEventListener('change', toggleSound);
+undoBtn.addEventListener('click', () => {
+    console.log("Undo button clicked.");
+    undoLastMove();
+});
+
+// 添加计时器暂停/继续功能
+function toggleTimer() {
+    if (!gameState.gameStarted) return; // 游戏未开始，不做任何操作
+    
+    if (gameState.timerInterval) {
+        // 暂停计时器
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+        updateHistory("游戏已暂停");
+        // 显示暂停状态
+        timerElement.style.opacity = "0.5";
+        return false; // 返回已暂停状态
+    } else {
+        // 继续计时器
+        gameState.timerInterval = setInterval(() => {
+            gameState.timer++;
+            const minutes = Math.floor(gameState.timer / 60).toString().padStart(2, '0');
+            const seconds = (gameState.timer % 60).toString().padStart(2, '0');
+            timerElement.textContent = `${minutes}:${seconds}`;
+        }, 1000);
+        updateHistory("游戏已继续");
+        // 显示继续状态
+        timerElement.style.opacity = "1";
+        return true; // 返回已继续状态
+    }
+}
+
+// 为计时器添加点击事件以暂停/继续
+timerElement.style.cursor = "pointer";
+timerElement.title = "点击暂停/继续计时";
+timerElement.addEventListener('click', toggleTimer);
+    </script>
+</body>
+</html>
+
+
+

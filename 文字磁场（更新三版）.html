@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>文字磁场（特殊版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            font-size: 16px;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            touch-action: none;
+            background-color: #f9f7f1;
+            color: #333;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        #app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 80px 20px 40px;
+        }
+        #controls {
+            position: fixed;
+            top: 15px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(249, 247, 241, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        button, .btn {
+            padding: 0.5rem 1rem;
+            background-color: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+        button:hover, .btn:hover {
+            background-color: #2d3748;
+        }
+        button:active, .btn:active {
+            transform: scale(0.98);
+        }
+        #text-input {
+            width: 100%;
+            max-width: 800px;
+            margin: 15px auto;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 150px;
+            display: none;
+            background-color: #fff;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        #container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 25px;
+            min-height: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .char, .easter-egg-char {
+            position: absolute;
+            will-change: transform, color;
+            cursor: default;
+            user-select: none;
+            -webkit-user-select: none;
+            display: inline-block;
+            transition: transform 800ms cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+        }
+        .char.highlight {
+            color: #e53e3e;
+            transform: scale(1.5) !important;
+            z-index: 10;
+        }
+        .easter-egg-char {
+            font-size: 28px;
+        }
+        .hint, #toast-notification {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.75);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            max-width: 90%;
+            width: fit-content;
+            text-align: center;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        #toast-notification {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+            display: none;
+             background-color: #2d3748;
+        }
+        #toast-notification.show {
+             display: block;
+             opacity: 1;
+             transform: translateX(-50%);
+        }
+
+        #settings-panel {
+            position: fixed;
+            top: 75px;
+            right: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 200;
+            display: none;
+            max-width: 260px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease-out;
+            opacity: 1;
+        }
+        #settings-panel h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            color: #2d3748;
+        }
+        .setting-item {
+            margin-bottom: 15px;
+        }
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.875rem;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .setting-value {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: right;
+            margin-top: 3px;
+        }
+        #close-settings {
+            margin-top: 10px;
+            width: 100%;
+        }
+        body.dark-theme {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        body.dark-theme #controls {
+            background: rgba(26, 32, 44, 0.8);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        body.dark-theme button, body.dark-theme .btn {
+            background-color: #4a5568;
+            color: #e2e8f0;
+        }
+        body.dark-theme button:hover, body.dark-theme .btn:hover {
+            background-color: #718096;
+        }
+        body.dark-theme #container {
+            background-color: #2d3748;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        body.dark-theme .char, body.dark-theme .easter-egg-char {
+            color: #e2e8f0;
+        }
+        body.dark-theme .char.highlight {
+            color: #f56565;
+        }
+        body.dark-theme #settings-panel {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        body.dark-theme #settings-panel h3 {
+            color: #cbd5e0;
+        }
+        body.dark-theme .setting-item label {
+            color: #a0aec0;
+        }
+        body.dark-theme .setting-value {
+            color: #a0aec0;
+        }
+        body.dark-theme #text-input {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding-bottom: 70px;
+            }
+            #app {
+                padding-top: 120px;
+            }
+            #controls {
+                top: 10px;
+                padding: 10px;
+            }
+            button, .btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
+            #container {
+                padding: 20px;
+            }
+            #settings-panel {
+                top: auto;
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                width: auto;
+            }
+            .hint, #toast-notification {
+                botton: 70px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="controls">
+            <button id="edit-btn" aria-label="编辑或应用文本">编辑文本</button>
+            <button id="reset-btn" aria-label="重置所有内容到初始状态">重置</button>
+            <button id="settings-btn" aria-label="打开或关闭设置面板">设置</button>
+            <button id="theme-btn" aria-label="切换亮色或暗色主题">切换主题</button>
+        </div>
+
+        <textarea id="text-input" placeholder="在此输入想要显示的文字内容... 不妨输入 “空城的小彩蛋” 试试看！"></textarea>
+
+        <div id="container"></div>
+
+        <div id="settings-panel">
+            <h3>效果设置</h3>
+            <div class="setting-item">
+                <label for="radius-slider">排斥半径</label>
+                <input type="range" id="radius-slider" min="30" max="400" step="5">
+                <div class="setting-value" id="radius-value">150px</div>
+            </div>
+             <div class="setting-item">
+                <label for="force-slider">排斥力度</label>
+                <input type="range" id="force-slider" min="0.1" max="2.0" step="0.1">
+                <div class="setting-value" id="force-value">1.0</div>
+            </div>
+            <div class="setting-item">
+                <label for="font-size-slider">字体大小</label>
+                <input type="range" id="font-size-slider" min="10" max="40" step="1">
+                <div class="setting-value" id="font-size-value">18px</div>
+            </div>
+            <div class="setting-item">
+                <label for="line-height-slider">行高</label>
+                <input type="range" id="line-height-slider" min="1.0" max="3.0" step="0.1">
+                <div class="setting-value" id="line-height-value">1.8</div>
+            </div>
+            <div class="setting-item">
+                <label for="letter-spacing-slider">字间距</label>
+                <input type="range" id="letter-spacing-slider" min="-2" max="10" step="0.5">
+                <div class="setting-value" id="letter-spacing-value">1px</div>
+            </div>
+            <div class="setting-item">
+                <label for="animation-speed-slider">动画速度</label>
+                <input type="range" id="animation-speed-slider" min="100" max="2000" step="50">
+                <div class="setting-value" id="animation-speed-value">0.8s</div>
+            </div>
+            <button id="close-settings" class="btn" aria-label="关闭设置面板">关闭</button>
+        </div>
+    </div>
+
+    <div class="hint">触摸或鼠标悬停在文字上体验互动效果</div>
+    <div id="toast-notification"></div>
+
+<script>
+(function() {
+    const defaultText = `《再别康桥》徐志摩
+
+轻轻的我走了，
+正如我轻轻的来；
+我轻轻的招手，
+作别西天的云彩。
+
+那河畔的金柳，
+是夕阳中的新娘；
+波光里的艳影，
+在我的心头荡漾。
+
+软泥上的青荇，
+油油的在水底招摇；
+在康河的柔波里，
+我甘心做一条水草。`;
+
+    const initialConfig = Object.freeze({
+        radius: 150,
+        force: 1.0,
+        fontSize: 18,
+        lineHeight: 1.8,
+        animationSpeed: 800,
+        letterSpacing: 1,
+        isDarkTheme: false,
+        currentText: defaultText
+    });
+
+    let config = { ...initialConfig };
+
+    const EASTER_EGG_TRIGGER = "空城的小彩蛋";
+    const EASTER_EGG_CHAR = "🌰";
+    const EASTER_EGG_COUNT = 25;
+    const EASTER_EGG_ORBIT_SPEED = 0.005;
+    const EASTER_EGG_HEART_X_OFFSET = 20;
+
+    const container = document.getElementById('container');
+    const textInput = document.getElementById('text-input');
+    const editBtn = document.getElementById('edit-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsPanel = document.getElementById('settings-panel');
+    const closeSettingsBtn = document.getElementById('close-settings');
+    const themeBtn = document.getElementById('theme-btn');
+    const hint = document.querySelector('.hint');
+    const toast = document.getElementById('toast-notification');
+
+    const radiusSlider = document.getElementById('radius-slider');
+    const forceSlider = document.getElementById('force-slider');
+    const fontSizeSlider = document.getElementById('font-size-slider');
+    const lineHeightSlider = document.getElementById('line-height-slider');
+    const letterSpacingSlider = document.getElementById('letter-spacing-slider');
+    const animationSpeedSlider = document.getElementById('animation-speed-slider');
+
+    const radiusValue = document.getElementById('radius-value');
+    const forceValue = document.getElementById('force-value');
+    const fontSizeValue = document.getElementById('font-size-value');
+    const lineHeightValue = document.getElementById('line-height-value');
+    const letterSpacingValue = document.getElementById('letter-spacing-value');
+    const animationSpeedValue = document.getElementById('animation-speed-value');
+
+    let chars = [];
+    let containerRect;
+    let isInteracting = false;
+    let isEditMode = false;
+    let isEasterEggActive = false;
+    let activeCharIndex = -1;
+    let rafId = null;
+    let pointer = { x: 0, y: 0 };
+    let measureSpan = null;
+    let easterEggOrbitOffset = 0;
+    const STORAGE_KEY = 'textMagneticFieldState_v3';
+    let toastTimeout = null;
+
+    function init() {
+        loadState();
+        updateUIFromConfig();
+        createMeasureSpan();
+        if (config.currentText === EASTER_EGG_TRIGGER) {
+            activateEasterEgg();
+        } else {
+             layoutText(config.currentText);
+        }
+        setupEventListeners();
+        hideHint();
+    }
+
+    function showToast(message, duration = 5000) {
+        if (!toast) return;
+        clearTimeout(toastTimeout);
+
+        toast.textContent = message;
+        toast.classList.add('show');
+
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, duration);
+    }
+
+    function hideHint() {
+        setTimeout(() => {
+            if (hint) hint.style.opacity = '0';
+            setTimeout(() => {
+                if (hint) hint.style.display = 'none';
+            }, 500);
+        }, 5000);
+    }
+
+    function saveState() {
+        const textToSave = (isEasterEggActive && config.currentText === EASTER_EGG_TRIGGER) ? defaultText : config.currentText;
+        try {
+            const state = {
+                text: textToSave,
+                theme: config.isDarkTheme,
+                settings: {
+                    radius: config.radius,
+                    force: config.force,
+                    fontSize: config.fontSize,
+                    lineHeight: config.lineHeight,
+                    letterSpacing: config.letterSpacing,
+                    animationSpeed: config.animationSpeed
+                },
+                 wasEasterEggTriggered: (config.currentText === EASTER_EGG_TRIGGER)
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+            console.error("保存状态失败:", e);
+        }
+    }
+
+     function loadState() {
+        try {
+            const savedState = localStorage.getItem(STORAGE_KEY);
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                if (state.wasEasterEggTriggered) {
+                     config.currentText = EASTER_EGG_TRIGGER;
+                } else {
+                     config.currentText = state.text || initialConfig.currentText;
+                }
+
+                config.isDarkTheme = state.theme ?? initialConfig.isDarkTheme;
+                if (state.settings) {
+                    config.radius = state.settings.radius ?? initialConfig.radius;
+                    config.force = state.settings.force ?? initialConfig.force;
+                    config.fontSize = state.settings.fontSize ?? initialConfig.fontSize;
+                    config.lineHeight = state.settings.lineHeight ?? initialConfig.lineHeight;
+                    config.letterSpacing = state.settings.letterSpacing ?? initialConfig.letterSpacing;
+                    config.animationSpeed = state.settings.animationSpeed ?? initialConfig.animationSpeed;
+                }
+            } else {
+                 config = { ...initialConfig };
+            }
+        } catch (e) {
+            console.error("加载状态失败:", e);
+            config = { ...initialConfig };
+        }
+        textInput.value = config.currentText;
+    }
+
+    function updateUIFromConfig() {
+        document.body.classList.toggle('dark-theme', config.isDarkTheme);
+        themeBtn.textContent = config.isDarkTheme ? '亮色主题' : '暗色主题';
+
+        radiusSlider.value = config.radius;
+        forceSlider.value = config.force;
+        fontSizeSlider.value = config.fontSize;
+        lineHeightSlider.value = config.lineHeight;
+        letterSpacingSlider.value = config.letterSpacing;
+        animationSpeedSlider.value = config.animationSpeed;
+
+        radiusValue.textContent = `${config.radius}px`;
+        forceValue.textContent = config.force.toFixed(1);
+        fontSizeValue.textContent = `${config.fontSize}px`;
+        lineHeightValue.textContent = config.lineHeight.toFixed(1);
+        letterSpacingValue.textContent = `${config.letterSpacing}px`;
+        animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
+
+        applyDynamicStyles();
+    }
+
+    function applyDynamicStyles() {
+         const transitionStyle = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease`;
+         chars.forEach(char => {
+            if (char && char.element) {
+               char.element.style.transition = transitionStyle;
+            }
+        });
+    }
+
+    function setupEventListeners() {
+        container.addEventListener('touchstart', handleInteractionStart, { passive: false });
+        container.addEventListener('touchmove', handleInteractionMove, { passive: false });
+        container.addEventListener('touchend', handleInteractionEnd);
+        container.addEventListener('touchcancel', handleInteractionEnd);
+
+        container.addEventListener('mouseenter', handleInteractionStart);
+        container.addEventListener('mousemove', handleInteractionMove);
+        container.addEventListener('mouseleave', handleInteractionEnd);
+
+        editBtn.addEventListener('click', toggleEditMode);
+        resetBtn.addEventListener('click', resetToDefaults);
+        settingsBtn.addEventListener('click', toggleSettings);
+        closeSettingsBtn.addEventListener('click', toggleSettings);
+        themeBtn.addEventListener('click', toggleTheme);
+
+        radiusSlider.addEventListener('input', updateRadius);
+        forceSlider.addEventListener('input', updateForce);
+        fontSizeSlider.addEventListener('input', updateFontSize);
+        lineHeightSlider.addEventListener('input', updateLineHeight);
+        letterSpacingSlider.addEventListener('input', updateLetterSpacing);
+        animationSpeedSlider.addEventListener('input', updateAnimationSpeed);
+
+        [radiusSlider, forceSlider, fontSizeSlider, lineHeightSlider, letterSpacingSlider, animationSpeedSlider].forEach(slider => {
+            slider.addEventListener('change', debounce(saveState, 300));
+        });
+
+        window.addEventListener('resize', debounce(handleResize, 250));
+
+        textInput.addEventListener('input', () => {});
+    }
+
+    function createMeasureSpan() {
+        if (!measureSpan) {
+            measureSpan = document.createElement('span');
+            measureSpan.style.position = 'absolute';
+            measureSpan.style.visibility = 'hidden';
+            measureSpan.style.height = 'auto';
+            measureSpan.style.width = 'auto';
+            measureSpan.style.whiteSpace = 'nowrap';
+            document.body.appendChild(measureSpan);
+        }
+    }
+
+    function layoutText(text) {
+        isEasterEggActive = false;
+        container.innerHTML = '';
+        chars = [];
+        activeCharIndex = -1;
+        cancelAnimationLoop();
+
+        if (!text || text.trim() === '') {
+            text = '点击 "编辑文本" 按钮来添加内容...';
+        }
+
+        containerRect = container.getBoundingClientRect();
+        const computedStyle = getComputedStyle(container);
+        const paddingLeft = parseFloat(computedStyle.paddingLeft);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        const paddingBottom = parseFloat(computedStyle.paddingBottom);
+        const containerWidth = container.clientWidth;
+
+        measureSpan.style.fontSize = `${config.fontSize}px`;
+        measureSpan.style.fontFamily = computedStyle.fontFamily;
+        measureSpan.style.letterSpacing = `${config.letterSpacing}px`;
+        measureSpan.style.lineHeight = `${config.lineHeight}`;
+
+        const lines = text.split('\n');
+        let yPos = paddingTop;
+        let charIndex = 0;
+        const linePixelHeight = config.fontSize * config.lineHeight;
+        const fragment = document.createDocumentFragment();
+
+        lines.forEach((line, lineIndex) => {
+            let xPos = paddingLeft;
+            const lineChars = line.split('');
+
+            if (lineChars.length === 0 && lines.length > 1 && lineIndex < lines.length - 1) {
+                 yPos += linePixelHeight;
+                 return;
+            }
+
+            lineChars.forEach(char => {
+                measureSpan.textContent = (char === ' ' ? '\u00A0' : char);
+                let charWidth = measureSpan.getBoundingClientRect().width;
+                if(charWidth <= 0 && char !== ' ') charWidth = config.fontSize * 0.6;
+
+                if (xPos > paddingLeft && xPos + charWidth > containerWidth - paddingLeft) {
+                    xPos = paddingLeft;
+                    yPos += linePixelHeight;
+                }
+
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = char;
+                span.style.fontSize = `${config.fontSize}px`;
+                span.style.lineHeight = `${config.lineHeight}`;
+                span.style.letterSpacing = `${config.letterSpacing}px`;
+                span.style.transition = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease`;
+
+                const initialX = xPos;
+                const initialY = yPos;
+
+                span.style.left = `${initialX}px`;
+                span.style.top = `${initialY}px`;
+
+                const randomX = (Math.random() - 0.5) * containerRect.width * 1.5;
+                const randomY = (Math.random() - 0.5) * containerRect.height * 1.5;
+                span.style.transform = `translate(${randomX}px, ${randomY}px)`;
+
+                fragment.appendChild(span);
+
+                chars.push({
+                    element: span,
+                    originalX: initialX,
+                    originalY: initialY,
+                    index: charIndex++
+                });
+
+                xPos += charWidth + config.letterSpacing;
+            });
+
+             yPos += linePixelHeight;
+        });
+
+        container.appendChild(fragment);
+        container.style.minHeight = `${yPos + paddingBottom}px`;
+
+        requestAnimationFrame(() => {
+            chars.forEach(char => {
+                if (char && char.element) {
+                    char.element.style.transform = 'translate(0, 0)';
+                }
+            });
+        });
+    }
+
+    function activateEasterEgg() {
+        isEasterEggActive = true;
+        container.innerHTML = '';
+        chars = [];
+        activeCharIndex = -1;
+        cancelAnimationLoop();
+
+        containerRect = container.getBoundingClientRect();
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        const fragment = document.createDocumentFragment();
+        const angleStep = (Math.PI * 2) / EASTER_EGG_COUNT;
+
+        let minY = Infinity, maxY = -Infinity;
+
+        const effectiveCenterX = centerX - EASTER_EGG_HEART_X_OFFSET;
+        
+        for (let i = 0; i < EASTER_EGG_COUNT; i++) {
+            const initialAngle = i * angleStep;
+
+            const scaleFactor = Math.max(30, Math.min(config.radius, Math.min(centerX, centerY) * 0.8)) / 18;
+            const initialX = effectiveCenterX + scaleFactor * (16 * Math.pow(Math.sin(initialAngle), 3));
+            const initialY = centerY - scaleFactor * (13 * Math.cos(initialAngle) - 5 * Math.cos(2 * initialAngle) - 2 * Math.cos(3 * initialAngle) - Math.cos(4 * initialAngle));
+
+            minY = Math.min(minY, initialY);
+            maxY = Math.max(maxY, initialY);
+
+            const span = document.createElement('span');
+            span.className = 'easter-egg-char';
+            span.textContent = EASTER_EGG_CHAR;
+            span.style.left = `0px`;
+            span.style.top = `0px`;
+            span.style.transition = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
+
+            const randomAngle = Math.random() * Math.PI * 2;
+            const randomDist = Math.max(containerRect.width, containerRect.height);
+            const startX = effectiveCenterX + randomDist * Math.cos(randomAngle);
+            const startY = centerY + randomDist * Math.sin(randomAngle);
+            span.style.transform = `translate(${startX}px, ${startY}px)`;
+
+            fragment.appendChild(span);
+
+            chars.push({
+                element: span,
+                initialAngle: initialAngle,
+                index: i
+            });
+        }
+
+        container.appendChild(fragment);
+        const requiredHeight = (maxY - minY) + 50;
+        container.style.minHeight = `${Math.max(450, requiredHeight)}px`;
+
+        easterEggOrbitOffset = 0;
+        startAnimationLoop();
+    }
+
+    function handleInteractionStart(e) {
+        if (e.type === 'touchstart') e.preventDefault();
+        containerRect = container.getBoundingClientRect();
+        isInteracting = true;
+        updatePointerPosition(e);
+        if (!rafId) {
+             startAnimationLoop();
+        }
+    }
+
+    function handleInteractionMove(e) {
+        if (!isInteracting) return;
+        if (e.type === 'touchmove') e.preventDefault();
+        updatePointerPosition(e);
+    }
+
+    function handleInteractionEnd() {
+        if (!isInteracting) return;
+        isInteracting = false;
+    }
+
+    function updatePointerPosition(e) {
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        pointer.x = clientX - containerRect.left;
+        pointer.y = clientY - containerRect.top;
+    }
+
+    function startAnimationLoop() {
+        if (!rafId) {
+            rafId = requestAnimationFrame(animationLoop);
+        }
+    }
+
+    function cancelAnimationLoop() {
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    }
+
+    function animationLoop() {
+        let needsAnotherFrame = false;
+        containerRect = container.getBoundingClientRect();
+
+        if (isEasterEggActive) {
+            needsAnotherFrame = true;
+            easterEggOrbitOffset += EASTER_EGG_ORBIT_SPEED;
+
+            const centerX = containerRect.width / 2;
+            const centerY = containerRect.height / 2;
+            const effectiveCenterX = centerX - EASTER_EGG_HEART_X_OFFSET;
+            const scaleFactor = Math.max(30, Math.min(config.radius, Math.min(centerX, centerY) * 0.8)) / 18;
+
+            chars.forEach(char => {
+                if (!char || !char.element) return;
+
+                const currentAngle = char.initialAngle + easterEggOrbitOffset;
+                const t = currentAngle;
+
+                const targetOffsetX = scaleFactor * (16 * Math.pow(Math.sin(t), 3));
+                const targetOffsetY = -scaleFactor * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+
+                const targetX = effectiveCenterX + targetOffsetX;
+                const targetY = centerY + targetOffsetY;
+
+                let interactionDx = 0;
+                let interactionDy = 0;
+                if (isInteracting) {
+                    const dx = targetX - pointer.x;
+                    const dy = targetY - pointer.y;
+                    const distSq = dx * dx + dy * dy;
+                    const radiusSq = config.radius * config.radius;
+
+                    if (distSq < radiusSq && distSq > 0.01) {
+                        const dist = Math.sqrt(distSq);
+                        const angle = Math.atan2(dy, dx);
+                        const forceMagnitude = ((config.radius - dist) / config.radius) * config.radius * config.force;
+                        interactionDx = Math.cos(angle) * forceMagnitude;
+                        interactionDy = Math.sin(angle) * forceMagnitude;
+                    }
+                }
+
+                const finalX = targetX + interactionDx;
+                const finalY = targetY + interactionDy;
+
+                char.element.style.transform = `translate(${finalX}px, ${finalY}px)`;
+            });
+
+        } else {
+            let currentNearestIndex = -1;
+            let nearestDistSq = Infinity;
+            const radiusSq = config.radius * config.radius;
+
+            if (isInteracting) {
+                needsAnotherFrame = true;
+                chars.forEach((char, index) => {
+                    if (!char || !char.element) return;
+
+                    const dx = char.originalX - pointer.x;
+                    const dy = char.originalY - pointer.y;
+                    const distSq = dx * dx + dy * dy;
+
+                    let transformX = 0;
+                    let transformY = 0;
+
+                    if (distSq < nearestDistSq) {
+                        nearestDistSq = distSq;
+                        currentNearestIndex = index;
+                    }
+
+                    if (distSq < radiusSq && distSq > 0.01) {
+                        const dist = Math.sqrt(distSq);
+                        const angle = Math.atan2(dy, dx);
+                        const forceMagnitude = ((config.radius - dist) / config.radius) * config.radius * config.force;
+                        transformX = Math.cos(angle) * forceMagnitude;
+                        transformY = Math.sin(angle) * forceMagnitude;
+                    }
+                    char.element.style.transform = `translate(${transformX}px, ${transformY}px)`;
+                });
+
+                 if (activeCharIndex !== currentNearestIndex) {
+                     if (activeCharIndex !== -1 && chars[activeCharIndex] && chars[activeCharIndex].element) {
+                         chars[activeCharIndex].element.classList.remove('highlight');
+                     }
+                     if (currentNearestIndex !== -1 && chars[currentNearestIndex] && chars[currentNearestIndex].element) {
+                         chars[currentNearestIndex].element.classList.add('highlight');
+                     }
+                     activeCharIndex = currentNearestIndex;
+                 }
+                 if (activeCharIndex !== -1 && chars[activeCharIndex] && chars[activeCharIndex].element && !chars[activeCharIndex].element.classList.contains('highlight')) {
+                    chars[activeCharIndex].element.classList.add('highlight');
+                 }
+
+            } else {
+                let requiresResetVisuals = false;
+                 if (activeCharIndex !== -1) {
+                    if (chars[activeCharIndex] && chars[activeCharIndex].element) {
+                        chars[activeCharIndex].element.classList.remove('highlight');
+                    }
+                    activeCharIndex = -1;
+                    requiresResetVisuals = true;
+                }
+
+                chars.forEach(char => {
+                    if (char && char.element) {
+                        const currentTransform = char.element.style.transform;
+                        if (currentTransform && currentTransform !== 'translate(0px, 0px)' && currentTransform !== 'translate(0, 0)') {
+                             char.element.style.transform = 'translate(0, 0)';
+                             requiresResetVisuals = true;
+                        }
+                    }
+                });
+                needsAnotherFrame = requiresResetVisuals;
+            }
+        }
+
+        if (needsAnotherFrame) {
+            rafId = requestAnimationFrame(animationLoop);
+        } else {
+            cancelAnimationLoop();
+        }
+    }
+
+    function resetToDefaults() {
+        isInteracting = false;
+        isEasterEggActive = false;
+        cancelAnimationLoop();
+
+        config = { ...initialConfig };
+
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {
+            console.error("清除状态失败:", e);
+        }
+
+        updateUIFromConfig();
+        textInput.value = config.currentText;
+        layoutText(config.currentText);
+
+        if (isEditMode) {
+            isEditMode = false;
+            editBtn.textContent = '编辑文本';
+            textInput.style.display = 'none';
+            container.style.display = 'block';
+        } else {
+             textInput.style.display = 'none';
+             container.style.display = 'block';
+        }
+        settingsPanel.style.display = 'none';
+        clearTimeout(toastTimeout);
+        toast.classList.remove('show');
+    }
+
+    function handleResize() {
+        if (isEasterEggActive) {
+            activateEasterEgg();
+        } else {
+            cancelAnimationLoop();
+            layoutText(config.currentText);
+        }
+    }
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        if (isEditMode) {
+            editBtn.textContent = '应用更改';
+            textInput.style.display = 'block';
+            container.style.display = 'none';
+            settingsPanel.style.display = 'none';
+
+            textInput.value = isEasterEggActive ? EASTER_EGG_TRIGGER : config.currentText;
+            textInput.focus();
+            cancelAnimationLoop();
+
+        } else {
+            editBtn.textContent = '编辑文本';
+            textInput.style.display = 'none';
+            container.style.display = 'block';
+            const newText = textInput.value.trim();
+
+            if (newText === EASTER_EGG_TRIGGER) {
+                const previouslyActive = isEasterEggActive;
+                config.currentText = newText;
+                activateEasterEgg();
+                if (!previouslyActive) {
+                    showToast("哦哟，看来是触发了我想给栗子看的隐藏彩蛋嘿嘿！🌰🎉", 5000);
+                }
+                saveState();
+            } else {
+                isEasterEggActive = false;
+                if (newText !== config.currentText || chars.length === 0 || config.currentText === EASTER_EGG_TRIGGER) {
+                    config.currentText = newText;
+                    layoutText(config.currentText);
+                    saveState();
+                } else {
+                    layoutText(config.currentText);
+                }
+            }
+        }
+    }
+
+    function toggleSettings() {
+        const isVisible = settingsPanel.style.display === 'block';
+        settingsPanel.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+             updateUIFromConfig();
+        }
+    }
+
+    function toggleTheme() {
+        config.isDarkTheme = !config.isDarkTheme;
+        updateUIFromConfig();
+        saveState();
+    }
+
+    function updateRadius() {
+        config.radius = parseInt(radiusSlider.value);
+        radiusValue.textContent = `${config.radius}px`;
+        if (isEasterEggActive) activateEasterEgg();
+    }
+    function updateForce() {
+        config.force = parseFloat(forceSlider.value);
+        forceValue.textContent = config.force.toFixed(1);
+    }
+    function updateFontSize() {
+        config.fontSize = parseInt(fontSizeSlider.value);
+        fontSizeValue.textContent = `${config.fontSize}px`;
+        if (!isEasterEggActive) {
+            layoutText(config.currentText);
+        }
+    }
+    function updateLineHeight() {
+        config.lineHeight = parseFloat(lineHeightSlider.value);
+        lineHeightValue.textContent = config.lineHeight.toFixed(1);
+         if (!isEasterEggActive) {
+            layoutText(config.currentText);
+        }
+    }
+    function updateLetterSpacing() {
+        config.letterSpacing = parseFloat(letterSpacingSlider.value);
+        letterSpacingValue.textContent = `${config.letterSpacing.toFixed(1)}px`;
+         if (!isEasterEggActive) {
+            layoutText(config.currentText);
+        }
+    }
+    function updateAnimationSpeed() {
+        config.animationSpeed = parseInt(animationSpeedSlider.value);
+        animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
+        applyDynamicStyles();
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

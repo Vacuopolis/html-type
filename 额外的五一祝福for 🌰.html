@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小空城の五一祝福</title>
+    <style>
+        :root {
+    --primary-color: #e74c3c;    /* 红色 */
+    --secondary-color: #f39c12;  /* 金黄色 */
+    --bg-light: #fdebd0;         /* 浅黄色背景 */
+    --text-light: #ffffff;       /* 白色文字 */
+    --shadow-color: rgba(0, 0, 0, 0.2);
+    --transition-time: 0.3s;
+}
+
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--bg-light) 0%, var(--primary-color) 100%);
+    overflow: hidden;
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    position: relative;
+}
+
+#particles-js {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#startScreen, #gameContainer, #finalMessage {
+    position: relative;
+    z-index: 10;
+}
+
+#startScreen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    transition: opacity var(--transition-time) ease;
+}
+
+.title {
+    font-size: min(4em, 15vw);
+    color: var(--text-light);
+    text-shadow: 3px 3px 0 var(--secondary-color);
+    animation: float 2s ease-in-out infinite;
+    margin-bottom: 50px;
+    text-align: center;
+    padding: 0 20px;
+}
+
+#startBtn {
+    padding: 20px 40px;
+    font-size: min(2em, 8vw);
+    background: var(--primary-color);
+    border: none;
+    border-radius: 50px;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: transform var(--transition-time), background-color var(--transition-time);
+    box-shadow: 0 5px 15px var(--shadow-color);
+}
+
+#startBtn:hover {
+    transform: scale(1.1);
+    background: var(--secondary-color);
+}
+
+#audioControl {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: background var(--transition-time);
+}
+
+#audioControl:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+#gameContainer {
+    display: none;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.puzzle-piece {
+    position: absolute;
+    width: 20vw;
+    height: 20vw;
+    max-width: 150px;
+    max-height: 150px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.5s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+    padding: 10px;
+    text-align: center;
+}
+
+.puzzle-piece:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+.puzzle-piece::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 70%);
+    top: -50%;
+    left: -50%;
+    transition: all 0.3s;
+    opacity: 0;
+}
+
+.puzzle-piece:active::after {
+    opacity: 1;
+    transform: translate(50%, 50%);
+}
+
+#finalMessage {
+    width: 80%;
+    max-width: 550px;
+    padding: 30px;
+    font-size: 1.0em;
+    line-height: 1.6;
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 30px;
+    text-align: center;
+    animation: appear 1s ease-out;
+    z-index: 1500;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+#finalMessage p {
+    margin: 10px 0;
+    font-size: 1em;
+}
+
+#finalMessage h2 {
+    font-size: 1.5em;
+    color: var(--secondary-color);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes appear {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes finalMergeAppear {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0) rotate(-180deg);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+}
+
+.merge-animation {
+    animation: merge 2s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes merge {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--deltaX), var(--deltaY))
+                  scale(0.1)
+                  rotate(360deg);
+        opacity: 0;
+    }
+}
+
+#finalMerge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: min(3em, 12vw);
+    color: var(--secondary-color);
+    text-shadow: 2px 2px white;
+    opacity: 0;
+    animation: finalMergeAppear 1s ease-out forwards;
+    cursor: pointer;
+    padding: 20px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: background 0.3s;
+    z-index: 1000;
+}
+
+#finalMerge:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+#toast {
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 30px;
+    font-size: 1em;
+    display: none;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 3px 10px var(--shadow-color);
+    animation: toastFade 3.5s ease-out;
+    white-space: nowrap;
+    min-width: 120px;
+    text-align: center;
+    letter-spacing: 2px;
+    z-index: 1000;
+}
+
+@keyframes toastFade {
+    0% {
+        opacity: 0;
+        top: 10%;
+        transform: translateX(-50%) scaleX(0.8);
+    }
+    20% {
+        opacity: 1;
+        top: 15%;
+        transform: translateX(-50%) scaleX(1);
+    }
+    80% {
+        opacity: 1;
+        top: 15%;
+    }
+    100% {
+        opacity: 0;
+        top: 20%;
+        transform: translateX(-50%) scaleX(0.8);
+    }
+}
+
+#loadingOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* 修改加载背景为劳动节色调 */
+    background: linear-gradient(135deg, var(--bg-light) 0%, var(--primary-color) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease-out;
+}
+
+#loadingSpinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--text-light);
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.text-highlight {
+    color: var(--secondary-color);
+    font-weight: bold;
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.confetti {
+    position: absolute;
+    opacity: 0.9;
+    transition: transform 0.1s linear;
+}
+
+#confettiContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2000;
+    overflow: hidden;
+}
+
+.click-effect {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.6);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 9999;
+    animation: clickRipple 0.8s ease-out forwards;
+}
+
+@keyframes clickRipple {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 0.7;
+    }
+    100% {
+        width: 100px;
+        height: 100px;
+        opacity: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .title {
+        font-size: 2.5em;
+    }
+    
+    #startBtn {
+        padding: 15px 30px;
+        font-size: 1.5em;
+    }
+    
+    #finalMessage {
+        width: 90%;
+        padding: 20px;
+        font-size: 0.9em;
+    }
+}
+
+/* 滑动时的波纹效果 */
+.slide-effect {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(243, 156, 18, 0.9); /* 金黄色 */
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: slideRipple 1s ease-out forwards;
+}
+
+@keyframes slideRipple {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 0.6;
+    }
+    100% {
+        width: 80px;
+        height: 80px;
+        opacity: 0;
+    }
+}
+
+/* 按钮点击时的波纹效果 */
+.button-effect {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(231, 76, 60, 0.6); /* 红色 */
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 9999;
+    animation: buttonRipple 0.6s ease-out forwards;
+}
+
+@keyframes buttonRipple {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 0.8;
+    }
+    100% {
+        width: 120px;
+        height: 120px;
+        opacity: 0;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay">
+        <div id="loadingSpinner"></div>
+    </div>
+
+    <div id="particles-js"></div>
+    
+    <div id="startScreen">
+        <h1 class="title">小空城送给🌰<br>の五一祝福</h1>
+        <button id="startBtn">让我看看！</button>
+    </div>
+    
+    <div id="audioControl">🔊</div>
+    
+    <div id="gameContainer"></div>
+    <div id="finalMessage"></div>
+    <div id="toast">点击✨试试</div>
+    
+    <audio id="bgm" loop>
+        <source src="https://k0ub7yd8y32y18zw2409x8738xa20xx18z.djvod.ndcimgs.com/upic/2025/04/30/20/BMjAyNTA0MzAyMDM5MDZfMTAwOTQ3OTc4MF8xNjMwMTcxOTU4MzlfMl8z_b_B9c5500239d888c641285f6728494fc0c.mp4?tag=1-1746016785-unknown-0-rt2zhdmxdk-d5f855493fa778c3&provider=self&clientCacheKey=3xiw2tmftv6nyag_b.mp4&di=75aa6a9a&bp=10000&x-ks-ptid=163017195839&kcdntag=p:Jiangxi;i:ChinaMobile;ft:UNKNOWN;h:COLD;pn:kuaishouVideoProjection&ocid=100001163&tt=b&ss=vp" type="video/mp4">
+    </audio>
+    
+    <audio id="clickSound">
+        <source src="https://img.tukuppt.com/newpreview_music/09/00/62/5c893bc72e6b348773.mp3" type="audio/mp3">
+    </audio>
+    
+    <audio id="completeSound">
+        <source src="https://www.soundjay.com/misc/sounds/magic-chime-02.mp3" type="audio/mp3">
+    </audio>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 添加全局点击特效
+            document.addEventListener('click', createClickEffect);
+            
+            // 触摸事件处理
+            document.addEventListener('touchstart', handleTouchStart, { passive: true });
+            
+            // 淡出加载界面
+            setTimeout(() => {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 500);
+            }, 1000);
+
+            // 初始化粒子背景
+            particlesJS('particles-js', {
+                particles: {
+                    number: { value: 80, density: { enable: true, value_area: 800 } },
+                    color: { value: "#ffffff" },
+                    shape: { type: "circle" },
+                    opacity: { value: 0.5, random: true },
+                    size: { value: 3, random: true },
+                    line_linked: { enable: false },
+                    move: { 
+                        enable: true, 
+                        speed: 2, 
+                        direction: "none", 
+                        random: true, 
+                        out_mode: "out"
+                    }
+                },
+                interactivity: {
+                    detect_on: "canvas",
+                    events: {
+                        onhover: { enable: true, mode: "bubble" },
+                        onclick: { enable: true, mode: "push" }
+                    },
+                    modes: {
+                        bubble: { distance: 100, size: 5, opacity: 0.8 },
+                        push: { particles_nb: 3 }
+                    }
+                }
+            });
+
+            // 音频控制
+            const bgm = document.getElementById('bgm');
+            const audioControl = document.getElementById('audioControl');
+            let isMuted = false;
+
+            audioControl.addEventListener('click', () => {
+                isMuted = !isMuted;
+                if (isMuted) {
+                    bgm.pause();
+                    audioControl.innerHTML = '🔇';
+                } else {
+                    bgm.play().catch(e => console.log('需要用户交互才能播放音频', e));
+                    audioControl.innerHTML = '🔊';
+                }
+            });
+
+            // 开始按钮事件
+            const startBtn = document.getElementById('startBtn');
+            startBtn.addEventListener('click', () => {
+                const startScreen = document.getElementById('startScreen');
+                startScreen.style.opacity = '0';
+                
+                bgm.play().catch(e => console.log('需要用户交互才能播放音频', e));
+                
+                setTimeout(() => {
+                    startScreen.style.display = 'none';
+                    document.getElementById('gameContainer').style.display = 'block';
+                    createPuzzle();
+                    showToast();
+                }, 300);
+            });
+        });
+        
+        // 处理触摸事件
+        function handleTouchStart(e) {
+            // 仅创建一个点击特效在第一个触摸点
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                
+                // 创建一个模拟的鼠标事件对象
+                const simulatedEvent = {
+                    pageX: touch.pageX,
+                    pageY: touch.pageY,
+                    target: document.elementFromPoint(touch.clientX, touch.clientY)
+                };
+                
+                // 使用模拟事件创建点击特效
+                createClickEffect(simulatedEvent);
+            }
+        }
+        
+        // 处理滑动事件（touchmove）以创建波纹效果
+document.addEventListener('touchmove', handleTouchMove, { passive: true });
+
+function handleTouchMove(e) {
+    // 仅在有触摸点时触发效果
+    if (e.touches.length > 0) {
+        // 限制波纹效果的频率，避免过于频繁
+        if (!window.lastSlideEffectTime || Date.now() - window.lastSlideEffectTime > 50) {
+            const touch = e.touches[0];
+            // 创建一个模拟的事件对象
+            const simulatedEvent = {
+                pageX: touch.pageX,
+                pageY: touch.pageY,
+                target: document.elementFromPoint(touch.clientX, touch.clientY)
+            };
+            // 创建滑动波纹效果
+            createSlideEffect(simulatedEvent);
+            window.lastSlideEffectTime = Date.now();
+        }
+    }
+}
+
+// 滑动特效函数
+function createSlideEffect(e) {
+    // 滑动特效元素
+    const effect = document.createElement('div');
+    effect.className = 'slide-effect';
+    // 设置位置为滑动位置
+    effect.style.left = `${e.pageX}px`;
+    effect.style.top = `${e.pageY}px`;
+    // 添加到文档
+    document.body.appendChild(effect);
+    // 动画结束后移除元素
+    setTimeout(() => {
+        effect.remove();
+    }, 1000); // 滑动效果动画时间
+}
+        
+        // 点击特效函数
+function createClickEffect(e) {
+    // 点击特效元素
+    const effect = document.createElement('div');
+    const target = e.target;
+    const tagName = target.tagName.toLowerCase();
+    const isButton = tagName === 'button' || 
+                     tagName === 'a' || 
+                     target.id === 'startBtn' || 
+                     target.id === 'audioControl' || 
+                     target.id === 'finalMerge' ||
+                     target.classList.contains('puzzle-piece');
+
+    // 根据是否为按钮选择不同的效果类
+    effect.className = isButton ? 'button-effect' : 'click-effect';
+    
+    // 设置位置为点击位置
+    effect.style.left = `${e.pageX}px`;
+    effect.style.top = `${e.pageY}px`;
+    // 添加到文档
+    document.body.appendChild(effect);
+    // 动画结束后移除元素
+    setTimeout(() => {
+        effect.remove();
+    }, isButton ? 600 : 800); // 按钮效果动画时间较短
+}
+
+        // 设置消息数组
+        const messages = [
+            "你是十万大山养出的栗子",
+            "仁心智慧在双手生长",
+            "漓江水路过都为你回望",
+            "愿时光绣出所爱白衣裳",
+            "❤️ 劳动节快乐！❤️"
+        ];
+        
+        let currentStep = 0;
+
+        // 创建拼图游戏
+        function createPuzzle() {
+            const container = document.getElementById('gameContainer');
+            const viewport = {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+            
+            // 响应式调整拼图大小
+            const pieceWidth = Math.min(viewport.width * 0.2, 150);
+            const pieceHeight = Math.min(viewport.height * 0.2, 150);
+            const placedPositions = [];
+            
+            // 碰撞检测
+            function isColliding(newRect) {
+                return placedPositions.some(existingRect => {
+                    return !(newRect.right <= existingRect.left ||
+                        newRect.left >= existingRect.right ||
+                        newRect.bottom <= existingRect.top ||
+                        newRect.top >= existingRect.bottom);
+                });
+            }
+            
+            // 创建拼图碎片
+            for (let i = 0; i < 4; i++) {
+                let newPosition;
+                let attempts = 0;
+                const maxAttempts = 100; // 避免无限循环
+                
+                // 尝试找到不重叠的位置
+                do {
+                    const margin = pieceWidth * 0.5; // 边缘安全距离
+                    const left = margin + Math.random() * (viewport.width - pieceWidth - margin * 2);
+                    const top = margin + Math.random() * (viewport.height - pieceHeight - margin * 2);
+                    
+                    newPosition = {
+                        left: left,
+                        top: top,
+                        right: left + pieceWidth,
+                        bottom: top + pieceHeight
+                    };
+                    
+                    attempts++;
+                } while (isColliding(newPosition) && attempts < maxAttempts);
+                
+                placedPositions.push(newPosition);
+                
+                // 创建拼图DOM元素
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece';
+                piece.style.width = `${pieceWidth}px`;
+                piece.style.height = `${pieceHeight}px`;
+                piece.style.left = `${newPosition.left}px`;
+                piece.style.top = `${newPosition.top}px`;
+                piece.innerHTML = "✨";
+                piece.dataset.index = i;
+                piece.addEventListener('click', handlePieceClick);
+                
+                // 添加随机旋转效果
+                const randomRotation = Math.random() * 10 - 5;
+                piece.style.transform = `rotate(${randomRotation}deg)`;
+                
+                container.appendChild(piece);
+            }
+        }
+
+        // 处理点击事件
+        function handlePieceClick(e) {
+            hideToast();
+            const piece = e.target;
+            
+            // 避免重复点击已合并的碎片
+            if (piece.classList.contains('merged') || currentStep >= 4) return;
+            
+            // 播放点击音效
+            const clickSound = document.getElementById('clickSound');
+            if (clickSound) {
+                clickSound.currentTime = 0;
+                clickSound.play().catch(e => console.log('音效播放失败', e));
+            }
+            
+            // 碎片内容和样式
+            piece.innerHTML = messages[currentStep];
+            currentStep++;
+            
+            piece.style.background = 'var(--primary-color)';
+            piece.style.color = 'white';
+            piece.style.fontSize = '1.2em';
+            piece.classList.add('merged');
+            piece.style.pointerEvents = 'none';
+            
+            // 点击反馈动画
+            piece.style.transform = 'scale(1.2)';
+            setTimeout(() => piece.style.transform = 'scale(1)', 200);
+            
+            // 全部碎片点击完成后的处理
+            if (currentStep === 4) {
+                // 播放完成音效
+                const completeSound = document.getElementById('completeSound');
+                if (completeSound) {
+                    completeSound.play().catch(e => console.log('音效播放失败', e));
+                }
+                
+                // 延迟执行合并动画
+                setTimeout(() => {
+                    const centerX = window.innerWidth / 2;
+                    const centerY = window.innerHeight / 2;
+                    
+                    // 让所有碎片飞向中心
+                    document.querySelectorAll('.puzzle-piece').forEach(p => {
+                        const rect = p.getBoundingClientRect();
+                        const currentX = rect.left + rect.width/2;
+                        const currentY = rect.top + rect.height/2;
+                        const deltaX = centerX - currentX;
+                        const deltaY = centerY - currentY;
+                        
+                        p.style.setProperty('--deltaX', `${deltaX}px`);
+                        p.style.setProperty('--deltaY', `${deltaY}px`);
+                        p.classList.add('merge-animation');
+                    });
+                    
+                    // 显示最终合并效果
+                    setTimeout(() => {
+                        document.querySelectorAll('.puzzle-piece').forEach(p => p.remove());
+                        
+                        // 创建最终合并元素
+                        const mergeText = document.createElement('div');
+                        mergeText.id = 'finalMerge';
+                        mergeText.innerHTML = '最后！';
+                        document.body.appendChild(mergeText);
+                        
+                        // 确保元素已添加到DOM
+                        setTimeout(() => {
+                            // 明确设置样式使其可点击
+                            mergeText.style.cursor = 'pointer';
+                            mergeText.style.zIndex = '1000';
+                            
+                            // 添加点击事件处理
+                            mergeText.onclick = function() {
+                                showFinalMessage();
+                            };
+                            
+                            // 添加视觉提示
+                            showToast("点击“最后”查看祝福！");
+                        }, 100);
+                    }, 1500);
+                }, 1000);
+            }
+        }
+
+        // 显示提示信息
+        function showToast(message = "点击✨试试") {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            
+            // 清除之前的计时器
+            if (window.toastTimer) {
+                clearTimeout(window.toastTimer);
+            }
+            
+            // 设置新的计时器
+            window.toastTimer = setTimeout(() => {
+                if (toast.style.display !== 'none') {
+                    toast.style.display = 'none';
+                }
+            }, 3500);
+        }
+
+        // 隐藏提示信息
+        function hideToast() {
+            document.getElementById('toast').style.display = 'none';
+            if (window.toastTimer) {
+                clearTimeout(window.toastTimer);
+            }
+        }
+
+// 初始化粒子效果
+function initParticles() {
+    particlesJS('particles-js', {
+        "particles": {
+            "number": {
+                "value": 80,
+                "density": {
+                    "enable": true,
+                    "value_area": 800
+                }
+            },
+            "color": {
+               
+                "value": ["#e74c3c", "#f39c12", "#d35400", "#c0392b"]
+            },
+            "shape": {
+                "type": ["circle", "triangle", "star"],
+                "stroke": {
+                    "width": 0,
+                    "color": "#000000"
+                },
+                "polygon": {
+                    "nb_sides": 5
+                }
+            },
+            "opacity": {
+                "value": 0.5,
+                "random": true,
+                "anim": {
+                    "enable": true,
+                    "speed": 1,
+                    "opacity_min": 0.1,
+                    "sync": false
+                }
+            },
+            "size": {
+                "value": 5,
+                "random": true,
+                "anim": {
+                    "enable": true,
+                    "speed": 5,
+                    "size_min": 0.1,
+                    "sync": false
+                }
+            },
+            "line_linked": {
+                "enable": false
+            },
+            "move": {
+                "enable": true,
+                "speed": 2,
+                "direction": "none",
+                "random": true,
+                "straight": false,
+                "out_mode": "out",
+                "bounce": false,
+                "attract": {
+                    "enable": false,
+                    "rotateX": 600,
+                    "rotateY": 1200
+                }
+            }
+        },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": {
+                    "enable": true,
+                    "mode": "bubble"
+                },
+                "onclick": {
+                    "enable": true,
+                    "mode": "push"
+                },
+                "resize": true
+            },
+            "modes": {
+                "bubble": {
+                    "distance": 150,
+                    "size": 8,
+                    "duration": 2,
+                    "opacity": 0.8,
+                    "speed": 3
+                },
+                "push": {
+                    "particles_nb": 4
+                }
+            }
+        },
+        "retina_detect": true
+    });
+}
+
+        // 创建五彩纸屑效果
+        function createConfetti() {
+            const colors = ['#e74c3c', '#f39c12', '#fdebd0', '#d35400', '#c0392b', '#e67e22'];
+            
+            // 创建一个单独的彩屑容器，确保它位于祝福信息之上
+            let confettiContainer = document.getElementById('confettiContainer');
+            if (!confettiContainer) {
+                confettiContainer = document.createElement('div');
+                confettiContainer.id = 'confettiContainer';
+                confettiContainer.style.position = 'fixed';
+                confettiContainer.style.top = '0';
+                confettiContainer.style.left = '0';
+                confettiContainer.style.width = '100%';
+                confettiContainer.style.height = '100%';
+                confettiContainer.style.pointerEvents = 'none'; // 允许点击穿透
+                confettiContainer.style.zIndex = '2000'; // 确保在祝福信息之上
+                document.body.appendChild(confettiContainer);
+            }
+            
+            // 创建更多彩屑以增强效果
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // 随机属性
+                const size = Math.random() * 12 + 5; // 略微增大尺寸范围
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const left = Math.random() * 100;
+                
+                // 随机速度和延迟
+                const animationDuration = Math.random() * 4 + 3; // 增加持续时间
+                const delay = Math.random() * 3; // 添加随机延迟
+                
+                // 设置样式
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${left}vw`;
+                confetti.style.top = '-20px';
+                confetti.style.position = 'absolute';
+                confetti.style.opacity = '0.9';
+                
+                // 随机形状
+                if (Math.random() > 0.6) {
+                    confetti.style.borderRadius = '50%';
+                } else if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '2px';
+                    confetti.style.width = `${size * 0.7}px`;
+                    confetti.style.height = `${size * 1.3}px`;
+                }
+                
+                // 添加到容器
+                confettiContainer.appendChild(confetti);
+                
+                // 动画相关
+                setTimeout(() => {
+                    // 动画起始参数
+                    let rotationSpeed = Math.random() * 20 - 10; // 旋转速度
+                    let horizontalSwing = Math.random() * 15; // 水平摆动幅度
+                    let fallSpeed = 2 + Math.random() * 2; // 下落速度
+                    
+                    const startTime = performance.now();
+                    
+                    // 使用requestAnimationFrame实现平滑动画
+                    function animateConfetti(timestamp) {
+                        const elapsed = timestamp - startTime;
+                        const duration = animationDuration * 1000;
+                        const progress = elapsed / duration;
+                        
+                        if (progress < 1) {
+                            // 位置计算
+                            const top = (progress * 120) * fallSpeed; // 下落距离
+                            const swingFactor = Math.sin(progress * 10) * horizontalSwing * (1 - progress * 0.5);
+                            const horizontalPosition = parseFloat(confetti.style.left) + swingFactor;
+                            
+                            // 应用位置
+                            confetti.style.top = `${top}vh`;
+                            confetti.style.left = `${horizontalPosition}vw`;
+                            
+                            // 旋转和淡出
+                            const currentRotation = rotationSpeed * progress * 360;
+                            confetti.style.transform = `rotate(${currentRotation}deg)`;
+                            
+                            // 根据下落进度调整透明度，使彩屑慢慢消失
+                            confetti.style.opacity = Math.max(0, 0.9 - (progress * 0.9));
+                            
+                            requestAnimationFrame(animateConfetti);
+                        } else {
+                            // 动画结束后移除元素
+                            confetti.remove();
+                        }
+                    }
+                    
+                    requestAnimationFrame(animateConfetti);
+                }, delay * 1000); // 应用随机延迟
+            }
+            
+            // 在动画结束后移除容器
+            setTimeout(() => {
+                const container = document.getElementById('confettiContainer');
+                if (container) {
+                    container.style.opacity = '0';
+                    container.style.transition = 'opacity 1s';
+                    setTimeout(() => container.remove(), 1000);
+                }
+            }, 10000); // 10秒后清理
+        }
+
+        // 显示最终祝福信息
+        function showFinalMessage() {
+            // 先创建彩屑，确保它在祝福信息下方启动
+            createConfetti();
+            
+            // 延迟显示祝福信息，让彩屑先开始飘落
+            setTimeout(() => {
+                // 隐藏游戏容器
+                document.getElementById('gameContainer').style.display = 'none';
+                
+                // 获取并显示最终信息容器
+                const final = document.getElementById('finalMessage');
+                
+                // 修改祝福信息的样式，使其半透明以便能看到背后的彩屑
+                final.style.backgroundColor = 'rgba(255, 255, 255, 0.85)';
+                final.style.backdropFilter = 'blur(5px)';
+                final.style.webkitBackdropFilter = 'blur(5px)';
+                final.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.2)';
+                final.style.display = 'block';
+                
+                // 设置内容
+                final.innerHTML = `
+                    <h2>致最辛勤的栗子：</h2>
+        <p class="text-highlight" style="margin-top:20px;">${messages[4]}</p>
+                <p>第一个愿望——<br>
+愿栗子吃嘛嘛香身体棒，<br>
+像永安王城的青砖稳稳当当，<br>
+小病小痛统统绕道走，<br>
+笑眼弯成湄江上的小月亮！</p>
+
+        <p>第二个愿望——<br>
+治病救人的本事越来越强，<br>
+手术刀稳得像刘三姐抛绣球，<br>
+疑难杂症见了栗子都投降，<br>
+但再忙也要记得照顾身体！</p>
+
+        <p>第三个愿望——<br>
+开会别总碰上大风天，<br>
+论文数据乖乖听栗子话，<br>
+那些熬过的夜终会变成光，<br>
+等栗子回家总有一碗螺蛳粉飘香~</p>
+
+        <p>最后的心愿——<br>
+当白衣战士也要做健康标兵，<br>
+救死扶伤的路上别忘喝碗热粥养胃，<br>
+希望这颗蒙山栗子的生命力...<br>
+比玉梦冲的瀑布还更绵长！</p>
+
+        <p class="text-highlight" style="margin-top:20px;">—— 永远为栗子喝彩的小空城<br>Ｏ(≧▽≦)Ｏ </p>
+                `;
+                
+                // 强制重绘触发动画
+                void final.offsetWidth;
+                final.style.animation = 'appear 1s ease-out';
+                
+                // 清理元素
+                const finalMerge = document.getElementById('finalMerge');
+                if (finalMerge) {
+                    finalMerge.remove();
+                }
+                
+                // 隐藏提示
+                hideToast();
+            }, 500); // 延迟500ms显示祝福信息
+        }
+    </script>
+</body>
+</html>

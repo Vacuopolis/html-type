@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vacuopolis - 创意互动实验室</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --background-color: #f8f9fa;
+            --card-color: #ffffff;
+            --text-color: #333333;
+            --hover-color: #e3f2fd;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .category {
+            margin-bottom: 2rem;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .projects {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .project-card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-img {
+            height: 160px;
+            background-color: #ddd;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            flex-grow: a;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .card-description {
+            color: #666;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .card-link {
+            display: inline-block;
+            text-decoration: none;
+            color: white;
+            background-color: var(--primary-color);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .card-link:hover {
+            background-color: var(--secondary-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background-color: #f1f1f1;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .projects {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .projects {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Vacuopolis 创意互动实验室</h1>
+        <p class="subtitle">探索互动可视化、游戏和创意编程的世界。点击下方卡片，体验各种有趣的网页实验。</p>
+    </header>
+
+    <div class="container">
+        <div id="projects-container">
+            <!-- 项目将通过JavaScript动态加载 -->
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Vacuopolis. 保留所有权利。</p>
+    </footer>
+
+    <script>
+        // 项目数据 - 要添加新项目只需在对应类别数组中添加新对象
+        const projectsData = {
+            "互动可视化": [
+                {
+                    title: "五一祝福",
+                    description: "一个给栗子的五一特别礼物（算是吧）。",
+                    imageUrl: "https://183-232-114-59.pd1.cjjd19.com:30443/download-cdn.cjjd19.com/123-943/0a3c139c/1812910709-0/0a3c139cf871dedaf88e4e9fa47af3af/c-m80?v=5&t=1746171953&s=1746171953853a97b4bef6f0f5581d9d733e78387a&r=503VCC&bzc=1&bzs=0&filename=IMG_20250501_154522.png&cache_type=1&xmfcid=a605e13f-0965-4623-869b-055c7e08de59-1-50111d3b1",
+                    link: "https://vacuopolis.rth1.xyz/额外的五一祝福for 🌰.html"
+                },
+                {
+                    title: "文字磁场",
+                    description: "交互式文字动画，创造出文字跟随磁场的视觉效果。",
+                    imageUrl: "https://183-232-114-73.pd1.cjjd19.com:30443/download-cdn.cjjd19.com/123-278/d39367ea/1812910709-0/d39367eacfa9c80d604a31f2655c4116/c-m80?v=5&t=1746171518&s=1746171518c9289cefe8f22dd5728ae217938d9471&r=MRMAPF&bzc=1&bzs=0&filename=IMG_20250501_153544.png&cache_type=1&xmfcid=5ebfe4f0-8430-4585-82b4-db2ba8a2c10e-0-50111d3b1",
+                    link: "https://vacuopolis.rth1.xyz/文字磁场（更新三版）.html"
+                }
+            ],
+            "游戏": [
+                {
+                    title: "亮灯游戏",
+                    description: "一个挑战逻辑思维的拼图游戏，目标是点亮所有的灯。",
+                    imageUrl: "https://183-232-114-59.pd1.cjjd19.com:30443/download-cdn.cjjd19.com/123-4/2530159d/1812910709-0/2530159dc3a1c426b4259bdf3158b804/c-m80?v=5&t=1746171722&s=17461717222d6668ddaf10cdc52b131ce33a474153&r=G2TN4D&bzc=1&bzs=0&filename=IMG_20250501_154017.png&cache_type=1&xmfcid=5d385929-9586-43ba-995a-ea4641ee44e4-0-50111d3b1",
+                    link: "https://vacuopolis.rth1.xyz/亮灯游戏.html"
+                },
+                                {
+                    title: "贪吃蛇游戏",
+                    description: "一个贪吃蛇游戏，多种模式可供游玩（多人模式暂不支持）。",
+                    imageUrl: "https://183-232-114-169.pd1.cjjd19.com:30443/download-cdn.cjjd19.com/123-837/1c545bab/1812910709-0/1c545babd03298e0d928a4d15509d345/c-m80?v=5&t=1746171803&s=17461718030efdec316012b937a3fae2da80a71841&r=KQ1GD7&bzc=1&bzs=0&filename=IMG_20250501_154118.png&cache_type=1&xmfcid=3e644f65-0942-4953-bc8f-1585c68fe0c0-0-50111d3b1",
+                    link: "https://vacuopolis.rth1.xyz/贪吃蛇.html"
+                }
+            ]
+            // 可以添加更多类别
+            // "其他类别": [ ... ]
+        };
+
+        // 生成项目卡片
+        const projectsContainer = document.getElementById('projects-container');
+        
+        Object.keys(projectsData).forEach(category => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'category';
+            
+            const categoryTitle = document.createElement('h2');
+            categoryTitle.className = 'category-title';
+            categoryTitle.textContent = category;
+            categoryDiv.appendChild(categoryTitle);
+            
+            const projectsGrid = document.createElement('div');
+            projectsGrid.className = 'projects';
+            
+            projectsData[category].forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                
+                const cardImg = document.createElement('div');
+                cardImg.className = 'card-img';
+                cardImg.style.backgroundImage = `url(${project.imageUrl})`;
+                
+                const cardContent = document.createElement('div');
+                cardContent.className = 'card-content';
+                
+                const cardTitle = document.createElement('h3');
+                cardTitle.className = 'card-title';
+                cardTitle.textContent = project.title;
+                
+                const cardDescription = document.createElement('p');
+                cardDescription.className = 'card-description';
+                cardDescription.textContent = project.description;
+                
+                const cardLink = document.createElement('a');
+                cardLink.className = 'card-link';
+                cardLink.href = project.link;
+                cardLink.textContent = '查看项目';
+                cardLink.target = '_blank';
+                
+                cardContent.appendChild(cardTitle);
+                cardContent.appendChild(cardDescription);
+                cardContent.appendChild(cardLink);
+                
+                card.appendChild(cardImg);
+                card.appendChild(cardContent);
+                
+                projectsGrid.appendChild(card);
+            });
+            
+            categoryDiv.appendChild(projectsGrid);
+            projectsContainer.appendChild(categoryDiv);
+        });
+    </script>
+</body>
+</html>

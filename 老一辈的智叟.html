@@ -1,406 +1,623 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老一辈的智叟</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Minecraft', Arial, sans-serif;
-            background-color: #111;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .scene-container {
-            position: relative;
-            flex-grow: 1;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .background-image {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 1;
-        }
-        .villager-image {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.8s ease-out;
-            z-index: 2;
-        }
-        @keyframes confettiAnimation {
-            0% { opacity: 0; transform: translateY(0); }
-            10% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-100px) rotate(360deg); }
-        }
-        .confetti-container {
-            position: absolute;
-            left: 5%;
-            bottom: 0%;
-            width: 40%;
-            height: 50%;
-            z-index: 3;
-            pointer-events: none;
-        }
-        .confetti {
-            position: absolute;
-            width: 8px;
-            height: 16px;
-            background-color: white;
-            opacity: 0;
-            animation: confettiAnimation 1.5s forwards;
-        }
-        .chat-container {
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-top: 2px solid #555;
-            height: 200px;
-            display: flex;
-            flex-direction: column;
-            z-index: 10;
-        }
-        .chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            padding: 5px;
-            scrollbar-width: thin;
-            scrollbar-color: #555 rgba(0,0,0,0.3);
-        }
-        .chat-messages::-webkit-scrollbar {
-            width: 8px;
-        }
-        .chat-messages::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.3);
-        }
-        .chat-messages::-webkit-scrollbar-thumb {
-            background-color: #555;
-            border-radius: 4px;
-        }
-        .message {
-            margin-bottom: 8px;
-            word-wrap: break-word;
-        }
-        .player-message {
-            color: #AAFFAA;
-        }
-        .villager-message {
-            color: #FFAA55;
-        }
-        .chat-input {
-            display: flex;
-        }
-        input {
-            flex-grow: 1;
-            padding: 8px;
-            border: 2px solid #555;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border-radius: 4px;
-        }
-        button {
-            padding: 8px 15px;
-            margin-left: 10px;
-            background-color: #5D7;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        button:hover {
-            background-color: #4C6;
-        }
-        .nametag {
-            position: absolute;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.5s;
-            top: 33%;
-            left: 22%;
-            z-index: 4;
-        }
-        .speech-bubble {
-            position: absolute;
-            background-color: white;
-            color: black;
-            padding: 10px 15px;
-            border-radius: 10px;
-            max-width: 60%;
-            top: 28%;
-            left: 35%;
-            transform: translate(-50%, -100%);
-            opacity: 0;
-            transition: opacity 0.8s;
-            z-index: 4;
-        }
-        .speech-bubble:after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 20%;
-            margin-left: -15px;
-            border-width: 15px 15px 0;
-            border-style: solid;
-            border-color: white transparent;
-        }
-        .reset-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: 1px solid #555;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 10;
-            transition: background-color 0.2s;
-        }
-        .reset-button:hover {
-            background-color: rgba(50, 50, 50, 0.7);
-        }
-        @media (max-width: 768px) {
-            .speech-bubble {
-                max-width: 80%;
-                font-size: 14px;
-            }
-            .chat-container {
-                height: 150px;
-            }
-            .nametag {
-                font-size: 12px;
-            }
-        }
-        #loadingStatus {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-size: 12px;
-            color: #aaa;
-            z-index: 100;
-        }
-    </style>
-</head>
-<body>
-    <div class="scene-container">
-        <img src="https://stellar-cat-4909aa.netlify.app/image/EmptyBackground.png" alt="Minecraft Scene" class="background-image">
-        <img src="https://stellar-cat-4909aa.netlify.app/image/VillagerAppear.png" alt="Villager Scene" class="villager-image">
-        <div class="confetti-container" id="confettiContainer"></div>
-        <div class="nametag">老一辈的'智叟'</div>
-        <div class="speech-bubble" aria-live="polite"></div>
-        <audio id="villagerSound" preload="auto"></audio>
-        <div id="loadingStatus"></div>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>老一辈的智叟</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Minecraft', Arial, sans-serif;
+        background-color: #111;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+    .scene-container {
+        position: relative;
+        flex-grow: 1;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .background-image {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 1;
+    }
+    .villager-image {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 0.8s ease-out;
+        z-index: 2;
+    }
+    @keyframes confettiAnimation {
+        0% { opacity: 0; transform: translateY(0); }
+        10% { opacity: 1; }
+        100% { opacity: 0; transform: translateY(-100px) rotate(360deg); }
+    }
+    .confetti-container {
+        position: absolute;
+        left: 5%;
+        bottom: 0%;
+        width: 40%;
+        height: 50%;
+        z-index: 3;
+        pointer-events: none;
+    }
+    .confetti {
+        position: absolute;
+        width: 8px;
+        height: 16px;
+        background-color: white;
+        opacity: 0;
+        animation: confettiAnimation 1.5s forwards;
+    }
+    .chat-container {
+        background-color: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-top: 2px solid #555;
+        height: 200px;
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+    }
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        padding: 5px;
+        scrollbar-width: thin;
+        scrollbar-color: #555 rgba(0,0,0,0.3);
+    }
+    .chat-messages::-webkit-scrollbar {
+        width: 8px;
+    }
+    .chat-messages::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.3);
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+        background-color: #555;
+        border-radius: 4px;
+    }
+    .message {
+        margin-bottom: 8px;
+        word-wrap: break-word;
+    }
+    .player-message {
+        color: #AAFFAA;
+    }
+    .villager-message {
+        color: #FFAA55;
+    }
+    .chat-input {
+        display: flex;
+    }
+    input {
+        flex-grow: 1;
+        padding: 8px;
+        border: 2px solid #555;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        border-radius: 4px;
+    }
+    button {
+        padding: 8px 15px;
+        margin-left: 10px;
+        background-color: #5D7;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    button:hover {
+        background-color: #4C6;
+    }
+    .nametag {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.5s;
+        top: 33%;
+        left: 22%;
+        z-index: 4;
+    }
+    .speech-bubble {
+    position: absolute;
+    background-color: white;
+    color: black;
+    padding: 10px 15px;
+    border-radius: 10px;
+    max-width: 70%;
+    max-height: 50vh;
+    overflow-y: auto;
+    top: 28%;
+    left: 35%;
+    transform: translate(-50%, -100%);
+    opacity: 0;
+    transition: opacity 0.8s;
+    z-index: 4;
+    line-height: 1.4;
+    font-size: 0.95em;
+}
+.speech-bubble::-webkit-scrollbar {
+    width: 6px;
+}
+.speech-bubble::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 3px;
+}
+.speech-bubble::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 3px;
+}
+.speech-bubble:after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 20%;
+    margin-left: -15px;
+    border-width: 15px 15px 0;
+    border-style: solid;
+    border-color: white transparent;
+}
+    .reset-button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: 1px solid #555;
+        border-radius: 4px;
+        cursor: pointer;
+        z-index: 10;
+        transition: background-color 0.2s;
+    }
+    .reset-button:hover {
+        background-color: rgba(50, 50, 50, 0.7);
+    }
+    .joker-image {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        top: 40%;
+        left: 24%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.8s;
+        z-index: 3;
+        border-radius: 10px;
+        display: none;
+    }
+    .audio-notification {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 100;
+        display: none;
+        text-align: center;
+        max-width: 80%;
+    }
+    .notification-button {
+        margin-top: 10px;
+        padding: 8px 15px;
+        background-color: #5D7;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+    }
+    @media (max-width: 768px) {
+    .speech-bubble {
+        max-width: 85%;
+        font-size: 0.9em;
+        max-height: 40vh;
+    }
+    .chat-container {
+        height: 150px;
+    }
+    .nametag {
+        font-size: 12px;
+    }
+    .joker-image {
+        width: 100px;
+        height: 100px;
+    }
+}
+    #loadingStatus {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        font-size: 12px;
+        color: #aaa;
+        z-index: 100;
+    }
+</style>
+<div class="scene-container">
+    <img src="https://stellar-cat-4909aa.netlify.app/image/EmptyBackground.png" alt="Minecraft Scene" class="background-image">
+    <img src="https://stellar-cat-4909aa.netlify.app/image/VillagerAppear.png" alt="Villager Scene" class="villager-image">
+    <div class="confetti-container" id="confettiContainer"></div>
+    <div class="nametag">老一辈的'智叟'</div>
+    <div class="speech-bubble" aria-live="polite"></div>
+    <img src="https://stellar-cat-4909aa.netlify.app/image/joker.jpeg" alt="Joker" class="joker-image" id="jokerImage">
+    <audio id="villagerSound" preload="auto"></audio>
+    <audio id="jokerSound" preload="auto"></audio>
+    <audio id="easterEggSound" preload="auto"></audio>
+    <div id="loadingStatus"></div>
+    <div class="audio-notification" id="audioNotification">
+        <p>点击下方按钮启用音效</p>
+        <button class="notification-button" id="enableAudioBtn">启用音效</button>
     </div>
-    <div class="chat-container">
-        <div class="chat-messages" id="chatMessages">
-            <div class="message">当你假期来到老家一人户做客时你随口说到....</div>
-        </div>
-        <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="输入聊天内容..." aria-label="聊天输入框">
-            <button onclick="sendMessage()">发送</button>
-        </div>
+</div>
+<div class="chat-container">
+    <div class="chat-messages" id="chatMessages">
+        <div class="message">当你假期来到老家一人户做客时你随口说到....</div>
     </div>
-    <script>
-        const chatMessages = document.getElementById('chatMessages');
-        const messageInput = document.getElementById('messageInput');
-        const villagerImage = document.querySelector('.villager-image');
-        const confettiContainer = document.getElementById('confettiContainer');
-        const nametag = document.querySelector('.nametag');
-        const speechBubble = document.querySelector('.speech-bubble');
-        const villagerSound = document.getElementById('villagerSound');
-        const loadingStatus = document.getElementById('loadingStatus');
-        let villagerSummoned = false;
-        
-        // 设置音频源并加载
-        function setupAudio() {
-            const audioUrl = "https://www.soundjay.com/misc/sounds/magic-chime-02.mp3";
-            villagerSound.src = audioUrl;            
-        }        
-        // 初始化
-        setupAudio();
-        
-        // 按Enter发送消息
-        messageInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
+    <div class="chat-input">
+        <input type="text" id="messageInput" placeholder="输入聊天内容..." aria-label="聊天输入框">
+        <button onclick="sendMessage()">发送</button>
+    </div>
+</div>
+<script>
+    const chatMessages = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
+    const villagerImage = document.querySelector('.villager-image');
+    const confettiContainer = document.getElementById('confettiContainer');
+    const nametag = document.querySelector('.nametag');
+    const speechBubble = document.querySelector('.speech-bubble');
+    const villagerSound = document.getElementById('villagerSound');
+    const jokerSound = document.getElementById('jokerSound');
+    const easterEggSound = document.getElementById('easterEggSound');
+    const loadingStatus = document.getElementById('loadingStatus');
+    const audioNotification = document.getElementById('audioNotification');
+    const enableAudioBtn = document.getElementById('enableAudioBtn');
+    let villagerSummoned = false;
+    let jokerTimeout = null;
+    let audioInitialized = false;
+    let jokerReady = false;
+    let pendingJokerDisplay = false;
+    let isEasterEggTriggered = false;
+
+    function setupAudio() {
+        villagerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/lybdzs.mp3";
+        jokerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/joker.mp3";
+        easterEggSound.src = "https://stellar-cat-4909aa.netlify.app/audio/EasterEgg.m4a";
+        villagerSound.load();
+        jokerSound.load();
+        easterEggSound.load();
+    }
+
+    function initializeAudio() {
+        if (audioInitialized) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const silentPlay = villagerSound.play();
+            if (silentPlay !== undefined) {
+                silentPlay.then(() => {
+                    villagerSound.pause();
+                    villagerSound.currentTime = 0;
+                    return jokerSound.play();
+                })
+                .then(() => {
+                    jokerSound.pause();
+                    jokerSound.currentTime = 0;
+                    return easterEggSound.play();
+                })
+                .then(() => {
+                    easterEggSound.pause();
+                    easterEggSound.currentTime = 0;
+                    audioInitialized = true;
+                    console.log("音频初始化成功");
+                    if (pendingJokerDisplay && jokerReady && !isEasterEggTriggered) {
+                        displayJoker();
+                    }
+                    resolve();
+                })
+                .catch(error => {
+                    console.warn("音频初始化失败:", error);
+                    showAudioNotification();
+                    reject(error);
+                });
+            } else {
+                reject(new Error("无法初始化音频"));
             }
         });
-        
-        function sendMessage() {
-            const message = messageInput.value.trim();
-            if (message === '') return;
-            
-            // 添加你的消息
-            const playerMessageDiv = document.createElement('div');
-            playerMessageDiv.className = 'message player-message';
-            playerMessageDiv.textContent = `你: ${message}`;
-            chatMessages.appendChild(playerMessageDiv);
-            
-            // 检查是否包含"混凝土"
-            if (message.includes('混凝土') && !villagerSummoned) {
-                summonVillager();
-            }
-            
-            // 清空输入框并滚动到底部
-            messageInput.value = '';
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-        
-        // 根据设备性能确定粒子数量
-        function getConfettiCount() {
-            // 检测是否是性能较低的设备
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            return isMobile ? 100 : 200; // 移动设备减少粒子数量
-        }
-        
-        function createConfetti() {
-            // 清空现有纸屑
-            confettiContainer.innerHTML = '';
-            
-            // 创建多个纸屑元素
-            const confettiCount = getConfettiCount();
-            for (let i = 0; i < confettiCount; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                
-                // 随机位置
-                confetti.style.left = Math.random() * 100 + '%';
-                confetti.style.top = Math.random() * 100 + '%';
-                
-                // 随机延迟
-                confetti.style.animationDelay = Math.random() * 0.8 + 's';
-                
-                // 随机旋转
-                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-                
-                // 随机颜色
-                const colors = ['#ffffff', '#dedede', '#f0f0f0', '#ffffff'];
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                
-                // 随机大小
-                const size = Math.random() * 6 + 3;
-                confetti.style.width = `${size}px`;
-                confetti.style.height = `${size * 1.5}px`;
-                
-                confettiContainer.appendChild(confetti);
-            }
-        }
-        
-        // 打字机效果函数
-        function typewriterEffect(element, text, speed = 40) {
-            element.textContent = ''; // 清空内容
-            let i = 0;
-            
-            function typeNextChar() {
-                if (i < text.length) {
-                    element.textContent += text.charAt(i);
-                    i++;
-                    setTimeout(typeNextChar, speed);
+    }
+
+    function showAudioNotification() {
+        audioNotification.style.display = 'block';
+    }
+
+    function hideAudioNotification() {
+        audioNotification.style.display = 'none';
+    }
+
+    enableAudioBtn.addEventListener('click', function() {
+        initializeAudio()
+            .then(() => {
+                hideAudioNotification();
+                if (jokerReady && !jokerImage.style.opacity === '1' && !isEasterEggTriggered) {
+                    displayJoker();
                 }
+            })
+            .catch(e => console.error("启用音频失败:", e));
+    });
+
+    setupAudio();
+
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (message === '') return;
+        initializeAudio().catch(() => console.log("通过消息发送初始化音频失败"));
+        
+        const playerMessageDiv = document.createElement('div');
+        playerMessageDiv.className = 'message player-message';
+        playerMessageDiv.textContent = `你: ${message}`;
+        chatMessages.appendChild(playerMessageDiv);
+        
+        if (message === "栗子是个怎么样的人") {
+            isEasterEggTriggered = true;
+            if (jokerTimeout) {
+                clearTimeout(jokerTimeout);
+                jokerTimeout = null;
             }
-            
-            typeNextChar();
+            summonVillagerWithEasterEgg();
+        }
+        else if (message.includes('表姐') && !villagerSummoned) {
+            summonVillager();
         }
         
-        function summonVillager() {
-            villagerSummoned = true;
-            
-            // 创建纸屑效果并开始渐显图片
-            createConfetti();
-            villagerImage.style.opacity = '1';
-            
-            // 显示村民名称标签
+        messageInput.value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function getConfettiCount() {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        return isMobile ? 100 : 200;
+    }
+
+    function createConfetti() {
+    confettiContainer.innerHTML = '';
+    const confettiCount = getConfettiCount();
+    for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.top = Math.random() * 100 + '%';
+        confetti.style.animationDelay = Math.random() * 0.8 + 's';
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        const colors = ['#ffffff', '#dedede', '#f0f0f0', '#ffffff'];
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        const size = Math.random() * 6 + 3;
+        confetti.style.width = `${size}px`;
+        confetti.style.height = `${size * 1.5}px`;
+        confettiContainer.appendChild(confetti);
+    }
+}
+
+function typewriterEffect(element, text, speed = 40, callback) {
+    element.textContent = '';
+    let i = 0;
+    function typeNextChar() {
+        if (i < text.length) {
+            element.textContent += text.charAt(i);
+            i++;
+            setTimeout(typeNextChar, speed);
+        } else if (callback) {
+            callback();
+        }
+    }
+    typeNextChar();
+}
+
+function summonVillager() {
+    villagerSummoned = true;
+    createConfetti();
+    villagerImage.style.opacity = '1';
+    setTimeout(() => {
+        nametag.style.opacity = 1;
+        setTimeout(() => {
+            speechBubble.style.opacity = 1;
+            const villagerText = "你刚刚说了表姐是吧，首先我认为她就是很失败的，因为她没有找男人结婚她学历高有啥用，不还是没男人要吗？";
+            typewriterEffect(speechBubble, villagerText, 40, showJokerAfterDelay);
+            playVillagerSound();
+            const villagerMessageDiv = document.createElement('div');
+            villagerMessageDiv.className = 'message villager-message';
+            villagerMessageDiv.textContent = `老一辈的'智叟': ${villagerText}`;
+            chatMessages.appendChild(villagerMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 500);
+    }, 800);
+}
+
+function summonVillagerWithEasterEgg() {
+    villagerSummoned = true;
+    createConfetti();
+    villagerImage.style.opacity = '1';
+    setTimeout(() => {
+        nametag.style.opacity = 1;
+        setTimeout(() => {
+            speechBubble.style.opacity = 1;
+            const easterEggText = "我认为栗子是沉静中带着灵动的，温暖而不失坚韧的，可靠且善解人意的，低调谦逊却富有好奇心的，兼具冷静理性与敏锐同理心的，思维缜密又富有创造力的，勤奋务实而执着坚定的，乐观向上且心怀热忱的，幽默风趣却真诚坦率的，脚踏实地而追求卓越的，独立自主且富有主见的，自律克己又虚怀若谷的，知行合一却默默耕耘的，心思细腻而行动果决的，善于观察且锐意创新的，外柔内刚又内心丰盈的一位医学生。";
+            typewriterEffect(speechBubble, easterEggText, 20);
+            playEasterEggSound();
+            const villagerMessageDiv = document.createElement('div');
+            villagerMessageDiv.className = 'message villager-message';
+            villagerMessageDiv.textContent = `老一辈的'智叟': ${easterEggText}`;
+            chatMessages.appendChild(villagerMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
             setTimeout(() => {
-                nametag.style.opacity = 1;
-                
-                // 显示村民对话
-                setTimeout(() => {
-                    speechBubble.style.opacity = 1;
-                    
-                    // 使用打字机效果显示文本
-                    const villagerText = "你刚刚说了混凝土是吧，首先我认为意大利面就是应该拌四十二号混凝土的...";
-                    typewriterEffect(speechBubble, villagerText);
-                    
-                    // 播放音频
-                    playVillagerSound();
-                    
-                    // 添加村民消息到聊天区
-                    const villagerMessageDiv = document.createElement('div');
-                    villagerMessageDiv.className = 'message villager-message';
-                    villagerMessageDiv.textContent = `老一辈的'智叟': ${villagerText}`;
-                    chatMessages.appendChild(villagerMessageDiv);
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                }, 500);
-            }, 800);
+                speechBubble.scrollTop = 0;
+            }, easterEggText.length * 20 + 100);
+        }, 500);
+    }, 800);
+}
+
+function showJokerAfterDelay() {
+    if (isEasterEggTriggered) return;
+    console.log("等待10秒后显示Joker...");
+    jokerTimeout = setTimeout(() => {
+        console.log("Joker准备显示");
+        jokerReady = true;
+        if (audioInitialized) {
+            displayJoker();
+        } else {
+            pendingJokerDisplay = true;
+            showAudioNotification();
         }
-        
-        // 播放音频的函数
-        function playVillagerSound() {
-            // 重置音频到开始位置（如果已经播放过）
-            villagerSound.currentTime = 0;
-            
-            // 播放音频
-            const playPromise = villagerSound.play();
-            
-        }
-        
-        // 重置场景的功能
-        function resetScene() {
-            villagerImage.style.opacity = '0';
-            nametag.style.opacity = 0;
-            speechBubble.style.opacity = 0;
-            speechBubble.textContent = '';
-            villagerSummoned = false;
-            confettiContainer.innerHTML = '';
-            
-            // 停止音频
-            villagerSound.pause();
-            villagerSound.currentTime = 0;
-            loadingStatus.textContent = "";
-        }
-        
-        // 双击背景重置场景
-        document.querySelector('.scene-container').addEventListener('dblclick', resetScene);
-        
-        // 触摸设备支持
-        let lastTapTime = 0;
-        document.querySelector('.scene-container').addEventListener('touchend', function(e) {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTapTime;
-            
-            if (tapLength < 500 && tapLength > 0) {
-                resetScene();
-                e.preventDefault();
-            }
-            
-            lastTapTime = currentTime;
+    }， 6000);
+}
+
+function displayJoker() {
+    if (isEasterEggTriggered) return;
+    console.log("显示Joker");
+    pendingJokerDisplay = false;
+    jokerImage.style.display = 'block';
+    setTimeout(() => {
+        jokerImage.style.opacity = 1;
+        playJokerSound();
+    }, 50);
+}
+
+function playVillagerSound() {
+    if (!audioInitialized) {
+        initializeAudio().catch(() => console.log("播放村民声音时初始化音频失败"));
+        return;
+    }
+    villagerSound.currentTime = 0;
+    const playPromise = villagerSound.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.error("播放村民音频失败:", error);
         });
-        
-        
-        // 页面焦点设置
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                messageInput.focus();
-            }, 500);
+    }
+}
+
+function playJokerSound() {
+    if (!audioInitialized) {
+        console.log("音频未初始化，不能播放Joker音效");
+        return;
+    }
+    console.log("播放Joker音效");
+    jokerSound.currentTime = 0;
+    const playPromise = jokerSound.play();
+    if (playPromise !== undefined) {
+        playPromise.then(() => {
+            console.log("Joker音效播放成功");
+        }).catch(error => {
+            console.error("播放Joker音效失败:", error);
+            showAudioNotification();
         });
-    </script>
+    }
+}
+
+function playEasterEggSound() {
+    if (!audioInitialized) {
+        initializeAudio().catch(() => console.log("播放彩蛋音频时初始化音频失败"));
+        return;
+    }
+    easterEggSound.currentTime = 0;
+    const playPromise = easterEggSound.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.error("播放彩蛋音频失败:", error);
+            showAudioNotification();
+        });
+    }
+}
+
+function resetScene() {
+    if (isEasterEggTriggered) {
+        showEasterEggResetMessage();
+        return;
+    }
+    villagerImage.style.opacity = '0';
+    nametag.style.opacity = 0;
+    speechBubble.style.opacity = 0;
+    speechBubble.textContent = '';
+    villagerSummoned = false;
+    confettiContainer.innerHTML = '';
+    if (jokerTimeout) {
+        clearTimeout(jokerTimeout);
+        jokerTimeout = null;
+    }
+    jokerImage.style.opacity = 0;
+    setTimeout(() => {
+        jokerImage.style.display = 'none';
+    }, 800);
+    jokerReady = false;
+    pendingJokerDisplay = false;
+    villagerSound.pause();
+    villagerSound.currentTime = 0;
+    jokerSound.pause();
+    jokerSound.currentTime = 0;
+    easterEggSound.pause();
+    easterEggSound.currentTime = 0;
+    hideAudioNotification();
+    loadingStatus.textContent = "";
+}
+
+document。querySelector('.scene-container').addEventListener('dblclick', function(e) {
+    if (isEasterEggTriggered) {
+        e.preventDefault();
+        e.stopPropagation();
+        showEasterEggResetMessage();
+        return false;
+    }
+    resetScene();
+});
+
+let lastTapTime = 0;
+document。querySelector('.scene-container').addEventListener('touchend', function(e) {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+    if (tapLength < 500 && tapLength > 0) {
+        if (isEasterEggTriggered) {
+            e.preventDefault();
+            showEasterEggResetMessage();
+            return false;
+        }
+        resetScene();
+        e.preventDefault();
+    }
+    lastTapTime = currentTime;
+});
+
+window。addEventListener('load', () => {
+    setTimeout(() => {
+        messageInput.focus();
+        setTimeout(() => {
+            initializeAudio().catch(() => console.log("页面加载后初始化音频失败"));
+        }, 1000);
+    }, 500);
+});
+
+document。addEventListener('click', function() {
+    initializeAudio().catch(() => console.log("通过点击初始化音频失败"));
+});
+</script>
 </body>
 </html>

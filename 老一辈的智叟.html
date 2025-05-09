@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的世界村民互动</title>
+    <title>老一辈的智叟</title>
     <style>
         body {
             margin: 0;
@@ -177,7 +177,6 @@
         .reset-button:hover {
             background-color: rgba(50, 50, 50, 0.7);
         }
-        /* 移动设备响应式设计 */
         @media (max-width: 768px) {
             .speech-bubble {
                 max-width: 80%;
@@ -212,7 +211,7 @@
     </div>
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">
-            <div class="message">当你假期来到一个人家做客时....</div>
+            <div class="message">当你假期来到老家一人户做客时你随口说到....</div>
         </div>
         <div class="chat-input">
             <input type="text" id="messageInput" placeholder="输入聊天内容..." aria-label="聊天输入框">
@@ -267,7 +266,7 @@
         
         // 根据设备性能确定粒子数量
         function getConfettiCount() {
-            // 检测是否是移动设备或性能较低的设备
+            // 检测是否是性能较低的设备
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             return isMobile ? 100 : 200; // 移动设备减少粒子数量
         }
@@ -381,7 +380,7 @@
         // 双击背景重置场景
         document.querySelector('.scene-container').addEventListener('dblclick', resetScene);
         
-        // 添加触摸设备支持
+        // 触摸设备支持
         let lastTapTime = 0;
         document.querySelector('.scene-container').addEventListener('touchend', function(e) {
             const currentTime = new Date().getTime();

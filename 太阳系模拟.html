@@ -93,11 +93,38 @@
             cursor: pointer;
             border-radius: 4px;
         }
-        #info-toggle-btn {
+        #settings-popup {
             position: absolute;
-            top: 10px;
-            left: calc(10px + 250px); /* 示例：放在 controls 右侧 */
-            z-index: 100; /* 与 controls 同级 */
+            bottom: 70px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 150;
+            display: none;
+            width: 300px;
+        }
+        #settings-popup .close-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            padding: 5px;
+        }
+        #settings-popup h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        #settings-popup .settings-group {
+            margin-bottom: 15px;
+        }
+        #settings-popup .slider-container {
+            margin-bottom: 10px;
         }
         #info-panel.hidden {
             opacity: 0;
@@ -206,6 +233,18 @@
             z-index: 100;
             color: white;
         }
+        /* 小行星带样式 */
+        .asteroid-info {
+            position: absolute;
+            bottom: 110px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 100;
+            color: white;
+        }
         @media (max-width: 768px) {
             .controls {
                 width: calc(100% - 20px); /* 调整宽度 */
@@ -239,11 +278,12 @@
                 font-size: 10px;
                 padding: 2px 4px;
             }
-            #info-toggle-btn {
-                 position: static; /* 在移动端让按钮成为 controls 的一部分 */
-                 order: 5; /* 调整在 flex 布局中的顺序，如果需要 */
+            #settings-popup {
+                 width: calc(100% - 40px);
+                 left: 10px;
+                 right: 10px;
             }
-             /* 隐藏整个面板的关闭按钮，因为面板居中了 */
+            /* 隐藏整个面板的关闭按钮，因为面板居中了 */
             #info-panel > .close-button {
                  top: 10px;
                  right: 10px;
@@ -266,19 +306,33 @@
     <div class="controls">
         <button id="pause-btn">暂停</button>
         <button id="reset-btn">重置</button>
-        <button id="toggle-labels-btn">隐藏标签</button>
-        <button id="toggle-trails-btn">显示轨迹</button>
-        <div class="slider-container">
-            <label for="speed-slider">速度:</label>
-            <input type="range" id="speed-slider" min="0.001" max="2" step="0.001" value="0.01">
-            <span id="speed-value">0.010x</span>
+        <button id="settings-btn">设置</button>
+    </div>
+    <!-- 设置弹出窗口 -->
+    <div id="settings-popup">
+        <button class="close-button" id="settings-close-btn">×</button>
+        <h3>设置</h3>
+        <div class="settings-group">
+
+            <button id="toggle-trails-btn">显示轨迹</button>    
+            <button id="toggle-asteroid-belt-btn">显示小行星带</button>
+            <button id="info-toggle-btn">隐藏信息</button>
         </div>
-        <button id="info-toggle-btn">隐藏信息</button>
+        <div class="settings-group">
+            <div class="slider-container">
+                <label for="speed-slider">速度:</label>
+                <input type="range" id="speed-slider" min="0.001" max="2" step="0.001" value="0.01">
+                <span id="speed-value">0.010x</span>
+                <button id="toggle-labels-btn">隐藏标签</button>
+            </div>            
+        </div>
     </div>
     <!-- 缩放值显示 -->
     <div id="zoom-value-display">缩放: 1.0x</div>
     <!-- 缩放提示 -->
     <div class="zoom-hint">使用鼠标滚轮或双指捏合缩放，按住拖动可移动视角</div>
+    <!-- 小行星带信息 -->
+    <div class="asteroid-info" id="asteroid-info" style="display: none;">小行星带已启用</div>
     <!-- 信息面板 -->
     <div id="info-panel">
         <!-- 统一的关闭按钮 -->
@@ -286,7 +340,7 @@
         <div id="intro-content" class="intro-content">
             <h1>太阳系</h1>
             <p>点击任何天体查看详细信息。使用下方控制面板调整模拟。</p>
-            <p>右键点击行星显示简要信息。</p>
+            <p>右键点击行星显示简要信息。</p>            
         </div>
         <!-- 行星信息 Divs (保持不变) -->
         <div id="sun-info" class="planet-info">
@@ -315,7 +369,7 @@
             </ul>
             <p>水星没有明显的大气层，表面满是撞击坑，昼夜温差极大。</p>
         </div>
-        <div id="venus-info" class="planet-info">
+                <div id="venus-info" class="planet-info">
             <h2>金星</h2>
             <p>金星是太阳系中第二颗行星，大小与地球相似，但环境极端。</p>
             <ul>
@@ -342,7 +396,7 @@
             </ul>
             <p>地球表面的71%被液态水覆盖，拥有富含氮氧的大气层和保护性的磁场。</p>
         </div>
-                  <div id="mars-info" class="planet-info">
+        <div id="mars-info" class="planet-info">
             <h2>火星</h2>
             <p>火星是太阳系中第四颗行星，常被称为"红色星球"。</p>
             <ul>
@@ -412,6 +466,17 @@
             </ul>
             <p>海王星是第一个通过数学预测发现的行星。拥有太阳系中最强的风，速度可达2100公里/小时。</p>
         </div>
+        <div id="asteroid-belt-info" class="planet-info">
+            <h2>小行星带</h2>
+            <p>小行星带是位于火星和木星轨道之间的一个区域，由数百万颗岩质天体组成。</p>
+            <ul>
+                <li>位置: 火星和木星轨道之间</li>
+                <li>平均距离太阳: 2.2-3.2 AU (3.3-4.8亿公里)</li>
+                <li>已知小行星数量: 100万+</li>
+                <li>最大成员: 谷神星 (直径约940公里)</li>
+            </ul>
+            <p>小行星带被认为是太阳系形成早期，由于木星强大引力的干扰而未能凝聚成行星的物质残骸。</p>
+        </div>
         <!-- 信息面板结束 -->
     </div>
     <!-- 键盘快捷键提示 -->
@@ -423,6 +488,7 @@
             <li><kbd>L</kbd>: 切换标签</li>
             <li><kbd>T</kbd>: 切换轨迹</li>
             <li><kbd>I</kbd>: 切换信息面板</li>
+            <li><kbd>A</kbd>: 切换小行星带</li>            
             <li><kbd>+/-</kbd>: 调整速度</li>
             <li><kbd>鼠标滚轮</kbd>: 缩放</li>
         </ul>
@@ -438,115 +504,262 @@
     const toggleLabelsBtn = document.getElementById('toggle-labels-btn');
     const toggleTrailsBtn = document.getElementById('toggle-trails-btn');
     const zoomValueDisplay = document.getElementById('zoom-value-display');
+    const asteroidInfoDiv = document.getElementById('asteroid-info');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsPopup = document.getElementById('settings-popup');
+    const settingsCloseBtn = document.getElementById('settings-close-btn');
+    const travelTimeSlider = document.getElementById('travel-time-slider');
+    const travelTimeValue = document.getElementById('travel-time-value');
     
     // 设置画布尺寸
-    function resizeCanvas() {
-        canvas.width = simulationContainer.clientWidth;
-        canvas.height = simulationContainer.clientHeight;
-        // 调整大小时重新创建标签，因为位置可能变化
-        createLabels();
-        // 重新生成星空背景
-        stars = generateStarfield();
+function resizeCanvas() {
+    // 获取设备像素比率，保证在高DPI屏幕上清晰显示
+    const dpr = window.devicePixelRatio || 1;
+    // 设置canvas的物理像素尺寸（乘以设备像素比）
+    canvas.width = simulationContainer.clientWidth * dpr;
+    canvas.height = simulationContainer.clientHeight * dpr;
+    // 设置canvas的CSS显示尺寸
+    canvas.style.width = `${simulationContainer.clientWidth}px`;
+    canvas.style.height = `${simulationContainer.clientHeight}px`;
+    // 重置变换矩阵，防止缩放累积
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // 应用设备像素比缩放
+    ctx.scale(dpr, dpr);
+    
+    // 更新基础中心点 - 使用CSS像素尺寸计算，不除以dpr
+    baseX = simulationContainer.clientWidth / 2;
+    baseY = simulationContainer.clientHeight / 2;
+    
+    // 在初始化或重置时使用默认偏移
+    if (offsetX === 0 && offsetY === 0) {
+        offsetX = defaultOffsetX;
+        offsetY = defaultOffsetY;
     }
     
+    // 更新实际渲染中心点
+    centerX = baseX + offsetX;
+    centerY = baseY + offsetY;
+    
+    // 清除所有轨迹，因为尺寸变化后轨迹会不匹配
+    planets.forEach(planet => {
+        if (planet.name !== "sun") {
+            planet.trail = [];
+        }
+    });
+    
+    // 调整大小时重新创建标签，因为位置可能变化
+    createLabels();
+    // 重新生成星空背景
+    stars = generateStarfield();
+    // 更新缩放值显示
+    updateZoomValueDisplay();
+}
     // 初始化时调整一次，并监听窗口大小变化
     window.addEventListener('resize', resizeCanvas);
-    
     // 太阳系参数（距离和半径按比例调整以便显示，颜色为十六进制字符串）
     const planets = [
-        { name: "sun", color: "FDB813", radius: 35, distance: 0, orbit: 0, speed: 0, angle: 0, moons: [], rings: false, showTrail: false, trail: [] },
-        { name: "mercury", color: "B7B8B9", radius: 4, distance: 60, orbit: 88, speed: 0.041, angle: Math.random() * Math.PI * 2, moons: [], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 },
-        { name: "venus", color: "E7CDCD", radius: 8, distance: 90, orbit: 225, speed: 0.016, angle: Math.random() * Math.PI * 2, moons: [], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 },
-        { name: "earth", color: "267bef", radius: 9, distance: 130, orbit: 365, speed: 0.01, angle: Math.random() * Math.PI * 2, moons: [
+        { name: "sun", color: "FDB813", radius: 35, distance: 0, orbit: 0, speed: 0, rotationSpeed: 0.5, angle: 0, rotationAngle: 0, moons: [], rings: false, showTrail: false, trail: [] },
+        { name: "mercury", color: "B7B8B9", radius: 4, distance: 60, orbit: 88, speed: 0.041, rotationSpeed: 0.02, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 },
+        { name: "venus", color: "E7CDCD", radius: 8, distance: 90, orbit: 225, speed: 0.016, rotationSpeed: 0.004, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 },
+        { name: "earth", color: "267bef", radius: 9, distance: 130, orbit: 365, speed: 0.01, rotationSpeed: 0.5, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [
             { name: "moon", distance: 15, radius: 2, orbit: 27, angle: 0, speed: 0.1 }
         ], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 },
-        { name: "mars", color: "c1440e", radius: 6, distance: 180, orbit: 687, speed: 0.0053, angle: Math.random() * Math.PI * 2, moons: [
+        { name: "mars", color: "c1440e", radius: 6, distance: 180, orbit: 687, speed: 0.0053, rotationSpeed: 0.48, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [
             { name: "phobos", distance: 10, radius: 1, orbit: 0.3, angle: 0, speed: 0.2 },
             { name: "deimos", distance: 14, radius: 1, orbit: 1.2, angle: Math.PI, speed: 0.15 }
         ], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 },
-        { name: "jupiter", color: "e0b44e", radius: 25, distance: 280, orbit: 4333, speed: 0.0008, angle: Math.random() * Math.PI * 2, moons: [
+        { name: "jupiter", color: "e0b44e", radius: 25, distance: 280, orbit: 4333, speed: 0.0008, rotationSpeed: 1.2, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [
             { name: "io", distance: 35, radius: 2, orbit: 1.7, angle: 0, speed: 0.05 },
             { name: "europa", distance: 40, radius: 2, orbit: 3.5, angle: Math.PI/2, speed: 0.04 },
             { name: "ganymede", distance: 45, radius: 3, orbit: 7.1, angle: Math.PI, speed: 0.03 },
             { name: "callisto", distance: 55, radius: 3, orbit: 16.7, angle: Math.PI*1.5, speed: 0.02 }
         ], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 },
-        { name: "saturn", color: "f4d4a9", radius: 20, distance: 380, orbit: 10759, speed: 0.0003, angle: Math.random() * Math.PI * 2, moons: [
-             { name: "titan", distance: 35, radius: 3, orbit: 16, angle: Math.PI/3, speed: 0.04 }
+        { name: "saturn", color: "f4d4a9", radius: 20, distance: 380, orbit: 10759, speed: 0.0003, rotationSpeed: 1.1, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [
+            { name: "titan", distance: 35, radius: 3, orbit: 16, angle: Math.PI/3, speed: 0.04 }
         ], rings: true, ringColor: "f4ebd2", ringInner: 25, ringOuter: 40, showTrail: false, trail: [], trailMaxPoints: 100 },
-        { name: "uranus", color: "BAFFFA", radius: 15, distance: 480, orbit: 30687, speed: 0.0001, angle: Math.random() * Math.PI * 2, moons: [
-             { name: "miranda", distance: 22, radius: 1, orbit: 1.4, angle: Math.PI*1.2, speed: 0.03 }
+        { name: "uranus", color: "BAFFFA", radius: 15, distance: 480, orbit: 30687, speed: 0.0001, rotationSpeed: 0.7, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [
+            { name: "miranda", distance: 22, radius: 1, orbit: 1.4, angle: Math.PI*1.2, speed: 0.03 }
         ], rings: true, ringColor: "e0faf8", ringInner: 18, ringOuter: 22, showTrail: false, trail: [], trailMaxPoints: 100 },
-        { name: "neptune", color: "5B5DDF", radius: 14, distance: 580, orbit: 60190, speed: 0.00006, angle: Math.random() * Math.PI * 2, moons: [
-             { name: "triton", distance: 25, radius: 2, orbit: 5.8, angle: Math.PI*0.8, speed: 0.02 }
+        { name: "neptune", color: "5B5DDF", radius: 14, distance: 580, orbit: 60190, speed: 0.00006, rotationSpeed: 0.8, angle: Math.random() *Math.PI* 2, rotationAngle: 0, moons: [
+            { name: "triton", distance: 25, radius: 2, orbit: 5.8, angle: Math.PI*0.8, speed: 0.02 }
         ], rings: false, showTrail: false, trail: [], trailMaxPoints: 100 }
     ];
+    // 小行星带
+    let showAsteroidBelt = false;
+    let asteroids = [];
+    // 生成小行星带
+    function generateAsteroidBelt() {
+        asteroids = [];
+        const asteroidCount = 800; // 小行星数量
+        const minDistance = 200; // 最小轨道半径
+        const maxDistance = 260; // 最大轨道半径
+        const minSize = 0.5;
+        const maxSize = 2;
+        for (let i = 0; i < asteroidCount; i++) {
+            // 随机轨道半径
+            const distance = minDistance + Math.random() * (maxDistance - minDistance);
+            // 随机角度
+            const angle = Math.random() *Math.PI* 2;
+            // 随机大小
+            const size = minSize + Math.random() * (maxSize - minSize);
+            // 随机速度（围绕平均值）
+            const baseSpeed = 0.002;
+            const speedVariation = 0.0005;
+            const speed = baseSpeed + (Math.random() *2 - 1)* speedVariation;
+            // 随机灰色调
+            const grayValue = Math.floor(Math.random() * 100 + 155).toString(16);
+            const color = grayValue + grayValue + grayValue;
+            asteroids.push({
+                distance,
+                angle,
+                size,
+                speed,
+                color
+            });
+        }
+    }
     
     // 控制模拟参数
     let paused = false;
     let speed = 0.01;
     let zoom = 1;
     let baseX, baseY; // 基础中心点（画布中心）
-    let offsetX = 0, offsetY = 0; // 中心点偏移量
+    // 添加默认的初始偏移量，将太阳系向左上方移动
+    let defaultOffsetX = -300; // 向左偏移
+    let defaultOffsetY = -550; // 向上偏移
+    let offsetX = defaultOffsetX, offsetY = defaultOffsetY; // 初始化为默认偏移
     let centerX, centerY; // 实际渲染中心点
     let planetLabels = []; // 存储标签DOM元素
     let showLabels = true;
     let infoPanelVisible = true;
     let planetScreenData = []; // 存储行星屏幕坐标和大小
     let stars = []; // 星空背景
-    
     // 拖动相关变量
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
     let lastOffsetX = 0;
     let lastOffsetY = 0;
-    
     // 缩放相关变量
     let zoomMin = 0.2;
     let zoomMax = 5;
     let zoomStep = 0.1; // 每次缩放步长
-    
     // 多点触控相关变量
     let touchDistance = 0;
     let touchZoomStartScale = 1;
     
     // 生成星空背景
+    // 增强星空背景生成函数
     function generateStarfield() {
         const stars = [];
-        const starCount = 200; // 星星数量
+        const starCount = 300; // 增加星星数量
+        
+        // 计算一个比画布大的区域来生成星星，确保在缩放和移动视角时始终有星星
+        const bufferFactor = 3; // 生成范围是画布尺寸的3倍
+        const width = canvas.width * bufferFactor;
+        const height = canvas.height * bufferFactor;
+        const offsetX = -width / 2 + canvas.width / 2;
+        const offsetY = -height / 2 + canvas.height / 2;
+        
+        // 生成闪烁星星
         for (let i = 0; i < starCount; i++) {
             stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: Math.random() * 1.5 + 0.5, // 0.5到2之间的半径
-                opacity: Math.random() * 0.8 + 0.2 // 0.2到1.0之间的透明度
+                x: offsetX + Math.random() * width,
+                y: offsetY + Math.random() * height,
+                radius: Math.random() * 1.5 + 0.5,
+                opacity: Math.random() * 0.8 + 0.2,
+                twinkleSpeed: Math.random() * 0.01 + 0.001, // 闪烁速度
+                twinkleOffset: Math.random() *Math.PI* 2 // 闪烁相位
+            });
+        }
+        // 添加几个远处的星云
+        const nebulaeCount = 3;
+        for (let i = 0; i < nebulaeCount; i++) {
+            stars.push({
+                type: 'nebula',
+                x: offsetX + Math.random() * width,
+                y: offsetY + Math.random() * height,
+                radius: Math.random() * 100 + 50,
+                color: [
+                    `rgba(${Math.floor(Math.random()*100+155)}, 50, ${Math.floor(Math.random()*100+155)}, 0.1)`,
+                    `rgba(50, ${Math.floor(Math.random()*100+155)}, ${Math.floor(Math.random()*100+155)}, 0.1)`,
+                    `rgba(${Math.floor(Math.random()*100+155)}, ${Math.floor(Math.random()*100+155)}, 50, 0.1)`
+                ][i % 3], // 随机颜色
+                rotation: Math.random() *Math.PI* 2
             });
         }
         return stars;
     }
-    
-    // 绘制星空背景
+    // 相应的星空绘制函数
     function drawStarfield() {
+        // 计算视口偏移量
+        const viewOffsetX = (offsetX / zoom);
+        const viewOffsetY = (offsetY / zoom);
+        
         stars.forEach(star => {
-            ctx.beginPath();
-            ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
-            ctx.fill();
+            // 调整星星位置，使其随视口移动
+            const adjustedX = star.x - viewOffsetX * 0.2; // 星星移动较慢，产生视差效果
+            const adjustedY = star.y - viewOffsetY * 0.2;
+            
+            // 将星星位置缠绕到视口区域内
+            const visibleWidth = canvas.width / zoom * 1.5;
+            const visibleHeight = canvas.height / zoom * 1.5;
+            const visibleOffsetX = centerX - visibleWidth / 2;
+            const visibleOffsetY = centerY - visibleHeight / 2;
+            
+            let displayX = ((adjustedX - visibleOffsetX) % visibleWidth + visibleWidth) % visibleWidth + visibleOffsetX;
+            let displayY = ((adjustedY - visibleOffsetY) % visibleHeight + visibleHeight) % visibleHeight + visibleOffsetY;
+            
+            if (star.type === 'nebula') {
+                // 绘制星云
+                ctx.save();
+                ctx.translate(displayX, displayY);
+                ctx.rotate(star.rotation);
+                // 使用放射渐变创建星云效果
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, star.radius);
+                gradient.addColorStop(0, star.color.replace('0.1', '0.3')); // 中心更亮
+                gradient.addColorStop(0.5, star.color);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // 边缘淡出
+                ctx.beginPath();
+                // 创建不规则形状
+                ctx.moveTo(star.radius * 0.5, 0);
+                for (let i = 1; i < 12; i++) {
+                    const angle = (i / 12) *Math.PI* 2;
+                    const radius = star.radius *(0.5 + Math.sin(i* 5) * 0.5);
+                    ctx.lineTo(
+                        Math.cos(angle) * radius,
+                        Math.sin(angle) * radius
+                    );
+                }
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.restore();
+            } else {
+                // 星星闪烁效果
+                const twinkle = Math.sin(Date.now() *star.twinkleSpeed + star.twinkleOffset)* 0.3 + 0.7;
+                ctx.beginPath();
+                ctx.arc(displayX, displayY, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity * twinkle})`;
+                ctx.fill();
+            }
         });
     }
-    
     // 更新位置计算
     function updatePositions(timeScale) {
         planets.forEach(planet => {
             if (!paused && timeScale > 0) {
                 // 行星轨道运动
                 if (planet.speed > 0) {
-                    planet.angle += (planet.speed * speed * timeScale);
+                    planet.angle += (planet.speed *speed* timeScale);
                     planet.angle %= (Math.PI * 2);
+                    // 更新行星自转角度 (与全局速度关联)
+                    planet.rotationAngle += (planet.rotationSpeed *speed* timeScale);
+                    planet.rotationAngle %= (Math.PI * 2);
                     // 记录轨迹点
                     if (planet.showTrail && planet.name !== "sun") {
-                        const x = centerX + planet.distance * Math.cos(planet.angle) * zoom;
-                        const y = centerY + planet.distance * Math.sin(planet.angle) * zoom;
+                        const x = centerX + planet.distance *Math.cos(planet.angle)* zoom;
+                        const y = centerY + planet.distance *Math.sin(planet.angle)* zoom;
                         // 只在一定间隔添加点，以避免点过密
                         if (planet.trail.length === 0 ||
                             Math.hypot(x - planet.trail[planet.trail.length-1].x,
@@ -563,239 +776,1231 @@
                 if (planet.moons && Array.isArray(planet.moons)) {
                     planet.moons.forEach(moon => {
                         if (moon.speed > 0) {
-                             moon.angle += (moon.speed * speed * timeScale * 5); // 让卫星转得更快些
+                             moon.angle += (moon.speed *speed* timeScale * 5); // 让卫星转得更快些
                              moon.angle %= (Math.PI * 2);
                         }
                     });
                 }
             }
         });
+        // 更新小行星位置
+        if (showAsteroidBelt && !paused && timeScale > 0) {
+            asteroids.forEach(asteroid => {
+                asteroid.angle += (asteroid.speed *speed* timeScale);
+                asteroid.angle %= (Math.PI * 2);
+            });
+        }
+        
+    }
+    // 绘制小行星带
+    function drawAsteroidBelt() {
+        if (!showAsteroidBelt) return;
+        asteroids.forEach(asteroid => {
+            const x = centerX + asteroid.distance *Math.cos(asteroid.angle)* zoom;
+            const y = centerY + asteroid.distance *Math.sin(asteroid.angle)* zoom;
+            const size = asteroid.size * zoom;
+            // 只绘制屏幕上可见的小行星
+            if (x >= -size && x <= canvas.width + size &&
+                y >= -size && y <= canvas.height + size) {
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = `#${asteroid.color}`;
+                ctx.fill();
+            }
+        });
+    }
+    // 绘制天体（太阳、行星、卫星、环）
+function drawCelestialBody(planet) {
+    const x = centerX + planet.distance * Math.cos(planet.angle) * zoom;
+    const y = centerY + planet.distance * Math.sin(planet.angle) * zoom;
+    const radius = planet.radius * zoom;
+    
+    // 绘制轨迹
+    if (planet.showTrail && planet.trail.length > 1 && planet.name !== "sun") {
+        ctx.beginPath();
+        ctx.moveTo(planet.trail[0].x, planet.trail[0].y);
+        for (let i = 1; i < planet.trail.length; i++) {
+            ctx.lineTo(planet.trail[i].x, planet.trail[i].y);
+        }
+        ctx.strokeStyle = `#${planet.color}`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
     }
     
-    // 绘制天体（太阳、行星、卫星、环）
-    function drawCelestialBody(planet) {
-        const x = centerX + planet.distance * Math.cos(planet.angle) * zoom;
-        const y = centerY + planet.distance * Math.sin(planet.angle) * zoom;
-        const radius = planet.radius * zoom;
+    // 绘制轨道（对非太阳天体）
+if (planet.distance > 0 && planet.name !== "sun") {
+    // 计算行星当前角度来确定光亮部分位置
+    const orbitSegments = 36; // 将轨道分为36段，每段10度
+    const angleStep = (Math.PI * 2) / orbitSegments;
+    
+    // 遍历轨道的每个段落，根据与太阳的角度关系设置不同的亮度
+    for (let i = 0; i < orbitSegments; i++) {
+        const startAngle = i * angleStep;
+        const endAngle = (i + 1) * angleStep;
         
-        // 绘制轨迹
-        if (planet.showTrail && planet.trail.length > 1 && planet.name !== "sun") {
-            ctx.beginPath();
-            ctx.moveTo(planet.trail[0].x, planet.trail[0].y);
-            for (let i = 1; i < planet.trail.length; i++) {
-                ctx.lineTo(planet.trail[i].x, planet.trail[i].y);
+        // 计算这个段落中点与太阳的角度关系
+        const segmentMidAngle = startAngle + angleStep / 2;
+        
+        // 与行星当前角度的差值决定亮度 (0是最亮，PI是最暗)
+        const angleDiffFromPlanet = Math.abs(segmentMidAngle - planet.angle);
+        
+        // 将角度差转换为亮度值 (0-0.3范围)
+        // 使用余弦函数，当角度差为0或2PI时亮度最高，角度差为PI时亮度最低
+        const brightness = 0.08 + (0.22 * (Math.cos(angleDiffFromPlanet) + 1) / 2);
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, planet.distance * zoom, startAngle, endAngle);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${brightness})`;
+        ctx.lineWidth = 1.5; // 增加轨道线宽度使其更显眼
+        ctx.stroke();
+    }
+}
+    
+    // ===== 根据行星类型进行特殊绘制 =====
+    // 太阳
+if (planet.name === "sun") {
+    ctx.save();
+    
+    // 1. 外部光晕 - 更柔和的大范围辉光，增加层次感
+    const outerGlowRadius = radius * 2.5;  // 扩大外部光晕范围
+    const outerGlow = ctx.createRadialGradient(
+        x, y, radius * 0.8,
+        x, y, outerGlowRadius
+    );
+    // 更丰富的颜色过渡
+    outerGlow.addColorStop(0, "rgba(255, 220, 100, 0.4)");
+    outerGlow.addColorStop(0.3, "rgba(255, 150, 50, 0.25)");
+    outerGlow.addColorStop(0.6, "rgba(255, 80, 20, 0.15)");
+    outerGlow.addColorStop(1, "rgba(255, 30, 0, 0)");
+    
+    ctx.beginPath();
+    ctx.arc(x, y, outerGlowRadius, 0, Math.PI * 2);
+    ctx.fillStyle = outerGlow;
+    ctx.fill();
+    
+    // 2. 内部发光 - 更强烈的核心光晕，增强中心亮度
+    const innerGlowRadius = radius * 1.4;  // 略微增大内部光晕
+    const innerGlow = ctx.createRadialGradient(
+        x, y, radius * 0.1,  // 让中心更小更亮
+        x, y, innerGlowRadius
+    );
+    innerGlow.addColorStop(0, "rgba(255, 255, 255, 0.95)");  // 中心几乎纯白
+    innerGlow.addColorStop(0.2, "rgba(255, 255, 220, 0.85)");
+    innerGlow.addColorStop(0.5, "rgba(255, 220, 50, 0.65)");
+    innerGlow.addColorStop(1, "rgba(255, 150, 20, 0)");
+    
+    ctx.beginPath();
+    ctx.arc(x, y, innerGlowRadius, 0, Math.PI * 2);
+    ctx.fillStyle = innerGlow;
+    ctx.fill();
+    
+    // 3. 太阳主体 - 使用更丰富的渐变，增加艺术效果
+    // 稍微偏移光源中心点，让光照更自然
+    const offsetX = radius * 0.25;
+    const offsetY = radius * 0.25;
+    const sunGradient = ctx.createRadialGradient(
+        x - offsetX, y - offsetY, radius * 0.05,
+        x, y, radius
+    );
+    sunGradient.addColorStop(0, "#FFFFFF");       // 中心为纯白色
+    sunGradient.addColorStop(0.2, "#FFFFA0");     // 向外过渡到亮黄色
+    sunGradient.addColorStop(0.5, "#FFDD00");     // 中间为金黄色
+    sunGradient.addColorStop(0.8, "#FF9500");     // 较暗的橙色
+    sunGradient.addColorStop(0.95, "#FF5500");    // 边缘为红橙色
+    sunGradient.addColorStop(1, "#FF3000");       // 最外层为深红色
+    
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = sunGradient;
+    ctx.fill();
+    
+    // 4. 添加表面纹理与动态效果
+    const time = Date.now() * 0.0001 + planet.rotationAngle; // 自转时间因子
+    
+    // 裁剪到太阳表面
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(time * 0.5); // 自转速度减慢，更自然
+    
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.clip();
+    
+    // 5. 太阳表面等离子体对流效果 - 模拟太阳表面的对流单元
+    const cellCount = 12; // 增加格子数量
+    const cellSize = radius * 1.5 / cellCount;
+    
+    // 绘制对流单元网格
+    for (let i = -cellCount; i < cellCount; i++) {
+        for (let j = -cellCount; j < cellCount; j++) {
+            const cellX = i * cellSize;
+            const cellY = j * cellSize;
+            const distFromCenter = Math.sqrt(cellX*cellX + cellY*cellY);
+            
+            // 只在太阳表面内部绘制
+            if (distFromCenter < radius * 0.95) {
+                const noise = Math.sin(i * 0.5 + time * 5) * Math.cos(j * 0.5 + time * 3) * 0.5 + 0.5;
+                const cellGradient = ctx.createRadialGradient(
+                    cellX, cellY, 0,
+                    cellX, cellY, cellSize * (0.8 + noise * 0.4)
+                );
+                
+                // 根据到中心的距离调整颜色
+                const brightness = 1 - (distFromCenter / radius) * 0.5;
+                const r = Math.floor(255 * brightness);
+                const g = Math.floor((180 + noise * 50) * brightness);
+                const b = Math.floor(noise * 50 * brightness);
+                
+                cellGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.8)`);
+                cellGradient.addColorStop(0.7, `rgba(${r-40}, ${g-60}, ${b}, 0.2)`);
+                cellGradient.addColorStop(1, "rgba(255, 100, 0, 0)");
+                
+                ctx.beginPath();
+                ctx.arc(cellX, cellY, cellSize * (0.5 + noise * 0.5), 0, Math.PI * 2);
+                ctx.fillStyle = cellGradient;
+                ctx.fill();
             }
-            ctx.strokeStyle = `#${planet.color}`;
-            ctx.lineWidth = 1.5;
+        }
+    }
+    
+    // 6. 优化太阳黑子效果 - 更逼真的黑子
+    const spotsCount = 8; // 增加黑子数量
+    for (let i = 0; i < spotsCount; i++) {
+        // 根据索引调整角度，使黑子分布更均匀
+        const angleOffset = (Math.PI * 2) / spotsCount;
+        const angle = (i * angleOffset) + Math.sin(time * 3) * 0.2;
+        
+        // 随时间变化的非线性距离
+        const variation = Math.sin(time * 2 + i * 1.4) * 0.25;
+        const dist = radius * (0.3 + variation * 0.5 + i * 0.05) % radius;
+        
+        // 黑子大小随距离和时间变化
+        const spotSize = radius * (0.08 + Math.abs(variation) * 0.07);
+        const spotX = Math.cos(angle) * dist;
+        const spotY = Math.sin(angle) * dist;
+        
+        // 黑子有更复杂的结构 - 本影和半影
+        // 黑子本影
+        const umbra = ctx.createRadialGradient(
+            spotX, spotY, 0,
+            spotX, spotY, spotSize
+        );
+        umbra.addColorStop(0, "rgba(10, 0, 0, 0.95)");
+        umbra.addColorStop(0.5, "rgba(30, 5, 0, 0.9)");
+        umbra.addColorStop(0.7, "rgba(60, 15, 0, 0.7)");
+        umbra.addColorStop(1, "rgba(120, 40, 0, 0)");
+        
+        ctx.beginPath();
+        ctx.arc(spotX, spotY, spotSize, 0, Math.PI * 2);
+        ctx.fillStyle = umbra;
+        ctx.fill();
+        
+        // 黑子半影 - 周围的纤维结构
+        const penumbraSize = spotSize * 1.8;
+        ctx.strokeStyle = "rgba(180, 60, 0, 0.15)";
+        
+        // 绘制放射状纤维
+        for (let j = 0; j < 12; j++) {
+            const fiberAngle = (j / 12) * Math.PI * 2;
+            const fiberLength = penumbraSize * (0.8 + Math.random() * 0.4);
+            
+            ctx.beginPath();
+            ctx.moveTo(
+                spotX + Math.cos(fiberAngle) * spotSize * 0.7,
+                spotY + Math.sin(fiberAngle) * spotSize * 0.7
+            );
+            
+            // 使用二次贝塞尔曲线绘制弯曲的纤维
+            const cpDist = spotSize * 1.2;
+            const cpAngleOffset = Math.sin(time * 5 + j) * 0.2;
+            
+            ctx.quadraticCurveTo(
+                spotX + Math.cos(fiberAngle + cpAngleOffset) * cpDist,
+                spotY + Math.sin(fiberAngle + cpAngleOffset) * cpDist,
+                spotX + Math.cos(fiberAngle) * fiberLength,
+                spotY + Math.sin(fiberAngle) * fiberLength
+            );
+            
+            ctx.lineWidth = spotSize * 0.1;
+            ctx.stroke();
+        }
+    }
+    
+    // 恢复太阳表面裁剪
+    ctx.restore();
+    
+    // 7. 太阳耀斑 - 全新设计，更自然的曲线和动态变化
+    const flareCount = 9; // 增加耀斑数量
+    for (let i = 0; i < flareCount; i++) {
+        // 非均匀分布的耀斑角度
+        const flareAngle = (i / flareCount) * Math.PI * 2 + Math.sin(time * 3 + i) * 0.2;
+        const flareTime = time * 8 + i * 2.5;
+        // 耀斑大小随时间变化
+        const flareIntensity = 0.6 + Math.sin(flareTime * 0.5) * 0.4;
+        const flareSize = radius * (0.6 + Math.sin(flareTime) * 0.3) * flareIntensity;
+        
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(flareAngle);
+        
+        // 使用三次贝塞尔曲线绘制更复杂的耀斑形状
+        ctx.beginPath();
+        ctx.moveTo(radius * 0.92, 0);
+        
+        // 复杂的控制点计算，使耀斑看起来更自然且动态
+        const cp1x = radius * (1.1 + Math.sin(flareTime * 0.3) * 0.1);
+        const cp1y = radius * 0.4 * Math.sin(flareTime * 0.7);
+        
+        const cp2x = radius * (1.4 + Math.cos(flareTime * 0.5) * 0.15);
+        const cp2y = radius * 0.25 * Math.sin(flareTime * 0.9);
+        
+        const cp3x = radius * (1.6 + Math.sin(flareTime * 0.4) * 0.2);
+        const cp3y = radius * 0.15 * Math.sin(flareTime * 1.1);
+        
+        const endX = radius * (1.4 + Math.sin(flareTime * 0.3) * 0.3) * flareIntensity;
+        const endY = 0;
+        
+        // 使用贝塞尔曲线绘制上半部分
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, cp3x, cp3y);
+        ctx.bezierCurveTo(endX, endY, endX, -endY, cp3x, -cp3y);
+        ctx.bezierCurveTo(cp2x, -cp2y, cp1x, -cp1y, radius * 0.92, 0);
+        
+        // 使用渐变填充，增强发光效果
+        const flareGradient = ctx.createRadialGradient(
+            radius, 0, 0,
+            radius, 0, flareSize
+        );
+        flareGradient.addColorStop(0, "rgba(255, 255, 240, 0.9)");
+        flareGradient.addColorStop(0.3, "rgba(255, 220, 100, 0.7)");
+        flareGradient.addColorStop(0.6, "rgba(255, 180, 30, 0.5)");
+        flareGradient.addColorStop(0.8, "rgba(255, 120, 0, 0.3)");
+        flareGradient.addColorStop(1, "rgba(255, 60, 0, 0)");
+        
+        ctx.fillStyle = flareGradient;
+        ctx.fill();
+        
+        // 添加耀斑中的明亮纹理线
+        if (flareIntensity > 0.7) {
+            ctx.beginPath();
+            ctx.moveTo(radius * 0.95, 0);
+            ctx.bezierCurveTo(
+                cp1x * 0.95, cp1y * 0.5,
+                cp2x * 0.95, cp2y * 0.5,
+                endX * 0.9, 0
+            );
+            ctx.strokeStyle = "rgba(255, 255, 220, 0.6)";
+            ctx.lineWidth = radius * 0.02;
             ctx.stroke();
         }
         
-        // 特殊行星效果
-        if (planet.name === "earth") {
-            // 地球大气层效果
-            ctx.beginPath();
-            ctx.arc(x, y, radius * 1.05, 0, Math.PI * 2);
-            let atmosphere = ctx.createRadialGradient(
-                x, y, radius,
-                x, y, radius * 1.05
-            );
-            atmosphere.addColorStop(0, "rgba(135, 206, 250, 0.5)");
-            atmosphere.addColorStop(1, "rgba(135, 206, 250, 0)");
-            ctx.fillStyle = atmosphere;
-            ctx.fill();
-        }
-        
-        if (planet.name === "jupiter") {
-            // 绘制木星基本圆形
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            // 使用简单的纯色填充
-            ctx.fillStyle = "#e0b44e"; // 木星的橙黄色
-            ctx.fill();
-            
-            // 添加简单的阴影效果增加立体感
-            ctx.beginPath();
-            ctx.arc(x, y, radius, -Math.PI/2, Math.PI/2);
-            ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-            ctx.fill();
-            
-            // 添加高光效果
-            ctx.beginPath();
-            ctx.arc(x, y, radius, Math.PI/2, -Math.PI/2);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-            ctx.fill();
-            
-            // 添加大红斑
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(planet.angle * 0.03);
-            ctx.beginPath();
-            ctx.ellipse(radius * 0.3, -radius * 0.3, radius * 0.3, radius * 0.15, 0, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(187, 62, 3, 0.8)";
-            ctx.fill();
-            ctx.restore();
-        }
-        else if (planet.name === "saturn") {
-            // 绘制土星本体
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fillStyle = `#${planet.color}`;
-            ctx.fill();
-            ctx.save();
-            ctx.translate(x, y);
-            // 轻微旋转以模拟动态行星旋转
-            ctx.rotate(planet.angle * 0.5);  
-            ctx.restore();
-        }
-        
-        // --- 太阳特殊绘制 ---
-        if (planet.name === "sun") {
-            ctx.save(); // 保存状态，隔离太阳的特殊效果
-            
-            // 1. 太阳辉光 (模拟 CSS box-shadow)
-            ctx.shadowColor = `#${planet.color}`; // 使用行星颜色作为基准
-            ctx.shadowBlur = 30 * zoom; // 辉光模糊半径，随缩放调整
-            
-            // 2. 太阳表面渐变 (模拟 CSS radial-gradient)
-            const gradX = x; // 渐变中心X (保持在中心)
-            const gradY = y; // 渐变中心Y
-            const gradient = ctx.createRadialGradient(
-                gradX, gradY, radius * 0.1, // 内圆 (小，中心)
-                gradX, gradY, radius        // 外圆 (覆盖整个太阳)
-            );
-            
-            // 添加颜色断点 (从亮黄到橙红)
-            gradient.addColorStop(0, "#FFF7A0"); // 中心更亮
-            gradient.addColorStop(0.6, `#${planet.color}`); // 主体颜色
-            gradient.addColorStop(1, "#FF4500"); // 边缘橙红
-            ctx.fillStyle = gradient;
-            
-            // 3. 绘制太阳圆
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.restore(); // 恢复状态 (移除阴影, 重置填充样式)
-        }
-        // --- 其他行星绘制 ---
-        else {
-            // 1. 绘制轨道
-            if (planet.distance > 0) {
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, planet.distance * zoom, 0, Math.PI * 2);
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.15)"; // 稍微调亮轨道
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-            
-            // 2. 绘制环 (在行星之前绘制)
-            if (planet.rings) {
-                ctx.save();
-                ctx.translate(x, y);
-                 // 稍微倾斜环以模拟视角
-                ctx.rotate(planet.angle * 0.05 + Math.PI / 12); // 轻微旋转+固定倾斜
-                ctx.scale(1, 0.35); // 压扁成椭圆
-                const ringOuterRadius = planet.ringOuter * zoom;
-                const ringInnerRadius = planet.ringInner * zoom;
-                
-                // 绘制环带颜色 (半透明)
-                ctx.beginPath();
-                ctx.arc(0, 0, ringOuterRadius, 0, Math.PI * 2);
-                ctx.arc(0, 0, ringInnerRadius, 0, Math.PI * 2, true); // 逆时针挖掉内部
-                ctx.fillStyle = planet.ringColor ? `#${planet.ringColor}80` : "rgba(200, 200, 200, 0.5)"; // 添加透明度
-                ctx.fill();
-                
-                 // 可选：绘制环的边缘线增加清晰度
-                 ctx.beginPath();
-                 ctx.arc(0, 0, ringOuterRadius, 0, Math.PI * 2);
-                 ctx.strokeStyle = planet.ringColor ? `#${planet.ringColor}B0` : "rgba(220, 220, 220, 0.7)";
-                 ctx.lineWidth = 1 / 0.35; // 因为缩放了，线宽要反向调整
-                 ctx.stroke();
-                 
-                 ctx.beginPath();
-                 ctx.arc(0, 0, ringInnerRadius, 0, Math.PI * 2);
-                 ctx.strokeStyle = planet.ringColor ? `#${planet.ringColor}B0` : "rgba(220, 220, 220, 0.7)";
-                 ctx.lineWidth = 1 / 0.35;
-                 ctx.stroke();
-                 
-                ctx.restore();
-            }
-            
-            // 3. 绘制行星本体
-            ctx.beginPath();
-            ctx.arc(x, y, Math.max(1, radius), 0, Math.PI * 2); // 保证最小半径为1像素
-            ctx.fillStyle = `#${planet.color}`;
-            ctx.fill();
-            
-            // 4. 绘制卫星及其轨道
-            if (planet.moons && Array.isArray(planet.moons)) {
-                planet.moons.forEach(moon => {
-                    const moonOrbitRadius = moon.distance * zoom;
-                    const moonX = x + moonOrbitRadius * Math.cos(moon.angle);
-                    const moonY = y + moonOrbitRadius * Math.sin(moon.angle);
-                    const moonRadius = Math.max(1, moon.radius * zoom); // 保证最小半径
-                    
-                    // 绘制卫星轨道 (更细、更暗)
-                    ctx.beginPath();
-                    ctx.arc(x, y, moonOrbitRadius, 0, Math.PI * 2);
-                    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                    
-                    // 绘制卫星
-                    ctx.beginPath();
-                    ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = "#CCCCCC"; // 卫星统一用灰色
-                    ctx.fill();
-                });
-            }
-        } // --- End of else (non-sun) ---
-        
-        // --- 更新标签位置 (对所有天体都执行) ---
-        const labelElem = document.getElementById(`${planet.name}-label`);
-        if (labelElem) {
-            // 定位在天体正上方
-            const labelTop = y - radius - labelElem.offsetHeight - 5; // 5px间距
-            // 使用 transform translateX(-50%) 来居中
-            labelElem.style.left = `${x}px`;
-            labelElem.style.top = `${labelTop}px`;
-            labelElem.style.opacity = showLabels ? "1" : "0";
-            // 标签不应阻止对行星的点击
-            labelElem.style.pointerEvents = 'none';
-        }
-        
-        // 返回屏幕坐标和大小，用于点击检测
-        return { x, y, radius: radius, name: planet.name };
+        ctx.restore();
     }
     
+    // 8. 脉动效果 - 使太阳有微妙的呼吸效果
+    const pulseSpeed = 3; // 调整脉动速度
+    const pulseAmplitude = 0.04; // 增大脉动幅度
+    const pulsePhase = Math.sin(time * pulseSpeed) * pulseAmplitude;
+    const pulseRadius = radius * (1 + pulsePhase);
+    
+    ctx.beginPath();
+    ctx.arc(x, y, pulseRadius, 0, Math.PI * 2);
+    // 脉动发光效果
+    const pulseColor = Math.floor(200 + 55 * Math.sin(time * pulseSpeed));
+    ctx.fillStyle = `rgba(255, ${pulseColor}, 180, 0.25)`;
+    ctx.fill();
+    
+    // 9. 添加光晕边缘闪烁效果
+    ctx.save();
+    ctx.translate(x, y);
+    
+    for (let i = 0; i < 36; i++) {
+        const sparkAngle = (i / 36) * Math.PI * 2;
+        const sparkTime = time * 12 + i * 0.5;
+        const sparkLength = radius * 0.15 * (0.5 + Math.abs(Math.sin(sparkTime)));
+        
+        ctx.save();
+        ctx.rotate(sparkAngle);
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(radius + sparkLength, 0);
+        
+        ctx.strokeStyle = `rgba(255, 255, 200, ${0.4 * Math.sin(sparkTime) * Math.sin(sparkTime)})`;
+        ctx.lineWidth = radius * 0.03;
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    ctx.restore();
+    
+    // 10. 最终光晕效果 - 增加整体辉光
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 1.05, 0, Math.PI * 2);
+    const finalGlow = ctx.createRadialGradient(
+        x, y, radius * 0.8,
+        x, y, radius * 1.05
+    );
+    finalGlow.addColorStop(0, "rgba(255, 255, 200, 0.4)");
+    finalGlow.addColorStop(1, "rgba(255, 200, 100, 0)");
+    ctx.fillStyle = finalGlow;
+    ctx.fill();
+    
+    ctx.restore(); // 恢复初始状态
+}
+    // 水星
+    else if (planet.name === "mercury") {
+        ctx.save();
+        // 1. 基础表面 - 使用更丰富的渐变
+        const mercuryGradient = ctx.createRadialGradient(
+            x - radius * 0.3, y - radius * 0.3, 0,
+            x, y, radius
+        );
+        mercuryGradient.addColorStop(0, "#E0E0E0"); // 更亮的灰色
+        mercuryGradient.addColorStop(0.7, "#B0B0B0"); // 中间灰色
+        mercuryGradient.addColorStop(1, "#707070"); // 边缘更暗的灰色
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = mercuryGradient;
+        ctx.fill();
+        // 2. 水星表面纹理 - 预定义固定位置的陨石坑
+        ctx.save();
+        ctx.translate(x, y);
+        // 使用自转角度
+        ctx.rotate(planet.rotationAngle);
+        // 裁剪到水星内部
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.clip();
+        // 3. 预定义陨石坑区域（给它们固定位置而不是随机）
+        const craterPositions = [
+            {x: -0.5, y: -0.4, size: 0.25},
+            {x: 0.3, y: 0.2, size: 0.18},
+            {x: 0.1, y: -0.5, size: 0.2},
+            {x: -0.3, y: 0.6, size: 0.15},
+            {x: 0.6, y: -0.1, size: 0.23},
+            {x: -0.6, y: 0.3, size: 0.17},
+            {x: 0.5, y: 0.5, size: 0.12},
+            {x: -0.2, y: -0.7, size: 0.14},
+            {x: -0.7, y: -0.1, size: 0.19},
+            {x: 0.4, y: -0.6, size: 0.16}
+        ];
+        // 4. 使用3D阴影技术绘制更明显的陨石坑
+        craterPositions.forEach(crater => {
+            const craterX = radius * crater.x;
+            const craterY = radius * crater.y;
+            const craterSize = radius * crater.size;
+            // 绘制陨石坑，使用多层次增强3D效果
+            // 外环 - 陨石坑隆起边缘
+            ctx.beginPath();
+            ctx.arc(craterX, craterY, craterSize * 1.1, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(180, 180, 180, 0.7)";
+            ctx.fill();
+            // 中间环 - 陨石坑平面
+            ctx.beginPath();
+            ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(100, 100, 100, 0.6)";
+            ctx.fill();
+            // 内环 - 陨石坑中央
+            ctx.beginPath();
+            ctx.arc(craterX, craterY, craterSize * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(60, 60, 60, 0.7)";
+            ctx.fill();
+            // 添加阴影效果 - 增强3D感
+            // 右下方高光
+            ctx.beginPath();
+            ctx.arc(craterX + craterSize*0.2, craterY + craterSize*0.2,
+                    craterSize * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(210, 210, 210, 0.3)";
+            ctx.fill();
+            // 左上方阴影
+            ctx.beginPath();
+            ctx.arc(craterX - craterSize*0.2, craterY - craterSize*0.2,
+                    craterSize * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(40, 40, 40, 0.4)";
+            ctx.fill();
+        });
+        // 5. 添加一些大型构造特征 - 模拟卡洛里斯盆地等
+        ctx.beginPath();
+        ctx.ellipse(radius * 0.1, radius * 0.2, radius * 0.6, radius * 0.4, Math.PI/4, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(120, 120, 120, 0.5)";
+        ctx.lineWidth = radius * 0.03;
+        ctx.stroke();
+        // 6. 添加明显的表面纹理 - 模拟水星的褶皱和崎岖地形
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI;
+            const length = radius * 1.8;
+            ctx.beginPath();
+            ctx.moveTo(-Math.cos(angle) * radius, -Math.sin(angle) * radius);
+            ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+            ctx.strokeStyle = "rgba(130, 130, 130, 0.3)";
+            ctx.lineWidth = radius * 0.01;
+            ctx.stroke();
+        }
+        ctx.restore(); // 恢复旋转和平移
+        // 7. 轻微环境光反射
+        ctx.beginPath();
+        ctx.arc(x - radius * 0.5, y - radius * 0.5, radius * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.fill();
+        ctx.restore(); // 恢复所有状态
+    }
+    // 金星
+    else if (planet.name === "venus") {
+        ctx.save();
+        // 基础金黄色表面
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        // 创建表面渐变
+        const venusGradient = ctx.createRadialGradient(
+            x - radius * 0.2, y - radius * 0.2, 0,
+            x, y, radius
+        );
+        venusGradient.addColorStop(0, "#FFE6B5");
+        venusGradient.addColorStop(1, "#E6C073");
+        ctx.fillStyle = venusGradient;
+        ctx.fill();
+        // 添加云层效果
+        ctx.save();
+        ctx.translate(x, y);
+        // 旋转云层以创建动态效果
+        ctx.rotate(planet.rotationAngle);
+        // 裁剪到金星内部
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.clip();
+        // 添加涡旋云层效果
+        const spiralCount = 3;
+        const spiralWidth = radius * 0.3;
+        for (let i = 0; i < spiralCount; i++) {
+            const startAngle = (i / spiralCount) * Math.PI * 2;
+            ctx.beginPath();
+            for (let j = 0; j <= 20; j++) {
+                const angle = startAngle + (j / 10) * Math.PI * 2;
+                const spiralRadius = (j / 20) * radius;
+                const x = Math.cos(angle) * spiralRadius;
+                const y = Math.sin(angle) * spiralRadius;
+                if (j === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = spiralWidth;
+            ctx.stroke();
+        }
+        // 添加随机云块
+        const cloudCount = 8;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+        for (let i = 0; i < cloudCount; i++) {
+            const cloudAngle = Math.random() * Math.PI * 2;
+            const cloudDist = Math.random() * radius * 0.8;
+            const cloudSize = Math.random() * radius * 0.3 + radius * 0.1;
+            const cloudX = Math.cos(cloudAngle) * cloudDist;
+            const cloudY = Math.sin(cloudAngle) * cloudDist;
+            ctx.beginPath();
+            ctx.arc(cloudX, cloudY, cloudSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore(); // 恢复裁剪
+        // 最后添加基本大气效果
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 1.05, 0, Math.PI * 2);
+        const atmosphere = ctx.createRadialGradient(
+            x, y, radius,
+            x, y, radius * 1.05
+        );
+        atmosphere.addColorStop(0, "rgba(255, 230, 150, 0.4)");
+        atmosphere.addColorStop(1, "rgba(255, 230, 150, 0)");
+        ctx.fillStyle = atmosphere;
+        ctx.fill();
+        ctx.restore(); // 恢复初始状态
+    }
+    // 地球
+    else if (planet.name === "earth") {
+        ctx.save(); // 保存当前状态
+        // 绘制基础海洋
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#0077be"; // 海洋蓝
+        ctx.fill();
+        // 绘制大陆
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(planet.rotationAngle); // 地球自转
+        // 裁剪到地球内部
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.clip();
+        // 北美大陆 (简化为一个形状)
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.3, -radius * 0.3);
+        ctx.lineTo(-radius * 0.5, -radius * 0.1);
+        ctx.lineTo(-radius * 0.3, radius * 0.2);
+        ctx.lineTo(-radius * 0.1, radius * 0.3);
+        ctx.lineTo(radius * 0.1, 0);
+        ctx.lineTo(0, -radius * 0.3);
+        ctx.closePath();
+        ctx.fillStyle = "#4caf50"; // 绿色大陆
+        ctx.fill();
+        // 欧亚大陆
+        ctx.beginPath();
+        ctx.moveTo(0, -radius * 0.3);
+        ctx.lineTo(radius * 0.4, -radius * 0.1);
+        ctx.lineTo(radius * 0.4, radius * 0.2);
+        ctx.lineTo(0, radius * 0.4);
+        ctx.lineTo(-radius * 0.2, radius * 0.3);
+        ctx.closePath();
+        ctx.fillStyle = "#4caf50"; // 绿色大陆
+        ctx.fill();
+        // 南极洲
+        ctx.beginPath();
+        ctx.arc(0, radius * 0.7, radius * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = "#FFFFFF"; // 白色极地
+        ctx.fill();
+        ctx.restore(); // 恢复到平移前
+        // 云层效果 - 在行星上方以半透明白色绘制
+        ctx.save();
+        ctx.translate(x, y);
+        // 云层随时间移动，不跟随行星旋转
+        const cloudRotation = Date.now() * 0.0002;
+        ctx.rotate(cloudRotation);
+        // 绘制几朵云
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        for (let i = 0; i < 4; i++) {
+            const cloudAngle = (i / 4) * Math.PI * 2;
+            const cloudX = Math.cos(cloudAngle) * (radius * 0.7);
+            const cloudY = Math.sin(cloudAngle) * (radius * 0.7);
+            const cloudSize = radius * 0.3;
+            ctx.beginPath();
+            ctx.arc(cloudX, cloudY, cloudSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore(); // 恢复到平移前
+        // 大气层效果
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 1.05, 0, Math.PI * 2);
+        const atmosphere = ctx.createRadialGradient(
+            x, y, radius,
+            x, y, radius * 1.05
+        );
+        atmosphere.addColorStop(0, "rgba(135, 206, 250, 0.3)");
+        atmosphere.addColorStop(1, "rgba(135, 206, 250, 0)");
+        ctx.fillStyle = atmosphere;
+        ctx.fill();
+        ctx.restore(); // 恢复到初始状态
+    }
+    // 火星
+    else if (planet.name === "mars") {
+        ctx.save();
+        // 基础红色表面
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        // 创建表面渐变
+        const marsGradient = ctx.createRadialGradient(
+            x - radius * 0.2, y - radius * 0.2, 0,
+            x, y, radius
+        );
+        marsGradient.addColorStop(0, "#ff6b5a"); // 亮红色
+        marsGradient.addColorStop(1, "#c1440e"); // 深红色
+        ctx.fillStyle = marsGradient;
+        ctx.fill();
+        // 添加表面特征
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(planet.rotationAngle); // 火星自转
+        // 裁剪到火星内部
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.clip();
+        // 添加一些暗色区域模拟火星高地和谷地
+        const regionsCount = 3;
+        for (let i = 0; i < regionsCount; i++) {
+            const regionAngle = (i / regionsCount) * Math.PI * 2;
+            const regionX = Math.cos(regionAngle) * (radius * 0.4);
+            const regionY = Math.sin(regionAngle) * (radius * 0.4);
+            const regionSize = radius * 0.5;
+            ctx.beginPath();
+            ctx.arc(regionX, regionY, regionSize, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(100, 30, 0, 0.2)";
+            ctx.fill();
+        }
+        // 添加几个陨石坑
+        const cratersCount = 5;
+        for (let i = 0; i < cratersCount; i++) {
+            const craterAngle = Math.random() * Math.PI * 2;
+            const craterDist = Math.random() * radius * 0.7;
+            const craterSize = Math.random() * radius * 0.1 + radius * 0.05;
+            const craterX = Math.cos(craterAngle) * craterDist;
+            const craterY = Math.sin(craterAngle) * craterDist;
+            ctx.beginPath();
+            ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(80, 20, 0, 0.3)";
+            ctx.fill();
+        }
+        ctx.restore(); // 恢复裁剪
+        // 添加极冰帽
+        const capSize = radius * 0.25;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        // 南极冰帽
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(planet.rotationAngle); // 与自转相同的角度
+        ctx.beginPath();
+        ctx.arc(0, radius * 0.75, capSize, 0, Math.PI * 2);
+        ctx.fill();
+        // 北极冰帽
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.75, capSize * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore(); // 恢复平移和旋转
+        // 薄大气层效果
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 1.03, 0, Math.PI * 2);
+        const atmosphere = ctx.createRadialGradient(
+            x, y, radius,
+            x, y, radius * 1.03
+        );
+        atmosphere.addColorStop(0, "rgba(255, 150, 120, 0.2)");
+        atmosphere.addColorStop(1, "rgba(255, 150, 120, 0)");
+        ctx.fillStyle = atmosphere;
+        ctx.fill();
+        ctx.restore(); // 恢复初始状态
+    }
+    // 木星
+    else if (planet.name === "jupiter") {
+        ctx.save();
+        // 基础绘制
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#e0b44e"; // 基础颜色
+        ctx.fill();
+        // 添加条纹
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(planet.rotationAngle); // 自转
+        // 裁剪到木星范围内
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.clip();
+        // 绘制条纹
+        const stripesCount = 7;
+        for (let i = -stripesCount; i <= stripesCount; i++) {
+            const yPos = (i / stripesCount) * radius * 1.5;
+            const stripesHeight = radius * 0.25;
+            ctx.fillStyle = i % 2 === 0 ?
+                "rgba(160, 82, 45, 0.4)" : // 暗色条纹
+                "rgba(210, 180, 140, 0.3)"; // 亮色条纹
+            ctx.fillRect(-radius, yPos - stripesHeight/2, radius * 2, stripesHeight);
+        }
+        // 大红斑
+        ctx.beginPath();
+        ctx.ellipse(radius * 0.4, -radius * 0.2, radius * 0.4, radius * 0.2, 0, 0, Math.PI * 2);
+        const spotGradient = ctx.createRadialGradient(
+            radius * 0.4, -radius * 0.2, 0,
+            radius * 0.4, -radius * 0.2, radius * 0.4
+        );
+        spotGradient.addColorStop(0, "#FF6347"); // 中心亮色
+        spotGradient.addColorStop(0.7, "#8B0000"); // 边缘暗色
+        spotGradient.addColorStop(1, "rgba(139, 0, 0, 0.7)");
+        ctx.fillStyle = spotGradient;
+        ctx.fill();
+        ctx.restore(); // 恢复剪裁
+        ctx.restore(); // 恢复初始状态
+    }
+    // 土星
+else if (planet.name === "saturn") {
+    ctx.save();
+    // 绘制行星背后的环部分
+    if (planet.rings) {
+        ctx.save();
+        ctx.translate(x, y);
+        // 倾斜环系
+        ctx.rotate(Math.PI / 12);
+        ctx.scale(1, 0.35);
+        
+        const ringOuterRadius = planet.ringOuter * zoom;
+        const ringInnerRadius = planet.ringInner * zoom;
+        
+        // 绘制环的后半部分（下半部分）
+        ctx.beginPath();
+        ctx.arc(0, 0, ringOuterRadius, 0, Math.PI, false); // 只绘制下半圆
+        ctx.arc(0, 0, ringInnerRadius, Math.PI, 0, true); // 逆时针回到起点
+        ctx.closePath();
+        
+        // 创建环的渐变
+        const ringGradient = ctx.createLinearGradient(0, -ringOuterRadius, 0, ringOuterRadius);
+        ringGradient.addColorStop(0, "rgba(230, 220, 210, 0.7)");
+        ringGradient.addColorStop(0.5, "rgba(200, 180, 160, 0.5)");
+        ringGradient.addColorStop(1, "rgba(230, 220, 210, 0.7)");
+        ctx.fillStyle = ringGradient;
+        ctx.fill();
+        
+        // 绘制卡西尼缝隙（后半部分）
+        const cassiniRadius = ringOuterRadius * 0.73;
+        ctx.beginPath();
+        ctx.arc(0, 0, cassiniRadius, 0, Math.PI, false);
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.lineWidth = 2 / 0.35;
+        ctx.stroke();
+        
+        ctx.restore(); // 恢复缩放和旋转
+    }
+    
+    // 基础绘制土星本体
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    // 创建渐变
+    const saturnGradient = ctx.createRadialGradient(
+        x - radius * 0.2, y - radius * 0.2, 0,
+        x, y, radius
+    );
+    saturnGradient.addColorStop(0, "#FFF0D1");
+    saturnGradient.addColorStop(1, "#e0b44e");
+    ctx.fillStyle = saturnGradient;
+    ctx.fill();
+    
+    // 添加条纹
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(planet.rotationAngle); // 自转
+    // 裁剪到土星内部
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.clip();
+    // 绘制较细的条纹
+    const stripesCount = 5;
+    for (let i = -stripesCount; i <= stripesCount; i++) {
+        const yPos = (i / stripesCount) * radius * 1.2;
+        const stripesHeight = radius * 0.15;
+        ctx.fillStyle = i % 2 === 0 ?
+            "rgba(180, 140, 90, 0.3)" : // 暗色条纹
+            "rgba(240, 220, 180, 0.2)"; // 亮色条纹
+        ctx.fillRect(-radius, yPos - stripesHeight/2, radius * 2, stripesHeight);
+    }
+    ctx.restore(); // 恢复裁剪
+    
+    // 绘制环的前半部分（上半部分）
+    if (planet.rings) {
+        ctx.save();
+        ctx.translate(x, y);
+        // 倾斜环系
+        ctx.rotate(Math.PI / 12);
+        ctx.scale(1, 0.35);
+        
+        const ringOuterRadius = planet.ringOuter * zoom;
+        const ringInnerRadius = planet.ringInner * zoom;
+        
+        // 绘制环的前半部分（上半部分）
+        ctx.beginPath();
+        ctx.arc(0, 0, ringOuterRadius, Math.PI, Math.PI * 2, false); // 只绘制上半圆
+        ctx.arc(0, 0, ringInnerRadius, Math.PI * 2, Math.PI, true); // 逆时针回到起点
+        ctx.closePath();
+        
+        // 创建环的渐变
+        const ringGradient = ctx.createLinearGradient(0, -ringOuterRadius, 0, ringOuterRadius);
+        ringGradient.addColorStop(0, "rgba(230, 220, 210, 0.7)");
+        ringGradient.addColorStop(0.5, "rgba(200, 180, 160, 0.5)");
+        ringGradient.addColorStop(1, "rgba(230, 220, 210, 0.7)");
+        ctx.fillStyle = ringGradient;
+        ctx.fill();
+        
+        // 绘制卡西尼缝隙（前半部分）
+        const cassiniRadius = ringOuterRadius * 0.73;
+        ctx.beginPath();
+        ctx.arc(0, 0, cassiniRadius, Math.PI, Math.PI * 2, false);
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.lineWidth = 2 / 0.35;
+        ctx.stroke();
+        
+        // 增加环的边缘线以增强清晰度
+        ctx.beginPath();
+        ctx.arc(0, 0, ringOuterRadius, Math.PI, Math.PI * 2, false);
+        ctx.strokeStyle = "rgba(230, 220, 210, 0.8)";
+        ctx.lineWidth = 1 / 0.35;
+        ctx.stroke();
+        
+        ctx.restore(); // 恢复缩放和旋转
+    }
+    
+    ctx.restore(); // 恢复初始状态
+}
+    // 天王星
+else if (planet.name === "uranus") {
+    ctx.save();
+    // 基础绘制 - 更丰富的蓝绿色渐变
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    
+    // 创建更复杂的表面渐变，增加色彩层次
+    const uranusGradient = ctx.createRadialGradient(
+        x - radius * 0.3, y - radius * 0.3, radius * 0.1,
+        x, y, radius
+    );
+    uranusGradient.addColorStop(0, "#E1FFFA"); // 更亮的高光
+    uranusGradient.addColorStop(0.4, "#A2E7E2"); // 中间色调
+    uranusGradient.addColorStop(0.7, "#64B8B0"); // 基础色
+    uranusGradient.addColorStop(1, "#4A9992"); // 边缘更深的颜色
+    
+    ctx.fillStyle = uranusGradient;
+    ctx.fill();
+    
+    // 添加北极南极帽 - 天王星两极略带不同色调
+    const poleRadius = radius * 0.3;
+    
+    // 南极
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.PI / 2 + planet.rotationAngle);
+    ctx.beginPath();
+    ctx.arc(0, radius * 0.7, poleRadius, 0, Math.PI * 2);
+    const southPoleGradient = ctx.createRadialGradient(
+        0, radius * 0.7, 0,
+        0, radius * 0.7, poleRadius
+    );
+    southPoleGradient.addColorStop(0, "rgba(160, 230, 225, 0.4)");
+    southPoleGradient.addColorStop(1, "rgba(160, 230, 225, 0)");
+    ctx.fillStyle = southPoleGradient;
+    ctx.fill();
+    
+    // 北极
+    ctx.beginPath();
+    ctx.arc(0, -radius * 0.7, poleRadius, 0, Math.PI * 2);
+    const northPoleGradient = ctx.createRadialGradient(
+        0, -radius * 0.7, 0,
+        0, -radius * 0.7, poleRadius
+    );
+    northPoleGradient.addColorStop(0, "rgba(180, 250, 245, 0.5)");
+    northPoleGradient.addColorStop(1, "rgba(180, 250, 245, 0)");
+    ctx.fillStyle = northPoleGradient;
+    ctx.fill();
+    ctx.restore();
+    
+    // 添加更自然的云带纹理
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.PI / 2 + planet.rotationAngle);
+    
+    // 裁剪到行星内部
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.clip();
+    
+    // 绘制多层次云带 - 使用不同宽度和透明度的条纹
+    const bandCount = 12; // 增加条纹数量
+    
+    // 绘制细条带
+    for (let i = -bandCount; i <= bandCount; i++) {
+        const yPos = (i / bandCount) * radius;
+        // 随机化条带高度和透明度
+        const bandHeight = radius * (0.05 + Math.random() * 0.05);
+        const opacity = 0.05 + Math.random() * 0.1;
+        
+        // 根据位置变化颜色 - 接近两极时偏蓝，赤道处偏绿
+        const colorMix = Math.abs(i) / bandCount; // 0靠近赤道，1靠近极点
+        const greenValue = Math.floor(220 + colorMix * 20);
+        const blueValue = Math.floor(230 + colorMix * 25);
+        
+        ctx.fillStyle = `rgba(180, ${greenValue}, ${blueValue}, ${opacity})`;
+        ctx.fillRect(-radius * 1.2, yPos - bandHeight/2, radius * 2.4, bandHeight);
+    }
+    
+    // 添加一些更清晰可见的特征云团
+    for (let i = 0; i < 6; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * radius * 0.7;
+        const size = radius * (0.1 + Math.random() * 0.15);
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200, 255, 250, ${0.1 + Math.random() * 0.15})`;
+        ctx.fill();
+    }
+    
+    ctx.restore(); // 恢复裁剪
+    
+    // 绘制更精细的环系
+    if (planet.rings) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // 天王星的环系几乎垂直于轨道平面
+        ctx.rotate(Math.PI / 2);
+        ctx.scale(1, 0.05); // 扁平的环
+        
+        const ringOuterRadius = planet.ringOuter * zoom;
+        const ringInnerRadius = planet.ringInner * zoom;
+        
+        // 绘制多层环带，增加细节
+        const ringLayers = 5;
+        const ringWidth = (ringOuterRadius - ringInnerRadius) / ringLayers;
+        
+        for (let i = 0; i < ringLayers; i++) {
+            const innerR = ringInnerRadius + i * ringWidth;
+            const outerR = innerR + ringWidth;
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, outerR, 0, Math.PI * 2);
+            ctx.arc(0, 0, innerR, 0, Math.PI * 2, true);
+            
+            // 交替不同亮度的环带
+            const opacity = i % 2 === 0 ? 0.35 : 0.2;
+            ctx.fillStyle = `rgba(220, 240, 240, ${opacity})`;
+            ctx.fill();
+        }
+        
+        // 添加细小的裂缝和间隙 - 天王星环有几个窄间隙
+        const gapPositions = [ringInnerRadius + ringWidth * 1.5, ringInnerRadius + ringWidth * 3.2];
+        const gapWidth = ringWidth * 0.2;
+        
+        for (const gapPos of gapPositions) {
+            ctx.beginPath();
+            ctx.arc(0, 0, gapPos + gapWidth/2, 0, Math.PI * 2);
+            ctx.arc(0, 0, gapPos - gapWidth/2, 0, Math.PI * 2, true);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+            ctx.fill();
+        }
+        
+        // 环系轮廓效果
+        ctx.beginPath();
+        ctx.arc(0, 0, ringOuterRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(240, 255, 255, 0.6)";
+        ctx.lineWidth = 1.5 / 0.05;
+        ctx.stroke();
+        
+        ctx.restore(); // 恢复缩放和旋转
+    }
+    
+    // 增强大气层效果 - 使用多层大气
+    // 内层大气 - 更明显的蓝色雾状
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 1.02, 0, Math.PI * 2);
+    const innerAtmosphere = ctx.createRadialGradient(
+        x, y, radius,
+        x, y, radius * 1.02
+    );
+    innerAtmosphere.addColorStop(0, "rgba(160, 235, 230, 0.25)");
+    innerAtmosphere.addColorStop(1, "rgba(160, 235, 230, 0)");
+    ctx.fillStyle = innerAtmosphere;
+    ctx.fill();
+    
+    // 外层大气 - 更扩散的效果
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 1.05, 0, Math.PI * 2);
+    const outerAtmosphere = ctx.createRadialGradient(
+        x, y, radius * 1.02,
+        x, y, radius * 1.05
+    );
+    outerAtmosphere.addColorStop(0, "rgba(200, 255, 250, 0.15)");
+    outerAtmosphere.addColorStop(1, "rgba(200, 255, 250, 0)");
+    ctx.fillStyle = outerAtmosphere;
+    ctx.fill();
+    
+    // 添加轻微的地面反光效果
+    ctx.beginPath();
+    ctx.arc(x - radius * 0.15, y - radius * 0.15, radius * 0.6, 0, Math.PI * 2);
+    const highlight = ctx.createRadialGradient(
+        x - radius * 0.15, y - radius * 0.15, 0,
+        x - radius * 0.15, y - radius * 0.15, radius * 0.6
+    );
+    highlight.addColorStop(0, "rgba(255, 255, 255, 0.1)");
+    highlight.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = highlight;
+    ctx.fill();
+    
+    ctx.restore(); // 恢复初始状态
+}
+    // 海王星
+    else if (planet.name === "neptune") {
+        ctx.save();
+        // 基础深蓝色
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        // 创建表面渐变
+        const neptuneGradient = ctx.createRadialGradient(
+            x - radius * 0.2, y - radius * 0.2, 0,
+            x, y, radius
+        );
+        neptuneGradient.addColorStop(0, "#6B93D6");
+        neptuneGradient.addColorStop(1, "#3A4CA8");
+        ctx.fillStyle = neptuneGradient;
+        ctx.fill();
+        // 添加云纹和特征
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(planet.rotationAngle); // 自转
+        // 裁剪到行星内部
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.clip();
+        // 绘制几个淡条纹
+        const stripesCount = 4;
+        for (let i = -stripesCount; i <= stripesCount; i++) {
+            const yPos = (i / stripesCount) * radius * 1.2;
+            const stripesHeight = radius * 0.15;
+            ctx.fillStyle = "rgba(150, 180, 255, 0.2)";
+            ctx.fillRect(-radius, yPos - stripesHeight/2, radius * 2, stripesHeight);
+        }
+        // 添加大暗斑特征
+        ctx.beginPath();
+        ctx.ellipse(radius * 0.3, -radius * 0.3, radius * 0.3, radius * 0.2, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(30, 60, 130, 0.5)";
+        ctx.fill();
+        // 添加几个小暗斑
+        const spotsCount = 3;
+        for (let i = 0; i < spotsCount; i++) {
+            const spotAngle = (i / spotsCount) * Math.PI * 2;
+            const spotDist = radius * 0.5;
+            const spotX = Math.cos(spotAngle) * spotDist;
+            const spotY = Math.sin(spotAngle) * spotDist;
+            const spotSizeX = radius * 0.15;
+            const spotSizeY = radius * 0.1;
+            ctx.beginPath();
+            ctx.ellipse(spotX, spotY, spotSizeX, spotSizeY, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(30, 60, 130, 0.4)";
+            ctx.fill();
+        }
+        ctx.restore(); // 恢复裁剪
+        // 大气层效果
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 1.03, 0, Math.PI * 2);
+        const atmosphere = ctx.createRadialGradient(
+            x, y, radius,
+            x, y, radius * 1.03
+        );
+        atmosphere.addColorStop(0, "rgba(150, 180, 255, 0.2)");
+        atmosphere.addColorStop(1, "rgba(150, 180, 255, 0)");
+        ctx.fillStyle = atmosphere;
+        ctx.fill();
+        ctx.restore(); // 恢复初始状态
+    }
+    // 普通行星的默认绘制 (当以上所有特殊行星情况都不匹配时)
+    else {
+        // 绘制行星本体
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(1, radius), 0, Math.PI * 2); // 保证最小半径为1像素
+        ctx.fillStyle = `#${planet.color}`;
+        ctx.fill();
+        // 绘制环 (如果有)
+        if (planet.rings) {
+            ctx.save();
+            ctx.translate(x, y);
+            // 稍微倾斜环以模拟视角
+            ctx.rotate(Math.PI / 12); // 固定倾斜
+            ctx.scale(1, 0.35); // 压扁成椭圆
+            const ringOuterRadius = planet.ringOuter * zoom;
+            const ringInnerRadius = planet.ringInner * zoom;
+            // 绘制环带颜色 (半透明)
+            ctx.beginPath();
+            ctx.arc(0, 0, ringOuterRadius, 0, Math.PI * 2);
+            ctx.arc(0, 0, ringInnerRadius, 0, Math.PI * 2, true); // 逆时针挖掉内部
+            ctx.fillStyle = planet.ringColor ? `#${planet.ringColor}80` : "rgba(200, 200, 200, 0.5)"; // 添加透明度
+            ctx.fill();
+            // 绘制环的边缘线增加清晰度
+            ctx.beginPath();
+            ctx.arc(0, 0, ringOuterRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = planet.ringColor ? `#${planet.ringColor}B0` : "rgba(220, 220, 220, 0.7)";
+            ctx.lineWidth = 1 / 0.35; // 因为缩放了，线宽要反向调整
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, ringInnerRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = planet.ringColor ? `#${planet.ringColor}B0` : "rgba(220, 220, 220, 0.7)";
+            ctx.lineWidth = 1 / 0.35;
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+    
+    // 绘制卫星及其轨道
+    if (planet.moons && Array.isArray(planet.moons)) {
+        planet.moons.forEach(moon => {
+            const moonOrbitRadius = moon.distance * zoom;
+            const moonX = x + moonOrbitRadius * Math.cos(moon.angle);
+            const moonY = y + moonOrbitRadius * Math.sin(moon.angle);
+            const moonRadius = Math.max(1, moon.radius * zoom); // 保证最小半径
+            
+            // 绘制卫星轨道，使用动态渐变
+const moonOrbitSegments = 24; // 将月球轨道分为24段，每段15度
+const moonAngleStep = (Math.PI * 2) / moonOrbitSegments;
+
+// 遍历卫星轨道的每个段落，根据与行星和太阳的角度关系设置不同的亮度
+for (let i = 0; i < moonOrbitSegments; i++) {
+    const startAngle = i * moonAngleStep;
+    const endAngle = (i + 1) * moonAngleStep;
+    
+    // 计算这个段落中点与月球当前位置的角度关系
+    const segmentMidAngle = startAngle + moonAngleStep / 2;
+    
+    // 与月球当前角度的差值决定亮度
+    const angleDiffFromMoon = Math.abs(segmentMidAngle - moon.angle);
+    
+    // 同时考虑太阳方向 - 从行星到太阳的向量
+    const sunDirection = Math.atan2(centerY - y, centerX - x);
+    
+    // 计算该段与太阳方向的夹角
+    const angleDiffFromSun = Math.abs(segmentMidAngle - sunDirection);
+    
+    // 结合月球位置和太阳方向计算最终亮度
+    // 当轨道段靠近月球且面向太阳时最亮
+    const moonFactor = (Math.cos(angleDiffFromMoon) + 1) / 2; // 0-1
+    const sunFactor = (Math.cos(angleDiffFromSun) + 1) / 2;   // 0-1
+    
+    // 结合两个因素，并映射到亮度范围 (0.05-0.2)
+    const brightness = 0.05 + (0.15 * (moonFactor * 0.3 + sunFactor * 0.7));
+    
+    ctx.beginPath();
+    ctx.arc(x, y, moonOrbitRadius, startAngle, endAngle);
+    ctx.strokeStyle = `rgba(255, 255, 255, ${brightness})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+}
+            
+            // 绘制卫星
+            ctx.beginPath();
+            ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#CCCCCC"; // 卫星统一用灰色
+            ctx.fill();
+        });
+    }
+    
+    // 更新标签位置
+    const labelElem = document.getElementById(`${planet.name}-label`);
+    if (labelElem) {
+        const labelTop = y - radius - labelElem.offsetHeight - 5;
+        labelElem.style.left = `${x}px`;
+        labelElem.style.top = `${labelTop}px`;
+        labelElem.style.opacity = showLabels ? "1" : "0";
+        labelElem.style.pointerEvents = 'none';
+    }
+    
+    
+    // 返回屏幕坐标和大小，用于点击检测
+    return { x, y, radius: radius, name: planet.name };
+}
     // 创建或更新行星标签
     function createLabels() {
         // 清除旧标签 (如果存在)
         planetLabels.forEach(label => label.remove());
         planetLabels = []; // 清空数组
-        
         // 为每个行星创建标签并添加到容器
         planets.forEach(planet => {
             const label = document.createElement('div');
             label.id = `${planet.name}-label`;
             label.className = 'planet-label';
-            
             // 简单的名称映射
             const nameMap = {
                 sun: "太阳", mercury: "水星", venus: "金星", earth: "地球",
                 mars: "火星", jupiter: "木星", saturn: "土星",
                 uranus: "天王星", neptune: "海王星"
             };
-            
             label.textContent = nameMap[planet.name] || planet.name;
             label.style.opacity = showLabels ? "1" : "0"; // 设置初始透明度
             label.style.pointerEvents = 'none'; // 标签不应捕获事件
-            
             simulationContainer.appendChild(label); // 添加到容器中
             planetLabels.push(label);
         });
     }
-    
     // 创建行星弹出窗口
     function createPlanetPopup() {
         // 创建弹出窗口元素
@@ -803,28 +2008,23 @@
         popup.id = 'planet-popup';
         popup.className = 'planet-popup';
         popup.style.display = 'none';
-        
         // 添加到容器
         simulationContainer.appendChild(popup);
         return popup;
     }
-    
     // 显示行星弹出信息
     function showPlanetPopup(planetData, clientX, clientY) {
         const popup = document.getElementById('planet-popup');
         if (!popup) return;
-        
         // 找到行星数据
         const planet = planets.find(p => p.name === planetData.name);
         if (!planet) return;
-        
         // 名称映射
         const nameMap = {
             sun: "太阳", mercury: "水星", venus: "金星", earth: "地球",
             mars: "火星", jupiter: "木星", saturn: "土星",
             uranus: "天王星", neptune: "海王星"
         };
-        
         // 行星轨道周期天数转为年或天的表示
         let orbitPeriod = planet.orbit;
         let orbitUnit = '天';
@@ -832,7 +2032,6 @@
             orbitPeriod = (orbitPeriod / 365).toFixed(1);
             orbitUnit = '年';
         }
-        
         // 填充内容
         popup.innerHTML = `
             <h3>${nameMap[planet.name] || planet.name}</h3>
@@ -842,12 +2041,10 @@
             ${planet.moons.length ? `<p>卫星数: ${planet.moons.length}</p>` : ''}
             ${planet.rings ? `<p>有光环</p>` : ''}
         `;
-        
         // 设置位置 (跟随鼠标)
         popup.style.left = `${clientX}px`;
         popup.style.top = `${clientY}px`;
         popup.style.display = 'block';
-        
         // 设置自动隐藏
         if (window.popupTimeout) clearTimeout(window.popupTimeout);
         window.popupTimeout = setTimeout(() => {
@@ -855,37 +2052,83 @@
         }, 3000);
     }
     
+    // 创建临时通知
+    function createNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'planet-label'; // 复用行星标签样式
+        notification.style.position = 'fixed';
+        notification.style.bottom = '150px';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%)';
+        notification.style.padding = '8px 15px';
+        notification.style.fontSize = '14px';
+        notification.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        notification.style.zIndex = '1000';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        // 2秒后自动移除
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 500);
+        }, 2000);
+    }
+
+    // 获取中文名称
+    function getChineseName(planetName) {
+        const nameMap = {
+            sun: "太阳", mercury: "水星", venus: "金星", earth: "地球",
+            mars: "火星", jupiter: "木星", saturn: "土星",
+            uranus: "天王星", neptune: "海王星"
+        };
+        return nameMap[planetName] || planetName;
+    }
+    // 切换小行星带
+    function toggleAsteroidBelt() {
+        showAsteroidBelt = !showAsteroidBelt;
+        if (showAsteroidBelt) {
+            // 如果之前没有生成小行星，现在生成
+            if (asteroids.length === 0) {
+                generateAsteroidBelt();
+            }
+            document.getElementById('toggle-asteroid-belt-btn').textContent = '隐藏小行星带';
+            asteroidInfoDiv.style.display = 'block';
+            // 显示小行星带信息面板
+            showPlanetInfo('asteroid-belt');
+        } else {
+            document.getElementById('toggle-asteroid-belt-btn').textContent = '显示小行星带';
+            asteroidInfoDiv.style.display = 'none';
+            // 返回介绍面板
+            showIntroContent();
+        }
+    }
     // 显示介绍内容
     function showIntroContent() {
         introContent.style.display = 'block';
         allPlanetInfoDivs.forEach(elem => {
             elem.style.display = 'none';
         });
-        
         // 确保面板可见
         if (!infoPanelVisible) {
             toggleInfoPanel(); // 调用切换函数来显示
         }
         infoPanel.scrollTop = 0; // 滚动到顶部
     }
-    
     // 关闭整个信息面板
     function closeInfoPanel() {
         infoPanel.classList.add('hidden');
         infoPanelVisible = false;
         infoToggleBtn.textContent = '显示信息';
     }
-    
     // 使函数全局可用，以便 onclick 调用
     window.closeInfoPanel = closeInfoPanel;
-    
     // 切换信息面板可见性
     function toggleInfoPanel() {
         infoPanelVisible = !infoPanelVisible;
         if (infoPanelVisible) {
             infoPanel.classList.remove('hidden');
             infoToggleBtn.textContent = '隐藏信息';
-            
             // 如果当前没有显示行星信息，则显示介绍
             const anyPlanetInfoVisible = Array.from(allPlanetInfoDivs).some(div => div.style.display === 'block');
             if (!anyPlanetInfoVisible) {
@@ -896,36 +2139,72 @@
             infoToggleBtn.textContent = '显示信息';
         }
     }
-    
     // 更新缩放值显示
     function updateZoomValueDisplay() {
         zoomValueDisplay.textContent = `缩放: ${zoom.toFixed(1)}x`;
     }
-    
-    // 缩放功能实现
+    // 处理缩放
     function handleZoom(delta, clientX, clientY) {
         const oldZoom = zoom;
-        
-        // 计算新的缩放值，限制在最小和最大缩放范围内
-        zoom = Math.max(zoomMin, Math.min(zoomMax, zoom + delta * zoomStep));
-        
-        // 更新缩放值显示
-        updateZoomValueDisplay();
-        
-        // 如果缩放到最小值，重置中心点偏移
-        if (zoom <= zoomMin) {
-            offsetX = 0;
-            offsetY = 0;
-        }
-        
-        // 清除所有轨迹，因为缩放后轨迹会不匹配
-        planets.forEach(planet => {
-            if (planet.name !== "sun") {
-                planet.trail = [];
-            }
-        });
+        // 计算目标缩放值
+        const targetZoom = Math.max(zoomMin, Math.min(zoomMax, zoom + delta * zoomStep));
+        // 保存点击/触摸位置相对于中心的偏移
+        const mouseX = clientX - baseX - offsetX;
+        const mouseY = clientY - baseY - offsetY;
+        // 使用动画平滑缩放
+        animateZoom(targetZoom, mouseX, mouseY);
     }
-    
+    // 添加平滑缩放动画函数
+    let zoomAnimationId = null;
+    function animateZoom(targetZoom, mouseX, mouseY) {
+        // 如果已有动画，取消它
+        if (zoomAnimationId !== null) {
+            cancelAnimationFrame(zoomAnimationId);
+        }
+        const startZoom = zoom;
+        const zoomRange = targetZoom - startZoom;
+        const duration = 200; // 动画持续时间(毫秒)
+        const startTime = performance.now();
+        // 记忆初始偏移量
+        const startOffsetX = offsetX;
+        const startOffsetY = offsetY;
+        function zoomStep(currentTime) {
+            const elapsed = currentTime - startTime;
+            let progress = Math.min(elapsed / duration, 1);
+            // 使用缓动函数让动画更自然
+            progress = easeOutQuad(progress);
+            // 计算当前缩放值
+            zoom = startZoom + zoomRange * progress;
+            // 调整偏移以保持鼠标位置不变
+            if (zoomRange !== 0) {
+                const scaleFactor = zoom / startZoom;
+                offsetX = startOffsetX + mouseX * (1 - scaleFactor);
+                offsetY = startOffsetY + mouseY * (1 - scaleFactor);
+            }
+            // 更新显示
+            updateZoomValueDisplay();
+            // 更新实际渲染中心点
+            centerX = baseX + offsetX;
+            centerY = baseY + offsetY;
+            // 如果动画未完成，继续下一帧
+            if (progress < 1) {
+                zoomAnimationId = requestAnimationFrame(zoomStep);
+            } else {
+                zoomAnimationId = null;
+                // 清除所有轨迹，因为缩放后轨迹会不匹配
+                planets.forEach(planet => {
+                    if (planet.name !== "sun") {
+                        planet.trail = [];
+                    }
+                });
+            }
+        }
+        zoomAnimationId = requestAnimationFrame(zoomStep);
+    }
+    // 添加缓动函数
+    function easeOutQuad(t) {
+        return t * (2 - t);
+    }
     // 设置缩放和拖动事件监听器
     function setupInteractionControls() {
         // 鼠标滚轮缩放
@@ -935,29 +2214,32 @@
             const delta = -Math.sign(e.deltaY);
             handleZoom(delta, e.clientX, e.clientY);
         });
-        
         // 鼠标拖动处理
         canvas.addEventListener('mousedown', (e) => {
             if (e.button === 0) { // 只处理左键
-                e.preventDefault();
-                isDragging = true;
-                dragStartX = e.clientX;
-                dragStartY = e.clientY;
-                lastOffsetX = offsetX;
-                lastOffsetY = offsetY;
-                canvas.classList.add('grabbing');
+               handleDragStart(e);          
             }
         });
-        
+        function handleDragStart(e) {
+            e.preventDefault();
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            lastOffsetX = offsetX;
+            lastOffsetY = offsetY;
+            canvas.classList.add('grabbing');
+           
+        }
         window.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 const dx = e.clientX - dragStartX;
                 const dy = e.clientY - dragStartY;
-                
                 // 根据当前缩放级别调整拖动敏感度
                 offsetX = lastOffsetX + dx;
                 offsetY = lastOffsetY + dy;
-                
+                // 更新中心点
+                centerX = baseX + offsetX;
+                centerY = baseY + offsetY;
                 // 清除所有轨迹，因为拖动后轨迹会不匹配
                 planets.forEach(planet => {
                     if (planet.name !== "sun") {
@@ -966,33 +2248,31 @@
                 });
             }
         });
-        
         window.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
                 canvas.classList.remove('grabbing');
             }
         });
-        
         // 触摸事件处理（双指缩放和单指拖动）
         let initialDistance = 0;
         let isZooming = false;
         let isTouchDragging = false;
         let touchStartX = 0;
         let touchStartY = 0;
-        
+        let lastTouchTime = 0;
         // 触摸开始
         simulationContainer.addEventListener('touchstart', (e) => {
+                    
             if (e.touches.length === 2) {
                 isZooming = true;
                 isTouchDragging = false;
-                
                 // 计算两个触摸点之间的初始距离
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
-                initialDistance = Math.sqrt(dx * dx + dy * dy);
+                initialDistance = Math.sqrt(dx *dx + dy* dy);
                 touchZoomStartScale = zoom;
-            } 
+            }
             else if (e.touches.length === 1) {
                 isZooming = false;
                 isTouchDragging = true;
@@ -1000,34 +2280,26 @@
                 touchStartY = e.touches[0].clientY;
                 lastOffsetX = offsetX;
                 lastOffsetY = offsetY;
+                
             }
         });
-        
         // 触摸移动
         simulationContainer.addEventListener('touchmove', (e) => {
             if (isZooming && e.touches.length === 2) {
                 e.preventDefault(); // 阻止默认行为以防止页面滚动
-                
                 // 计算当前触摸点之间的距离
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const currentDistance = Math.sqrt(dx * dx + dy * dy);
-                
+                const currentDistance = Math.sqrt(dx *dx + dy* dy);
                 // 计算缩放比例变化
                 const scaleFactor = currentDistance / initialDistance;
-                
                 // 应用新的缩放值，并确保在范围内
                 zoom = Math.max(zoomMin, Math.min(zoomMax, touchZoomStartScale * scaleFactor));
-                
-                // 如果缩放到最小值，重置中心点偏移
-                if (zoom <= zoomMin) {
-                    offsetX = 0;
-                    offsetY = 0;
-                }
-                
+                // 更新中心点
+                centerX = baseX + offsetX;
+                centerY = baseY + offsetY;
                 // 更新缩放值显示
                 updateZoomValueDisplay();
-                
                 // 清除所有轨迹
                 planets.forEach(planet => {
                     if (planet.name !== "sun") {
@@ -1038,13 +2310,13 @@
             else if (isTouchDragging && e.touches.length === 1) {
                 const touchX = e.touches[0].clientX;
                 const touchY = e.touches[0].clientY;
-                
                 const dx = touchX - touchStartX;
                 const dy = touchY - touchStartY;
-                
                 offsetX = lastOffsetX + dx;
                 offsetY = lastOffsetY + dy;
-                
+                // 更新中心点
+                centerX = baseX + offsetX;
+                centerY = baseY + offsetY;
                 // 清除所有轨迹
                 planets.forEach(planet => {
                     if (planet.name !== "sun") {
@@ -1053,20 +2325,68 @@
                 });
             }
         });
-        
         // 触摸结束
         simulationContainer.addEventListener('touchend', () => {
             isZooming = false;
             isTouchDragging = false;
         });
-        
         // 触摸取消
         simulationContainer.addEventListener('touchcancel', () => {
             isZooming = false;
             isTouchDragging = false;
         });
     }
-    
+    // 添加行星信息动态更新功能
+    function updatePlanetInfo() {
+        // 如果有行星信息面板正在显示
+        planets.forEach(planet => {
+            const infoDiv = document.getElementById(`${planet.name}-info`);
+            if (infoDiv && infoDiv.style.display === 'block') {
+                // 查找或创建动态信息元素
+                let dynamicInfo = document.getElementById(`${planet.name}-dynamic-info`);
+                if (!dynamicInfo) {
+                    dynamicInfo = document.createElement('div');
+                    dynamicInfo.id = `${planet.name}-dynamic-info`;
+                    dynamicInfo.className = 'dynamic-planet-info';
+                    dynamicInfo.style.marginTop = '15px';
+                    dynamicInfo.style.padding = '10px';
+                    dynamicInfo.style.backgroundColor = 'rgba(50, 50, 50, 0.5)';
+                    dynamicInfo.style.borderRadius = '5px';
+                    infoDiv.appendChild(dynamicInfo);
+                }
+                // 计算一些动态值
+                const orbitProgress = ((planet.angle / (Math.PI *2))* 100).toFixed(1);
+                const orbitPeriodDays = planet.orbit;
+                const daysPerSecond = orbitPeriodDays * speed / 60; // 假设60fps
+                // 更新信息
+                dynamicInfo.innerHTML = `
+                    <h3>实时数据</h3>
+                    <p>公转进度: ${orbitProgress}%</p>
+                    <p>模拟速度: ${daysPerSecond.toFixed(2)} 天/秒</p>
+                    <p>当前角度: ${(planet.angle * 180 / Math.PI).toFixed(1)}°</p>
+                    ${planet.rotationSpeed ? `<p>自转速度: ${(planet.rotationSpeed * speed).toFixed(4)} rad/帧</p>` : ''}
+                `;
+            }
+        });
+    }
+    // 显示行星信息面板
+    function showPlanetInfo(planetName) {
+        // 隐藏介绍和其他行星信息
+        introContent.style.display = 'none';
+        allPlanetInfoDivs.forEach(elem => {
+            elem.style.display = 'none';
+        });
+        // 显示被选行星的信息
+        const planetInfoDiv = document.getElementById(`${planetName}-info`);
+        if (planetInfoDiv) {
+            planetInfoDiv.style.display = 'block';
+            // 确保面板可见
+            if (!infoPanelVisible) {
+                toggleInfoPanel();
+            }
+            infoPanel.scrollTop = 0;
+        }
+    }
     // 主绘制循环
     let lastTimestamp = 0;
     function draw(timestamp) {
@@ -1074,29 +2394,28 @@
         // 限制时间增量，防止标签页挂起后动画跳跃过大
         const timeScale = Math.min(timeDelta / (1000 / 60), 5); // (假设60fps)
         lastTimestamp = timestamp;
-        
-        // 清除画布
+                // 清除画布
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         // 更新基础中心点和实际渲染中心点
         baseX = canvas.width / 2;
         baseY = canvas.height / 2;
         centerX = baseX + offsetX;
         centerY = baseY + offsetY;
-        
         // 绘制星空背景
         drawStarfield();
-        
         // 更新天体位置
         updatePositions(timeScale);
-        
+        // 绘制小行星带
+        drawAsteroidBelt();
         // 绘制所有天体并存储屏幕数据
         planetScreenData = planets.map(planet => drawCelestialBody(planet));
-        
+        // 更新行星信息
+        if (!paused) {
+            updatePlanetInfo();
+        }
         // 请求下一帧
         requestAnimationFrame(draw);
     }
-    
     // 切换轨迹显示/隐藏
     function toggleTrails() {
         const allTrailsOn = planets.every(p => p.name === "sun" || p.showTrail);
@@ -1111,7 +2430,6 @@
         });
         toggleTrailsBtn.textContent = allTrailsOn ? '显示轨迹' : '隐藏轨迹';
     }
-    
     // 设置键盘控制
     function setupKeyboardControls() {
         window.addEventListener('keydown', (e) => {
@@ -1135,6 +2453,11 @@
                 case 'I':
                     toggleInfoPanel();
                     break;
+                case 'a':  // a：切换小行星带
+                case 'A':
+                    toggleAsteroidBelt();
+                    break;
+                
                 case '+':  // +：增加速度
                 case '=':  // =：增加速度 (同一个键)
                     changeSpeed(0.01);
@@ -1151,7 +2474,6 @@
             }
         });
     }
-    
     // 修改速度的辅助函数
     function changeSpeed(delta) {
         const speedSlider = document.getElementById('speed-slider');
@@ -1162,80 +2484,135 @@
         speedSlider.dispatchEvent(new Event('input'));
     }
     
+    const travelOrder = ["sun", "mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"];
+    
     // 初始化函数
-    function init() {
-        // 设置画布初始大小
-        resizeCanvas(); // 这也会调用 createLabels 和生成星空
-        
-        // 创建行星弹出窗口
-        createPlanetPopup();
-        
-        // 设置控制面板初始值
-        document.getElementById('speed-slider').value = speed;
-        document.getElementById('speed-value').textContent = speed.toFixed(3) + 'x';
-        updateZoomValueDisplay(); // 初始化缩放值显示
-        document.getElementById('pause-btn').textContent = paused ? '播放' : '暂停';
-        toggleLabelsBtn.textContent = showLabels ? '隐藏标签' : '显示标签';
-        toggleTrailsBtn.textContent = '显示轨迹';
-        infoToggleBtn.textContent = infoPanelVisible ? '隐藏信息' : '显示信息';
-        
-        if (!infoPanelVisible) infoPanel.classList.add('hidden');
-        else showIntroContent(); // 初始显示介绍
-        
-        // 添加事件监听器
-        canvas.addEventListener('click', handleCanvasClick);
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-        document.getElementById('pause-btn').addEventListener('click', togglePause);
-        document.getElementById('reset-btn').addEventListener('click', resetSimulation);
-        toggleLabelsBtn.addEventListener('click', () => toggleLabels()); // 切换标签
-        toggleTrailsBtn.addEventListener('click', toggleTrails); // 切换轨迹
-        document.getElementById('speed-slider').addEventListener('input', updateSpeed);
-        infoToggleBtn.addEventListener('click', toggleInfoPanel);
-        
-        // 设置缩放和拖动控制
-        setupInteractionControls();
-        
-        // 设置键盘控制
-        setupKeyboardControls();
-        
-        // 更新初始中心点
-        baseX = canvas.width / 2;
-        baseY = canvas.height / 2;
-        centerX = baseX;
-        centerY = baseY;
-        
-        // 启动动画循环
-        requestAnimationFrame(draw);
+function init() {
+    // 设置画布初始大小
+    resizeCanvas(); // 这也会调用 createLabels 和生成星空
+    // 生成小行星带
+    generateAsteroidBelt();
+    // 创建行星弹出窗口
+    createPlanetPopup();
+    // 设置控制面板初始值
+    document.getElementById('speed-slider').value = speed;
+    document.getElementById('speed-value').textContent = speed.toFixed(3) + 'x';
+    updateZoomValueDisplay(); // 初始化缩放值显示
+    document.getElementById('pause-btn').textContent = paused ? '播放' : '暂停';
+    toggleLabelsBtn.textContent = showLabels ? '隐藏标签' : '显示标签';
+    toggleTrailsBtn.textContent = '显示轨迹';
+    infoToggleBtn.textContent = infoPanelVisible ? '隐藏信息' : '显示信息';
+    document.getElementById('toggle-asteroid-belt-btn').textContent = '显示小行星带';
+    if (!infoPanelVisible) infoPanel.classList.add('hidden');
+    else showIntroContent(); // 初始显示介绍
+    // 添加事件监听器
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.getElementById('pause-btn').addEventListener('click', togglePause);
+    document.getElementById('reset-btn').addEventListener('click', resetSimulation);
+    toggleLabelsBtn.addEventListener('click', () => toggleLabels()); // 切换标签
+    toggleTrailsBtn.addEventListener('click', toggleTrails); // 切换轨迹
+    document.getElementById('speed-slider').addEventListener('input', updateSpeed);
+    infoToggleBtn.addEventListener('click', toggleInfoPanel);
+    document.getElementById('toggle-asteroid-belt-btn').addEventListener('click', toggleAsteroidBelt);
+    settingsBtn.addEventListener('click', toggleSettingsPopup);
+    settingsCloseBtn.addEventListener('click', toggleSettingsPopup);
+    // 设置缩放和拖动控制
+    setupInteractionControls();
+    // 设置键盘控制
+    setupKeyboardControls();
+    
+    // 更新基础中心点
+    baseX = canvas.width / 2;
+    baseY = canvas.height / 2;
+    
+    // 使用默认偏移量
+    offsetX = defaultOffsetX;
+    offsetY = defaultOffsetY;
+    
+    // 确保中心点正确设置
+    centerX = baseX + offsetX;
+    centerY = baseY + offsetY;
+    
+    // 为竖屏手机设置初始缩放
+    adjustInitialZoomForMobile();
+    
+    // 启动动画循环
+    requestAnimationFrame(draw);
+}
+// 根据屏幕尺寸调整初始缩放
+function adjustInitialZoomForMobile() {
+    // 检测是否为移动设备
+    const isMobile = window.innerWidth <= 768;
+    // 检测是否为竖屏
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    if (isMobile) {
+        if (isPortrait) {
+            // 竖屏手机设置较小的缩放，确保可以看到太阳和周围行星
+            zoom = 0.6;
+            // 对于竖屏手机，可能需要更大的偏移以确保能看到更多行星
+            offsetX = defaultOffsetX * 1.2;
+            offsetY = defaultOffsetY * 1.2;
+        } else {
+            // 横屏手机可以设置稍大一点的缩放
+            zoom = 0.8;
+            // 对于横屏手机，使用标准偏移
+            offsetX = defaultOffsetX;
+            offsetY = defaultOffsetY;
+        }
+    } else {
+        // 桌面设备保持默认缩放
+        zoom = 1.0;
+        // 使用标准偏移
+        offsetX = defaultOffsetX;
+        offsetY = defaultOffsetY;
+    }
+    
+    // 更新中心点
+    centerX = baseX + offsetX;
+    centerY = baseY + offsetY;
+    
+    // 更新缩放值显示
+    updateZoomValueDisplay();
+}
+    // 切换设置弹窗
+    function toggleSettingsPopup() {
+        const settingsPopup = document.getElementById('settings-popup');
+        if (settingsPopup.style.display === 'block') {
+            settingsPopup.style.display = 'none';
+        } else {
+            settingsPopup.style.display = 'block';
+        }
+    }
+    
+    // 更新航行模式停留时间
+    function updateTravelTime(event) {
+        const value = parseFloat(event.target.value);
+        travelStayTime = value * 1000; // 转换为毫秒
+        travelTimeValue.textContent = value.toFixed(1) + 's';
     }
     
     // 处理画布点击事件
     function handleCanvasClick(event) {
         // 如果正在拖动，不处理点击
         if (isDragging) return;
-        
         // 阻止默认右键菜单
         if (event.button === 2) {
             event.preventDefault();
         }
-        
         const rect = canvas.getBoundingClientRect();
         const clickX = event.clientX - rect.left;
         const clickY = event.clientY - rect.top;
-        
         let clickedPlanetName = null;
-        
         // 从后往前检查（外层行星先检查），或者按绘制顺序检查（太阳先检查）
         for (const planetData of planetScreenData) {
             if (!planetData) continue; // 跳过无效数据
-            
             const distance = Math.sqrt(Math.pow(clickX - planetData.x, 2) + Math.pow(clickY - planetData.y, 2));
-            
             // 点击半径稍微放大一点，更容易点中
             const clickRadius = Math.max(planetData.radius, 10); // 最小点击区域为10px半径
-            
             if (distance <= clickRadius) {
                 clickedPlanetName = planetData.name;
-                
                 // 如果是右键点击，显示弹出信息
                 if (event.button === 2) {
                     showPlanetPopup(planetData, event.clientX, event.clientY);
@@ -1244,19 +2621,16 @@
                 break; // 找到第一个（最上层）被点击的
             }
         }
-        
         if (clickedPlanetName && event.button === 0) {
             // 隐藏介绍和其他行星信息
             introContent.style.display = 'none';
             allPlanetInfoDivs.forEach(elem => {
                 elem.style.display = 'none';
             });
-            
             // 显示被点击行星的信息
             const planetInfoDiv = document.getElementById(`${clickedPlanetName}-info`);
             if (planetInfoDiv) {
                 planetInfoDiv.style.display = 'block';
-                
                 // 点击行星时确保面板可见并滚动到顶部
                 if (!infoPanelVisible) {
                     toggleInfoPanel(); // 调用切换函数来显示
@@ -1268,13 +2642,11 @@
             }
         }
     }
-    
     // 切换暂停/播放
     function togglePause() {
         paused = !paused;
         document.getElementById('pause-btn').textContent = paused ? '播放' : '暂停';
     }
-    
     // 切换标签显示/隐藏
     function toggleLabels(forceState = null) {
         showLabels = (forceState !== null) ? forceState : !showLabels;
@@ -1283,63 +2655,56 @@
                 label.style.opacity = showLabels ? "1" : "0";
             }
         });
-        
         // 更新按钮文本
         toggleLabelsBtn.textContent = showLabels ? '隐藏标签' : '显示标签';
     }
-    
     // 重置模拟状态
-    function resetSimulation() {
-        // 重置行星和卫星角度为随机初始值（或固定值）
-        planets.forEach(planet => {
-            planet.angle = Math.random() * Math.PI * 2; // 重置为随机角度
-            planet.trail = []; // 清空轨迹
-            
-            if (planet.moons && Array.isArray(planet.moons)) {
-                planet.moons.forEach((moon, index) => {
-                    moon.angle = (index * Math.PI / (planet.moons.length || 1)); // 均匀分布卫星初始角度
-                });
-            }
-        });
-        
-        // 重置控制参数
-        speed = 0.01;
-        document.getElementById('speed-slider').value = speed;
-        document.getElementById('speed-value').textContent = speed.toFixed(3) + 'x';
-        
-        zoom = 1;
-        updateZoomValueDisplay();
-        
-        // 重置中心点偏移
-        offsetX = 0;
-        offsetY = 0;
-        
-        paused = false;
-        document.getElementById('pause-btn').textContent = '暂停';
-        
-        // 重置标签显示状态和按钮文本
-        showLabels = true;
-        toggleLabels(true); // 强制显示标签
-        
-        // 关闭所有行星轨迹
-        planets.forEach(planet => {
-            planet.showTrail = false;
-        });
-        toggleTrailsBtn.textContent = '显示轨迹';
-        
-        // 重置信息面板到介绍视图
-        showIntroContent();
-        
-        // 重新创建标签以适应可能的缩放重置
-        createLabels();
-    }
+function resetSimulation() {
+    // 重置行星和卫星角度为随机初始值（或固定值）
+    planets.forEach(planet => {
+        planet.angle = Math.random() * Math.PI * 2; // 重置为随机角度
+        planet.rotationAngle = 0; // 重置自转角度
+        planet.trail = []; // 清空轨迹
+        if (planet.moons && Array.isArray(planet.moons)) {
+            planet.moons.forEach((moon, index) => {
+                moon.angle = (index * Math.PI / (planet.moons.length || 1)); // 均匀分布卫星初始角度
+            });
+        }
+    });
+    // 重置控制参数
+    speed = 0.01;
+    document.getElementById('speed-slider').value = speed;
+    document.getElementById('speed-value').textContent = speed.toFixed(3) + 'x';
     
+    // 为不同设备设置不同的缩放和默认偏移
+    adjustInitialZoomForMobile();
+        
+    paused = false;
+    document.getElementById('pause-btn').textContent = '暂停';
+    // 重置标签显示状态和按钮文本
+    showLabels = true;
+    toggleLabels(true); // 强制显示标签
+    // 关闭所有行星轨迹
+    planets.forEach(planet => {
+        planet.showTrail = false;
+    });
+    toggleTrailsBtn.textContent = '显示轨迹';
+    // 关闭小行星带
+    if (showAsteroidBelt) {
+        toggleAsteroidBelt();
+    }
+    // 重置信息面板到介绍视图
+    showIntroContent();
+    // 重新创建标签以适应可能的缩放重置
+    createLabels();
+    // 关闭设置弹窗
+    settingsPopup.style.display = 'none';
+}
     // 更新模拟速度
     function updateSpeed(event) {
         speed = parseFloat(event.target.value);
         document.getElementById('speed-value').textContent = speed.toFixed(3) + 'x';
     }
-    
     // 初始化应用
     init();
 </script>

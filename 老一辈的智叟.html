@@ -143,19 +143,18 @@
     color: black;
     padding: 10px 15px;
     border-radius: 10px;
-    max-width: 70%; /* 增加最大宽度 */
-    max-height: 50vh; /* 限制最大高度为视口高度的50% */
-    overflow-y: auto; /* 添加垂直滚动条 */
+    max-width: 70%;
+    max-height: 50vh;
+    overflow-y: auto;
     top: 28%;
     left: 35%;
     transform: translate(-50%, -100%);
     opacity: 0;
     transition: opacity 0.8s;
     z-index: 4;
-    line-height: 1.4; /* 增加行间距 */
-    font-size: 0.95em; /* 稍微减小字体大小 */
+    line-height: 1.4;
+    font-size: 0.95em;
 }
-/* 添加滚动条样式 */
 .speech-bubble::-webkit-scrollbar {
     width: 6px;
 }
@@ -167,7 +166,6 @@
     background-color: rgba(0,0,0,0.3);
     border-radius: 3px;
 }
-/* 调整气泡尾部箭头位置，确保在滚动时仍然可见 */
 .speech-bubble:after {
     content: '';
     position: absolute;
@@ -232,11 +230,10 @@
     }
     @media (max-width: 768px) {
     .speech-bubble {
-        max-width: 85%; /* 在移动设备上占据更多空间 */
-        font-size: 0.9em; /* 更小的字体 */
-        max-height: 40vh; /* 在移动设备上限制高度 */
+        max-width: 85%;
+        font-size: 0.9em;
+        max-height: 40vh;
     }
-    /* 保留其他原有的媒体查询样式 */
     .chat-container {
         height: 150px;
     }
@@ -271,8 +268,8 @@
     <audio id="easterEggSound" preload="auto"></audio>
     <div id="loadingStatus"></div>
     <div class="audio-notification" id="audioNotification">
-        <p>点击下方按钮启用音效</p>
-        <button class="notification-button" id="enableAudioBtn">启用音效</button>
+        <p>你前来买瓜</p>
+        <button class="notification-button" id="enableAudioBtn">瓜多少钱一斤？<br>（bushi）</button>
     </div>
 </div>
 <div class="chat-container">
@@ -285,7 +282,6 @@
     </div>
 </div>
 <script>
-    // 全局变量
     let chatMessages;
     let messageInput;
     let villagerImage;
@@ -301,26 +297,22 @@
     let jokerImage;
     let sendButton;
     let villagerSummoned = false;
-    let jokerTimeout = null; // 用于存储joker显示的timeout
+    let jokerTimeout = null;
     let audioInitialized = false;
-    let jokerReady = false; // 跟踪Joker是否准备好显示
-    let pendingJokerDisplay = false; // 标记是否有待显示的Joker
-    let isEasterEggTriggered = false; // 标记是否触发了彩蛋
-    // 确保所有函数定义为全局
+    let jokerReady = false;
+    let pendingJokerDisplay = false;
+    let isEasterEggTriggered = false;
     window.setupAudio = function() {
         villagerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/lybdzs.mp3";
         jokerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/joker.mp3";
         easterEggSound.src = "https://stellar-cat-4909aa.netlify.app/audio/EasterEgg.m4a";
-        // 预加载音频
         villagerSound.load();
         jokerSound.load();
         easterEggSound.load();
     };
-    // 初始化音频
     window.initializeAudio = function() {
         if (audioInitialized) return Promise.resolve();
         return new Promise((resolve, reject) => {
-            // 播放一个静音的音频来初始化音频上下文
             const silentPlay = villagerSound.play();
             if (silentPlay !== undefined) {
                 silentPlay.then(() => {
@@ -337,15 +329,12 @@
                     easterEggSound.pause();
                     easterEggSound.currentTime = 0;
                     audioInitialized = true;
-                    console.log("音频初始化成功");
-                    // 如果有待显示的Joker，现在显示
                     if (pendingJokerDisplay && jokerReady && !isEasterEggTriggered) {
                         displayJoker();
                     }
                     resolve();
                 })
                 .catch(error => {
-                    console.warn("音频初始化失败:", error);
                     showAudioNotification();
                     reject(error);
                 });
@@ -354,77 +343,59 @@
             }
         });
     };
-    // 显示音频通知
     window.showAudioNotification = function() {
         audioNotification.style.display = 'block';
     };
-    // 隐藏音频通知
     window.hideAudioNotification = function() {
         audioNotification.style.display = 'none';
     };
-    // 发送消息函数
     window.sendMessage = function() {
         const message = messageInput.value.trim();
         if (message === '') return;
-        // 尝试初始化音频
         initializeAudio().catch(() => console.log("通过消息发送初始化音频失败"));
-        // 添加你的消息
         const playerMessageDiv = document.createElement('div');
         playerMessageDiv.className = 'message player-message';
         playerMessageDiv.textContent = `你: ${message}`;
         chatMessages.appendChild(playerMessageDiv);
-        // 检查是否触发彩蛋
         if (message === "🌰") {
             isEasterEggTriggered = true;
             if (jokerTimeout) {
                 clearTimeout(jokerTimeout);
                 jokerTimeout = null;
             }
-            nametag.textContent = "小空城"; // 修改nametag文本为"小空城"
+            nametag.textContent = "小空城";
             summonVillagerWithEasterEgg();
         }
-        // 检查是否包含"表姐"
         else if (message.includes('表姐') && !villagerSummoned) {
             summonVillager();
         }
-        // 清空输入框并滚动到底部
         messageInput.value = '';
         chatMessages.scrollTop = chatMessages.scrollHeight;
     };
-    // 根据设备性能确定粒子数量
     window.getConfettiCount = function() {
-        // 检测是否是性能较低的设备
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        return isMobile ? 100 : 200; // 移动设备减少粒子数量
+        return isMobile ? 100 : 200;
     };
     window.createConfetti = function() {
-        // 清空现有纸屑
         confettiContainer.innerHTML = '';
-        // 创建多个纸屑元素
         const confettiCount = getConfettiCount();
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti';
-            // 随机位置
             confetti.style.left = Math.random() * 100 + '%';
             confetti.style.top = Math.random() * 100 + '%';
-            // 随机延迟
             confetti.style.animationDelay = Math.random() * 0.8 + 's';
-            // 随机旋转
             confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-            // 随机颜色
             const colors = ['#ffffff', '#dedede', '#f0f0f0', '#ffffff'];
             confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            // 随机大小
             const size = Math.random() * 6 + 3;
             confetti.style.width = `${size}px`;
             confetti.style.height = `${size * 1.5}px`;
             confettiContainer.appendChild(confetti);
         }
     };
-    // 打字机效果函数
     window.typewriterEffect = function(element, text, speed = 40, callback) {
-        element.textContent = ''; // 清空内容
+        element.textContent = '';
         let i = 0;
         function typeNextChar() {
             if (i < text.length) {
@@ -432,28 +403,22 @@
                 i++;
                 setTimeout(typeNextChar, speed);
             } else if (callback) {
-                callback(); // 打字效果完成后执行回调
+                callback();
             }
         }
         typeNextChar();
     };
     window.summonVillager = function() {
         villagerSummoned = true;
-        // 创建纸屑效果并开始渐显图片
         createConfetti();
         villagerImage.style.opacity = '1';
-        // 显示村民名称标签
         setTimeout(() => {
             nametag.style.opacity = 1;
-            // 显示村民对话
             setTimeout(() => {
                 speechBubble.style.opacity = 1;
-                // 使用打字机效果显示文本
                 const villagerText = "你刚刚说了表姐是吧，首先我认为她就是很失败的，因为她没有找男人结婚她学历高有啥用，不还是没男人要吗？";
                 typewriterEffect(speechBubble, villagerText, 40, showJokerAfterDelay);
-                // 播放音频
                 playVillagerSound();
-                // 添加村民消息到聊天区
                 const villagerMessageDiv = document.createElement('div');
                 villagerMessageDiv.className = 'message villager-message';
                 villagerMessageDiv.textContent = `老一辈的'智叟': ${villagerText}`;
@@ -462,59 +427,42 @@
             }, 500);
         }, 800);
     };
-    // 彩蛋触发时的村民召唤函数
     window.summonVillagerWithEasterEgg = function() {
         villagerSummoned = true;
-        // 创建纸屑效果并开始渐显图片
         createConfetti();
         villagerImage.style.opacity = '1';
-        // 显示村民名称标签
         setTimeout(() => {
             nametag.style.opacity = 1;
-            // 显示村民对话
             setTimeout(() => {
                 speechBubble.style.opacity = 1;
-                // 使用打字机效果显示彩蛋文本，加快速度
                 const easterEggText = "我认为栗子是沉静中带着灵动的，温暖而不失坚韧的，可靠且善解人意的，低调谦逊却富有好奇心的，兼具冷静理性与敏锐同理心的，思维缜密又富有创造力的，勤奋务实而执着坚定的，乐观向上且心怀热忱的，幽默风趣却真诚坦率的，脚踏实地而追求卓越的，独立自主且富有主见的，自律克己又虚怀若谷的，知行合一却默默耕耘的，心思细腻而行动果决的，善于观察且锐意创新的，外柔内刚又内心丰盈的一位医学生。";
-                // 提高打字速度到20，让长文本更快显示
                 typewriterEffect(speechBubble, easterEggText, 20);
-                // 播放彩蛋音频
                 playEasterEggSound();
-                // 添加彩蛋消息到聊天区
                 const villagerMessageDiv = document.createElement('div');
                 villagerMessageDiv.className = 'message villager-message';
-                villagerMessageDiv.textContent = `小空城: ${easterEggText}`; // 这里也修改为小空城
+                villagerMessageDiv.textContent = `小空城: ${easterEggText}`;
                 chatMessages.appendChild(villagerMessageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
-                // 确保speech-bubble文本完成后滚动到顶部
                 setTimeout(() => {
                     speechBubble.scrollTop = 0;
-                }, easterEggText.length * 20 + 100); // 根据打字速度和文本长度估算完成时间
+                }, easterEggText.length * 20 + 100);
             }, 500);
         }, 800);
     };
     window.showJokerAfterDelay = function() {
-        // 如果触发了彩蛋，不显示Joker
         if (isEasterEggTriggered) return;
-        // 在控制台显示等待开始信息
-        console.log("等待6秒后显示Joker...");
-        // 台词打完后等待6秒显示Joker
         jokerTimeout = setTimeout(() => {
-            console.log("Joker准备显示");
             jokerReady = true;
-            // 检查是否可以播放音频
             if (audioInitialized) {
                 displayJoker();
             } else {
                 pendingJokerDisplay = true;
                 showAudioNotification();
             }
-        }, 6000); // 6秒延迟，可以调整
+        }, 6000);
     };
     window.displayJoker = function() {
-        // 如果触发了彩蛋，不显示Joker
         if (isEasterEggTriggered) return;
-        console.log("显示Joker");
         pendingJokerDisplay = false;
         jokerImage.style.display = 'block';
         setTimeout(() => {
@@ -522,15 +470,12 @@
             playJokerSound();
         }, 50);
     };
-    // 播放音频的函数
     window.playVillagerSound = function() {
         if (!audioInitialized) {
             initializeAudio().catch(() => console.log("播放村民声音时初始化音频失败"));
             return;
         }
-        // 重置音频到开始位置（如果已经播放过）
         villagerSound.currentTime = 0;
-        // 播放音频并处理可能的错误
         const playPromise = villagerSound.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
@@ -539,86 +484,63 @@
         }
     };
     window.playJokerSound = function() {
-        if (!audioInitialized) {
-            console.log("音频未初始化，不能播放Joker音效");
-            return;
-        }
-        console.log("播放Joker音效");
+        if (!audioInitialized) return;
         jokerSound.currentTime = 0;
         const playPromise = jokerSound.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
-                console.log("Joker音效播放成功");
             }).catch(error => {
-                console.error("播放Joker音效失败:", error);
                 showAudioNotification();
             });
         }
     };
-    // 播放彩蛋音频
     window.playEasterEggSound = function() {
         if (!audioInitialized) {
             initializeAudio().catch(() => console.log("播放彩蛋音频时初始化音频失败"));
             return;
         }
-        // 重置音频到开始位置
         easterEggSound.currentTime = 0;
-        // 播放音频并处理可能的错误
         const playPromise = easterEggSound.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
-                console.error("播放彩蛋音频失败:", error);
                 showAudioNotification();
             });
         }
     };
-    // 重置场景的功能
     window.resetScene = function() {
-        // 如果彩蛋已经触发且正在显示，则阻止重置
         if (isEasterEggTriggered) {
-            // 用户尝试重置彩蛋时可以显示一个小提示
             showEasterEggResetMessage();
-            return; // 直接返回，不执行重置操作
+            return;
         }
         villagerImage.style.opacity = '0';
         nametag.style.opacity = 0;
-        nametag.textContent = "老一辈的'智叟'"; // 重置为原始文本
+        nametag.textContent = "老一辈的'智叟'";
         speechBubble.style.opacity = 0;
         speechBubble.textContent = '';
         villagerSummoned = false;
         confettiContainer.innerHTML = '';
-        // 清除joker timeout
         if (jokerTimeout) {
             clearTimeout(jokerTimeout);
             jokerTimeout = null;
         }
-        // 隐藏Joker图片
         jokerImage.style.opacity = 0;
         setTimeout(() => {
             jokerImage.style.display = 'none';
         }, 800);
-        // 重置Joker状态
         jokerReady = false;
         pendingJokerDisplay = false;
-        // 停止所有音频
         villagerSound.pause();
         villagerSound.currentTime = 0;
         jokerSound.pause();
         jokerSound.currentTime = 0;
         easterEggSound.pause();
         easterEggSound.currentTime = 0;
-        // 隐藏音频通知
         hideAudioNotification();
         loadingStatus.textContent = "";
     };
-    // 提示彩蛋不能重置的消息
     window.showEasterEggResetMessage = function() {
-        console.log("彩蛋已触发，无法重置");
-        // 可以在这里添加一个提示消息的实现
     };
-    // DOM加载完成后执行初始化
     document.addEventListener('DOMContentLoaded', function() {
-        // 获取DOM元素
         chatMessages = document.getElementById('chatMessages');
         messageInput = document.getElementById('messageInput');
         villagerImage = document.querySelector('.villager-image');
@@ -633,11 +555,9 @@
         enableAudioBtn = document.getElementById('enableAudioBtn');
         jokerImage = document.getElementById('jokerImage');
         sendButton = document.getElementById('sendButton');
-        // 绑定发送按钮点击事件
         if (sendButton) {
             sendButton.addEventListener('click', sendMessage);
         }
-        // 绑定Enter键事件
         if (messageInput) {
             messageInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -645,21 +565,17 @@
                 }
             });
         }
-        // 绑定音频启用按钮事件
         enableAudioBtn.addEventListener('click', function() {
             initializeAudio()
-                .then(() => {
+                。then(() => {
                     hideAudioNotification();
-                    // 如果Joker已准备好显示但尚未显示，显示它
                     if (jokerReady && !jokerImage.style.opacity === '1' && !isEasterEggTriggered) {
                         displayJoker();
                     }
                 })
-                .catch(e => console.error("启用音频失败:", e));
+                。catch(e => console.error("启用音频失败:", e));
         });
-        // 双击背景重置场景
         document.querySelector('.scene-container').addEventListener('dblclick', function(e) {
-            // 如果彩蛋已经触发，则阻止事件默认行为和冒泡
             if (isEasterEggTriggered) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -668,13 +584,11 @@
             }
             resetScene();
         });
-        // 触摸设备支持
         let lastTapTime = 0;
         document.querySelector('.scene-container').addEventListener('touchend', function(e) {
             const currentTime = new Date().getTime();
             const tapLength = currentTime - lastTapTime;
             if (tapLength < 500 && tapLength > 0) {
-                // 如果彩蛋已经触发，则阻止快速双击重置
                 if (isEasterEggTriggered) {
                     e.preventDefault();
                     showEasterEggResetMessage();
@@ -685,18 +599,14 @@
             }
             lastTapTime = currentTime;
         });
-        // 设置音频
         setupAudio();
-        // 尝试获取焦点并初始化音频
         setTimeout(() => {
             messageInput.focus();
-            // 轻微延迟后尝试初始化音频
             setTimeout(() => {
                 initializeAudio().catch(() => console.log("页面加载后初始化音频失败"));
             }, 1000);
         }, 500);
     });
-    // 监听用户交互以初始化音频
     document.addEventListener('click', function() {
         initializeAudio().catch(() => console.log("通过点击初始化音频失败"));
     });

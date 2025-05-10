@@ -138,23 +138,80 @@
         z-index: 4;
     }
     .speech-bubble {
-        position: absolute;
-        background-color: white;
-        color: black;
-        padding: 10px 15px;
-        border-radius: 10px;
-        width: 300px;
-        height: 150px;
-        overflow-y: auto;
-        top: 28%;
-        left: 35%;
-        transform: translate(-50%, -100%);
-        opacity: 0;
-        transition: opacity 0.8s;
-        z-index: 4;
-        line-height: 1.4;
-        font-size: 0.95em;
+    position: absolute;
+    background-color: white;
+    color: black;
+    padding: 10px 15px;
+    border-radius: 5px; 
+    width: 300px;
+    height: 150px;
+    overflow-y: auto;
+    top: 28%;
+    left: 35%;
+    transform: translate(-50%, -100%);
+    opacity: 0;
+    transition: opacity 0.8s;
+    z-index: 4;
+    line-height: 1.4;
+    font-size: 0.95em;
+    border: 2px solid #333; 
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.2); 
+}
+
+.speech-pointer {
+    position: absolute;
+    width: 0;
+    height: 0;
+    top: 29%; 
+    left: 19%;
+    border-width: 15px 15px 0;
+    border-style: solid;
+    border-color: #333 transparent transparent; 
+    opacity: 0;
+    transition: opacity 0.8s;
+    z-index: 3;
+}
+
+
+.speech-pointer:after {
+    content: '';
+    position: absolute;
+    top: -17px; 
+    left: -13px;
+    border-width: 13px 13px 0;
+    border-style: solid;
+    border-color: white transparent transparent;
+    z-index: 4;
+}
+
+@media (max-width: 768px) {
+    .speech-bubble {
+        width: 200px;
+        height: 80px;
+        font-size: 0.9em;
     }
+    
+    .speech-pointer {
+        border-width: 10px 10px 0;
+    }
+    
+    .speech-pointer:after {
+        top: -12px;
+        left: -8px;
+        border-width: 8px 8px 0;
+    }
+    
+    .chat-container {
+        height: 150px;
+    }
+    .nametag {
+        font-size: 12px;
+    }
+    .joker-image {
+        width: 100px;
+        height: 100px;
+    }
+}
     .speech-bubble::-webkit-scrollbar {
         width: 6px;
     }
@@ -165,16 +222,6 @@
     .speech-bubble::-webkit-scrollbar-thumb {
         background-color: rgba(0,0,0,0.3);
         border-radius: 3px;
-    }
-    .speech-bubble:after {
-        content: '';
-        position: absolute;
-        bottom: -15px;
-        left: 20%;
-        margin-left: -15px;
-        border-width: 15px 15px 0;
-        border-style: solid;
-        border-color: white transparent;
     }
     .reset-button {
         position: absolute;
@@ -227,23 +274,7 @@
         color: white;
         cursor: pointer;
     }
-    @media (max-width: 768px) {
-    .speech-bubble {
-        width: 200px;
-        height: 80px;
-        font-size: 0.9em;
-    }
-    .chat-container {
-        height: 150px;
-    }
-    .nametag {
-        font-size: 12px;
-    }
-    .joker-image {
-        width: 100px;
-        height: 100px;
-    }
-}
+    
     #loadingStatus {
         position: absolute;
         bottom: 5px;
@@ -261,6 +292,7 @@
     <div class="confetti-container" id="confettiContainer"></div>
     <div class="nametag">老一辈的'智叟'</div>
     <div class="speech-bubble" aria-live="polite"></div>
+    <div class="speech-pointer"></div>
     <img src="https://stellar-cat-4909aa.netlify.app/image/joker.jpeg" alt="Joker" class="joker-image" id="jokerImage">
     <audio id="villagerSound" preload="auto"></audio>
     <audio id="jokerSound" preload="auto"></audio>
@@ -401,6 +433,7 @@
         function typeNextChar() {
             if (i < text.length) {
                 element.textContent += text.charAt(i);
+                element.scrollTop = element.scrollHeight;
                 i++;
                 setTimeout(typeNextChar, speed);
             } else if (callback) {
@@ -410,45 +443,66 @@
         typeNextChar();
     };
         window.summonVillager = function() {
-        villagerSummoned = true;
-        createConfetti();
-        villagerImage.style.opacity = '1';
+    villagerSummoned = true;
+    createConfetti();
+    villagerImage.style.opacity = '1';
+    
+    // 获取指针元素
+    const speechPointer = document.querySelector('.speech-pointer');
+    
+    setTimeout(() => {
+        nametag.style.opacity = 1;
         setTimeout(() => {
-            nametag.style.opacity = 1;
-            setTimeout(() => {
-                speechBubble.style.opacity = 1;
-                const villagerText = "你刚刚说了表姐是吧，首先我认为她就是很失败的，因为她没有找男人结婚她学历高有啥用，不还是没男人要吗？";
-                typewriterEffect(speechBubble, villagerText, 40, showJokerAfterDelay);
-                playVillagerSound();
-                const villagerMessageDiv = document.createElement('div');
-                villagerMessageDiv.className = 'message villager-message';
-                villagerMessageDiv.textContent = `老一辈的'智叟': ${villagerText}`;
-                chatMessages.appendChild(villagerMessageDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 500);
-        }, 800);
-    };
+            // 显示对话框和指针
+            speechBubble.style.opacity = 1;
+            speechPointer.style.opacity = 1;
+            
+            const villagerText = "你刚刚说了表姐是吧，首先我认为她就是很失败的，因为她没有找男人结婚她学历高有啥用，不还是没男人要吗？";
+            
+            // 使用打字效果
+            typewriterEffect(speechBubble, villagerText, 40, showJokerAfterDelay);
+            playVillagerSound();
+            
+            // 添加到聊天记录
+            const villagerMessageDiv = document.createElement('div');
+            villagerMessageDiv.className = 'message villager-message';
+            villagerMessageDiv.textContent = `老一辈的'智叟': ${villagerText}`;
+            chatMessages.appendChild(villagerMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }, 500);
+    }, 800);
+};
     window.summonVillagerWithEasterEgg = function() {
-        villagerSummoned = true;
-        createConfetti();
-        villagerImage.style.opacity = '1';
+    villagerSummoned = true;
+    createConfetti();
+    villagerImage.style.opacity = '1';
+    
+    // 获取指针元素
+    const speechPointer = document.querySelector('.speech-pointer');
+    
+    setTimeout(() => {
+        nametag.style.opacity = 1;
         setTimeout(() => {
-            nametag.style.opacity = 1;
-            setTimeout(() => {
-                speechBubble.style.opacity = 1;
-                const easterEggText = "我认为栗子是沉静中带着灵动的，温暖而不失坚韧的，可靠且善解人意的，低调谦逊却富有好奇心的，兼具冷静理性与敏锐同理心的，思维缜密又富有创造力的，勤奋务实而执着坚定的，乐观向上且心怀热忱的，幽默风趣却真诚坦率的，脚踏实地而追求卓越的，独立自主且富有主见的，自律克己又虚怀若谷的，知行合一却默默耕耘的，心思细腻而行动果决的，善于观察且锐意创新的，外柔内刚又内心丰盈的一位医学生。";
-                typewriterEffect(speechBubble, easterEggText, 20);
-                playEasterEggSound();
-                const villagerMessageDiv = document.createElement('div');
-                villagerMessageDiv.className = 'message villager-message';
-                villagerMessageDiv.textContent = `小空城: ${easterEggText}`;
-                chatMessages.appendChild(villagerMessageDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                // 需要让speech-bubble滚动到顶部，以便用户能看到文本开头
-                speechBubble.scrollTop = 0;
-            }, 500);
-        }, 800);
-    };
+            // 显示对话框和指针
+            speechBubble.style.opacity = 1;
+            speechPointer.style.opacity = 1;
+            
+            const easterEggText = "我认为栗子是沉静中带着灵动的，温暖而不失坚韧的，可靠且善解人意的，低调谦逊却富有好奇心的，兼具冷静理性与敏锐同理心的，思维缜密又富有创造力的，勤奋务实而执着坚定的，乐观向上且心怀热忱的，幽默风趣却真诚坦率的，脚踏实地而追求卓越的，独立自主且富有主见的，自律克己又虚怀若谷的，知行合一却默默耕耘的，心思细腻而行动果决的，善于观察且锐意创新的，外柔内刚又内心丰盈的一位医学生。";
+            
+            // 使用打字效果
+            typewriterEffect(speechBubble, easterEggText, 20);
+            playEasterEggSound();
+            
+            // 添加到聊天记录
+            const villagerMessageDiv = document.createElement('div');
+            villagerMessageDiv.className = 'message villager-message';
+            villagerMessageDiv.textContent = `小空城: ${easterEggText}`;
+            chatMessages.appendChild(villagerMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;                 
+            speechBubble.scrollTop = 0;
+        }, 500);
+    }, 800);
+};
     window.showJokerAfterDelay = function() {
         if (isEasterEggTriggered) return;
         jokerTimeout = setTimeout(() => {
@@ -509,36 +563,47 @@
         }
     };
     window.resetScene = function() {
-        if (isEasterEggTriggered) {
-            showEasterEggResetMessage();
-            return;
-        }
-        villagerImage.style.opacity = '0';
-        nametag.style.opacity = 0;
-        nametag.textContent = "老一辈的'智叟'";
-        speechBubble.style.opacity = 0;
-        speechBubble.textContent = '';
-        villagerSummoned = false;
-        confettiContainer.innerHTML = '';
-        if (jokerTimeout) {
-            clearTimeout(jokerTimeout);
-            jokerTimeout = null;
-        }
-        jokerImage.style.opacity = 0;
-        setTimeout(() => {
-            jokerImage.style.display = 'none';
-        }, 800);
-        jokerReady = false;
-        pendingJokerDisplay = false;
-        villagerSound.pause();
-        villagerSound.currentTime = 0;
-        jokerSound.pause();
-        jokerSound.currentTime = 0;
-        easterEggSound.pause();
-        easterEggSound.currentTime = 0;
-        hideAudioNotification();
-        loadingStatus.textContent = "";
-    };
+    if (isEasterEggTriggered) {
+        showEasterEggResetMessage();
+        return;
+    }
+    
+    villagerImage.style.opacity = '0';
+    nametag.style.opacity = 0;
+    nametag.textContent = "老一辈的'智叟'";
+    speechBubble.style.opacity = 0;
+    speechBubble.textContent = '';
+    
+    // 隐藏指针
+    const speechPointer = document.querySelector('.speech-pointer');
+    speechPointer.style.opacity = 0;
+    
+    villagerSummoned = false;
+    confettiContainer.innerHTML = '';
+    
+    if (jokerTimeout) {
+        clearTimeout(jokerTimeout);
+        jokerTimeout = null;
+    }
+    
+    jokerImage.style.opacity = 0;
+    setTimeout(() => {
+        jokerImage.style.display = 'none';
+    }, 800);
+    
+    jokerReady = false;
+    pendingJokerDisplay = false;
+    
+    villagerSound.pause();
+    villagerSound.currentTime = 0;
+    jokerSound.pause();
+    jokerSound.currentTime = 0;
+    easterEggSound.pause();
+    easterEggSound.currentTime = 0;
+    
+    hideAudioNotification();
+    loadingStatus.textContent = "";
+};
     window.showEasterEggResetMessage = function() {
     };
     document.addEventListener('DOMContentLoaded', function() {
@@ -556,6 +621,7 @@
         enableAudioBtn = document.getElementById('enableAudioBtn');
         jokerImage = document.getElementById('jokerImage');
         sendButton = document.getElementById('sendButton');
+        const speechPointer = document.querySelector('.speech-pointer');
         // 检查是否应该显示通知，默认隐藏
         hideAudioNotification();
         if (sendButton) {

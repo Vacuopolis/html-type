@@ -215,7 +215,6 @@
         padding: 15px 20px;
         border-radius: 8px;
         z-index: 100;
-        display: none;
         text-align: center;
         max-width: 80%;
     }
@@ -302,6 +301,7 @@
     let jokerReady = false;
     let pendingJokerDisplay = false;
     let isEasterEggTriggered = false;
+    
     window.setupAudio = function() {
         villagerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/lybdzs.mp3";
         jokerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/joker.mp3";
@@ -310,6 +310,7 @@
         jokerSound.load();
         easterEggSound.load();
     };
+    
     window.initializeAudio = function() {
         if (audioInitialized) return Promise.resolve();
         return new Promise((resolve, reject) => {
@@ -329,6 +330,7 @@
                     easterEggSound.pause();
                     easterEggSound.currentTime = 0;
                     audioInitialized = true;
+                    hideAudioNotification();
                     if (pendingJokerDisplay && jokerReady && !isEasterEggTriggered) {
                         displayJoker();
                     }
@@ -339,24 +341,31 @@
                     reject(error);
                 });
             } else {
+                showAudioNotification();
                 reject(new Error("无法初始化音频"));
             }
         });
     };
+    
     window.showAudioNotification = function() {
         audioNotification.style.display = 'block';
     };
+    
     window.hideAudioNotification = function() {
         audioNotification.style.display = 'none';
     };
+    
     window.sendMessage = function() {
         const message = messageInput.value.trim();
         if (message === '') return;
+        
         initializeAudio().catch(() => console.log("通过消息发送初始化音频失败"));
+        
         const playerMessageDiv = document.createElement('div');
         playerMessageDiv.className = 'message player-message';
         playerMessageDiv.textContent = `你: ${message}`;
         chatMessages.appendChild(playerMessageDiv);
+        
         if (message === "🌰") {
             isEasterEggTriggered = true;
             if (jokerTimeout) {
@@ -369,13 +378,16 @@
         else if (message.includes('表姐') && !villagerSummoned) {
             summonVillager();
         }
+        
         messageInput.value = '';
         chatMessages.scrollTop = chatMessages.scrollHeight;
     };
+    
     window.getConfettiCount = function() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         return isMobile ? 100 : 200;
     };
+    
     window.createConfetti = function() {
         confettiContainer.innerHTML = '';
         const confettiCount = getConfettiCount();
@@ -394,6 +406,7 @@
             confettiContainer.appendChild(confetti);
         }
     };
+    
     window.typewriterEffect = function(element, text, speed = 40, callback) {
         element.textContent = '';
         let i = 0;
@@ -408,6 +421,7 @@
         }
         typeNextChar();
     };
+    
     window.summonVillager = function() {
         villagerSummoned = true;
         createConfetti();
@@ -427,6 +441,7 @@
             }, 500);
         }, 800);
     };
+    
     window.summonVillagerWithEasterEgg = function() {
         villagerSummoned = true;
         createConfetti();
@@ -449,6 +464,7 @@
             }, 500);
         }, 800);
     };
+    
     window.showJokerAfterDelay = function() {
         if (isEasterEggTriggered) return;
         jokerTimeout = setTimeout(() => {
@@ -461,6 +477,7 @@
             }
         }, 6000);
     };
+    
     window.displayJoker = function() {
         if (isEasterEggTriggered) return;
         pendingJokerDisplay = false;
@@ -470,6 +487,7 @@
             playJokerSound();
         }, 50);
     };
+    
     window.playVillagerSound = function() {
         if (!audioInitialized) {
             initializeAudio().catch(() => console.log("播放村民声音时初始化音频失败"));
@@ -480,9 +498,11 @@
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 console.error("播放村民音频失败:", error);
+                showAudioNotification();
             });
         }
     };
+    
     window.playJokerSound = function() {
         if (!audioInitialized) return;
         jokerSound.currentTime = 0;
@@ -494,6 +514,7 @@
             });
         }
     };
+    
     window.playEasterEggSound = function() {
         if (!audioInitialized) {
             initializeAudio().catch(() => console.log("播放彩蛋音频时初始化音频失败"));
@@ -507,6 +528,7 @@
             });
         }
     };
+    
     window.resetScene = function() {
         if (isEasterEggTriggered) {
             showEasterEggResetMessage();
@@ -538,8 +560,10 @@
         hideAudioNotification();
         loadingStatus.textContent = "";
     };
+    
     window.showEasterEggResetMessage = function() {
     };
+    
     document.addEventListener('DOMContentLoaded', function() {
         chatMessages = document.getElementById('chatMessages');
         messageInput = document.getElementById('messageInput');
@@ -555,9 +579,14 @@
         enableAudioBtn = document.getElementById('enableAudioBtn');
         jokerImage = document.getElementById('jokerImage');
         sendButton = document.getElementById('sendButton');
+        
+        // 检查是否应该显示通知，默认隐藏
+        hideAudioNotification();
+        
         if (sendButton) {
             sendButton.addEventListener('click', sendMessage);
         }
+        
         if (messageInput) {
             messageInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -565,16 +594,18 @@
                 }
             });
         }
+        
         enableAudioBtn.addEventListener('click', function() {
             initializeAudio()
-                。then(() => {
+                .then(() => {
                     hideAudioNotification();
                     if (jokerReady && !jokerImage.style.opacity === '1' && !isEasterEggTriggered) {
                         displayJoker();
                     }
                 })
-                。catch(e => console.error("启用音频失败:", e));
+                .catch(e => console.error("启用音频失败:", e));
         });
+        
         document.querySelector('.scene-container').addEventListener('dblclick', function(e) {
             if (isEasterEggTriggered) {
                 e.preventDefault();
@@ -584,6 +615,7 @@
             }
             resetScene();
         });
+        
         let lastTapTime = 0;
         document.querySelector('.scene-container').addEventListener('touchend', function(e) {
             const currentTime = new Date().getTime();
@@ -599,14 +631,20 @@
             }
             lastTapTime = currentTime;
         });
+        
         setupAudio();
+        
         setTimeout(() => {
             messageInput.focus();
             setTimeout(() => {
-                initializeAudio().catch(() => console.log("页面加载后初始化音频失败"));
+                initializeAudio().catch(() => {
+                    console.log("页面加载后初始化音频失败");
+                    showAudioNotification();
+                });
             }, 1000);
         }, 500);
     });
+    
     document.addEventListener('click', function() {
         initializeAudio().catch(() => console.log("通过点击初始化音频失败"));
     });

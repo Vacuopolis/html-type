@@ -138,44 +138,44 @@
         z-index: 4;
     }
     .speech-bubble {
-    position: absolute;
-    background-color: white;
-    color: black;
-    padding: 10px 15px;
-    border-radius: 10px;
-    max-width: 70%;
-    max-height: 50vh;
-    overflow-y: auto;
-    top: 28%;
-    left: 35%;
-    transform: translate(-50%, -100%);
-    opacity: 0;
-    transition: opacity 0.8s;
-    z-index: 4;
-    line-height: 1.4;
-    font-size: 0.95em;
-}
-.speech-bubble::-webkit-scrollbar {
-    width: 6px;
-}
-.speech-bubble::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.1);
-    border-radius: 3px;
-}
-.speech-bubble::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.3);
-    border-radius: 3px;
-}
-.speech-bubble:after {
-    content: '';
-    position: absolute;
-    bottom: -15px;
-    left: 20%;
-    margin-left: -15px;
-    border-width: 15px 15px 0;
-    border-style: solid;
-    border-color: white transparent;
-}
+        position: absolute;
+        background-color: white;
+        color: black;
+        padding: 10px 15px;
+        border-radius: 10px;
+        width: 300px;
+        height: 150px;
+        overflow-y: auto;
+        top: 28%;
+        left: 35%;
+        transform: translate(-50%, -100%);
+        opacity: 0;
+        transition: opacity 0.8s;
+        z-index: 4;
+        line-height: 1.4;
+        font-size: 0.95em;
+    }
+    .speech-bubble::-webkit-scrollbar {
+        width: 6px;
+    }
+    .speech-bubble::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.1);
+        border-radius: 3px;
+    }
+    .speech-bubble::-webkit-scrollbar-thumb {
+        background-color: rgba(0,0,0,0.3);
+        border-radius: 3px;
+    }
+    .speech-bubble:after {
+        content: '';
+        position: absolute;
+        bottom: -15px;
+        left: 20%;
+        margin-left: -15px;
+        border-width: 15px 15px 0;
+        border-style: solid;
+        border-color: white transparent;
+    }
     .reset-button {
         position: absolute;
         top: 10px;
@@ -229,9 +229,9 @@
     }
     @media (max-width: 768px) {
     .speech-bubble {
-        max-width: 85%;
+        width: 200px;
+        height: 80px;
         font-size: 0.9em;
-        max-height: 40vh;
     }
     .chat-container {
         height: 150px;
@@ -301,7 +301,6 @@
     let jokerReady = false;
     let pendingJokerDisplay = false;
     let isEasterEggTriggered = false;
-    
     window.setupAudio = function() {
         villagerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/lybdzs.mp3";
         jokerSound.src = "https://stellar-cat-4909aa.netlify.app/audio/joker.mp3";
@@ -310,7 +309,6 @@
         jokerSound.load();
         easterEggSound.load();
     };
-    
     window.initializeAudio = function() {
         if (audioInitialized) return Promise.resolve();
         return new Promise((resolve, reject) => {
@@ -346,26 +344,20 @@
             }
         });
     };
-    
     window.showAudioNotification = function() {
         audioNotification.style.display = 'block';
     };
-    
     window.hideAudioNotification = function() {
         audioNotification.style.display = 'none';
     };
-    
     window.sendMessage = function() {
         const message = messageInput.value.trim();
         if (message === '') return;
-        
         initializeAudio().catch(() => console.log("通过消息发送初始化音频失败"));
-        
         const playerMessageDiv = document.createElement('div');
         playerMessageDiv.className = 'message player-message';
         playerMessageDiv.textContent = `你: ${message}`;
         chatMessages.appendChild(playerMessageDiv);
-        
         if (message === "🌰") {
             isEasterEggTriggered = true;
             if (jokerTimeout) {
@@ -378,16 +370,13 @@
         else if (message.includes('表姐') && !villagerSummoned) {
             summonVillager();
         }
-        
         messageInput.value = '';
         chatMessages.scrollTop = chatMessages.scrollHeight;
     };
-    
     window.getConfettiCount = function() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         return isMobile ? 100 : 200;
     };
-    
     window.createConfetti = function() {
         confettiContainer.innerHTML = '';
         const confettiCount = getConfettiCount();
@@ -406,7 +395,6 @@
             confettiContainer.appendChild(confetti);
         }
     };
-    
     window.typewriterEffect = function(element, text, speed = 40, callback) {
         element.textContent = '';
         let i = 0;
@@ -421,8 +409,7 @@
         }
         typeNextChar();
     };
-    
-    window.summonVillager = function() {
+        window.summonVillager = function() {
         villagerSummoned = true;
         createConfetti();
         villagerImage.style.opacity = '1';
@@ -441,7 +428,6 @@
             }, 500);
         }, 800);
     };
-    
     window.summonVillagerWithEasterEgg = function() {
         villagerSummoned = true;
         createConfetti();
@@ -458,13 +444,11 @@
                 villagerMessageDiv.textContent = `小空城: ${easterEggText}`;
                 chatMessages.appendChild(villagerMessageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
-                setTimeout(() => {
-                    speechBubble.scrollTop = 0;
-                }, easterEggText.length * 20 + 100);
+                // 需要让speech-bubble滚动到顶部，以便用户能看到文本开头
+                speechBubble.scrollTop = 0;
             }, 500);
         }, 800);
     };
-    
     window.showJokerAfterDelay = function() {
         if (isEasterEggTriggered) return;
         jokerTimeout = setTimeout(() => {
@@ -477,7 +461,6 @@
             }
         }, 6000);
     };
-    
     window.displayJoker = function() {
         if (isEasterEggTriggered) return;
         pendingJokerDisplay = false;
@@ -487,7 +470,6 @@
             playJokerSound();
         }, 50);
     };
-    
     window.playVillagerSound = function() {
         if (!audioInitialized) {
             initializeAudio().catch(() => console.log("播放村民声音时初始化音频失败"));
@@ -502,7 +484,6 @@
             });
         }
     };
-    
     window.playJokerSound = function() {
         if (!audioInitialized) return;
         jokerSound.currentTime = 0;
@@ -514,7 +495,6 @@
             });
         }
     };
-    
     window.playEasterEggSound = function() {
         if (!audioInitialized) {
             initializeAudio().catch(() => console.log("播放彩蛋音频时初始化音频失败"));
@@ -528,7 +508,6 @@
             });
         }
     };
-    
     window.resetScene = function() {
         if (isEasterEggTriggered) {
             showEasterEggResetMessage();
@@ -560,10 +539,8 @@
         hideAudioNotification();
         loadingStatus.textContent = "";
     };
-    
     window.showEasterEggResetMessage = function() {
     };
-    
     document.addEventListener('DOMContentLoaded', function() {
         chatMessages = document.getElementById('chatMessages');
         messageInput = document.getElementById('messageInput');
@@ -579,14 +556,11 @@
         enableAudioBtn = document.getElementById('enableAudioBtn');
         jokerImage = document.getElementById('jokerImage');
         sendButton = document.getElementById('sendButton');
-        
         // 检查是否应该显示通知，默认隐藏
         hideAudioNotification();
-        
         if (sendButton) {
             sendButton.addEventListener('click', sendMessage);
         }
-        
         if (messageInput) {
             messageInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -594,7 +568,6 @@
                 }
             });
         }
-        
         enableAudioBtn.addEventListener('click', function() {
             initializeAudio()
                 .then(() => {
@@ -605,7 +578,6 @@
                 })
                 .catch(e => console.error("启用音频失败:", e));
         });
-        
         document.querySelector('.scene-container').addEventListener('dblclick', function(e) {
             if (isEasterEggTriggered) {
                 e.preventDefault();
@@ -615,7 +587,6 @@
             }
             resetScene();
         });
-        
         let lastTapTime = 0;
         document.querySelector('.scene-container').addEventListener('touchend', function(e) {
             const currentTime = new Date().getTime();
@@ -631,9 +602,7 @@
             }
             lastTapTime = currentTime;
         });
-        
         setupAudio();
-        
         setTimeout(() => {
             messageInput.focus();
             setTimeout(() => {
@@ -644,7 +613,6 @@
             }, 1000);
         }, 500);
     });
-    
     document.addEventListener('click', function() {
         initializeAudio().catch(() => console.log("通过点击初始化音频失败"));
     });

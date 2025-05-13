@@ -139,7 +139,6 @@
              opacity: 1;
              transform: translateX(-50%);
         }
-
         #settings-panel {
             position: fixed;
             top: 75px;
@@ -228,7 +227,14 @@
             color: #e2e8f0;
             border-color: #4a5568;
         }
-
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 1000;
+            will-change: transform;
+        }
         @media (max-width: 600px) {
             body {
                 padding-bottom: 70px;
@@ -269,22 +275,19 @@
             <button id="settings-btn" aria-label="打开或关闭设置面板">设置</button>
             <button id="theme-btn" aria-label="切换亮色或暗色主题">切换主题</button>
         </div>
-
-        <textarea id="text-input" placeholder="在此输入想要显示的文字内容... 不妨输入 “空城的小彩蛋” 试试看！"></textarea>
-
+        <textarea id="text-input" placeholder="在此输入想要显示的文字内容... 不妨输入“空城的小彩蛋”试试看！"></textarea>
         <div id="container"></div>
-
         <div id="settings-panel">
             <h3>效果设置</h3>
             <div class="setting-item">
                 <label for="radius-slider">排斥半径</label>
                 <input type="range" id="radius-slider" min="30" max="400" step="5">
-                <div class="setting-value" id="radius-value">150px</div>
+                <div class="setting-value" id="radius-value">140px</div>
             </div>
              <div class="setting-item">
                 <label for="force-slider">排斥力度</label>
                 <input type="range" id="force-slider" min="0.1" max="2.0" step="0.1">
-                <div class="setting-value" id="force-value">1.0</div>
+                <div class="setting-value" id="force-value">0.7</div>
             </div>
             <div class="setting-item">
                 <label for="font-size-slider">字体大小</label>
@@ -294,12 +297,12 @@
             <div class="setting-item">
                 <label for="line-height-slider">行高</label>
                 <input type="range" id="line-height-slider" min="1.0" max="3.0" step="0.1">
-                <div class="setting-value" id="line-height-value">1.8</div>
+                <div class="setting-value" id="line-height-value">1.5</div>
             </div>
             <div class="setting-item">
                 <label for="letter-spacing-slider">字间距</label>
                 <input type="range" id="letter-spacing-slider" min="-2" max="10" step="0.5">
-                <div class="setting-value" id="letter-spacing-value">1px</div>
+                <div class="setting-value" id="letter-spacing-value">0.8px</div>
             </div>
             <div class="setting-item">
                 <label for="animation-speed-slider">动画速度</label>
@@ -309,10 +312,8 @@
             <button id="close-settings" class="btn" aria-label="关闭设置面板">关闭</button>
         </div>
     </div>
-
     <div class="hint">触摸或鼠标悬停在文字上体验互动效果</div>
     <div id="toast-notification"></div>
-
 <script>
 (function() {
     const defaultText = `《再别康桥》徐志摩
@@ -331,26 +332,22 @@
 油油的在水底招摇；
 在康河的柔波里，
 我甘心做一条水草。`;
-
     const initialConfig = Object.freeze({
-        radius: 150,
-        force: 1.0,
+        radius: 140,
+        force: 0.7,
         fontSize: 18,
-        lineHeight: 1.8,
-        animationSpeed: 800,
-        letterSpacing: 1,
+        lineHeight: 1.5,
+        animationSpeed: 500,
+        letterSpacing: 0.8,
         isDarkTheme: false,
         currentText: defaultText
     });
-
     let config = { ...initialConfig };
-
     const EASTER_EGG_TRIGGER = "空城的小彩蛋";
     const EASTER_EGG_CHAR = "🌰";
     const EASTER_EGG_COUNT = 25;
     const EASTER_EGG_ORBIT_SPEED = 0.005;
     const EASTER_EGG_HEART_X_OFFSET = 20;
-
     const container = document.getElementById('container');
     const textInput = document.getElementById('text-input');
     const editBtn = document.getElementById('edit-btn');
@@ -361,21 +358,18 @@
     const themeBtn = document.getElementById('theme-btn');
     const hint = document.querySelector('.hint');
     const toast = document.getElementById('toast-notification');
-
     const radiusSlider = document.getElementById('radius-slider');
     const forceSlider = document.getElementById('force-slider');
     const fontSizeSlider = document.getElementById('font-size-slider');
     const lineHeightSlider = document.getElementById('line-height-slider');
     const letterSpacingSlider = document.getElementById('letter-spacing-slider');
     const animationSpeedSlider = document.getElementById('animation-speed-slider');
-
     const radiusValue = document.getElementById('radius-value');
     const forceValue = document.getElementById('force-value');
     const fontSizeValue = document.getElementById('font-size-value');
     const lineHeightValue = document.getElementById('line-height-value');
     const letterSpacingValue = document.getElementById('letter-spacing-value');
     const animationSpeedValue = document.getElementById('animation-speed-value');
-
     let chars = [];
     let containerRect;
     let isInteracting = false;
@@ -388,7 +382,110 @@
     let easterEggOrbitOffset = 0;
     const STORAGE_KEY = 'textMagneticFieldState_v3';
     let toastTimeout = null;
-
+    
+    function createConfetti() {
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4', '#9400d3', '#32cd32'];
+        const shapes = ['square', 'circle', 'triangle', 'heart', 'star'];
+        const confettiCount = 100;
+        const confettiContainer = document.createElement('div');
+        confettiContainer.style.position = 'fixed';
+        confettiContainer.style.top = '0';
+        confettiContainer.style.left = '0';
+        confettiContainer.style.width = '100%';
+        confettiContainer.style.height = '100%';
+        confettiContainer.style.pointerEvents = 'none';
+        confettiContainer.style.zIndex = '9999';
+        document.body.appendChild(confettiContainer);
+        
+        for (let i = 0; i < confettiCount; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                const size = Math.random() * 10 + 5;
+                
+                confetti.style.background = color;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.position = 'absolute';
+                confetti.style.zIndex = '9999';
+                
+                if (shape === 'circle') {
+                    confetti.style.borderRadius = '50%';
+                } else if (shape === 'triangle') {
+                    confetti.style.width = '0';
+                    confetti.style.height = '0';
+                    confetti.style.borderLeft = `${size/2}px solid transparent`;
+                    confetti.style.borderRight = `${size/2}px solid transparent`;
+                    confetti.style.borderBottom = `${size}px solid ${color}`;
+                    confetti.style.background = 'transparent';
+                } else if (shape === 'heart') {
+                    confetti.style.background = 'transparent';
+                    confetti.innerHTML = '❤️';
+                    confetti.style.color = color;
+                    confetti.style.fontSize = `${size}px`;
+                } else if (shape === 'star') {
+                    confetti.style.background = 'transparent';
+                    confetti.innerHTML = '★';
+                    confetti.style.color = color;
+                    confetti.style.fontSize = `${size}px`;
+                }
+                
+                const startX = Math.random() * window.innerWidth;
+                const endX = startX + (Math.random() - 0.5) * 200;
+                const startY = -20;
+                const endY = window.innerHeight + 20;
+                
+                confetti.style.left = `${startX}px`;
+                confetti.style.top = `${startY}px`;
+                
+                const duration = Math.random() * 3000 + 2000;
+                const rotation = Math.random() * 360;
+                
+                confetti.style.transform = `rotate(${rotation}deg)`;
+                
+                confettiContainer.appendChild(confetti);
+                
+                // 动画
+                const startTime = Date.now();
+                
+                function animateConfetti() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = elapsed / duration;
+                    
+                    if (progress >= 1) {
+                        confetti.remove();
+                        return;
+                    }
+                    
+                    const currentY = startY + (endY - startY) * progress;
+                    const currentX = startX + (endX - startX) * Math.sin(progress * Math.PI * 2);
+                    const currentRotation = rotation + progress * 720;
+                    
+                    confetti.style.top = `${currentY}px`;
+                    confetti.style.left = `${currentX}px`;
+                    confetti.style.transform = `rotate(${currentRotation}deg)`;
+                    
+                    requestAnimationFrame(animateConfetti);
+                }
+                
+                requestAnimationFrame(animateConfetti);
+                
+                // 清理
+                setTimeout(() => {
+                    confetti.remove();
+                }, duration + 100);
+            }, Math.random() * 1500);
+        }
+        
+        // 清理容器
+        setTimeout(() => {
+            confettiContainer.remove();
+        }, 6000);
+    }
+    
     function init() {
         loadState();
         updateUIFromConfig();
@@ -401,19 +498,15 @@
         setupEventListeners();
         hideHint();
     }
-
     function showToast(message, duration = 5000) {
         if (!toast) return;
         clearTimeout(toastTimeout);
-
         toast.textContent = message;
         toast.classList.add('show');
-
         toastTimeout = setTimeout(() => {
             toast.classList.remove('show');
         }, duration);
     }
-
     function hideHint() {
         setTimeout(() => {
             if (hint) hint.style.opacity = '0';
@@ -422,7 +515,6 @@
             }, 500);
         }, 5000);
     }
-
     function saveState() {
         const textToSave = (isEasterEggActive && config.currentText === EASTER_EGG_TRIGGER) ? defaultText : config.currentText;
         try {
@@ -444,7 +536,6 @@
             console.error("保存状态失败:", e);
         }
     }
-
      function loadState() {
         try {
             const savedState = localStorage.getItem(STORAGE_KEY);
@@ -455,7 +546,6 @@
                 } else {
                      config.currentText = state.text || initialConfig.currentText;
                 }
-
                 config.isDarkTheme = state.theme ?? initialConfig.isDarkTheme;
                 if (state.settings) {
                     config.radius = state.settings.radius ?? initialConfig.radius;
@@ -474,28 +564,23 @@
         }
         textInput.value = config.currentText;
     }
-
     function updateUIFromConfig() {
         document.body.classList.toggle('dark-theme', config.isDarkTheme);
         themeBtn.textContent = config.isDarkTheme ? '亮色主题' : '暗色主题';
-
         radiusSlider.value = config.radius;
         forceSlider.value = config.force;
         fontSizeSlider.value = config.fontSize;
         lineHeightSlider.value = config.lineHeight;
         letterSpacingSlider.value = config.letterSpacing;
         animationSpeedSlider.value = config.animationSpeed;
-
         radiusValue.textContent = `${config.radius}px`;
         forceValue.textContent = config.force.toFixed(1);
         fontSizeValue.textContent = `${config.fontSize}px`;
         lineHeightValue.textContent = config.lineHeight.toFixed(1);
         letterSpacingValue.textContent = `${config.letterSpacing}px`;
         animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
-
         applyDynamicStyles();
     }
-
     function applyDynamicStyles() {
          const transitionStyle = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease`;
          chars.forEach(char => {
@@ -504,39 +589,31 @@
             }
         });
     }
-
     function setupEventListeners() {
         container.addEventListener('touchstart', handleInteractionStart, { passive: false });
         container.addEventListener('touchmove', handleInteractionMove, { passive: false });
         container.addEventListener('touchend', handleInteractionEnd);
         container.addEventListener('touchcancel', handleInteractionEnd);
-
         container.addEventListener('mouseenter', handleInteractionStart);
         container.addEventListener('mousemove', handleInteractionMove);
         container.addEventListener('mouseleave', handleInteractionEnd);
-
         editBtn.addEventListener('click', toggleEditMode);
         resetBtn.addEventListener('click', resetToDefaults);
         settingsBtn.addEventListener('click', toggleSettings);
         closeSettingsBtn.addEventListener('click', toggleSettings);
         themeBtn.addEventListener('click', toggleTheme);
-
         radiusSlider.addEventListener('input', updateRadius);
         forceSlider.addEventListener('input', updateForce);
         fontSizeSlider.addEventListener('input', updateFontSize);
         lineHeightSlider.addEventListener('input', updateLineHeight);
         letterSpacingSlider.addEventListener('input', updateLetterSpacing);
         animationSpeedSlider.addEventListener('input', updateAnimationSpeed);
-
         [radiusSlider, forceSlider, fontSizeSlider, lineHeightSlider, letterSpacingSlider, animationSpeedSlider].forEach(slider => {
             slider.addEventListener('change', debounce(saveState, 300));
         });
-
         window.addEventListener('resize', debounce(handleResize, 250));
-
         textInput.addEventListener('input', () => {});
     }
-
     function createMeasureSpan() {
         if (!measureSpan) {
             measureSpan = document.createElement('span');
@@ -548,55 +625,45 @@
             document.body.appendChild(measureSpan);
         }
     }
-
     function layoutText(text) {
         isEasterEggActive = false;
         container.innerHTML = '';
         chars = [];
         activeCharIndex = -1;
         cancelAnimationLoop();
-
         if (!text || text.trim() === '') {
             text = '点击 "编辑文本" 按钮来添加内容...';
         }
-
         containerRect = container.getBoundingClientRect();
         const computedStyle = getComputedStyle(container);
         const paddingLeft = parseFloat(computedStyle.paddingLeft);
         const paddingTop = parseFloat(computedStyle.paddingTop);
         const paddingBottom = parseFloat(computedStyle.paddingBottom);
         const containerWidth = container.clientWidth;
-
         measureSpan.style.fontSize = `${config.fontSize}px`;
         measureSpan.style.fontFamily = computedStyle.fontFamily;
         measureSpan.style.letterSpacing = `${config.letterSpacing}px`;
         measureSpan.style.lineHeight = `${config.lineHeight}`;
-
         const lines = text.split('\n');
         let yPos = paddingTop;
         let charIndex = 0;
         const linePixelHeight = config.fontSize * config.lineHeight;
         const fragment = document.createDocumentFragment();
-
         lines.forEach((line, lineIndex) => {
             let xPos = paddingLeft;
             const lineChars = line.split('');
-
             if (lineChars.length === 0 && lines.length > 1 && lineIndex < lines.length - 1) {
                  yPos += linePixelHeight;
                  return;
             }
-
             lineChars.forEach(char => {
                 measureSpan.textContent = (char === ' ' ? '\u00A0' : char);
                 let charWidth = measureSpan.getBoundingClientRect().width;
                 if(charWidth <= 0 && char !== ' ') charWidth = config.fontSize * 0.6;
-
                 if (xPos > paddingLeft && xPos + charWidth > containerWidth - paddingLeft) {
                     xPos = paddingLeft;
                     yPos += linePixelHeight;
                 }
-
                 const span = document.createElement('span');
                 span.className = 'char';
                 span.textContent = char;
@@ -604,35 +671,26 @@
                 span.style.lineHeight = `${config.lineHeight}`;
                 span.style.letterSpacing = `${config.letterSpacing}px`;
                 span.style.transition = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease`;
-
                 const initialX = xPos;
                 const initialY = yPos;
-
                 span.style.left = `${initialX}px`;
                 span.style.top = `${initialY}px`;
-
                 const randomX = (Math.random() - 0.5) * containerRect.width * 1.5;
                 const randomY = (Math.random() - 0.5) * containerRect.height * 1.5;
                 span.style.transform = `translate(${randomX}px, ${randomY}px)`;
-
                 fragment.appendChild(span);
-
                 chars.push({
                     element: span,
                     originalX: initialX,
                     originalY: initialY,
                     index: charIndex++
                 });
-
                 xPos += charWidth + config.letterSpacing;
             });
-
              yPos += linePixelHeight;
         });
-
         container.appendChild(fragment);
         container.style.minHeight = `${yPos + paddingBottom}px`;
-
         requestAnimationFrame(() => {
             chars.forEach(char => {
                 if (char && char.element) {
@@ -641,64 +699,54 @@
             });
         });
     }
-
     function activateEasterEgg() {
         isEasterEggActive = true;
         container.innerHTML = '';
         chars = [];
         activeCharIndex = -1;
         cancelAnimationLoop();
-
         containerRect = container.getBoundingClientRect();
         const centerX = containerRect.width / 2;
         const centerY = containerRect.height / 2;
         const fragment = document.createDocumentFragment();
         const angleStep = (Math.PI * 2) / EASTER_EGG_COUNT;
-
         let minY = Infinity, maxY = -Infinity;
-
         const effectiveCenterX = centerX - EASTER_EGG_HEART_X_OFFSET;
+        
+        // 当彩蛋触发时，创建五彩纸屑效果
+        createConfetti();
         
         for (let i = 0; i < EASTER_EGG_COUNT; i++) {
             const initialAngle = i * angleStep;
-
             const scaleFactor = Math.max(30, Math.min(config.radius, Math.min(centerX, centerY) * 0.8)) / 18;
             const initialX = effectiveCenterX + scaleFactor * (16 * Math.pow(Math.sin(initialAngle), 3));
             const initialY = centerY - scaleFactor * (13 * Math.cos(initialAngle) - 5 * Math.cos(2 * initialAngle) - 2 * Math.cos(3 * initialAngle) - Math.cos(4 * initialAngle));
-
             minY = Math.min(minY, initialY);
             maxY = Math.max(maxY, initialY);
-
             const span = document.createElement('span');
             span.className = 'easter-egg-char';
             span.textContent = EASTER_EGG_CHAR;
             span.style.left = `0px`;
             span.style.top = `0px`;
             span.style.transition = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
-
             const randomAngle = Math.random() * Math.PI * 2;
             const randomDist = Math.max(containerRect.width, containerRect.height);
             const startX = effectiveCenterX + randomDist * Math.cos(randomAngle);
             const startY = centerY + randomDist * Math.sin(randomAngle);
             span.style.transform = `translate(${startX}px, ${startY}px)`;
-
             fragment.appendChild(span);
-
             chars.push({
                 element: span,
                 initialAngle: initialAngle,
                 index: i
             });
         }
-
         container.appendChild(fragment);
         const requiredHeight = (maxY - minY) + 50;
         container.style.minHeight = `${Math.max(450, requiredHeight)}px`;
-
         easterEggOrbitOffset = 0;
         startAnimationLoop();
     }
-
     function handleInteractionStart(e) {
         if (e.type === 'touchstart') e.preventDefault();
         containerRect = container.getBoundingClientRect();
@@ -708,18 +756,15 @@
              startAnimationLoop();
         }
     }
-
     function handleInteractionMove(e) {
         if (!isInteracting) return;
         if (e.type === 'touchmove') e.preventDefault();
         updatePointerPosition(e);
     }
-
     function handleInteractionEnd() {
         if (!isInteracting) return;
         isInteracting = false;
     }
-
     function updatePointerPosition(e) {
         let clientX, clientY;
         if (e.touches && e.touches.length > 0) {
@@ -735,45 +780,35 @@
         pointer.x = clientX - containerRect.left;
         pointer.y = clientY - containerRect.top;
     }
-
     function startAnimationLoop() {
         if (!rafId) {
             rafId = requestAnimationFrame(animationLoop);
         }
     }
-
     function cancelAnimationLoop() {
         if (rafId) {
             cancelAnimationFrame(rafId);
             rafId = null;
         }
     }
-
     function animationLoop() {
         let needsAnotherFrame = false;
         containerRect = container.getBoundingClientRect();
-
         if (isEasterEggActive) {
             needsAnotherFrame = true;
             easterEggOrbitOffset += EASTER_EGG_ORBIT_SPEED;
-
             const centerX = containerRect.width / 2;
             const centerY = containerRect.height / 2;
             const effectiveCenterX = centerX - EASTER_EGG_HEART_X_OFFSET;
             const scaleFactor = Math.max(30, Math.min(config.radius, Math.min(centerX, centerY) * 0.8)) / 18;
-
             chars.forEach(char => {
                 if (!char || !char.element) return;
-
                 const currentAngle = char.initialAngle + easterEggOrbitOffset;
                 const t = currentAngle;
-
                 const targetOffsetX = scaleFactor * (16 * Math.pow(Math.sin(t), 3));
                 const targetOffsetY = -scaleFactor * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-
                 const targetX = effectiveCenterX + targetOffsetX;
                 const targetY = centerY + targetOffsetY;
-
                 let interactionDx = 0;
                 let interactionDy = 0;
                 if (isInteracting) {
@@ -781,7 +816,6 @@
                     const dy = targetY - pointer.y;
                     const distSq = dx * dx + dy * dy;
                     const radiusSq = config.radius * config.radius;
-
                     if (distSq < radiusSq && distSq > 0.01) {
                         const dist = Math.sqrt(distSq);
                         const angle = Math.atan2(dy, dx);
@@ -790,35 +824,27 @@
                         interactionDy = Math.sin(angle) * forceMagnitude;
                     }
                 }
-
                 const finalX = targetX + interactionDx;
                 const finalY = targetY + interactionDy;
-
                 char.element.style.transform = `translate(${finalX}px, ${finalY}px)`;
             });
-
         } else {
             let currentNearestIndex = -1;
             let nearestDistSq = Infinity;
             const radiusSq = config.radius * config.radius;
-
             if (isInteracting) {
                 needsAnotherFrame = true;
                 chars.forEach((char, index) => {
                     if (!char || !char.element) return;
-
                     const dx = char.originalX - pointer.x;
                     const dy = char.originalY - pointer.y;
                     const distSq = dx * dx + dy * dy;
-
                     let transformX = 0;
                     let transformY = 0;
-
                     if (distSq < nearestDistSq) {
                         nearestDistSq = distSq;
                         currentNearestIndex = index;
                     }
-
                     if (distSq < radiusSq && distSq > 0.01) {
                         const dist = Math.sqrt(distSq);
                         const angle = Math.atan2(dy, dx);
@@ -828,7 +854,6 @@
                     }
                     char.element.style.transform = `translate(${transformX}px, ${transformY}px)`;
                 });
-
                  if (activeCharIndex !== currentNearestIndex) {
                      if (activeCharIndex !== -1 && chars[activeCharIndex] && chars[activeCharIndex].element) {
                          chars[activeCharIndex].element.classList.remove('highlight');
@@ -841,7 +866,6 @@
                  if (activeCharIndex !== -1 && chars[activeCharIndex] && chars[activeCharIndex].element && !chars[activeCharIndex].element.classList.contains('highlight')) {
                     chars[activeCharIndex].element.classList.add('highlight');
                  }
-
             } else {
                 let requiresResetVisuals = false;
                  if (activeCharIndex !== -1) {
@@ -851,7 +875,6 @@
                     activeCharIndex = -1;
                     requiresResetVisuals = true;
                 }
-
                 chars.forEach(char => {
                     if (char && char.element) {
                         const currentTransform = char.element.style.transform;
@@ -864,31 +887,25 @@
                 needsAnotherFrame = requiresResetVisuals;
             }
         }
-
         if (needsAnotherFrame) {
             rafId = requestAnimationFrame(animationLoop);
         } else {
             cancelAnimationLoop();
         }
     }
-
     function resetToDefaults() {
         isInteracting = false;
         isEasterEggActive = false;
         cancelAnimationLoop();
-
         config = { ...initialConfig };
-
         try {
             localStorage.removeItem(STORAGE_KEY);
         } catch (e) {
             console.error("清除状态失败:", e);
         }
-
         updateUIFromConfig();
         textInput.value = config.currentText;
         layoutText(config.currentText);
-
         if (isEditMode) {
             isEditMode = false;
             editBtn.textContent = '编辑文本';
@@ -902,7 +919,6 @@
         clearTimeout(toastTimeout);
         toast.classList.remove('show');
     }
-
     function handleResize() {
         if (isEasterEggActive) {
             activateEasterEgg();
@@ -911,7 +927,6 @@
             layoutText(config.currentText);
         }
     }
-
     function toggleEditMode() {
         isEditMode = !isEditMode;
         if (isEditMode) {
@@ -919,23 +934,20 @@
             textInput.style.display = 'block';
             container.style.display = 'none';
             settingsPanel.style.display = 'none';
-
             textInput.value = isEasterEggActive ? EASTER_EGG_TRIGGER : config.currentText;
             textInput.focus();
             cancelAnimationLoop();
-
         } else {
             editBtn.textContent = '编辑文本';
             textInput.style.display = 'none';
             container.style.display = 'block';
             const newText = textInput.value.trim();
-
             if (newText === EASTER_EGG_TRIGGER) {
                 const previouslyActive = isEasterEggActive;
                 config.currentText = newText;
                 activateEasterEgg();
                 if (!previouslyActive) {
-                    showToast("哦哟，看来是触发了我想给栗子看的隐藏彩蛋嘿嘿！🌰🎉", 5000);
+                    showToast("哦哟，看来是触发了我想给栗子看的隐藏彩蛋嘿嘿！🌰🎉", 6000);
                 }
                 saveState();
             } else {
@@ -950,7 +962,6 @@
             }
         }
     }
-
     function toggleSettings() {
         const isVisible = settingsPanel.style.display === 'block';
         settingsPanel.style.display = isVisible ? 'none' : 'block';
@@ -958,13 +969,11 @@
              updateUIFromConfig();
         }
     }
-
     function toggleTheme() {
         config.isDarkTheme = !config.isDarkTheme;
         updateUIFromConfig();
         saveState();
     }
-
     function updateRadius() {
         config.radius = parseInt(radiusSlider.value);
         radiusValue.textContent = `${config.radius}px`;
@@ -1000,7 +1009,6 @@
         animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
         applyDynamicStyles();
     }
-
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -1012,7 +1020,6 @@
             timeout = setTimeout(later, wait);
         };
     }
-
     init();
 })();
 </script>

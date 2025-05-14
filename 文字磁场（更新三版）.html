@@ -124,7 +124,7 @@
             max-width: 90%;
             width: fit-content;
             text-align: center;
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transition: opacity 1s ease-in-out, transform 1s ease-in-out;
             z-index: 1000;
             pointer-events: none;
         }
@@ -243,6 +243,8 @@
             border-radius: 8px;
             max-width: 300px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 2s ease;
         }
         #easter-egg-dialog {
             position: fixed;
@@ -322,7 +324,7 @@
             <button id="settings-btn" aria-label="打开或关闭设置面板">设置</button>
             <button id="theme-btn" aria-label="切换亮色或暗色主题">切换主题</button>
         </div>
-        <textarea id="text-input" placeholder="在此输入想要显示的文字内容... 不妨输入"空城的小彩蛋"试试看！"></textarea>
+        <textarea id="text-input" placeholder="在此输入想要显示的文字内容...如果不知道写什么，那不妨输入“空城的小彩蛋”试试！😘"></textarea>
         <div id="container">
             <!-- 彩蛋图片和对话框 -->
             <img id="easter-egg-image" src="https://stellar-cat-4909aa.netlify.app/image/ljh_opaque.jpg" alt="彩蛋图片">
@@ -425,15 +427,15 @@
     let rafId = null;
     let pointer = { x: 0, y: 0 };
     let measureSpan = null;
-    const STORAGE_KEY = 'textMagneticFieldState_v3';
+    const STORAGE_KEY = 'textMagneticFieldState_v4'; // 更改了版本号，防止与旧版冲突
     let toastTimeout = null;
     let typingInterval = null;
     let audioPlayer = null;
-
+    
     function createConfetti() {
         const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4', '#9400d3', '#32cd32'];
         const shapes = ['square', 'circle', 'triangle', 'heart', 'star'];
-        const confettiCount = 100;
+        const confettiCount = 20;
         const confettiContainer = document.createElement('div');
         confettiContainer.style.position = 'fixed';
         confettiContainer.style.top = '0';
@@ -443,91 +445,136 @@
         confettiContainer.style.pointerEvents = 'none';
         confettiContainer.style.zIndex = '9999';
         document.body.appendChild(confettiContainer);
+        
+        const fragment = document.createDocumentFragment();
+        const confettiElements = [];
+        const confettiData = [];
+        
         for (let i = 0; i < confettiCount; i++) {
-            setTimeout(() => {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const shape = shapes[Math.floor(Math.random() * shapes.length)];
-                const size = Math.random() * 10 + 5;
-                confetti.style.background = color;
-                confetti.style.width = `${size}px`;
-                confetti.style.height = `${size}px`;
-                confetti.style.position = 'absolute';
-                confetti.style.zIndex = '9999';
-                if (shape === 'circle') {
-                    confetti.style.borderRadius = '50%';
-                } else if (shape === 'triangle') {
-                    confetti.style.width = '0';
-                    confetti.style.height = '0';
-                    confetti.style.borderLeft = `${size/2}px solid transparent`;
-                    confetti.style.borderRight = `${size/2}px solid transparent`;
-                    confetti.style.borderBottom = `${size}px solid ${color}`;
-                    confetti.style.background = 'transparent';
-                } else if (shape === 'heart') {
-                    confetti.style.background = 'transparent';
-                    confetti.innerHTML = '❤️';
-                    confetti.style.color = color;
-                    confetti.style.fontSize = `${size}px`;
-                } else if (shape === 'star') {
-                    confetti.style.background = 'transparent';
-                    confetti.innerHTML = '★';
-                    confetti.style.color = color;
-                    confetti.style.fontSize = `${size}px`;
-                }
-                const startX = Math.random() * window.innerWidth;
-                const endX = startX + (Math.random() - 0.5) * 200;
-                const startY = -20;
-                const endY = window.innerHeight + 20;
-                confetti.style.left = `${startX}px`;
-                confetti.style.top = `${startY}px`;
-                const duration = Math.random() * 3000 + 2000;
-                const rotation = Math.random() * 360;
-                confetti.style.transform = `rotate(${rotation}deg)`;
-                confettiContainer.appendChild(confetti);
-                // 动画
-                const startTime = Date.now();
-                function animateConfetti() {
-                    const elapsed = Date.now() - startTime;
-                    const progress = elapsed / duration;
-                    if (progress >= 1) {
-                        confetti.remove();
-                        return;
-                    }
-                    const currentY = startY + (endY - startY) * progress;
-                    const currentX = startX + (endX - startX) * Math.sin(progress * Math.PI * 2);
-                    const currentRotation = rotation + progress * 720;
-                    confetti.style.top = `${currentY}px`;
-                    confetti.style.left = `${currentX}px`;
-                    confetti.style.transform = `rotate(${currentRotation}deg)`;
-                    requestAnimationFrame(animateConfetti);
-                }
-                requestAnimationFrame(animateConfetti);
-                // 清理
-                setTimeout(() => {
-                    confetti.remove();
-                }, duration + 100);
-            }, Math.random() * 1500);
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const shape = shapes[Math.floor(Math.random() * shapes.length)];
+            const size = Math.random() * 10 + 5;
+            
+            // 设置基本样式
+            confetti.style.background = color;
+            confetti.style.width = `${size}px`;
+            confetti.style.height = `${size}px`;
+            confetti.style.position = 'absolute';
+            confetti.style.zIndex = '9999';
+            confetti.style.opacity = '0'; // 初始透明度为0
+            confetti.style.transition = 'opacity 0.3s ease';
+            
+            if (shape === 'circle') {
+                confetti.style.borderRadius = '50%';
+            } else if (shape === 'triangle') {
+                confetti.style.width = '0';
+                confetti.style.height = '0';
+                confetti.style.borderLeft = `${size/2}px solid transparent`;
+                confetti.style.borderRight = `${size/2}px solid transparent`;
+                confetti.style.borderBottom = `${size}px solid ${color}`;
+                confetti.style.background = 'transparent';
+            } else if (shape === 'heart') {
+                confetti.style.background = 'transparent';
+                confetti.innerHTML = '❤️';
+                confetti.style.color = color;
+                confetti.style.fontSize = `${size}px`;
+            } else if (shape === 'star') {
+                confetti.style.background = 'transparent';
+                confetti.innerHTML = '★';
+                confetti.style.color = color;
+                confetti.style.fontSize = `${size}px`;
+            }
+            
+            const startX = Math.random() * window.innerWidth;
+            const endX = startX + (Math.random() - 0.5) * 200;
+            const startY = -20;
+            const endY = window.innerHeight + 20;
+            
+            confetti.style.left = `${startX}px`;
+            confetti.style.top = `${startY}px`;
+            const rotation = Math.random() * 360;
+            confetti.style.transform = `rotate(${rotation}deg)`;
+            
+            fragment.appendChild(confetti);
+            
+            confettiElements.push(confetti);
+            confettiData.push({
+                startX,
+                startY,
+                endX,
+                endY,
+                rotation,
+                duration: Math.random() * 3000 + 2000,
+                createdAt: Date.now() + Math.random() * 1500, // 随机延迟
+                element: confetti
+            });
         }
-        // 清理容器
-        setTimeout(() => {
-            confettiContainer.remove();
-        }, 6000);
+        
+        confettiContainer.appendChild(fragment);
+        
+        let animationStartTime = Date.now();
+        
+        function animateAllConfetti() {
+            const currentTime = Date.now();
+            const elapsed = currentTime - animationStartTime;
+            let allComplete = true;
+            
+            for (let i = 0; i < confettiData.length; i++) {
+                const data = confettiData[i];
+                const element = confettiElements[i];
+                
+                if (currentTime < data.createdAt) {
+                    allComplete = false;
+                    continue;
+                }
+                
+                if (element.style.opacity === '0') {
+                    element.style.opacity = '1';
+                }
+                
+                const itemElapsed = currentTime - data.createdAt;
+                const progress = Math.min(itemElapsed / data.duration, 1);
+                
+                if (progress < 1) {
+                    allComplete = false;
+                    
+                    const currentY = data.startY + (data.endY - data.startY) * progress;
+                    const currentX = data.startX + (data.endX - data.startX) * Math.sin(progress * Math.PI * 2);
+                    const currentRotation = data.rotation + progress * 720;
+                    
+                    element.style.top = `${currentY}px`;
+                    element.style.left = `${currentX}px`;
+                    element.style.transform = `rotate(${currentRotation}deg)`;
+                    
+                    if (progress > 0.8) {
+                        element.style.opacity = (1 - (progress - 0.8) * 5).toString();
+                    }
+                } else if (element.parentNode) { 
+                  element.parentNode.removeChild(element);
+                }
+            }
+            
+            if (!allComplete) {
+                requestAnimationFrame(animateAllConfetti);
+            } else {
+                confettiContainer.remove();
+            }
+        }
+        
+        requestAnimationFrame(animateAllConfetti);
     }
 
     function init() {
         loadState();
         updateUIFromConfig();
         createMeasureSpan();
-        if (config.currentText === EASTER_EGG_TRIGGER) {
-            activateEasterEgg();
-        } else {
-             layoutText(config.currentText);
-        }
+        layoutText(config.currentText);
         setupEventListeners();
         hideHint();
     }
-
+    
     function showToast(message, duration = 5000) {
         if (!toast) return;
         clearTimeout(toastTimeout);
@@ -537,7 +584,7 @@
             toast.classList.remove('show');
         }, duration);
     }
-
+    
     function hideHint() {
         setTimeout(() => {
             if (hint) hint.style.opacity = '0';
@@ -546,12 +593,11 @@
             }, 500);
         }, 5000);
     }
-
+    
     function saveState() {
-        const textToSave = (isEasterEggActive && config.currentText === EASTER_EGG_TRIGGER) ? defaultText : config.currentText;
         try {
             const state = {
-                text: textToSave,
+                text: config.currentText,
                 theme: config.isDarkTheme,
                 settings: {
                     radius: config.radius,
@@ -560,26 +606,29 @@
                     lineHeight: config.lineHeight,
                     letterSpacing: config.letterSpacing,
                     animationSpeed: config.animationSpeed
-                },
-                wasEasterEggTriggered: (config.currentText === EASTER_EGG_TRIGGER)
+                }
+              
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         } catch (e) {
             console.error("保存状态失败:", e);
         }
     }
-
+    
     function loadState() {
         try {
             const savedState = localStorage.getItem(STORAGE_KEY);
             if (savedState) {
                 const state = JSON.parse(savedState);
-                if (state.wasEasterEggTriggered) {
-                     config.currentText = EASTER_EGG_TRIGGER;
+                
+                if (state.text && state.text !== EASTER_EGG_TRIGGER) {
+                    config.currentText = state.text;
                 } else {
-                     config.currentText = state.text || initialConfig.currentText;
+                    config.currentText = defaultText;
                 }
+                
                 config.isDarkTheme = state.theme ?? initialConfig.isDarkTheme;
+                
                 if (state.settings) {
                     config.radius = state.settings.radius ?? initialConfig.radius;
                     config.force = state.settings.force ?? initialConfig.force;
@@ -597,7 +646,7 @@
         }
         textInput.value = config.currentText;
     }
-
+    
     function updateUIFromConfig() {
         document.body.classList.toggle('dark-theme', config.isDarkTheme);
         themeBtn.textContent = config.isDarkTheme ? '亮色主题' : '暗色主题';
@@ -615,7 +664,7 @@
         animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
         applyDynamicStyles();
     }
-
+    
     function applyDynamicStyles() {
          const transitionStyle = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease`;
          chars.forEach(char => {
@@ -624,7 +673,7 @@
             }
         });
     }
-
+    
     function setupEventListeners() {
         container.addEventListener('touchstart', handleInteractionStart, { passive: false });
         container.addEventListener('touchmove', handleInteractionMove, { passive: false });
@@ -650,7 +699,7 @@
         window.addEventListener('resize', debounce(handleResize, 250));
         textInput.addEventListener('input', () => {});
     }
-
+    
     function createMeasureSpan() {
         if (!measureSpan) {
             measureSpan = document.createElement('span');
@@ -662,23 +711,19 @@
             document.body.appendChild(measureSpan);
         }
     }
-
+    
     function layoutText(text) {
         isEasterEggActive = false;
         container.innerHTML = '';
-        // 重新添加彩蛋图片和对话框，因为innerHTML清空会移除它们
         container.appendChild(easterEggImage);
-        container.appendChild(easterEggDialog);
-        
-        // 隐藏彩蛋相关元素
+        container.appendChild(easterEggDialog);  
         easterEggImage.style.display = 'none';
         easterEggDialog.style.display = 'none';
-        
         chars = [];
         activeCharIndex = -1;
         cancelAnimationLoop();
         if (!text || text.trim() === '') {
-            text = '点击 "编辑文本" 按钮来添加内容...';
+            text = '点击 "编辑文本" 按钮来添加内容...如果不知道写什么，那不妨输入“空城的小彩蛋”试试😘';
         }
         containerRect = container.getBoundingClientRect();
         const computedStyle = getComputedStyle(container);
@@ -745,62 +790,50 @@
             });
         });
     }
-
+    
     // 打字机效果
     function typeWriter(element, text, speedConfig = {}) {
-    // 清除之前的任何打字机效果计时器
-    if (typingInterval) clearTimeout(typingInterval);
-    
-    // 默认配置
-    const defaultConfig = {
-        defaultSpeed: 80,      // 默认每个字符显示时间(ms)
-        speeds: {},            // 特定字符位置的速度配置对象 {index: speed}
-        pauseAt: {}            // 特定位置的暂停时间 {index: pauseTime}
-    };
-    
-    // 合并默认配置和用户配置
-    const config = {...defaultConfig, ...speedConfig};
-    
-    // 清空元素内容
-    element.textContent = '';
-    
-    // 跟踪当前处理的字符索引
-    let i = 0;
-    
-    // 使用递归函数而不是setInterval，以便更灵活地控制速度
-    function showNextChar() {
-        if (i < text.length) {
-            // 添加下一个字符
-            element.textContent += text.charAt(i);
-            
-            // 确定下一个字符的显示延迟
-            let nextDelay = config.defaultSpeed;
-            
-            // 检查是否有为当前位置配置的特殊速度
-            if (config.speeds[i] !== undefined) {
-                nextDelay = config.speeds[i];
+        // 清除之前的任何打字机效果计时器
+        if (typingInterval) clearTimeout(typingInterval);
+        // 默认配置
+        const defaultConfig = {
+            defaultSpeed: 80,      // 默认每个字符显示时间(ms)
+            speeds: {},            // 特定字符位置的速度配置对象 {index: speed}
+            pauseAt: {}            // 特定位置的暂停时间 {index: pauseTime}
+        };
+        // 合并默认配置和用户配置
+        const config = {...defaultConfig, ...speedConfig};
+        // 清空元素内容
+        element.textContent = '';
+        // 跟踪当前处理的字符索引
+        let i = 0;
+        function showNextChar() {
+            if (i < text.length) {
+                // 添加下一个字符
+                element.textContent += text.charAt(i);
+                // 确定下一个字符的显示延迟
+                let nextDelay = config.defaultSpeed;
+                // 检查是否有为当前位置配置的特殊速度
+                if (config.speeds[i] !== undefined) {
+                    nextDelay = config.speeds[i];
+                }
+                // 检查是否需要在当前位置暂停
+                if (config.pauseAt[i] !== undefined) {
+                    nextDelay += config.pauseAt[i];
+                }
+                // 递增索引
+                i++;
+                // 安排下一个字符的显示
+                typingInterval = setTimeout(showNextChar, nextDelay);
+            } else {
+                // 完成打字效果
+                typingInterval = null;
             }
-            
-            // 检查是否需要在当前位置暂停
-            if (config.pauseAt[i] !== undefined) {
-                nextDelay += config.pauseAt[i];
-            }
-            
-            // 递增索引
-            i++;
-            
-            // 安排下一个字符的显示
-            typingInterval = setTimeout(showNextChar, nextDelay);
-        } else {
-            // 完成打字效果
-            typingInterval = null;
         }
+        // 开始显示字符
+        showNextChar();
     }
     
-    // 开始显示字符
-    showNextChar();
-}
-
     function playAudio() {
         if (audioPlayer) {
             audioPlayer.pause();
@@ -810,92 +843,84 @@
             console.error("音频播放失败:", e);
         });
     }
-
+    
+    // 修改activateEasterEgg函数，添加渐显效果
     function activateEasterEgg() {
-    isEasterEggActive = true;
-    container.innerHTML = '';
-    // 重新添加彩蛋图片和对话框，因为innerHTML清空会移除它们
-    container.appendChild(easterEggImage);
-    container.appendChild(easterEggDialog);
-    chars = [];
-    activeCharIndex = -1;
-    cancelAnimationLoop();
-    containerRect = container.getBoundingClientRect();
-    
-    // 创建彩蛋效果
-    createConfetti();
-    
-    // 设置图片样式
-    easterEggImage.style.display = 'block';
-    easterEggImage.style.width = '250px';
-    easterEggImage.style.left = '50%';
-    easterEggImage.style.top = '50%';
-    easterEggImage.style.transform = 'translate(-50%, -50%)';
-    
-    // 移动对话框到文档中而不是容器内
-    if (easterEggDialog.parentNode === container) {
-        container.removeChild(easterEggDialog);
-        document.body.appendChild(easterEggDialog);
+        isEasterEggActive = true;
+        container.innerHTML = '';
+        container.appendChild(easterEggImage);
+        container.appendChild(easterEggDialog);
+        chars = [];
+        activeCharIndex = -1;
+        cancelAnimationLoop();
+        containerRect = container.getBoundingClientRect();    
+        
+        // 触发彩带特效
+        createConfetti();    
+        
+        // 显示但初始透明度为0
+        easterEggImage.style.display = 'block';
+        easterEggImage.style.opacity = '0';
+        easterEggImage.style.width = '250px';
+        easterEggImage.style.left = '50%';
+        easterEggImage.style.top = '50%';
+        easterEggImage.style.transform = 'translate(-50%, -50%)';
+        
+        // 使用setTimeout来触发渐显效果
+        setTimeout(() => {
+            easterEggImage.style.opacity = '2';
+        }, 100);
+
+        if (easterEggDialog.parentNode === container) {
+            container.removeChild(easterEggDialog);
+            document.body.appendChild(easterEggDialog);
+        }
+        
+        easterEggDialog.style.display = 'block';
+        easterEggDialog.style.position = 'fixed';
+        easterEggDialog.style.width = '400px';
+        easterEggDialog.style.zIndex = '1001';
+        easterEggDialog.style.left = '50%';
+        easterEggDialog.style.top = '60px';
+        easterEggDialog.style.transform = 'translateX(-50%)';
+        
+        const dialogText = "其实无论礼物的形式是什么，我想送给你的…………永远都是我所能给出的，最多的陪伴和最大的快乐。";
+        typeWriter(easterEggDialog, dialogText, {
+            defaultSpeed: 80,
+            // 可以为特定位置配置不同的打字速度
+            speeds: {
+                //可选，十六冒号一百二十加分号表示为第17个字符显示速度为120ms
+            },
+            // 在特定位置添加暂停效果
+            pauseAt: {
+                1: 1200,
+                12: 1100,
+                20: 700,
+                21: 600,
+                22: 1650,
+                33: 1150,
+                38: 1150
+            }
+        });
+        
+        playAudio();
+        container.style.minHeight = '450px';
     }
     
-    // 设置对话框样式 - 使用固定位置
-    easterEggDialog.style.display = 'block';
-    easterEggDialog.style.position = 'fixed'; // 改为fixed定位
-    easterEggDialog.style.width = '400px';
-    easterEggDialog.style.zIndex = '1001'; // 确保显示在最上层
-    
-    // 固定位置定位对话框 - 屏幕中上方
-    easterEggDialog.style.left = '50%';
-    easterEggDialog.style.top = '60px'; // 固定在屏幕上方
-    easterEggDialog.style.transform = 'translateX(-50%)';
-    
-    // 使用打字机效果显示文本
-const dialogText = "其实无论礼物是什么，我想送给你的…………永远都是我所能给出的，最多的陪伴和最大的快乐。";
-typeWriter(easterEggDialog, dialogText, {
-    defaultSpeed: 80,
-    // 可以为特定位置配置不同的打字速度
-    speeds: {
-        10: 120,  // 第11个字符显示速度为120ms
-        11: 120,
-        16: 120,  // 第17个字符显示速度为120ms
-    },
-    // 在特定位置添加暂停效果
-    pauseAt: {
-        15: 500,  // 在第16个字符后暂停500ms
-        21: 1000, // 在"…………"后暂停1000ms
+    function positionDialogRandomly() {    
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const dialogWidth = easterEggDialog.offsetWidth || 400;
+        const dialogHeight = easterEggDialog.offsetHeight || 100;
+        const maxLeft = windowWidth - dialogWidth - 20;
+        const maxTop = windowHeight - dialogHeight - 20;
+        const randomLeft = Math.max(20, Math.random() * maxLeft);
+        const randomTop = Math.max(20, Math.random() * maxTop);
+        easterEggDialog.style.left = `${randomLeft}px`;
+        easterEggDialog.style.top = `${randomTop}px`;
+        easterEggDialog.style.transform = 'none';
     }
-});
     
-    // 播放音频
-    playAudio();
-    
-    // 确保容器高度足够
-    container.style.minHeight = '450px';
-}
-
-function positionDialogRandomly() {
-    // 获取窗口尺寸
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    
-    // 获取对话框尺寸
-    const dialogWidth = easterEggDialog.offsetWidth || 400;
-    const dialogHeight = easterEggDialog.offsetHeight || 100;
-    
-    // 确保对话框完全在屏幕内的边界
-    const maxLeft = windowWidth - dialogWidth - 20;
-    const maxTop = windowHeight - dialogHeight - 20;
-    
-    // 随机生成位置 (保持20px的边距)
-    const randomLeft = Math.max(20, Math.random() * maxLeft);
-    const randomTop = Math.max(20, Math.random() * maxTop);
-    
-    // 应用随机位置
-    easterEggDialog.style.left = `${randomLeft}px`;
-    easterEggDialog.style.top = `${randomTop}px`;
-    easterEggDialog.style.transform = 'none'; // 移除之前的transform
-}
-
     function handleInteractionStart(e) {
         if (e.type === 'touchstart') e.preventDefault();
         containerRect = container.getBoundingClientRect();
@@ -905,18 +930,18 @@ function positionDialogRandomly() {
              startAnimationLoop();
         }
     }
-
+    
     function handleInteractionMove(e) {
         if (!isInteracting) return;
         if (e.type === 'touchmove') e.preventDefault();
         updatePointerPosition(e);
     }
-
+    
     function handleInteractionEnd() {
         if (!isInteracting) return;
         isInteracting = false;
     }
-
+    
     function updatePointerPosition(e) {
         let clientX, clientY;
         if (e.touches && e.touches.length > 0) {
@@ -932,24 +957,23 @@ function positionDialogRandomly() {
         pointer.x = clientX - containerRect.left;
         pointer.y = clientY - containerRect.top;
     }
-
+    
     function startAnimationLoop() {
         if (!rafId) {
             rafId = requestAnimationFrame(animationLoop);
         }
     }
-
+    
     function cancelAnimationLoop() {
         if (rafId) {
             cancelAnimationFrame(rafId);
             rafId = null;
         }
     }
-
+    
     function animationLoop() {
         let needsAnotherFrame = false;
         containerRect = container.getBoundingClientRect();
-        
         if (isEasterEggActive) {
             // 彩蛋激活后不需要动画效果
             needsAnotherFrame = false;
@@ -979,7 +1003,6 @@ function positionDialogRandomly() {
                     }
                     char.element.style.transform = `translate(${transformX}px, ${transformY}px)`;
                 });
-                
                 if (activeCharIndex !== currentNearestIndex) {
                     if (activeCharIndex !== -1 && chars[activeCharIndex] && chars[activeCharIndex].element) {
                         chars[activeCharIndex].element.classList.remove('highlight');
@@ -989,7 +1012,6 @@ function positionDialogRandomly() {
                     }
                     activeCharIndex = currentNearestIndex;
                 }
-                
                 if (activeCharIndex !== -1 && chars[activeCharIndex] && chars[activeCharIndex].element && !chars[activeCharIndex].element.classList.contains('highlight')) {
                     chars[activeCharIndex].element.classList.add('highlight');
                 }
@@ -1014,70 +1036,63 @@ function positionDialogRandomly() {
                 needsAnotherFrame = requiresResetVisuals;
             }
         }
-        
         if (needsAnotherFrame) {
             rafId = requestAnimationFrame(animationLoop);
         } else {
             cancelAnimationLoop();
         }
     }
-
+    
     function resetToDefaults() {
-    isInteracting = false;
-    isEasterEggActive = false;
-    cancelAnimationLoop();
-    
-    // 停止音频播放
-    if (audioPlayer) {
-        audioPlayer.pause();
-        audioPlayer = null;
+        isInteracting = false;
+        isEasterEggActive = false;
+        cancelAnimationLoop();
+        // 停止音频播放
+        if (audioPlayer) {
+            audioPlayer.pause();
+            audioPlayer = null;
+        }
+        // 清除打字机效果
+        if (typingInterval) {
+            clearTimeout(typingInterval);
+            typingInterval = null;
+        }
+        // 确保对话框回到容器中
+        if (easterEggDialog.parentNode !== container) {
+            document.body.removeChild(easterEggDialog);
+            container.appendChild(easterEggDialog);
+        }
+        // 重置对话框样式
+        easterEggDialog.style.position = 'absolute';
+        easterEggDialog.style.transform = 'translateX(-50%)';
+        easterEggDialog.style.left = '50%';
+        easterEggDialog.style.top = 'auto';
+        // 隐藏彩蛋元素
+        easterEggImage.style.display = 'none';
+        easterEggDialog.style.display = 'none';
+        config = { ...initialConfig };
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {
+            console.error("清除状态失败:", e);
+        }
+        updateUIFromConfig();
+        textInput.value = config.currentText;
+        layoutText(config.currentText);
+        if (isEditMode) {
+            isEditMode = false;
+            editBtn.textContent = '编辑文本';
+            textInput.style.display = 'none';
+            container.style.display = 'block';
+        } else {
+            textInput.style.display = 'none';
+            container.style.display = 'block';
+        }
+        settingsPanel.style.display = 'none';
+        clearTimeout(toastTimeout);
+        toast.classList.remove('show');
     }
     
-    // 清除打字机效果
-    if (typingInterval) {
-        clearTimeout(typingInterval);
-        typingInterval = null;
-    }
-    
-    // 确保对话框回到容器中
-    if (easterEggDialog.parentNode !== container) {
-        document.body.removeChild(easterEggDialog);
-        container.appendChild(easterEggDialog);
-    }
-    
-    // 重置对话框样式
-    easterEggDialog.style.position = 'absolute';
-    easterEggDialog.style.transform = 'translateX(-50%)';
-    easterEggDialog.style.left = '50%';
-    easterEggDialog.style.top = 'auto';
-    
-    // 隐藏彩蛋元素
-    easterEggImage.style.display = 'none';
-    easterEggDialog.style.display = 'none';
-    
-    config = { ...initialConfig };
-    try {
-        localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-        console.error("清除状态失败:", e);
-    }
-    updateUIFromConfig();
-    textInput.value = config.currentText;
-    layoutText(config.currentText);
-    if (isEditMode) {
-        isEditMode = false;
-        editBtn.textContent = '编辑文本';
-        textInput.style.display = 'none';
-        container.style.display = 'block';
-    } else {
-        textInput.style.display = 'none';
-        container.style.display = 'block';
-    }
-    settingsPanel.style.display = 'none';
-    clearTimeout(toastTimeout);
-    toast.classList.remove('show');
-}
-
     function handleResize() {
         if (isEasterEggActive) {
             activateEasterEgg();
@@ -1086,7 +1101,7 @@ function positionDialogRandomly() {
             layoutText(config.currentText);
         }
     }
-
+    
     function toggleEditMode() {
         isEditMode = !isEditMode;
         if (isEditMode) {
@@ -1107,8 +1122,10 @@ function positionDialogRandomly() {
                 config.currentText = newText;
                 activateEasterEgg();
                 if (!previouslyActive) {
-                    showToast("哦哟，看来是触发了我想给栗子看的隐藏彩蛋嘿嘿！🌰🎉", 6000);
+                    showToast("哦哟，     看来是陆景和想对栗子说的话诶！   🌰🎉", 10000);
                 }
+                // 不再将彩蛋触发词保存到localStorage
+                // 但是我们会在saveState中设置文本
                 saveState();
             } else {
                 isEasterEggActive = false;
@@ -1125,7 +1142,6 @@ function positionDialogRandomly() {
                 // 隐藏彩蛋元素
                 easterEggImage.style.display = 'none';
                 easterEggDialog.style.display = 'none';
-                
                 if (newText !== config.currentText || chars.length === 0 || config.currentText === EASTER_EGG_TRIGGER) {
                     config.currentText = newText;
                     layoutText(config.currentText);
@@ -1136,7 +1152,7 @@ function positionDialogRandomly() {
             }
         }
     }
-
+    
     function toggleSettings() {
         const isVisible = settingsPanel.style.display === 'block';
         settingsPanel.style.display = isVisible ? 'none' : 'block';
@@ -1144,24 +1160,24 @@ function positionDialogRandomly() {
              updateUIFromConfig();
         }
     }
-
+    
     function toggleTheme() {
         config.isDarkTheme = !config.isDarkTheme;
         updateUIFromConfig();
         saveState();
     }
-
+    
     function updateRadius() {
         config.radius = parseInt(radiusSlider.value);
         radiusValue.textContent = `${config.radius}px`;
         if (isEasterEggActive) activateEasterEgg();
     }
-
+    
     function updateForce() {
         config.force = parseFloat(forceSlider.value);
         forceValue.textContent = config.force.toFixed(1);
     }
-
+    
     function updateFontSize() {
         config.fontSize = parseInt(fontSizeSlider.value);
         fontSizeValue.textContent = `${config.fontSize}px`;
@@ -1169,7 +1185,7 @@ function positionDialogRandomly() {
             layoutText(config.currentText);
         }
     }
-
+    
     function updateLineHeight() {
         config.lineHeight = parseFloat(lineHeightSlider.value);
         lineHeightValue.textContent = config.lineHeight.toFixed(1);
@@ -1177,7 +1193,7 @@ function positionDialogRandomly() {
             layoutText(config.currentText);
         }
     }
-
+    
     function updateLetterSpacing() {
         config.letterSpacing = parseFloat(letterSpacingSlider.value);
         letterSpacingValue.textContent = `${config.letterSpacing.toFixed(1)}px`;
@@ -1185,13 +1201,13 @@ function positionDialogRandomly() {
             layoutText(config.currentText);
         }
     }
-
+    
     function updateAnimationSpeed() {
         config.animationSpeed = parseInt(animationSpeedSlider.value);
         animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
         applyDynamicStyles();
     }
-
+    
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -1203,7 +1219,7 @@ function positionDialogRandomly() {
             timeout = setTimeout(later, wait);
         };
     }
-
+    
     init();
 })();
 </script>

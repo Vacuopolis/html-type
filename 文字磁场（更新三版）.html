@@ -235,7 +235,6 @@
             z-index: 1000;
             will-change: transform;
         }
-        /* ASCII艺术风格容器 */
         #ascii-art-container {
             position: absolute;
             z-index: 10;
@@ -244,13 +243,13 @@
             font-family: monospace;
             white-space: pre;
             line-height: 1;
-            font-size: 12px; /* 字符画字体大小 */
+            font-size: 12px;
             text-align: center;
             opacity: 0;
             transition: opacity 2s ease;
             overflow: hidden;
             color: #333;
-            letter-spacing: 0px; /* 字符画字间距 */
+            letter-spacing: 0px;
         }
         body.dark-theme #ascii-art-container {
             color: #e2e8f0;
@@ -317,7 +316,7 @@
                 botton: 70px;
             }
             #ascii-art-container {
-                font-size: 7px; /* 移动设备上字符画字体大小 */
+                font-size: 7px;
                 max-width: 90%;
             }
             #easter-egg-dialog {
@@ -336,7 +335,6 @@
         </div>
         <textarea id="text-input" placeholder="在此输入想要显示的文字内容...如果不知道写什么，那不妨输入“空城的小彩蛋”试试！😘"></textarea>
         <div id="container">
-            <!-- 彩蛋ASCII艺术和对话框 -->
             <pre id="ascii-art-container"></pre>
             <div id="easter-egg-dialog"></div>
         </div>
@@ -379,11 +377,9 @@
     <div id="toast-notification"></div>
 <script>
 (function() {
-    // 字符画设置常量 - 可以在这里直接修改字符画的样式
-    const ASCII_FONT_SIZE = 1.2; // 字符画字体大小
-    const ASCII_LETTER_SPACING = 0; // 字符画字间距
-    const ASCII_MOBILE_FONT_SIZE = 1.2; // 移动设备上的字符画字体大小
-    
+    const ASCII_FONT_SIZE = 1.2;
+    const ASCII_LETTER_SPACING = 0;
+    const ASCII_MOBILE_FONT_SIZE = 1.2;
     const defaultText = `《再别康桥》徐志摩
 轻轻的我走了，
 正如我轻轻的来；
@@ -433,7 +429,6 @@
     const animationSpeedValue = document.getElementById('animation-speed-value');
     const asciiArtContainer = document.getElementById('ascii-art-container');
     const easterEggDialog = document.getElementById('easter-egg-dialog');
-    // ASCII 艺术内容
     const asciiArt = `...................................................................................................................................................................................................................................................................................................................................................................................................................
 ...................................................................................................................................................................................................................................................................................................................................................................................................................
 ...................................................................................................................................................................................................................................................................................................................................................................................................................
@@ -834,7 +829,7 @@ OOOOOOooOOOoOOOo/\/*....*...***,oooOOOOOooO^*=o[**..**...*...**...*...****o^****
 OoOOoo^*,oOooooo^***.........*,’=OOOOOOOo/oo^=/****..**..***..**...*...****=’*****..***oooOOO^.OOOoooOOO@@@@@@@@OOOOOOOOOoo@@@@O@@@@@@@OOOOOOOOooooooooOooooOOOOOOOOOOOOOOOOOOOOOOOOoooooooooOOoOOOOooOOooOOOOOoOOOOOoOOOOOOooooooOOOOooooOOOOOOOO@@@@@@@@@@@@@OoOOOOOOOOOOO@@@@@@@@@@OO@O**OO***=oooooOOOO^******\OO\o\*******...................**\OO@^........[\oooooooooooooo/’**=oo[[,[o/[***.....*ooooOO*.*..
 OoOOooo’**\Oooooo^*.*......***=ooOOOOOOOOooOooo*.****.***.***..**..***..,\***’*****.**oooOOOO^.OOoooooOO@@@@@@@@@OO@@OOOOOOO@@@O@@@@@@@@OOOOOOOooooooooooOOOOOOOoooooOOOOOOOOOOOOOOOooooOOOOOOOOoOOOoOOOOOOooOOOOOOOOOOOOOOOoOOOOOOOOOOOOOOOOOOOOO@@@@@@@@@@@@@/=OOOO@@OOOO@@@@@@@@@@@OO@O*/O^*=^*=oooOOOOO^.******O@O[o^**’****.................*o*=OO@O............................*..................=oooO^.....
 oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\*******,***\OOoOO^.oOoooooOO@@@@@@OOO@@@@OOOOo\O@@OOOO@@@OOOOOOOOOOOoooooooOooooOOOOOOOOOOOOOOOOOOOOoooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO@@@@@@@@@@@@@^*,OOO@@OOO@OOO@@@@@@@@OO@^*\o**oo^=oooOOOOO^..*,\’*=OO^*[o’*****.................=O^*oO@O..........................*.....................ooOO^.....
-`; // 字符画内容
+`;
     let chars = [];
     let containerRect;
     let isInteracting = false;
@@ -844,11 +839,10 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
     let rafId = null;
     let pointer = { x: 0, y: 0 };
     let measureSpan = null;
-    const STORAGE_KEY = 'textMagneticFieldState_v4'; // 版本号
+    const STORAGE_KEY = 'textMagneticFieldState_v4';
     let toastTimeout = null;
     let typingInterval = null;
     let audioPlayer = null;
-    
     function createConfetti() {
         const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4', '#9400d3', '#32cd32'];
         const shapes = ['square', 'circle', 'triangle', 'heart', 'star'];
@@ -876,7 +870,7 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             confetti.style.height = `${size}px`;
             confetti.style.position = 'absolute';
             confetti.style.zIndex = '9999';
-            confetti.style.opacity = '0'; // 初始透明度
+            confetti.style.opacity = '0';
             confetti.style.transition = 'opacity 0.3s ease';
             if (shape === 'circle') {
                 confetti.style.borderRadius = '50%';
@@ -915,7 +909,7 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
                 endY,
                 rotation,
                 duration: Math.random() * 3000 + 2000,
-                createdAt: Date.now() + Math.random() * 1500, // 随机延迟
+                createdAt: Date.now() + Math.random() * 1500,
                 element: confetti
             });
         }
@@ -940,7 +934,7 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
                 if (progress < 1) {
                     allComplete = false;
                     const currentY = data.startY + (data.endY - data.startY) * progress;
-                    const currentX = data.startX + (data.endX - data.startX) * Math.sin(progress * Math.PI * 2);
+                    const currentX = data.startX + (data.endX - data.startX) *Math.sin(progress* Math.PI * 2);
                     const currentRotation = data.rotation + progress * 720;
                     element.style.top = `${currentY}px`;
                     element.style.left = `${currentX}px`;
@@ -960,7 +954,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         }
         requestAnimationFrame(animateAllConfetti);
     }
-    
     function init() {
         loadState();
         updateUIFromConfig();
@@ -969,7 +962,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         setupEventListeners();
         hideHint();
     }
-    
     function showToast(message, duration = 5000) {
         if (!toast) return;
         clearTimeout(toastTimeout);
@@ -979,7 +971,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             toast.classList.remove('show');
         }, duration);
     }
-    
     function hideHint() {
         setTimeout(() => {
             if (hint) hint.style.opacity = '0';
@@ -988,7 +979,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             }, 500);
         }, 5000);
     }
-    
     function saveState() {
         try {
             const state = {
@@ -1008,7 +998,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             console.error("保存状态失败:", e);
         }
     }
-    
     function loadState() {
         try {
             const savedState = localStorage.getItem(STORAGE_KEY);
@@ -1037,7 +1026,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         }
         textInput.value = config.currentText;
     }
-    
     function updateUIFromConfig() {
         document.body.classList.toggle('dark-theme', config.isDarkTheme);
         themeBtn.textContent = config.isDarkTheme ? '亮色主题' : '暗色主题';
@@ -1055,7 +1043,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
         applyDynamicStyles();
     }
-    
     function applyDynamicStyles() {
          const transitionStyle = `transform ${config.animationSpeed}ms cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease`;
          chars.forEach(char => {
@@ -1064,7 +1051,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             }
         });
     }
-    
     function setupEventListeners() {
         container.addEventListener('touchstart', handleInteractionStart, { passive: false });
         container.addEventListener('touchmove', handleInteractionMove, { passive: false });
@@ -1084,14 +1070,13 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         lineHeightSlider.addEventListener('input', updateLineHeight);
         letterSpacingSlider.addEventListener('input', updateLetterSpacing);
         animationSpeedSlider.addEventListener('input', updateAnimationSpeed);
-        [radiusSlider, forceSlider, fontSizeSlider, lineHeightSlider, letterSpacingSlider, 
+        [radiusSlider, forceSlider, fontSizeSlider, lineHeightSlider, letterSpacingSlider,
          animationSpeedSlider].forEach(slider => {
             slider.addEventListener('change', debounce(saveState, 300));
         });
         window.addEventListener('resize', debounce(handleResize, 250));
         textInput.addEventListener('input', () => {});
     }
-    
     function createMeasureSpan() {
         if (!measureSpan) {
             measureSpan = document.createElement('span');
@@ -1103,12 +1088,11 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             document.body.appendChild(measureSpan);
         }
     }
-    
     function layoutText(text) {
         isEasterEggActive = false;
         container.innerHTML = '';
         container.appendChild(asciiArtContainer);
-        container.appendChild(easterEggDialog);  
+        container.appendChild(easterEggDialog);
         asciiArtContainer.style.display = 'none';
         easterEggDialog.style.display = 'none';
         chars = [];
@@ -1158,8 +1142,8 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
                 const initialY = yPos;
                 span.style.left = `${initialX}px`;
                 span.style.top = `${initialY}px`;
-                const randomX = (Math.random() - 0.5) * containerRect.width * 1.5;
-                const randomY = (Math.random() - 0.5) * containerRect.height * 1.5;
+                const randomX = (Math.random() - 0.5) *containerRect.width* 1.5;
+                const randomY = (Math.random() - 0.5) *containerRect.height* 1.5;
                 span.style.transform = `translate(${randomX}px, ${randomY}px)`;
                 fragment.appendChild(span);
                 chars.push({
@@ -1182,16 +1166,12 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             });
         });
     }
-    
-    // 打字机效果
     function typeWriter(element, text, speedConfig = {}) {
-        // 清除之前的任何打字机效果计时器
         if (typingInterval) clearTimeout(typingInterval);
-        // 默认配置
         const defaultConfig = {
-            defaultSpeed: 80,      // 默认每个字符显示时间(ms)
-            speeds: {},       
-            pauseAt: {}            
+            defaultSpeed: 80,
+            speeds: {},
+            pauseAt: {}
         };
         const config = {...defaultConfig, ...speedConfig};
         element.textContent = '';
@@ -1214,7 +1194,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         }
         showNextChar();
     }
-    
     function playAudio() {
         if (audioPlayer) {
             audioPlayer.pause();
@@ -1224,7 +1203,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             console.error("音频播放失败:", e);
         });
     }
-    
     function activateEasterEgg() {
         isEasterEggActive = true;
         container.innerHTML = '';
@@ -1233,8 +1211,8 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         chars = [];
         activeCharIndex = -1;
         cancelAnimationLoop();
-        containerRect = container.getBoundingClientRect();    
-        createConfetti();    
+        containerRect = container.getBoundingClientRect();
+        createConfetti();
         asciiArtContainer.textContent = asciiArt;
         asciiArtContainer.style.display = 'block';
         asciiArtContainer.style.opacity = '0';
@@ -1242,11 +1220,9 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         asciiArtContainer.style.left = '50%';
         asciiArtContainer.style.top = '50%';
         asciiArtContainer.style.transform = 'translate(-50%, -50%)';
-        
         const isMobile = window.innerWidth <= 600;
         asciiArtContainer.style.fontSize = `${isMobile ? ASCII_MOBILE_FONT_SIZE : ASCII_FONT_SIZE}px`;
         asciiArtContainer.style.letterSpacing = `${ASCII_LETTER_SPACING}px`;
-        
         setTimeout(() => {
             asciiArtContainer.style.opacity = '1';
         }, 100);
@@ -1264,11 +1240,8 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         const dialogText = "其实无论礼物的形式是什么，我想送给你的…………永远都是我所能给出的，最多的陪伴和最大的快乐。";
         typeWriter(easterEggDialog, dialogText, {
             defaultSpeed: 80,
-            // 可以为特定位置配置不同的打字速度
             speeds: {
-                //可选，十六冒号一百二十加分号表示为第17个字符显示速度为120ms
             },
-            // 在特定位置添加暂停效果
             pauseAt: {
                 1: 1200,
                 12: 1100,
@@ -1282,7 +1255,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         playAudio();
         container.style.minHeight = '450px';
     }
-    
     function handleInteractionStart(e) {
         if (e.type === 'touchstart') e.preventDefault();
         containerRect = container.getBoundingClientRect();
@@ -1292,18 +1264,15 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
              startAnimationLoop();
         }
     }
-    
     function handleInteractionMove(e) {
         if (!isInteracting) return;
         if (e.type === 'touchmove') e.preventDefault();
         updatePointerPosition(e);
     }
-    
     function handleInteractionEnd() {
         if (!isInteracting) return;
         isInteracting = false;
     }
-    
     function updatePointerPosition(e) {
         let clientX, clientY;
         if (e.touches && e.touches.length > 0) {
@@ -1319,25 +1288,21 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         pointer.x = clientX - containerRect.left;
         pointer.y = clientY - containerRect.top;
     }
-    
     function startAnimationLoop() {
         if (!rafId) {
             rafId = requestAnimationFrame(animationLoop);
         }
     }
-    
     function cancelAnimationLoop() {
         if (rafId) {
             cancelAnimationFrame(rafId);
             rafId = null;
         }
     }
-    
     function animationLoop() {
         let needsAnotherFrame = false;
         containerRect = container.getBoundingClientRect();
         if (isEasterEggActive) {
-            // 彩蛋激活后不需要动画效果
             needsAnotherFrame = false;
         } else {
             let currentNearestIndex = -1;
@@ -1349,7 +1314,7 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
                     if (!char || !char.element) return;
                     const dx = char.originalX - pointer.x;
                     const dy = char.originalY - pointer.y;
-                    const distSq = dx * dx + dy * dy;
+                    const distSq = dx *dx + dy* dy;
                     let transformX = 0;
                     let transformY = 0;
                     if (distSq < nearestDistSq) {
@@ -1359,7 +1324,7 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
                     if (distSq < radiusSq && distSq > 0.01) {
                         const dist = Math.sqrt(distSq);
                         const angle = Math.atan2(dy, dx);
-                        const forceMagnitude = ((config.radius - dist) / config.radius) * config.radius * config.force;
+                        const forceMagnitude = ((config.radius - dist) / config.radius) *config.radius* config.force;
                         transformX = Math.cos(angle) * forceMagnitude;
                         transformY = Math.sin(angle) * forceMagnitude;
                     }
@@ -1404,31 +1369,25 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             cancelAnimationLoop();
         }
     }
-    
     function resetToDefaults() {
         isInteracting = false;
         isEasterEggActive = false;
         cancelAnimationLoop();
-        // 停止音频播放
         if (audioPlayer) {
             audioPlayer.pause();
             audioPlayer = null;
         }
-        // 清除打字机效果
         if (typingInterval) {
             clearTimeout(typingInterval);
             typingInterval = null;
         }
-        // 确保对话框回到容器中
         if (easterEggDialog.parentNode !== container) {
             document.body.removeChild(easterEggDialog);
             container.appendChild(easterEggDialog);
         }
-                // 重置对话框样式
         easterEggDialog.style.transform = 'translateX(-50%)';
         easterEggDialog.style.left = '50%';
         easterEggDialog.style.top = 'auto';
-        // 隐藏彩蛋元素
         asciiArtContainer.style.display = 'none';
         easterEggDialog.style.display = 'none';
         config = { ...initialConfig };
@@ -1453,7 +1412,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         clearTimeout(toastTimeout);
         toast.classList.remove('show');
     }
-    
     function handleResize() {
         if (isEasterEggActive) {
             activateEasterEgg();
@@ -1462,7 +1420,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             layoutText(config.currentText);
         }
     }
-    
     function toggleEditMode() {
         isEditMode = !isEditMode;
         if (isEditMode) {
@@ -1488,17 +1445,14 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
                 saveState();
             } else {
                 isEasterEggActive = false;
-                // 停止音频播放
                 if (audioPlayer) {
                     audioPlayer.pause();
                     audioPlayer = null;
                 }
-                // 清除打字机效果
                 if (typingInterval) {
                     clearTimeout(typingInterval);
                     typingInterval = null;
                 }
-                // 隐藏彩蛋元素
                 asciiArtContainer.style.display = 'none';
                 easterEggDialog.style.display = 'none';
                 if (newText !== config.currentText || chars.length === 0 || config.currentText === EASTER_EGG_TRIGGER) {
@@ -1511,7 +1465,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             }
         }
     }
-    
     function toggleSettings() {
         const isVisible = settingsPanel.style.display === 'block';
         settingsPanel.style.display = isVisible ? 'none' : 'block';
@@ -1519,24 +1472,20 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
              updateUIFromConfig();
         }
     }
-    
     function toggleTheme() {
         config.isDarkTheme = !config.isDarkTheme;
         updateUIFromConfig();
         saveState();
     }
-    
     function updateRadius() {
         config.radius = parseInt(radiusSlider.value);
         radiusValue.textContent = `${config.radius}px`;
         if (isEasterEggActive) activateEasterEgg();
     }
-    
     function updateForce() {
         config.force = parseFloat(forceSlider.value);
         forceValue.textContent = config.force.toFixed(1);
     }
-    
     function updateFontSize() {
         config.fontSize = parseInt(fontSizeSlider.value);
         fontSizeValue.textContent = `${config.fontSize}px`;
@@ -1544,7 +1493,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             layoutText(config.currentText);
         }
     }
-    
     function updateLineHeight() {
         config.lineHeight = parseFloat(lineHeightSlider.value);
         lineHeightValue.textContent = config.lineHeight.toFixed(1);
@@ -1552,7 +1500,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             layoutText(config.currentText);
         }
     }
-    
     function updateLetterSpacing() {
         config.letterSpacing = parseFloat(letterSpacingSlider.value);
         letterSpacingValue.textContent = `${config.letterSpacing.toFixed(1)}px`;
@@ -1560,13 +1507,11 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             layoutText(config.currentText);
         }
     }
-    
     function updateAnimationSpeed() {
         config.animationSpeed = parseInt(animationSpeedSlider.value);
         animationSpeedValue.textContent = `${(config.animationSpeed / 1000).toFixed(1)}s`;
         applyDynamicStyles();
     }
-    
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -1578,7 +1523,6 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
             timeout = setTimeout(later, wait);
         };
     }
-    
     init();
 })();
 </script>

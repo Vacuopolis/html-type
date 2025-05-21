@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="zh">
 <head>
@@ -9,7 +10,7 @@
         /* --- 基本样式重置和全局设置 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Arial'， sans-serif;
+            font-family: 'Arial', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -22,7 +23,7 @@
         }
         body.dark-theme { background: linear-gradient(135deg, #2c3e50, #4a5568); }
         /* --- 主要容器样式 --- */
-        。container {
+        .container {
             background-color: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 15px;
@@ -33,11 +34,11 @@
         }
         /* --- 标题和说明 --- */
         h1 { text-align: center; margin-bottom: 10px; font-size: 2rem; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
-        。instructions { text-align: center; margin-bottom: 20px; font-size: 0.9rem; opacity: 0.9; }
+        .instructions { text-align: center; margin-bottom: 20px; font-size: 0.9rem; opacity: 0.9; }
         /* --- 游戏信息 (步数, 时间) --- */
-        。game-info { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 1rem; }
+        .game-info { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 1rem; }
         /* --- 选项设置区域 (尺寸和难度) --- */
-        。options-select {
+        .options-select {
             display: flex;
             flex-wrap: wrap; /* 允许换行 */
             gap: 15px; /* 增大间距 */
@@ -205,37 +206,22 @@
     border-radius: 10px;
     z-index: 9999;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    width: 60vw; /* 初始宽度设为视口宽度的60% */
-    min-width: 300px;
     max-width: 90vw;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
-}
-
-.image-popup .drag-handle {
-    cursor: move;
-    padding: 5px;
-    margin-bottom: 10px;
-    text-align: center;
-    color: white;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    user-select: none;
-}
-
-.image-popup .image-container {
-    flex-grow: 1;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 10px;
+    resize: both;
+    overflow: auto;
+    min-width: 300px;
+    min-height: 200px;
 }
 
 .image-popup img {
     max-width: 100%;
-    max-height: 70vh; /* 最大高度为视口高度的70% */
+    max-height: calc(100% - 40px);
     object-fit: contain;
     border-radius: 5px;
+    margin-bottom: 10px;
 }
 
 .image-popup .popup-controls {
@@ -279,6 +265,19 @@
 .image-popup .close-btn:hover,
 .image-popup .size-btn:hover {
     background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* 拖动手柄指示器 */
+.image-popup::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 15px;
+    height: 15px;
+    background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%);
+    border-radius: 0 0 5px 0;
+    pointer-events: none;
 }
     </style>
 </head>
@@ -438,32 +437,14 @@ function showImagePopup() {
         return; // 已经完成过，不再显示
     }
     
-    // 移除可能已经存在的浮窗
-    const existingPopup = document.querySelector('.image-popup');
-    if (existingPopup) {
-        existingPopup.remove();
-    }
-    
     // 创建浮窗
     const popup = document.createElement('div');
     popup.className = 'image-popup';
-    
-    // 创建拖动把手
-    const dragHandle = document.createElement('div');
-    dragHandle.className = 'drag-handle';
-    dragHandle.textContent = '点击此处拖动';
-    
-    // 创建图片容器
-    const imageContainer = document.createElement('div');
-    imageContainer.className = 'image-container';
     
     // 创建图片元素
     const img = document.createElement('img');
     img.src = "https://moe.jitsu.top/api/?_titleBarHeight=94&sort=r18";
     img.alt = "奖励图片";
-    
-    // 添加图片到容器
-    imageContainer.appendChild(img);
     
     // 创建控制区域
     const controls = document.createElement('div');
@@ -476,32 +457,35 @@ function showImagePopup() {
     // 放大按钮
     const enlargeBtn = document.createElement('button');
     enlargeBtn.className = 'size-btn';
-    enlargeBtn.textContent = '放大';
+    enlargeBtn.innerHTML = '放大';
     enlargeBtn.onclick = function() {
         const currentWidth = popup.offsetWidth;
+        const currentHeight = popup.offsetHeight;
         popup.style.width = (currentWidth * 1.2) + 'px';
+        popup.style.height = (currentHeight * 1.2) + 'px';
     };
     
     // 缩小按钮
     const shrinkBtn = document.createElement('button');
     shrinkBtn.className = 'size-btn';
-    shrinkBtn.textContent = '缩小';
+    shrinkBtn.innerHTML = '缩小';
     shrinkBtn.onclick = function() {
         const currentWidth = popup.offsetWidth;
-        if (currentWidth > 300) { // 确保不小于最小宽度
+        const currentHeight = popup.offsetHeight;
+        // 确保不小于最小尺寸
+        if (currentWidth > 300 && currentHeight > 200) {
             popup.style.width = (currentWidth * 0.8) + 'px';
+            popup.style.height = (currentHeight * 0.8) + 'px';
         }
     };
     
     // 重置尺寸按钮
     const resetBtn = document.createElement('button');
     resetBtn.className = 'size-btn';
-    resetBtn.textContent = '重置';
+    resetBtn.innerHTML = '重置';
     resetBtn.onclick = function() {
-        popup.style.width = '60vw'; // 重置为默认宽度
-        popup.style.top = '50%';
-        popup.style.left = '50%';
-        popup.style.transform = 'translate(-50%, -50%)';
+        popup.style.width = '';
+        popup.style.height = '';
     };
     
     // 创建关闭按钮
@@ -509,11 +493,8 @@ function showImagePopup() {
     closeBtn.className = 'close-btn';
     closeBtn.innerHTML = '×';
     closeBtn.onclick = function() {
-    // 清理全局的事件监听器
-    document.removeEventListener('mousemove', popupMouseMove);
-    document.removeEventListener('mouseup', popupMouseUp);
-    document.body.removeChild(popup);
-};
+        document.body.removeChild(popup);
+    };
     
     // 添加按钮到控制区域
     sizeControls.appendChild(enlargeBtn);
@@ -523,57 +504,69 @@ function showImagePopup() {
     controls.appendChild(closeBtn);
     
     // 组装浮窗
-    popup.appendChild(dragHandle);
-    popup.appendChild(imageContainer);
+    popup.appendChild(img);
     popup.appendChild(controls);
+    
+    // 使浮窗可拖动
+    makeDraggable(popup);
     
     // 添加到页面
     document.body.appendChild(popup);
-    
-    // 设置拖动功能
-    let isDragging = false;
-    let offsetX, offsetY;
-    
-    dragHandle.addEventListener('mousedown', function(e) {
-        isDragging = true;
-        
-        // 获取鼠标相对于浮窗的位置
-        const rect = popup.getBoundingClientRect();
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-        
-        // 取消transform，使用top和left定位
-        const computedStyle = window.getComputedStyle(popup);
-        const matrix = new WebKitCSSMatrix(computedStyle.transform);
-        
-        // 如果有transform，转换为top/left定位
-        if (matrix.m41 !== 0 || matrix.m42 !== 0) {
-            popup.style.top = rect.top + 'px';
-            popup.style.left = rect.left + 'px';
-            popup.style.transform = 'none';
-        }
-        
-        // 阻止默认行为和冒泡
-        e.preventDefault();
-        e.stopPropagation();
-    });
-    
-    document.addEventListener('mousemove', function(e) {
-        if (isDragging) {
-            popup.style.top = (e.clientY - offsetY) + 'px';
-            popup.style.left = (e.clientX - offsetX) + 'px';
-            popup.style.transform = 'none'; // 确保不使用transform
-        }
-    });
-    
-    document.addEventListener('mouseup', function() {
-        isDragging = false;
-    });
     
     // 标记此局游戏已完成
     gameState.gameCompleted = true;
 }
 
+// 使元素可拖动的函数
+function makeDraggable(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    // 创建拖动区域（标题栏）
+    const dragHandle = document.createElement('div');
+    dragHandle.style.cursor = 'move';
+    dragHandle.style.padding = '5px';
+    dragHandle.style.marginBottom = '10px';
+    dragHandle.style.textAlign = 'center';
+    dragHandle.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
+    dragHandle.innerHTML = '点击此处拖动 <span style="font-size:10px;">(或拖动边缘调整大小)</span>';
+    
+    // 插入到浮窗的最前面
+    element.insertBefore(dragHandle, element.firstChild);
+    
+    dragHandle.onmousedown = dragMouseDown;
+    
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // 获取鼠标初始位置
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        // 当鼠标移动时调用elementDrag
+        document.onmousemove = elementDrag;
+    }
+    
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // 计算新位置
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // 设置元素的新位置
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+        // 取消transform，避免与拖动冲突
+        element.style.transform = 'none';
+    }
+    
+    function closeDragElement() {
+        // 停止移动
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
         
         // 初始化游戏函数
         function initGame() {
@@ -1431,10 +1424,10 @@ levelSelect.addEventListener('change', (e) => {
 });
 
 // 主题切换开关变化事件
-themeToggle.addEventListener('change', toggleTheme);
+themeToggle。addEventListener('change', toggleTheme);
 
 // --- 页面加载完成后的初始化操作 ---
-window.onload = () => {
+window。onload = () => {
     console.log("Window loaded. Starting initialization.");
     applySavedTheme();           // 应用保存的主题
     applySavedSoundSettings();   // 应用保存的音效设置
@@ -1483,8 +1476,8 @@ function playSound(sound) {
 }
 
 // 添加事件监听器
-soundToggle.addEventListener('change', toggleSound);
-undoBtn.addEventListener('click', () => {
+soundToggle。addEventListener('change', toggleSound);
+undoBtn。addEventListener('click', () => {
     console.log("Undo button clicked.");
     undoLastMove();
 });
@@ -1516,9 +1509,9 @@ function toggleTimer() {
 }
 
 // 为计时器添加点击事件以暂停/继续
-timerElement.style.cursor = "pointer";
-timerElement.title = "点击暂停/继续计时";
-timerElement.addEventListener('click', toggleTimer);
+timerElement。style.cursor = "pointer";
+timerElement。title = "点击暂停/继续计时";
+timerElement。addEventListener('click', toggleTimer);
 
 </script>
 </body>

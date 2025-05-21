@@ -430,81 +430,19 @@
         
         // 创建并显示图片浮窗
 function showImagePopup() {
-    // 如果已经完成游戏且未显示过图片，则显示图片
+    // 如果已经完成游戏且已显示过图片，则不再显示
     if (gameState.gameCompleted) {
         return; // 已经完成过，不再显示
     }
+    
     // 创建浮窗
     const popup = document.createElement('div');
     popup.className = 'image-popup';
-    // 创建图片元素
-    const img = document.createElement('img');
-    img.src = "https://moe.jitsu.top/api/?_titleBarHeight=94&sort=r18";
-    img.alt = "奖励图片";
+    
     // 创建控制区域
     const controls = document.createElement('div');
     controls.className = 'popup-controls';
-    // 创建尺寸控制按钮组
-    const sizeControls = document.createElement('div');
-    sizeControls.className = 'size-controls';
-    // 放大按钮
-    const enlargeBtn = document.createElement('button');
-    enlargeBtn.className = 'size-btn';
-    enlargeBtn.innerHTML = '放大';
-    enlargeBtn.onclick = function() {
-        const currentWidth = popup.offsetWidth;
-        const currentHeight = popup.offsetHeight;
-        popup.style.width = (currentWidth * 1.2) + 'px';
-        popup.style.height = (currentHeight * 1.2) + 'px';
-    };
-    // 缩小按钮
-    const shrinkBtn = document.createElement('button');
-    shrinkBtn.className = 'size-btn';
-    shrinkBtn.innerHTML = '缩小';
-    shrinkBtn.onclick = function() {
-        const currentWidth = popup.offsetWidth;
-        const currentHeight = popup.offsetHeight;
-        // 确保不小于最小尺寸
-        if (currentWidth > 300 && currentHeight > 200) {
-            popup.style.width = (currentWidth * 0.8) + 'px';
-            popup.style.height = (currentHeight * 0.8) + 'px';
-        }
-    };
-    // 重置尺寸按钮
-    const resetBtn = document.createElement('button');
-    resetBtn.className = 'size-btn';
-    resetBtn.innerHTML = '重置';
-    resetBtn.onclick = function() {
-        popup.style.width = '';
-        popup.style.height = '';
-    };
-    // 创建关闭按钮
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'close-btn';
-    closeBtn.innerHTML = '×';
-    closeBtn.onclick = function() {
-        document.body.removeChild(popup);
-    };
-    // 添加按钮到控制区域
-    sizeControls.appendChild(enlargeBtn);
-    sizeControls.appendChild(shrinkBtn);
-    sizeControls.appendChild(resetBtn);
-    controls.appendChild(sizeControls);
-    controls.appendChild(closeBtn);
-    // 组装浮窗
-    popup.appendChild(img);
-    popup.appendChild(controls);
-    // 使浮窗可拖动
-    makeDraggable(popup);
-    // 添加到页面
-    document.body.appendChild(popup);
-    // 标记此局游戏已完成
-    gameState.gameCompleted = true;
-}
-
-// 使元素可拖动的函数
-function makeDraggable(element) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
     // 创建拖动区域（标题栏）
     const dragHandle = document.createElement('div');
     dragHandle.style.cursor = 'move';
@@ -513,33 +451,146 @@ function makeDraggable(element) {
     dragHandle.style.textAlign = 'center';
     dragHandle.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
     dragHandle.innerHTML = '点击此处拖动 <span style="font-size:10px;">(或拖动边缘调整大小)</span>';
-    // 插入到浮窗的最前面
-    element.insertBefore(dragHandle, element.firstChild);
-    dragHandle.onmousedown = dragMouseDown;
+    
+    // 创建图片元素
+    const img = document.createElement('img');
+    img.alt = "奖励图片";
+    img.src = "https://moe.jitsu.top/api/?_titleBarHeight=94&sort=r18";
+    
+    // 添加图片加载错误处理
+    img.onerror = function() {
+        img.style.display = 'none';
+        const errorMsg = document.createElement('div');
+        errorMsg.style.color = 'white';
+        errorMsg.style.padding = '20px';
+        errorMsg.style.textAlign = 'center';
+        errorMsg.innerHTML = '图片加载失败<br>请检查网络连接或刷新页面重试';
+        popup.insertBefore(errorMsg, controls);
+    };
+    
+    // 创建尺寸控制按钮组
+    const sizeControls = document.createElement('div');
+    sizeControls.className = 'size-controls';
+    
+    // 放大按钮
+    const enlargeBtn = document.createElement('button');
+    enlargeBtn.className = 'size-btn';
+    enlargeBtn.innerHTML = '放大';
+    enlargeBtn.onclick = function(e) {
+        e.stopPropagation(); // 阻止事件冒泡
+        const currentWidth = popup.offsetWidth;
+        const currentHeight = popup.offsetHeight;
+        popup.style.width = (currentWidth * 1.2) + 'px';
+        popup.style.height = (currentHeight * 1.2) + 'px';
+    };
+    
+    // 缩小按钮
+    const shrinkBtn = document.createElement('button');
+    shrinkBtn.className = 'size-btn';
+    shrinkBtn.innerHTML = '缩小';
+    shrinkBtn.onclick = function(e) {
+        e.stopPropagation(); // 阻止事件冒泡
+        const currentWidth = popup.offsetWidth;
+        const currentHeight = popup.offsetHeight;
+        // 确保不小于最小尺寸
+        if (currentWidth > 300 && currentHeight > 200) {
+            popup.style.width = (currentWidth * 0.8) + 'px';
+            popup.style.height = (currentHeight * 0.8) + 'px';
+        }
+    };
+    
+    // 重置尺寸按钮
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'size-btn';
+    resetBtn.innerHTML = '重置';
+    resetBtn.onclick = function(e) {
+        e.stopPropagation(); // 阻止事件冒泡
+        popup.style.width = '';
+        popup.style.height = '';
+    };
+    
+    // 创建关闭按钮
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '×';
+    closeBtn.onclick = function(e) {
+        e.stopPropagation(); // 阻止事件冒泡
+        document.body.removeChild(popup);
+    };
+    
+    // 添加按钮到控制区域
+    sizeControls.appendChild(enlargeBtn);
+    sizeControls.appendChild(shrinkBtn);
+    sizeControls.appendChild(resetBtn);
+    controls.appendChild(sizeControls);
+    controls.appendChild(closeBtn);
+    
+    // 组装浮窗
+    popup.appendChild(dragHandle);
+    popup.appendChild(img);
+    popup.appendChild(controls);
+    
+    // 使浮窗可拖动
+    makeDraggable(popup, dragHandle);
+    
+    // 添加到页面
+    document.body.appendChild(popup);
+    
+    // 标记此局游戏已完成
+    gameState.gameCompleted = true;
+}
+
+// 使元素可拖动的函数
+function makeDraggable(element, handle) {
+    if (!handle || !element) return;
+    
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    handle.onmousedown = dragMouseDown;
+    
     function dragMouseDown(e) {
         e = e || window.event;
         e.preventDefault();
         // 获取鼠标初始位置
         pos3 = e.clientX;
         pos4 = e.clientY;
+        
+        // 添加事件监听器
         document.onmouseup = closeDragElement;
-        // 当鼠标移动时调用elementDrag
         document.onmousemove = elementDrag;
     }
+    
     function elementDrag(e) {
         e = e || window.event;
         e.preventDefault();
+        
         // 计算新位置
         pos1 = pos3 - e.clientX;
         pos2 = pos4 - e.clientY;
         pos3 = e.clientX;
         pos4 = e.clientY;
+        
+        // 获取窗口尺寸
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        // 计算新位置，但确保不超出屏幕
+        let newTop = element.offsetTop - pos2;
+        let newLeft = element.offsetLeft - pos1;
+        
+        // 边界检查，确保浮窗不会完全移出屏幕
+        if (newTop < 0) newTop = 0;
+        if (newLeft < 0) newLeft = 0;
+        if (newTop > windowHeight - 50) newTop = windowHeight - 50;
+        if (newLeft > windowWidth - 50) newLeft = windowWidth - 50;
+        
         // 设置元素的新位置
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
+        element.style.top = newTop + "px";
+        element.style.left = newLeft + "px";
+        
         // 取消transform，避免与拖动冲突
         element.style.transform = 'none';
     }
+    
     function closeDragElement() {
         // 停止移动
         document.onmouseup = null;

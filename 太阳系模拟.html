@@ -649,7 +649,6 @@ function resizeCanvas() {
     let touchZoomStartScale = 1;
     
     // 生成星空背景
-    // 增强星空背景生成函数
     function generateStarfield() {
         const stars = [];
         const starCount = 300; // 增加星星数量
@@ -698,8 +697,8 @@ function resizeCanvas() {
         
         stars.forEach(star => {
             // 调整星星位置，使其随视口移动
-            const adjustedX = star.x - viewOffsetX * 0.2; // 星星移动较慢，产生视差效果
-            const adjustedY = star.y - viewOffsetY * 0.2;
+            const adjustedX = star.x + viewOffsetX * 0.2; // 星星移动较慢，产生视差效果
+            const adjustedY = star.y + viewOffsetY * 0.2;
             
             // 将星星位置缠绕到视口区域内
             const visibleWidth = canvas.width / zoom * 1.5;

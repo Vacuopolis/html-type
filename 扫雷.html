@@ -1143,11 +1143,11 @@
             </div>
         </div>
         <div class="game-controls">
-            <button class="btn" id="btn-restart">🔄 重新开始</button>
-            <button class="btn info" id="btn-auto-solve">🤖 自动扫雷</button>
-            <button class="btn" id="btn-undo">↩️ 撤销</button>
-            <button class="btn" id="btn-pause">⏸️ 暂停</button>
             <button class="btn warning" id="btn-hint">💡 提示</button>
+            <button class="btn info" id="btn-auto-solve">🤖 自动扫雷</button>
+            <button class="btn" id="btn-pause">⏸️ 暂停</button>
+            <button class="btn" id="btn-undo">↩️ 撤销</button>
+            <button class="btn" id="btn-restart">🔄 重新开始</button>
             <button class="btn" id="btn-sound">🔊 音效</button>
             <button class="btn info" id="btn-help">❓ 帮助</button>
         </div>
@@ -1269,9 +1269,9 @@
                 <div class="help-section">
                     <h3>🎮 游戏玩法</h3>
                     <ul>
-                        <li>点击格子将会揭开，请避免踩到地雷</li>
-                        <li>数字表示周围8个格子的地雷数量</li>
-                        <li>右键或长按格子可以标记为旗子</li>
+                        <li>首次点击格子将会揭开，此时游戏正式开始，请避免踩到地雷</li>
+                        <li>显示的数字表示以数字为中心周围8个格子的地雷数量</li>
+                        <li>右键或长按格子可以标记为旗子（可用于排雷）</li>
                         <li>揭开所有非地雷格子即可获胜</li>
                     </ul>
                 </div>
@@ -1281,11 +1281,11 @@
                         <li><strong>缩放控制</strong>：点击🔍+/-调整格子大小</li>
                         <li><strong>小地图</strong>：点击后将导航至所点位置</li>
                         <li><strong>滚动查看</strong>：游戏板支持滚动浏览</li>
-                        <li><strong>连击系统</strong>：连续成功操作获得加分</li>
+                        <li><strong>连击系统</strong>：连续成功排雷的操作可获得更多加分</li>
                         <li><strong>进度条</strong>：显示当前游戏完成的进度</li>
-                        <li><strong>特殊格子</strong>：闪烁格子提供额外奖励</li>
-                        <li><strong>智能提示</strong>：基于逻辑推理的人性化提示</li>
-                        <li><strong>双击功能</strong>：对已揭开的数字格子双击可自动展开相邻安全格子</li>
+                        <li><strong>特殊格子</strong>：闪烁格子将提供额外分数奖励</li>
+                        <li><strong>智能提示</strong>：基于逻辑推理的人性化提示（可获知原因）</li>
+                        <li><strong>双击功能</strong>：对已揭开的数字格子双击可自动展开相邻的安全格子</li>
                     </ul>
                 </div>
                 <div class="help-section">

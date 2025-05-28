@@ -421,30 +421,6 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
             animation: progressShine 2s ease-in-out infinite;
         }
-        /* ========== 触摸控制样式 ========== */
-        .touch-controls {
-            display: none;
-            justify-content: center;
-            gap: 15px;
-            margin: 25px 0;
-        }
-        .touch-btn {
-            padding: 18px;
-            border-radius: 50%;
-            width: 70px;
-            height: 70px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 28px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow);
-            transform: translateZ(0);
-        }
-        .touch-btn.active {
-            transform: scale(1.3) translateZ(0);
-            box-shadow: 0 0 25px rgba(33, 150, 243, 0.6);
-        }
         /* ========== 游戏板容器样式 ========== */
         .game-board-wrapper {
             position: relative;
@@ -935,11 +911,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
         @keyframes modalSlideIn {
-            from { 
+            from {
                 transform: translateY(-30px) scale(0.95);
                 opacity: 0;
             }
-            to { 
+            to {
                 transform: translateY(0) scale(1);
                 opacity: 1;
             }
@@ -1069,11 +1045,11 @@
             }
         }
         @keyframes pulseHealth {
-            0%, 100% { 
+            0%, 100% {
                 transform: scale(1);
                 box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3);
             }
-            50% { 
+            50% {
                 transform: scale(1.05);
                 box-shadow: 0 6px 30px rgba(244, 67, 54, 0.5);
             }
@@ -1105,9 +1081,6 @@
             }
             .header h1 {
                 font-size: 2.5em;
-            }
-            .touch-controls {
-                display: flex;
             }
             .game-controls {
                 flex-direction: column;
@@ -1206,12 +1179,12 @@
             <p>挑战极限，成为扫雷传奇！</p>
         </div>
         <div class="game-controls">
+            <button class="btn info" id="btn-help">❓ 帮助</button>
             <button class="btn success" id="btn-beginner">初级 9×9</button>
             <button class="btn warning" id="btn-intermediate">中级 16×16</button>
             <button class="btn danger" id="btn-expert">高级 16×30</button>
             <button class="btn" id="btn-mega">巨型 30×50</button>
             <button class="btn" id="btn-custom">自定义</button>
-            <button class="btn" id="btn-theme">🌓 主题</button>
         </div>
         <!-- 生存模式血量显示 -->
         <div class="survival-health" id="survival-health">
@@ -1259,11 +1232,6 @@
         <div class="progress-bar">
             <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
         </div>
-        <div class="touch-controls">
-            <button class="touch-btn btn" id="touch-reveal">👆</button>
-            <button class="touch-btn btn danger" id="touch-flag">🚩</button>
-            <button class="touch-btn btn warning" id="touch-question">❓</button>
-        </div>
         <div class="game-controls-extended">
             <!-- 缩放控制区 -->
             <div class="zoom-control-section">
@@ -1298,7 +1266,7 @@
             <button class="btn" id="btn-undo">↩️ 撤销</button>
             <button class="btn" id="btn-restart">🔄 重新开始</button>
             <button class="btn" id="btn-sound">🔊 音效</button>
-            <button class="btn info" id="btn-help">❓ 帮助</button>
+            <button class="btn" id="btn-theme">🌓 主题</button>
         </div>
         <div class="achievements">
             <div class="achievement" id="ach-first-win">
@@ -1327,7 +1295,7 @@
             </div>
         </div>
         <div class="version-info">
-            <small>by空城 版本 <span id="version-number">1.1.5</span></small>
+            <small>by空城 版本 <span id="version-number">1.2.0</span></small>
         </div>
     </div>
     <!-- 自动排雷状态指示器 -->
@@ -1424,7 +1392,8 @@
                     <ul>
                         <li>首次点击格子将会揭开，此时游戏正式开始，请避免踩到地雷</li>
                         <li>显示的数字表示以数字为中心周围8个格子的地雷数量</li>
-                        <li>右键或长按格子可以标记为旗子（可用于排雷）</li>
+                        <li><strong>左键点击</strong>：揭开格子</li>
+                        <li><strong>右键点击/长按</strong>：标记旗子/问号（循环切换：空白→旗子→问号→空白）</li>
                         <li>揭开所有非地雷格子即可获胜</li>
                     </ul>
                 </div>
@@ -1432,7 +1401,7 @@
                     <h3>🛠️ 功能说明</h3>
                     <ul>
                         <li><strong>缩放控制</strong>：点击🔍+/-调整格子大小</li>
-                        <li><strong>小地图</strong>：点击后将导航至所点位置</li>
+                        <li><strong>小地图</strong>：点击后将导航至所点位置（仅在棋盘不能完全显示时出现）</li>
                         <li><strong>滚动查看</strong>：游戏板支持滚动浏览</li>
                         <li><strong>连击系统</strong>：连续成功排雷的操作可获得更多加分</li>
                         <li><strong>进度条</strong>：显示当前游戏完成的进度</li>
@@ -1482,7 +1451,7 @@
             class MinesweeperUltimate {
                 constructor() {
                     // 版本控制
-                    this.VERSION = '1.1.5';
+                    this.VERSION = '1.2.0';
                     this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
                     this.difficulties = {
                         beginner: { rows: 9, cols: 9, mines: 10 },
@@ -1508,7 +1477,6 @@
                         won: false,
                         paused: false,
                         soundEnabled: true,
-                        touchMode: 'reveal',
                         mode: 'classic',
                         moves: [],
                         powerUps: [],
@@ -1588,9 +1556,6 @@
                         'btn-zoom-in': () => this.zoomIn(),
                         'btn-zoom-out': () => this.zoomOut(),
                         'btn-reset-zoom': () => this.resetZoom(),
-                        'touch-reveal': () => this.setTouchMode('reveal'),
-                        'touch-flag': () => this.setTouchMode('flag'),
-                        'touch-question': () => this.setTouchMode('question'),
                         'btn-start-custom': () => this.startCustomGame(),
                         'btn-close-custom': () => this.closeModal('custom-modal'),
                         'btn-restart-modal': () => this.restart(),
@@ -1625,7 +1590,7 @@
                         gameModeSelect.addEventListener('change', () => {
                             const survivalSetting = document.getElementById('survival-lives-setting');
                             if (survivalSetting) {
-                                survivalSetting.style.display = 
+                                survivalSetting.style.display =
                                     gameModeSelect.value === 'survival' ? 'flex' : 'none';
                             }
                         });
@@ -1837,12 +1802,7 @@
                 // 设备检测
                 checkMobileDevice() {
                     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                    if (isMobile) {
-                        const touchControls = document.querySelector('.touch-controls');
-                        if (touchControls) {
-                            touchControls.style.display = 'flex';
-                        }
-                    }
+                    // 移动设备不再显示触控控制按钮，统一使用长按功能
                 }
                 // 事件绑定
                 bindEvents() {
@@ -1945,37 +1905,62 @@
                     }
                 }
                 // 渲染游戏板
-                renderBoard() {
-                    const boardElement = document.getElementById('game-board');
-                    if (!boardElement) return;
-                    boardElement.innerHTML = '<div class="mode-indicator" id="mode-indicator">经典模式</div>';
-                    boardElement.style.gridTemplateColumns = `repeat(${this.gameState.cols}, var(--cell-size))`;
-                    this.calculateOptimalCellSize();
-                    for (let row = 0; row < this.gameState.rows; row++) {
-                        for (let col = 0; col < this.gameState.cols; col++) {
-                            const cell = document.createElement('div');
-                            cell.className = 'cell';
-                            cell.dataset.row = row;
-                            cell.dataset.col = col;
-                            this.addCellEventListeners(cell, row, col);
-                            this.updateCell(cell, row, col);
-                            boardElement.appendChild(cell);
-                        }
-                    }
-                    this.setupMinimap();
-                    this.updateZoomDisplay();
-                }
+                // 渲染游戏板
+renderBoard() {
+    const boardElement = document.getElementById('game-board');
+    if (!boardElement) return;
+    
+    boardElement.innerHTML = '<div class="mode-indicator" id="mode-indicator">经典模式</div>';
+    boardElement.style.gridTemplateColumns = `repeat(${this.gameState.cols}, var(--cell-size))`;
+    
+    this.calculateOptimalCellSize();
+    
+    for (let row = 0; row < this.gameState.rows; row++) {
+        for (let col = 0; col < this.gameState.cols; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            
+            this.addCellEventListeners(cell, row, col);
+            this.updateCell(cell, row, col);
+            boardElement.appendChild(cell);
+        }
+    }
+    
+    // 延迟设置小地图，确保棋盘已完全渲染
+    setTimeout(() => {
+        this.setupMinimap();
+        this.updateZoomDisplay();
+    }, 50);
+    
+    const container = document.getElementById('game-board-container');
+    if (container) {
+        container.addEventListener('scroll', () => {
+            this.updateMinimapViewport();
+        });
+    }
+}
                 calculateOptimalCellSize() {
-                    const container = document.getElementById('game-board-container');
-                    if (!container) return;
-                    const maxWidth = container.clientWidth - 40;
-                    const maxHeight = container.clientHeight - 40;
-                    const cellWidth = Math.floor(maxWidth / this.gameState.cols);
-                    const cellHeight = Math.floor(maxHeight / this.gameState.rows);
-                    let cellSize = Math.min(cellWidth, cellHeight, 40);
-                    cellSize = Math.max(cellSize, 15);
-                    document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
-                }
+    const container = document.getElementById('game-board-container');
+    if (!container) return;
+    
+    const maxWidth = container.clientWidth - 40;
+    const maxHeight = container.clientHeight - 40;
+    
+    const cellWidth = Math.floor(maxWidth / this.gameState.cols);
+    const cellHeight = Math.floor(maxHeight / this.gameState.rows);
+    
+    let cellSize = Math.min(cellWidth, cellHeight, 40);
+    cellSize = Math.max(cellSize, 15);
+    
+    document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
+    
+    // 在设置格子大小后，重新检查是否需要显示小地图
+    setTimeout(() => {
+        this.setupMinimap();
+    }, 10);
+}
                 addCellEventListeners(cell, row, col) {
                     // 普通点击
                     cell.addEventListener('click', (e) => this.handleClick(row, col, e));
@@ -1998,51 +1983,70 @@
                             this.handleDoubleClick(row, col, e);
                         }
                     });
-                    // 触摸事件
-                    let touchTimer;
-                    let touchStartTime;
+                    // 修复触摸事件：改进长按检测逻辑
+                    let touchTimer = null;
+                    let touchStartTime = 0;
+                    let hasMoved = false;
+                    let longPressTriggered = false;
                     cell.addEventListener('touchstart', (e) => {
                         touchStartTime = Date.now();
+                        hasMoved = false;
+                        longPressTriggered = false;
+                        // 清除之前的计时器
+                        if (touchTimer) {
+                            clearTimeout(touchTimer);
+                        }
+                        // 设置长按计时器
                         touchTimer = setTimeout(() => {
-                            this.handleLongPress(row, col, e);
+                            if (!hasMoved && !longPressTriggered) {
+                                longPressTriggered = true;
+                                this.handleLongPress(row, col, e);
+                            }
                         }, 500);
                         e.preventDefault();
                     });
+                    cell.addEventListener('touchmove', (e) => {
+                        hasMoved = true;
+                        if (touchTimer) {
+                            clearTimeout(touchTimer);
+                            touchTimer = null;
+                        }
+                        e.preventDefault();
+                    });
                     cell.addEventListener('touchend', (e) => {
-                        clearTimeout(touchTimer);
+                        if (touchTimer) {
+                            clearTimeout(touchTimer);
+                            touchTimer = null;
+                        }
                         const touchDuration = Date.now() - touchStartTime;
-                        if (touchDuration < 500) {
+                        // 如果没有移动且没有触发长按，且触摸时间较短，则为普通点击
+                        if (!hasMoved && !longPressTriggered && touchDuration < 500) {
                             this.handleTouch(row, col, e);
                         }
                         e.preventDefault();
                     });
-                    cell.addEventListener('touchmove', () => {
-                        clearTimeout(touchTimer);
+                    cell.addEventListener('touchcancel', (e) => {
+                        if (touchTimer) {
+                            clearTimeout(touchTimer);
+                            touchTimer = null;
+                        }
+                        e.preventDefault();
                     });
                 }
-                // 小地图系统 - 改进显示逻辑
-                setupMinimap() {
+                // 小地图系统
+setupMinimap() {
     const minimapSection = document.getElementById('minimap-section');
     if (!minimapSection) return;
     
     // 检查是否需要显示小地图 - 当棋盘不能完全显示时
-    const container = document.getElementById('game-board-container');
-    const board = document.getElementById('game-board');
-    if (!container || !board) return;
+    const shouldShowMinimap = this.shouldShowMinimap();
     
-    // 计算棋盘实际尺寸
-    const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
-    const boardWidth = this.gameState.cols * (cellSize + 2) + 10; // 包括gap和padding
-    const boardHeight = this.gameState.rows * (cellSize + 2) + 10;
-    
-    // 如果棋盘能完全显示在容器中，隐藏小地图
-    if (boardWidth <= container.clientWidth && boardHeight <= container.clientHeight) {
+    if (!shouldShowMinimap) {
         minimapSection.style.display = 'none';
         return;
     }
     
     minimapSection.style.display = 'block';
-    
     const minimapBoard = document.getElementById('minimap-board');
     if (!minimapBoard) return;
     
@@ -2084,6 +2088,27 @@
     // 初始化视口显示
     this.updateMinimapViewport();
 }
+                /// 检查是否应该显示小地图
+shouldShowMinimap() {
+    const container = document.getElementById('game-board-container');
+    const board = document.getElementById('game-board');
+    if (!container || !board) return false;
+    
+    // 计算棋盘实际尺寸
+    const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+    const gap = 2; // 格子间距
+    const padding = 10; // 容器内边距
+    
+    const boardWidth = this.gameState.cols * (cellSize + gap) - gap + padding;
+    const boardHeight = this.gameState.rows * (cellSize + gap) - gap + padding;
+    
+    // 获取容器的可视区域大小
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    // 如果棋盘尺寸超过容器可视区域，则需要显示小地图
+    return boardWidth > containerWidth || boardHeight > containerHeight;
+}
                 updateMinimapCell(row, col, minimapCell = null) {
                     if (!minimapCell) {
                         minimapCell = document.querySelector(`.minimap-cell[data-row="${row}"][data-col="${col}"]`);
@@ -2100,94 +2125,74 @@
                     }
                 }
                 updateMinimapViewport() {
-    const container = document.getElementById('game-board-container');
-    const viewport = document.getElementById('minimap-viewport');
-    const minimapSection = document.getElementById('minimap-section');
-    const minimap = document.getElementById('minimap');
-    
-    if (!viewport || !container || !minimapSection || !minimap || minimapSection.style.display === 'none') return;
-    
-    const boardElement = document.getElementById('game-board');
-    if (!boardElement) return;
-    
-    // 获取实际的小地图内容区域尺寸（减去padding）
-    const minimapRect = minimap.getBoundingClientRect();
-    const minimapStyle = getComputedStyle(minimap);
-    const minimapPadding = parseInt(minimapStyle.paddingLeft) + parseInt(minimapStyle.paddingRight);
-    const minimapPaddingV = parseInt(minimapStyle.paddingTop) + parseInt(minimapStyle.paddingBottom);
-    
-    const minimapContentWidth = minimapRect.width - minimapPadding;
-    const minimapContentHeight = minimapRect.height - minimapPaddingV;
-    
-    // 获取游戏板的实际尺寸
-    const boardRect = boardElement.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    
-    if (!boardRect.width || !boardRect.height) return;
-    
-    // 计算缩放比例
-    const scaleX = minimapContentWidth / boardRect.width;
-    const scaleY = minimapContentHeight / boardRect.height;
-    
-    // 计算视口在小地图中的尺寸
-    const viewportWidth = Math.min(containerRect.width * scaleX, minimapContentWidth);
-    const viewportHeight = Math.min(containerRect.height * scaleY, minimapContentHeight);
-    
-    // 计算视口在小地图中的位置
-    const scrollRatioX = container.scrollLeft / (boardRect.width - containerRect.width || 1);
-    const scrollRatioY = container.scrollTop / (boardRect.height - containerRect.height || 1);
-    
-    const maxScrollX = minimapContentWidth - viewportWidth;
-    const maxScrollY = minimapContentHeight - viewportHeight;
-    
-    const viewportLeft = Math.max(0, Math.min(maxScrollX, scrollRatioX * maxScrollX));
-    const viewportTop = Math.max(0, Math.min(maxScrollY, scrollRatioY * maxScrollY));
-    
-    // 应用位置和尺寸
-    viewport.style.width = Math.max(10, viewportWidth) + 'px';
-    viewport.style.height = Math.max(10, viewportHeight) + 'px';
-    viewport.style.left = viewportLeft + 'px';
-    viewport.style.top = viewportTop + 'px';
-}
+                    const container = document.getElementById('game-board-container');
+                    const viewport = document.getElementById('minimap-viewport');
+                    const minimapSection = document.getElementById('minimap-section');
+                    const minimap = document.getElementById('minimap');
+                    if (!viewport || !container || !minimapSection || !minimap || minimapSection.style.display === 'none') return;
+                    const boardElement = document.getElementById('game-board');
+                    if (!boardElement) return;
+                    // 获取实际的小地图内容区域尺寸（减去padding）
+                    const minimapRect = minimap.getBoundingClientRect();
+                    const minimapStyle = getComputedStyle(minimap);
+                    const minimapPadding = parseInt(minimapStyle.paddingLeft) + parseInt(minimapStyle.paddingRight);
+                    const minimapPaddingV = parseInt(minimapStyle.paddingTop) + parseInt(minimapStyle.paddingBottom);
+                    const minimapContentWidth = minimapRect.width - minimapPadding;
+                    const minimapContentHeight = minimapRect.height - minimapPaddingV;
+                    // 获取游戏板的实际尺寸
+                    const boardRect = boardElement.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    if (!boardRect.width || !boardRect.height) return;
+                    // 计算缩放比例
+                    const scaleX = minimapContentWidth / boardRect.width;
+                    const scaleY = minimapContentHeight / boardRect.height;
+                    // 计算视口在小地图中的尺寸
+                    const viewportWidth = Math.min(containerRect.width * scaleX, minimapContentWidth);
+                    const viewportHeight = Math.min(containerRect.height * scaleY, minimapContentHeight);
+                    // 计算视口在小地图中的位置
+                    const scrollRatioX = container.scrollLeft / (boardRect.width - containerRect.width || 1);
+                    const scrollRatioY = container.scrollTop / (boardRect.height - containerRect.height || 1);
+                    const maxScrollX = minimapContentWidth - viewportWidth;
+                    const maxScrollY = minimapContentHeight - viewportHeight;
+                    const viewportLeft = Math.max(0, Math.min(maxScrollX, scrollRatioX * maxScrollX));
+                    const viewportTop = Math.max(0, Math.min(maxScrollY, scrollRatioY * maxScrollY));
+                    // 应用位置和尺寸
+                    viewport.style.width = Math.max(10, viewportWidth) + 'px';
+                    viewport.style.height = Math.max(10, viewportHeight) + 'px';
+                    viewport.style.left = viewportLeft + 'px';
+                    viewport.style.top = viewportTop + 'px';
+                }
                 scrollToCell(row, col) {
-    const container = document.getElementById('game-board-container');
-    if (!container) return;
-    
-    const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
-    const gap = 2; // 格子间距
-    
-    // 计算目标格子的位置（考虑gap和padding）
-    const targetX = col * (cellSize + gap) + 5 - container.clientWidth / 2;
-    const targetY = row * (cellSize + gap) + 5 - container.clientHeight / 2;
-    
-    // 确保不超出边界
-    const maxScrollLeft = container.scrollWidth - container.clientWidth;
-    const maxScrollTop = container.scrollHeight - container.clientHeight;
-    
-    const scrollLeft = Math.max(0, Math.min(maxScrollLeft, targetX));
-    const scrollTop = Math.max(0, Math.min(maxScrollTop, targetY));
-    
-    container.scrollTo({
-        left: scrollLeft,
-        top: scrollTop,
-        behavior: 'smooth'
-    });
-    
-    // 高亮目标格子
-    const targetCell = this.getCell(row, col);
-    if (targetCell) {
-        targetCell.style.boxShadow = '0 0 20px rgba(33, 150, 243, 0.8)';
-        targetCell.style.transform = 'scale(1.1)';
-        targetCell.style.zIndex = '100';
-        
-        setTimeout(() => {
-            targetCell.style.boxShadow = '';
-            targetCell.style.transform = '';
-            targetCell.style.zIndex = '';
-        }, 2000);
-    }
-}
-                
+                    const container = document.getElementById('game-board-container');
+                    if (!container) return;
+                    const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+                    const gap = 2; // 格子间距
+                    // 计算目标格子的位置（考虑gap和padding）
+                    const targetX = col * (cellSize + gap) + 5 - container.clientWidth / 2;
+                    const targetY = row * (cellSize + gap) + 5 - container.clientHeight / 2;
+                    // 确保不超出边界
+                    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+                    const maxScrollTop = container.scrollHeight - container.clientHeight;
+                    const scrollLeft = Math.max(0, Math.min(maxScrollLeft, targetX));
+                    const scrollTop = Math.max(0, Math.min(maxScrollTop, targetY));
+                    container.scrollTo({
+                        left: scrollLeft,
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
+                    // 高亮目标格子
+                    const targetCell = this.getCell(row, col);
+                    if (targetCell) {
+                        targetCell.style.boxShadow = '0 0 20px rgba(33, 150, 243, 0.8)';
+                        targetCell.style.transform = 'scale(1.1)';
+                        targetCell.style.zIndex = '100';
+                        setTimeout(() => {
+                            targetCell.style.boxShadow = '';
+                            targetCell.style.transform = '';
+                            targetCell.style.zIndex = '';
+                        }, 2000);
+                    }
+                }
                 // 缩放控制系统
                 zoomIn() {
                     this.gameState.zoom = Math.min(this.gameState.zoom + 0.2, 3);
@@ -2202,15 +2207,17 @@
                     this.applyZoom();
                 }
                 applyZoom() {
-                    const baseSize = 30;
-                    const newSize = Math.round(baseSize * this.gameState.zoom);
-                    document.documentElement.style.setProperty('--cell-size', `${newSize}px`);
-                    this.updateZoomDisplay();
-                    setTimeout(() => {
-                        this.updateMinimapViewport();
-                        this.setupMinimap(); // 重新检查是否需要显示小地图
-                    }, 100);
-                }
+    const baseSize = 30;
+    const newSize = Math.round(baseSize * this.gameState.zoom);
+    document.documentElement.style.setProperty('--cell-size', `${newSize}px`);
+    this.updateZoomDisplay();
+    
+    // 延迟更新小地图，确保DOM已更新
+    setTimeout(() => {
+        this.updateMinimapViewport();
+        this.setupMinimap(); // 重新检查是否需要显示小地图
+    }, 100);
+}
                 updateZoomDisplay() {
                     const zoomLevel = document.getElementById('zoom-level');
                     if (zoomLevel) {
@@ -2231,81 +2238,71 @@
                 }
                 // 禅意模式道具系统
                 updateZenItemsDisplay() {
-    const zenItems = document.getElementById('zen-items');
-    if (!zenItems) return;
-    
-    if (this.gameState.mode === 'zen') {
-        zenItems.classList.add('show');
-        // 更新道具按钮状态
-        Object.keys(this.gameState.zenItems).forEach(item => {
-            const button = document.getElementById(`zen-${item.replace(/([A-Z])/g, '-$1').toLowerCase()}`);
-            if (button) {
-                const itemData = this.gameState.zenItems[item];
-                button.disabled = itemData.count <= 0;
-                
-                // 获取按钮的基础文本
-                let baseText = '';
-                switch(item) {
-                    case 'timeStop':
-                        baseText = '⏸️ 时间暂停';
-                        break;
-                    case 'xray':
-                        baseText = '👁️ 透视镜';
-                        break;
-                    case 'safeDetect':
-                        baseText = '🛡️ 安全探测';
-                        break;
-                    case 'autoFlag':
-                        baseText = '🚩 自动标记';
-                        break;
+                    const zenItems = document.getElementById('zen-items');
+                    if (!zenItems) return;
+                    if (this.gameState.mode === 'zen') {
+                        zenItems.classList.add('show');
+                        // 更新道具按钮状态
+                        Object.keys(this.gameState.zenItems).forEach(item => {
+                            const button = document.getElementById(`zen-${item.replace(/([A-Z])/g, '-$1').toLowerCase()}`);
+                            if (button) {
+                                const itemData = this.gameState.zenItems[item];
+                                button.disabled = itemData.count <= 0;
+                                // 获取按钮的基础文本
+                                let baseText = '';
+                                switch(item) {
+                                    case 'timeStop':
+                                        baseText = '⏸️ 时间暂停';
+                                        break;
+                                    case 'xray':
+                                        baseText = '👁️ 透视镜';
+                                        break;
+                                    case 'safeDetect':
+                                        baseText = '🛡️ 安全探测';
+                                        break;
+                                    case 'autoFlag':
+                                        baseText = '🚩 自动标记';
+                                        break;
+                                }
+                                // 更新按钮文本，显示当前剩余次数
+                                button.textContent = `${baseText}（${itemData.count}）`;
+                            }
+                        });
+                    } else {
+                        zenItems.classList.remove('show');
+                    }
                 }
-                
-                // 更新按钮文本，显示当前剩余次数
-                button.textContent = `${baseText}（${itemData.count}）`;
-            }
-        });
-    } else {
-        zenItems.classList.remove('show');
-    }
-}
                 useZenItem(itemType) {
-    if (this.gameState.mode !== 'zen' || this.gameState.gameOver || this.gameState.firstClick) {
-        return;
-    }
-    
-    const item = this.gameState.zenItems[itemType];
-    if (!item || item.count <= 0) return;
-    
-    item.count--;
-    this.playSound('powerup');
-    
-    switch (itemType) {
-        case 'timeStop':
-            this.activateTimeStop();
-            break;
-        case 'xray':
-            this.activateXray();
-            break;
-        case 'safeDetect':
-            this.activateSafeDetect();
-            break;
-        case 'autoFlag':
-            this.activateAutoFlag();
-            break;
-    }
-    
-    // 立即更新道具显示，确保次数正确显示
-    this.updateZenItemsDisplay();
-}
+                    if (this.gameState.mode !== 'zen' || this.gameState.gameOver || this.gameState.firstClick) {
+                        return;
+                    }
+                    const item = this.gameState.zenItems[itemType];
+                    if (!item || item.count <= 0) return;
+                    item.count--;
+                    this.playSound('powerup');
+                    switch (itemType) {
+                        case 'timeStop':
+                            this.activateTimeStop();
+                            break;
+                        case 'xray':
+                            this.activateXray();
+                            break;
+                        case 'safeDetect':
+                            this.activateSafeDetect();
+                            break;
+                        case 'autoFlag':
+                            this.activateAutoFlag();
+                            break;
+                    }
+                    // 立即更新道具显示，确保次数正确显示
+                    this.updateZenItemsDisplay();
+                }
                 activateTimeStop() {
                     if (this.gameState.zenItems.timeStop.active) return;
-                    
                     this.gameState.zenItems.timeStop.active = true;
                     const originalPaused = this.gameState.paused;
                     this.gameState.paused = true;
-                    
                     this.showFloatingMessage('⏸️ 时间暂停30秒！');
-                    
                     setTimeout(() => {
                         this.gameState.zenItems.timeStop.active = false;
                         if (!originalPaused) {
@@ -2317,12 +2314,10 @@
                 activateXray() {
                     // 清除之前的透视效果
                     this.clearXrayEffect();
-                    
                     // 随机选择一个区域显示地雷
                     const centerRow = Math.floor(Math.random() * this.gameState.rows);
                     const centerCol = Math.floor(Math.random() * this.gameState.cols);
                     const radius = 3;
-                    
                     const xrayCells = [];
                     for (let r = Math.max(0, centerRow - radius); r <= Math.min(this.gameState.rows - 1, centerRow + radius); r++) {
                         for (let c = Math.max(0, centerCol - radius); c <= Math.min(this.gameState.cols - 1, centerCol + radius); c++) {
@@ -2335,11 +2330,9 @@
                             }
                         }
                     }
-                    
                     this.gameState.zenItems.xray.cells = xrayCells;
                     this.scrollToCell(centerRow, centerCol);
                     this.showFloatingMessage('👁️ 透视镜激活！显示区域内地雷');
-                    
                     // 5秒后清除效果
                     setTimeout(() => {
                         this.clearXrayEffect();
@@ -2354,7 +2347,6 @@
                 activateSafeDetect() {
                     // 清除之前的安全探测效果
                     this.clearSafeDetectEffect();
-                    
                     // 找到所有安全格子并高亮显示
                     const safeCells = [];
                     for (let r = 0; r < this.gameState.rows; r++) {
@@ -2364,7 +2356,6 @@
                             }
                         }
                     }
-                    
                     // 随机选择一些安全格子进行高亮
                     const highlightCount = Math.min(8, safeCells.length);
                     const selectedCells = [];
@@ -2377,10 +2368,8 @@
                             selectedCells.push([r, c]);
                         }
                     }
-                    
                     this.gameState.zenItems.safeDetect.cells = selectedCells;
                     this.showFloatingMessage('🛡️ 安全探测激活！绿色格子是安全的');
-                    
                     // 8秒后清除效果
                     setTimeout(() => {
                         this.clearSafeDetectEffect();
@@ -2397,16 +2386,14 @@
                 }
                 activateAutoFlag() {
                     let flaggedCount = 0;
-                    
                     // 寻找明显的地雷并自动标记
                     for (let r = 0; r < this.gameState.rows; r++) {
                         for (let c = 0; c < this.gameState.cols; c++) {
                             if (this.revealed[r][c] && this.board[r][c] > 0) {
                                 const neighbors = this.getNeighbors(r, c);
                                 const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
-                                const unrevealedCount = neighbors.filter(([nr, nc]) => 
+                                const unrevealedCount = neighbors.filter(([nr, nc]) =>
                                     !this.revealed[nr][nc] && !this.flags[nr][nc]).length;
-                                
                                 // 如果剩余未标记的格子数等于剩余地雷数，标记所有
                                 if (unrevealedCount === this.board[r][c] - flaggedCount && unrevealedCount > 0) {
                                     neighbors.forEach(([nr, nc]) => {
@@ -2423,7 +2410,6 @@
                             }
                         }
                     }
-                    
                     this.updateDisplay();
                     this.showFloatingMessage(`🚩 自动标记完成！标记了${flaggedCount}个地雷`);
                 }
@@ -2446,7 +2432,6 @@
                     `;
                     floatingDiv.textContent = message;
                     document.body.appendChild(floatingDiv);
-                    
                     setTimeout(() => {
                         if (floatingDiv.parentNode) {
                             floatingDiv.remove();
@@ -2457,9 +2442,7 @@
                 updateSurvivalHealthDisplay() {
                     const healthDisplay = document.getElementById('survival-health');
                     const healthValue = document.getElementById('health-value');
-                    
                     if (!healthDisplay || !healthValue) return;
-                    
                     if (this.gameState.mode === 'survival') {
                         healthDisplay.classList.add('show');
                         healthValue.textContent = this.gameState.lives;
@@ -2539,32 +2522,29 @@
                     this.revealCell(row, col);
                 }
                 handleRightClick(row, col, event) {
-    if (event) event.preventDefault();
-    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
-    if (this.revealed[row][col]) return;
-    
-    this.recordMove({ type: 'flag', row, col });
-    
-    if (this.flags[row][col]) {
-        // 从旗帜变为问号
-        this.flags[row][col] = false;
-        this.questions[row][col] = true;
-        this.gameState.minesLeft++;
-    } else if (this.questions[row][col]) {
-        // 从问号变为空白
-        this.questions[row][col] = false;
-    } else {
-        // 从空白变为旗帜
-        this.flags[row][col] = true;
-        this.gameState.minesLeft--;
-        this.playSound('flag');
-    }
-    
-    const cell = this.getCell(row, col);
-    this.updateCell(cell, row, col);
-    this.updateMinimapCell(row, col);
-    this.updateDisplay();
-}
+                    if (event) event.preventDefault();
+                    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
+                    if (this.revealed[row][col]) return;
+                    this.recordMove({ type: 'flag', row, col });
+                    if (this.flags[row][col]) {
+                        // 从旗帜变为问号
+                        this.flags[row][col] = false;
+                        this.questions[row][col] = true;
+                        this.gameState.minesLeft++;
+                    } else if (this.questions[row][col]) {
+                        // 从问号变为空白
+                        this.questions[row][col] = false;
+                    } else {
+                        // 从空白变为旗帜
+                        this.flags[row][col] = true;
+                        this.gameState.minesLeft--;
+                        this.playSound('flag');
+                    }
+                    const cell = this.getCell(row, col);
+                    this.updateCell(cell, row, col);
+                    this.updateMinimapCell(row, col);
+                    this.updateDisplay();
+                }
                 handleDoubleClick(row, col, event) {
                     if (event) event.preventDefault();
                     if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
@@ -2596,49 +2576,13 @@
                 }
                 handleTouch(row, col, event) {
                     if (event) event.preventDefault();
-                    switch (this.gameState.touchMode) {
-                        case 'reveal':
-                            this.handleClick(row, col);
-                            break;
-                        case 'flag':
-                            if (!this.revealed[row][col]) {
-                                this.flags[row][col] = !this.flags[row][col];
-                                this.questions[row][col] = false;
-                                if (this.flags[row][col]) {
-                                    this.gameState.minesLeft--;
-                                    this.playSound('flag');
-                                } else {
-                                    this.gameState.minesLeft++;
-                                }
-                                const cell = this.getCell(row, col);
-                                this.updateCell(cell, row, col);
-                                this.updateMinimapCell(row, col);
-                                this.updateDisplay();
-                            }
-                            break;
-                        case 'question':
-                            if (!this.revealed[row][col]) {
-                                this.questions[row][col] = !this.questions[row][col];
-                                this.flags[row][col] = false;
-                                const cell = this.getCell(row, col);
-                                this.updateCell(cell, row, col);
-                            }
-                            break;
-                    }
+                    // 简化触摸处理，直接执行点击操作
+                    this.handleClick(row, col, event);
                 }
                 handleLongPress(row, col, event) {
                     if (event) event.preventDefault();
-                    this.handleRightClick(row, col);
-                }
-                setTouchMode(mode) {
-                    this.gameState.touchMode = mode;
-                    document.querySelectorAll('.touch-btn').forEach(btn => {
-                        btn.classList.remove('active');
-                    });
-                    const activeBtn = document.getElementById(`touch-${mode}`);
-                    if (activeBtn) {
-                        activeBtn.classList.add('active');
-                    }
+                    // 长按执行右键点击（标记操作）
+                    this.handleRightClick(row, col, event);
                 }
                 // 核心游戏逻辑 - 优化展开性能
                 revealCell(row, col) {
@@ -3234,15 +3178,12 @@
                     const originalBoard = JSON.parse(JSON.stringify(this.board));
                     const simRevealed = JSON.parse(JSON.stringify(this.revealed));
                     const simFlags = JSON.parse(JSON.stringify(this.flags));
-                    
                     let changed = true;
                     let iterations = 0;
                     const maxIterations = this.gameState.rows * this.gameState.cols;
-                    
                     while (changed && iterations < maxIterations) {
                         changed = false;
                         iterations++;
-                        
                         // 基础逻辑推理
                         for (let r = 0; r < this.gameState.rows; r++) {
                             for (let c = 0; c < this.gameState.cols; c++) {
@@ -3250,13 +3191,11 @@
                                     const neighbors = [];
                                     let flaggedCount = 0;
                                     let unrevealedCount = 0;
-                                    
                                     this.forEachNeighbor(r, c, (nr, nc) => {
                                         neighbors.push([nr, nc]);
                                         if (simFlags[nr][nc]) flaggedCount++;
                                         if (!simRevealed[nr][nc] && !simFlags[nr][nc]) unrevealedCount++;
                                     });
-                                    
                                     // 如果已标记地雷数等于数字，剩余都是安全的
                                     if (flaggedCount === originalBoard[r][c]) {
                                         for (const [nr, nc] of neighbors) {
@@ -3270,7 +3209,6 @@
                                             }
                                         }
                                     }
-                                    
                                     // 如果未揭开格子数等于剩余地雷数，都是地雷
                                     if (unrevealedCount === originalBoard[r][c] - flaggedCount && unrevealedCount > 0) {
                                         for (const [nr, nc] of neighbors) {
@@ -3287,13 +3225,11 @@
                                 }
                             }
                         }
-                        
                         // 高级逻辑：子集推理
                         if (!changed) {
                             changed = this.performSubsetReasoning(simRevealed, simFlags, originalBoard);
                         }
                     }
-                    
                     // 检查是否完全解决
                     for (let r = 0; r < this.gameState.rows; r++) {
                         for (let c = 0; c < this.gameState.cols; c++) {
@@ -3305,48 +3241,38 @@
                             }
                         }
                     }
-                    
                     return true;
                 }
                 performSubsetReasoning(simRevealed, simFlags, originalBoard) {
                     let changed = false;
-                    
                     // 寻找重叠区域的逻辑关系
                     for (let r1 = 0; r1 < this.gameState.rows; r1++) {
                         for (let c1 = 0; c1 < this.gameState.cols; c1++) {
                             if (!simRevealed[r1][c1] || originalBoard[r1][c1] <= 0) continue;
-                            
                             const neighbors1 = this.getNeighbors(r1, c1);
                             const unrevealed1 = neighbors1.filter(([r, c]) => !simRevealed[r][c] && !simFlags[r][c]);
                             const flagged1 = neighbors1.filter(([r, c]) => simFlags[r][c]).length;
                             const remaining1 = originalBoard[r1][c1] - flagged1;
-                            
                             if (unrevealed1.length === 0 || remaining1 <= 0) continue;
-                            
                             // 寻找相邻的数字格子
                             for (let r2 = 0; r2 < this.gameState.rows; r2++) {
                                 for (let c2 = 0; c2 < this.gameState.cols; c2++) {
                                     if (r1 === r2 && c1 === c2) continue;
                                     if (!simRevealed[r2][c2] || originalBoard[r2][c2] <= 0) continue;
-                                    
                                     const neighbors2 = this.getNeighbors(r2, c2);
                                     const unrevealed2 = neighbors2.filter(([r, c]) => !simRevealed[r][c] && !simFlags[r][c]);
                                     const flagged2 = neighbors2.filter(([r, c]) => simFlags[r][c]).length;
                                     const remaining2 = originalBoard[r2][c2] - flagged2;
-                                    
                                     if (unrevealed2.length === 0 || remaining2 <= 0) continue;
-                                    
                                     // 检查是否有重叠的未揭开格子
-                                    const intersection = unrevealed1.filter(([r, c]) => 
+                                    const intersection = unrevealed1.filter(([r, c]) =>
                                         unrevealed2.some(([r2, c2]) => r === r2 && c === c2));
-                                    
                                     if (intersection.length > 0) {
                                         // 子集推理逻辑
-                                        const diff1 = unrevealed1.filter(([r, c]) => 
+                                        const diff1 = unrevealed1.filter(([r, c]) =>
                                             !intersection.some(([r2, c2]) => r === r2 && c === c2));
-                                        const diff2 = unrevealed2.filter(([r, c]) => 
+                                        const diff2 = unrevealed2.filter(([r, c]) =>
                                             !intersection.some(([r2, c2]) => r === r2 && c === c2));
-                                        
                                         // 如果一个是另一个的子集
                                         if (diff1.length === 0 && remaining1 <= remaining2) {
                                             // unrevealed1 是 unrevealed2 的子集
@@ -3372,7 +3298,6 @@
                             }
                         }
                     }
-                    
                     return changed;
                 }
                 // 游戏控制功能
@@ -3382,7 +3307,6 @@
                     this.clearHints();
                     this.clearXrayEffect();
                     this.clearSafeDetectEffect();
-                    
                     // 如果是自定义模式，使用保存的设置
                     if (this.gameState.difficulty === 'custom' && this.gameState.customSettings) {
                         const settings = this.gameState.customSettings;
@@ -3476,13 +3400,11 @@
                     const autoSpeed = parseInt(document.getElementById('auto-speed').value);
                     const specialCells = parseInt(document.getElementById('special-cells').value);
                     const survivalLives = parseInt(document.getElementById('survival-lives').value) || 3;
-                    
                     if (rows < 5 || rows > 50 || cols < 5 || cols > 100 ||
                         mines < 1 || mines >= rows * cols) {
                         alert('请输入有效的参数！');
                         return;
                     }
-                    
                     // 保存自定义设置
                     this.gameState.customSettings = {
                         rows,
@@ -3493,14 +3415,12 @@
                         specialCellChance: specialCells,
                         maxLives: mode === 'survival' ? survivalLives : 1
                     };
-                    
                     this.gameState.mode = mode;
                     this.gameState.autoSpeed = autoSpeed;
                     this.gameState.specialCellChance = specialCells;
                     if (mode === 'survival') {
                         this.gameState.maxLives = survivalLives;
                     }
-                    
                     this.closeModal('custom-modal');
                     this.startGame(rows, cols, mines, 'custom');
                 }
@@ -3654,35 +3574,29 @@
                     // 验证当前布局是否有逻辑解
                     let attempts = 0;
                     const maxAttempts = 10;
-                    
                     while (attempts < maxAttempts) {
                         if (this.canSolveLogically()) {
                             console.log('无猜模式验证通过 - 确保游戏有逻辑解');
                             return;
                         }
-                        
                         // 重新生成布局
                         this.board = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(0));
-                        
                         const positions = [];
                         for (let r = 0; r < this.gameState.rows; r++) {
                             for (let c = 0; c < this.gameState.cols; c++) {
                                 positions.push([r, c]);
                             }
                         }
-                        
                         // 随机打乱位置
                         for (let i = positions.length - 1; i > 0; i--) {
                             const j = Math.floor(Math.random() * (i + 1));
                             [positions[i], positions[j]] = [positions[j], positions[i]];
                         }
-                        
                         // 放置地雷
                         for (let i = 0; i < this.gameState.totalMines && i < positions.length; i++) {
                             const [r, c] = positions[i];
                             this.board[r][c] = -1;
                         }
-                        
                         // 计算数字
                         for (let r = 0; r < this.gameState.rows; r++) {
                             for (let c = 0; c < this.gameState.cols; c++) {
@@ -3691,10 +3605,8 @@
                                 }
                             }
                         }
-                        
                         attempts++;
                     }
-                    
                     console.log('无猜模式生成失败，使用常规模式');
                 }
                 // 数据持久化（版本化）

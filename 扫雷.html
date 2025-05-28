@@ -6,925 +6,1061 @@
     <title>扫雷大师 - 终极版</title>
     <style>
         * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
-:root {
-    --primary-color: #2196F3;
-    --success-color: #4CAF50;
-    --danger-color: #f44336;
-    --warning-color: #ff9800;
-    --cell-size: 30px;
-    --border-color: #bdbdbd;
-    --bg-color: #f5f5f5;
-    --text-color: #333;
-    --cell-bg: #e0e0e0;
-    --cell-hover: #d0d0d0;
-    --revealed-bg: #fff;
-    --shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-/* ========== 基础样式 ========== */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-    background: linear-gradient(135deg, var(--bg-color) 0%, #e8f5e8 100%);
-    color: var(--text-color);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: all 0.3s ease;
-    touch-action: manipulation;
-    overflow-x: hidden;
-}
-body.dark {
-    --bg-color: #1a1a1a;
-    --text-color: #f0f0f0;
-    --cell-bg: #2a2a2a;
-    --cell-hover: #3a3a3a;
-    --revealed-bg: #1f1f1f;
-    --border-color: #444;
-    --shadow: 0 2px 10px rgba(255,255,255,0.1);
-    background: linear-gradient(135deg, var(--bg-color) 0%, #2a2a2a 100%);
-}
-.container {
-    width: 100%;
-    max-width: 1400px;
-    padding: 20px;
-}
-/* ========== 头部样式 ========== */
-.header {
-    text-align: center;
-    margin-bottom: 30px;
-    animation: fadeIn 0.5s ease;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-}
-body.dark .header {
-    background: rgba(0, 0, 0, 0.2);
-}
-.header h1 {
-    font-size: 3em;
-    margin-bottom: 10px;
-    background: linear-gradient(45deg, var(--primary-color), var(--success-color), var(--warning-color));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.header p {
-    font-size: 1.2em;
-    opacity: 0.8;
-    font-weight: 300;
-}
-/* ========== 按钮样式 ========== */
-.btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 25px;
-    background: linear-gradient(45deg, var(--primary-color), #64b5f6);
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow);
-    position: relative;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    font-weight: 500;
-}
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.5s;
-}
-.btn:hover::before {
-    left: 100%;
-}
-.btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(0,0,0,0.25);
-}
-.btn:active {
-    transform: translateY(-1px);
-}
-.btn.success {
-    background: linear-gradient(45deg, var(--success-color), #81c784);
-}
-.btn.danger {
-    background: linear-gradient(45deg, var(--danger-color), #e57373);
-}
-.btn.warning {
-    background: linear-gradient(45deg, var(--warning-color), #ffb74d);
-}
-.btn.info {
-    background: linear-gradient(45deg, #17a2b8, #4dd0e1);
-}
-.btn.small {
-    padding: 8px 16px;
-    font-size: 14px;
-    border-radius: 20px;
-}
-/* ========== 游戏控制区域 ========== */
-.game-controls {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-}
-/* ========== 游戏统计区域 ========== */
-.game-stats {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-}
-.stat-box {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    padding: 20px 30px;
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-body.dark .stat-box {
-    background: rgba(42, 42, 42, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.stat-box:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-}
-.stat-icon {
-    font-size: 28px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-}
-.stat-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--primary-color);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-.stat-label {
-    font-size: 14px;
-    opacity: 0.7;
-    font-weight: 500;
-}
-/* ========== 扩展控制区域 ========== */
-.game-controls-extended {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    margin: 25px 0;
-    flex-wrap: wrap;
-}
-.zoom-control-section, .minimap-section {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-    text-align: center;
-    min-width: 220px;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-body.dark .zoom-control-section,
-body.dark .minimap-section {
-    background: rgba(42, 42, 42, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.zoom-control-section:hover,
-.minimap-section:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-}
-.zoom-control-section h4,
-.minimap-section h4 {
-    margin-bottom: 15px;
-    color: var(--primary-color);
-    font-size: 16px;
-    font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-/* ========== 缩放控制样式 ========== */
-.zoom-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-}
-.zoom-level {
-    min-width: 60px;
-    font-weight: bold;
-    color: var(--primary-color);
-    background: var(--bg-color);
-    padding: 8px 15px;
-    border-radius: 15px;
-    border: 2px solid var(--primary-color);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-}
-/* ========== 小地图样式 ========== */
-.minimap {
-    position: relative;
-    width: 220px;
-    height: 140px;
-    background: var(--bg-color);
-    border: 3px solid var(--primary-color);
-    border-radius: 15px;
-    padding: 8px;
-    margin: 0 auto;
-    overflow: hidden;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
-}
-body.dark .minimap {
-    background: var(--cell-bg);
-}
-.minimap-board {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    gap: 1px;
-    background: var(--border-color);
-    border-radius: 8px;
-    overflow: hidden;
-}
-.minimap-cell {
-    background: var(--cell-bg);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    border-radius: 2px;
-}
-.minimap-cell:hover {
-    transform: scale(1.2);
-    z-index: 10;
-    box-shadow: 0 0 8px var(--primary-color);
-    border-radius: 50%;
-}
-.minimap-cell.revealed {
-    background: var(--revealed-bg);
-}
-.minimap-cell.mine {
-    background: var(--danger-color);
-    box-shadow: 0 0 4px rgba(244, 67, 54, 0.5);
-}
-.minimap-cell.flagged {
-    background: var(--warning-color);
-    box-shadow: 0 0 4px rgba(255, 152, 0, 0.5);
-}
-.minimap-viewport {
-    position: absolute;
-    border: 3px solid var(--success-color);
-    pointer-events: none;
-    border-radius: 5px;
-    background: rgba(76, 175, 80, 0.3);
-    transition: all 0.2s ease;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-}
-/* ========== 进度条样式 ========== */
-.progress-bar {
-    width: 100%;
-    height: 12px;
-    background: var(--cell-bg);
-    border-radius: 10px;
-    margin: 15px 0;
-    overflow: hidden;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-}
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--success-color), var(--primary-color), var(--warning-color));
-    transition: width 0.5s ease;
-    border-radius: 8px;
-    position: relative;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-}
-.progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-    animation: progressShine 2s ease-in-out infinite;
-}
-/* ========== 触摸控制样式 ========== */
-.touch-controls {
-    display: none;
-    justify-content: center;
-    gap: 15px;
-    margin: 25px 0;
-}
-.touch-btn {
-    padding: 18px;
-    border-radius: 50%;
-    width: 70px;
-    height: 70px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 28px;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow);
-}
-.touch-btn.active {
-    transform: scale(1.3);
-    box-shadow: 0 0 25px rgba(33, 150, 243, 0.6);
-}
-/* ========== 游戏板容器样式 ========== */
-.game-board-wrapper {
-    position: relative;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 25px;
-}
-.game-board-container {
-    position: relative;
-    max-width: 90vw;
-    max-height: 60vh;
-    overflow: auto;
-    border: 3px solid var(--border-color);
-    border-radius: 20px;
-    background: var(--border-color);
-    box-shadow: var(--shadow);
-    scrollbar-width: thin;
-    scrollbar-color: var(--primary-color) var(--bg-color);
-}
-.game-board-container::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-.game-board-container::-webkit-scrollbar-track {
-    background: var(--bg-color);
-    border-radius: 8px;
-}
-.game-board-container::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, var(--primary-color), var(--success-color));
-    border-radius: 8px;
-}
-.game-board-container::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(45deg, var(--success-color), var(--warning-color));
-}
-.game-board-container::-webkit-scrollbar-corner {
-    background: var(--bg-color);
-}
-/* ========== 游戏板样式 ========== */
-.game-board {
-    display: grid;
-    gap: 2px;
-    background: var(--border-color);
-    padding: 5px;
-    position: relative;
-    user-select: none;
-    min-width: min-content;
-    border-radius: 15px;
-}
-/* ========== 格子样式 ========== */
-.cell {
-    width: var(--cell-size);
-    height: var(--cell-size);
-    background: linear-gradient(145deg, var(--cell-bg), #d0d0d0);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    font-size: calc(var(--cell-size) * 0.6);
-    border: 1px solid transparent;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.cell:hover:not(.revealed):not(.flagged) {
-    background: linear-gradient(145deg, var(--cell-hover), #c0c0c0);
-    transform: scale(1.08);
-    border: 2px solid var(--primary-color);
-    z-index: 5;
-    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-}
-.cell.revealed {
-    background: linear-gradient(145deg, var(--revealed-bg), #f8f8f8);
-    cursor: default;
-    animation: reveal 0.4s ease;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-}
-.cell.mine {
-    background: linear-gradient(145deg, var(--danger-color), #d32f2f);
-    animation: explode 0.6s ease;
-    box-shadow: 0 0 20px rgba(244, 67, 54, 0.7);
-}
-.cell.flagged::after {
-    content: "🚩";
-    font-size: calc(var(--cell-size) * 0.8);
-    animation: plantFlag 0.4s ease;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-.cell.question::after {
-    content: "❓";
-    font-size: calc(var(--cell-size) * 0.8);
-    animation: bounce 0.4s ease;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-.cell.hint {
-    animation: hintGlow 1.5s ease-in-out infinite;
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.9);
-    background: linear-gradient(45deg, rgba(255, 215, 0, 0.4), rgba(255, 165, 0, 0.4));
-    z-index: 10;
-    border-radius: 50%;
-}
-.cell.special {
-    background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb);
-    animation: specialGlow 2s ease-in-out infinite;
-    box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
-}
-/* ========== 数字颜色 ========== */
-.num-1 { color: #1976d2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.num-2 { color: #388e3c; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.num-3 { color: #d32f2f; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.num-4 { color: #7b1fa2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.num-5 { color: #f57c00; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.num-6 { color: #00796b; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.num-7 { color: #303f9f; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.num-8 { color: #424242; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-/* ========== 游戏状态指示器 ========== */
-.mode-indicator {
-    position: absolute;
-    top: -35px;
-    left: 0;
-    background: linear-gradient(45deg, var(--primary-color), var(--success-color));
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    z-index: 10;
-    box-shadow: var(--shadow);
-    font-weight: 500;
-}
-.auto-solve-status {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(45deg, rgba(33, 150, 243, 0.95), rgba(76, 175, 80, 0.95));
-    color: white;
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-size: 16px;
-    font-weight: bold;
-    display: none;
-    z-index: 10000;
-    animation: pulse 1s ease-in-out infinite;
-    box-shadow: 0 6px 25px rgba(33, 150, 243, 0.5);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-}
-/* ========== 连击指示器 ========== */
-.combo-indicator {
-    position: fixed;
-    top: 15%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(45deg, var(--warning-color), #ffb74d);
-    color: white;
-    padding: 25px 35px;
-    border-radius: 20px;
-    font-size: 28px;
-    font-weight: bold;
-    display: none;
-    z-index: 1001;
-    animation: comboShow 1s ease;
-    box-shadow: 0 8px 40px rgba(255, 152, 0, 0.4);
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    border: 3px solid rgba(255, 255, 255, 0.3);
-}
-/* ========== 模态框样式 ========== */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(5px);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease;
-}
-.modal-content {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    padding: 35px;
-    border-radius: 25px;
-    box-shadow: 0 10px 50px rgba(0,0,0,0.4);
-    text-align: center;
-    max-width: 90%;
-    width: 500px;
-    animation: slideIn 0.4s ease;
-    max-height: 80vh;
-    overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-body.dark .modal-content {
-    background: rgba(42, 42, 42, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.modal h2 {
-    margin-bottom: 25px;
-    color: var(--primary-color);
-    font-size: 28px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.modal-buttons {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-top: 25px;
-    flex-wrap: wrap;
-}
-/* ========== 设置表单样式 ========== */
-.settings-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin: 25px 0;
-}
-.settings-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.settings-item label {
-    font-weight: 600;
-    color: var(--text-color);
-    font-size: 14px;
-}
-.settings-item input, .settings-item select {
-    padding: 12px;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
-    font-size: 16px;
-    background: var(--revealed-bg);
-    color: var(--text-color);
-    transition: all 0.3s ease;
-}
-.settings-item input:focus, .settings-item select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
-    transform: scale(1.02);
-}
-/* ========== 成就系统样式 ========== */
-.achievements {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 15px;
-    margin-top: 25px;
-}
-.achievement {
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: var(--shadow);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-}
-body.dark .achievement {
-    background: rgba(42, 42, 42, 0.9);
-}
-.achievement:hover {
-    transform: translateY(-5px) scale(1.05);
-    border-color: var(--primary-color);
-    box-shadow: 0 8px 30px rgba(33, 150, 243, 0.3);
-}
-.achievement.unlocked {
-    background: linear-gradient(45deg, var(--success-color), #81c784);
-    color: white;
-    animation: unlock 0.6s ease;
-    border-color: var(--success-color);
-    box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
-}
-.achievement-icon {
-    font-size: 36px;
-    margin-bottom: 8px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-}
-.achievement div:last-child {
-    font-weight: 600;
-    font-size: 14px;
-}
-/* ========== 帮助内容样式 ========== */
-.help-content {
-    text-align: left;
-    line-height: 1.8;
-}
-.help-section {
-    margin-bottom: 25px;
-    padding: 20px;
-    background: rgba(249, 249, 249, 0.5);
-    border-radius: 15px;
-    border-left: 4px solid var(--primary-color);
-}
-body.dark .help-section {
-    background: rgba(255, 255, 255, 0.05);
-}
-.help-section h3 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 18px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-.help-section ul {
-    margin-left: 25px;
-}
-.help-section li {
-    margin-bottom: 8px;
-    font-size: 15px;
-}
-.help-section strong {
-    color: var(--primary-color);
-}
-/* ========== 版本信息样式 ========== */
-.version-info {
-    text-align: center;
-    margin-top: 30px;
-    opacity: 0.7;
-    font-size: 14px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-body.dark .version-info {
-    background: rgba(0, 0, 0, 0.2);
-}
-.version-info small {
-    color: var(--text-color);
-    font-weight: 500;
-}
-/* ========== 特效样式 ========== */
-.confetti {
-    position: fixed;
-    width: 12px;
-    height: 12px;
-    background: #f0f;
-    animation: confettiFall 3s linear infinite;
-    pointer-events: none;
-    z-index: 9999;
-    border-radius: 50%;
-    box-shadow: 0 0 6px rgba(0,0,0,0.3);
-}
-.particle {
-    position: absolute;
-    pointer-events: none;
-    animation: particle 1s ease-out forwards;
-    z-index: 999;
-    border-radius: 50%;
-}
-.power-up {
-    position: absolute;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, gold, orange);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    animation: powerUpFloat 2s ease infinite;
-    cursor: pointer;
-    z-index: 10;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
-}
-/* ========== 动画定义 ========== */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideIn {
-    from { transform: translateY(-50px) scale(0.9); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-}
-@keyframes reveal {
-    from { transform: scale(0.8) rotateY(90deg); opacity: 0; }
-    to { transform: scale(1) rotateY(0deg); opacity: 1; }
-}
-@keyframes explode {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.4); background: linear-gradient(45deg, orange, yellow); }
-    100% { transform: scale(1); }
-}
-@keyframes plantFlag {
-    from { transform: scale(0) rotate(-45deg); }
-    60% { transform: scale(1.2) rotate(5deg); }
-    to { transform: scale(1) rotate(0deg); }
-}
-@keyframes bounce {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-8px) scale(1.1); }
-}
-@keyframes hintGlow {
-    0%, 100% {
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
-        transform: scale(1);
-    }
-    50% {
-        box-shadow: 0 0 35px rgba(255, 215, 0, 1);
-        transform: scale(1.1);
-    }
-}
-@keyframes specialGlow {
-    0%, 100% {
-        box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
-    }
-    50% {
-        box-shadow: 0 0 30px rgba(254, 202, 87, 0.8);
-    }
-}
-@keyframes unlock {
-    from { transform: scale(0) rotate(-180deg); opacity: 0; }
-    50% { transform: scale(1.2) rotate(0deg); opacity: 1; }
-    to { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-@keyframes confettiFall {
-    0% {
-        transform: translateY(-100vh) rotate(0deg);
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(100vh) rotate(720deg);
-        opacity: 0;
-    }
-}
-@keyframes particle {
-    to {
-        transform: translate(var(--x), var(--y)) scale(0);
-        opacity: 0;
-    }
-}
-@keyframes powerUpFloat {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-15px) rotate(180deg); }
-}
-@keyframes comboShow {
-    0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 0; }
-    50% { transform: translate(-50%, -50%) scale(1.3) rotate(0deg); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
-}
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(1.05); }
-}
-@keyframes progressShine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-@keyframes floatUp {
-    0% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(-60px);
-    }
-}
-/* ========== 响应式设计 ========== */
-@media (max-width: 1024px) {
-    .container {
-        max-width: 95%;
-    }
-    .game-controls-extended {
-        gap: 20px;
-    }
-}
-@media (max-width: 768px) {
-    :root {
-        --cell-size: 25px;
-    }
-    .header h1 {
-        font-size: 2.5em;
-    }
-    .touch-controls {
-        display: flex;
-    }
-    .game-controls {
-        flex-direction: column;
-        align-items: center;
-    }
-    .btn {
-        width: 220px;
-    }
-    .game-board-container {
-        max-height: 50vh;
-    }
-    .game-controls-extended {
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-    }
-    .zoom-control-section, .minimap-section {
-        min-width: 300px;
-        max-width: 90%;
-    }
-    .minimap {
-        width: 260px;
-        height: 160px;
-    }
-    .settings-grid {
-        grid-template-columns: 1fr;
-    }
-    .auto-solve-status {
-        top: 10px;
-        right: 10px;
-        font-size: 14px;
-        padding: 8px 16px;
-    }
-}
-@media (max-width: 480px) {
-    :root {
-        --cell-size: 22px;
-    }
-    .container {
-        padding: 15px;
-    }
-    .game-stats {
-        gap: 12px;
-    }
-    .stat-box {
-        padding: 15px 20px;
-        font-size: 14px;
-    }
-    .minimap {
-        width: 240px;
-        height: 140px;
-    }
-    .zoom-control-section, .minimap-section {
-        min-width: 280px;
-    }
-    .modal-content {
-        width: 95%;
-        padding: 25px;
-    }
-    .achievements {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    }
-    .header h1 {
-        font-size: 2.2em;
-    }
-}
-@media (max-width: 320px) {
-    :root {
-        --cell-size: 20px;
-    }
-    .header h1 {
-        font-size: 1.8em;
-    }
-    .btn {
-        padding: 10px 20px;
-        font-size: 14px;
-    }
-    .game-stats {
-        flex-direction: column;
-        align-items: center;
-    }
-    .auto-solve-status {
-        position: fixed;
-        top: 5px;
-        right: 5px;
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-}
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        :root {
+            --primary-color: #2196F3;
+            --success-color: #4CAF50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --cell-size: 30px;
+            --border-color: #bdbdbd;
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --cell-bg: #e0e0e0;
+            --cell-hover: #d0d0d0;
+            --revealed-bg: #fff;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        /* ========== 基础样式 ========== */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #e8f5e8 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+        body.dark {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --cell-bg: #2a2a2a;
+            --cell-hover: #3a3a3a;
+            --revealed-bg: #1f1f1f;
+            --border-color: #444;
+            --shadow: 0 2px 10px rgba(255,255,255,0.1);
+            background: linear-gradient(135deg, var(--bg-color) 0%, #2a2a2a 100%);
+        }
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            padding: 20px;
+        }
+        /* ========== 头部样式 ========== */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+        }
+        body.dark .header {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, var(--primary-color), var(--success-color), var(--warning-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+        /* ========== 按钮样式 ========== */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(45deg, var(--primary-color), #64b5f6);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            font-weight: 500;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        .btn:hover::before {
+            left: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.25);
+        }
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        .btn.success {
+            background: linear-gradient(45deg, var(--success-color), #81c784);
+        }
+        .btn.danger {
+            background: linear-gradient(45deg, var(--danger-color), #e57373);
+        }
+        .btn.warning {
+            background: linear-gradient(45deg, var(--warning-color), #ffb74d);
+        }
+        .btn.info {
+            background: linear-gradient(45deg, #17a2b8, #4dd0e1);
+        }
+        .btn.small {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 20px;
+        }
+        /* ========== 游戏控制区域 ========== */
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        /* ========== 游戏统计区域 ========== */
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        body.dark .stat-box {
+            background: rgba(42, 42, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-box:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        .stat-icon {
+            font-size: 28px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.7;
+            font-weight: 500;
+        }
+        /* ========== 扩展控制区域 ========== */
+        .game-controls-extended {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+        .zoom-control-section, .minimap-section {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            min-width: 220px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        body.dark .zoom-control-section,
+        body.dark .minimap-section {
+            background: rgba(42, 42, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .zoom-control-section:hover,
+        .minimap-section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        }
+        .zoom-control-section h4,
+        .minimap-section h4 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        /* ========== 缩放控制样式 ========== */
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .zoom-level {
+            min-width: 60px;
+            font-weight: bold;
+            color: var(--primary-color);
+            background: var(--bg-color);
+            padding: 8px 15px;
+            border-radius: 15px;
+            border: 2px solid var(--primary-color);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* ========== 小地图样式 ========== */
+        .minimap {
+            position: relative;
+            width: 220px;
+            height: 140px;
+            background: var(--bg-color);
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 8px;
+            margin: 0 auto;
+            overflow: hidden;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+        }
+        body.dark .minimap {
+            background: var(--cell-bg);
+        }
+        .minimap-board {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            gap: 1px;
+            background: var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .minimap-cell {
+            background: var(--cell-bg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-radius: 2px;
+        }
+        .minimap-cell:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            box-shadow: 0 0 8px var(--primary-color);
+            border-radius: 50%;
+        }
+        .minimap-cell.revealed {
+            background: var(--revealed-bg);
+        }
+        .minimap-cell.mine {
+            background: var(--danger-color);
+            box-shadow: 0 0 4px rgba(244, 67, 54, 0.5);
+        }
+        .minimap-cell.flagged {
+            background: var(--warning-color);
+            box-shadow: 0 0 4px rgba(255, 152, 0, 0.5);
+        }
+        .minimap-viewport {
+            position: absolute;
+            border: 3px solid var(--success-color);
+            pointer-events: none;
+            border-radius: 5px;
+            background: rgba(76, 175, 80, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        /* ========== 进度条样式 ========== */
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--cell-bg);
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--primary-color), var(--warning-color));
+            transition: width 0.5s ease;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: progressShine 2s ease-in-out infinite;
+        }
+        /* ========== 触摸控制样式 ========== */
+        .touch-controls {
+            display: none;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+        }
+        .touch-btn {
+            padding: 18px;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+        .touch-btn.active {
+            transform: scale(1.3);
+            box-shadow: 0 0 25px rgba(33, 150, 243, 0.6);
+        }
+        /* ========== 游戏板容器样式 ========== */
+        .game-board-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        .game-board-container {
+            position: relative;
+            max-width: 90vw;
+            max-height: 60vh;
+            overflow: auto;
+            border: 3px solid var(--border-color);
+            border-radius: 20px;
+            background: var(--border-color);
+            box-shadow: var(--shadow);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--bg-color);
+        }
+        .game-board-container::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        .game-board-container::-webkit-scrollbar-track {
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+        .game-board-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, var(--primary-color), var(--success-color));
+            border-radius: 8px;
+        }
+        .game-board-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, var(--success-color), var(--warning-color));
+        }
+        .game-board-container::-webkit-scrollbar-corner {
+            background: var(--bg-color);
+        }
+        /* ========== 游戏板样式 ========== */
+        .game-board {
+            display: grid;
+            gap: 2px;
+            background: var(--border-color);
+            padding: 5px;
+            position: relative;
+            user-select: none;
+            min-width: min-content;
+            border-radius: 15px;
+        }
+        /* ========== 格子样式 ========== */
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: linear-gradient(145deg, var(--cell-bg), #d0d0d0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            font-size: calc(var(--cell-size) * 0.6);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .cell:hover:not(.revealed):not(.flagged) {
+            background: linear-gradient(145deg, var(--cell-hover), #c0c0c0);
+            transform: scale(1.08);
+            border: 2px solid var(--primary-color);
+            z-index: 5;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+        .cell.revealed {
+            background: linear-gradient(145deg, var(--revealed-bg), #f8f8f8);
+            cursor: default;
+            animation: reveal 0.4s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* 启用双击功能的已揭露数字格子 */
+        .cell.revealed:hover {
+            cursor: pointer;
+            background: linear-gradient(145deg, #f0f0f0, var(--revealed-bg));
+            transform: scale(1.05);
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+        .cell.mine {
+            background: linear-gradient(145deg, var(--danger-color), #d32f2f);
+            animation: explode 0.6s ease;
+            box-shadow: 0 0 20px rgba(244, 67, 54, 0.7);
+        }
+        .cell.flagged::after {
+            content: "🚩";
+            font-size: calc(var(--cell-size) * 0.8);
+            animation: plantFlag 0.4s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        .cell.question::after {
+            content: "❓";
+            font-size: calc(var(--cell-size) * 0.8);
+            animation: bounce 0.4s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        .cell.hint-safe {
+            animation: hintSafeGlow 2s ease-in-out infinite;
+            box-shadow: 0 0 25px rgba(76, 175, 80, 0.9);
+            background: linear-gradient(45deg, rgba(76, 175, 80, 0.4), rgba(129, 199, 132, 0.4));
+            z-index: 10;
+            border-radius: 8px;
+            border: 3px solid var(--success-color);
+        }
+        .cell.hint-mine {
+            animation: hintMineGlow 2s ease-in-out infinite;
+            box-shadow: 0 0 25px rgba(244, 67, 54, 0.9);
+            background: linear-gradient(45deg, rgba(244, 67, 54, 0.4), rgba(229, 115, 115, 0.4));
+            z-index: 10;
+            border-radius: 8px;
+            border: 3px solid var(--danger-color);
+        }
+        .cell.hint-error {
+            animation: hintErrorGlow 2s ease-in-out infinite;
+            box-shadow: 0 0 25px rgba(255, 193, 7, 0.9);
+            background: linear-gradient(45deg, rgba(255, 193, 7, 0.4), rgba(255, 183, 77, 0.4));
+            z-index: 10;
+            border-radius: 8px;
+            border: 3px solid var(--warning-color);
+        }
+        .cell.hint-double-click {
+            animation: hintDoubleClickGlow 2s ease-in-out infinite;
+            box-shadow: 0 0 25px rgba(156, 39, 176, 0.9);
+            background: linear-gradient(45deg, rgba(156, 39, 176, 0.4), rgba(186, 104, 200, 0.4));
+            z-index: 10;
+            border-radius: 8px;
+            border: 3px solid #9c27b0;
+        }
+        .cell.special {
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb);
+            animation: specialGlow 2s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
+        }
+        /* ========== 数字颜色 ========== */
+        .num-1 { color: #1976d2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .num-2 { color: #388e3c; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .num-3 { color: #d32f2f; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .num-4 { color: #7b1fa2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .num-5 { color: #f57c00; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .num-6 { color: #00796b; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .num-7 { color: #303f9f; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .num-8 { color: #424242; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        /* ========== 游戏状态指示器 ========== */
+        .mode-indicator {
+            position: absolute;
+            top: -35px;
+            left: 0;
+            background: linear-gradient(45deg, var(--primary-color), var(--success-color));
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 10;
+            box-shadow: var(--shadow);
+            font-weight: 500;
+        }
+        .auto-solve-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, rgba(33, 150, 243, 0.95), rgba(76, 175, 80, 0.95));
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            display: none;
+            z-index: 10000;
+            animation: pulse 1s ease-in-out infinite;
+            box-shadow: 0 6px 25px rgba(33, 150, 243, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        /* ========== 提示信息样式 ========== */
+        .hint-tooltip {
+            position: fixed;
+            left: 50%;
+            bottom: 15%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            z-index: 10000;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: tooltipShow 0.4s ease;
+            max-width: 85vw;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            line-height: 1.4;
+        }
+        .hint-tooltip::before {
+            display: none;
+        }
+        /* 不同类型提示的背景色 */
+        .hint-tooltip.hint-safe {
+            background: linear-gradient(45deg, rgba(76, 175, 80, 0.95), rgba(129, 199, 132, 0.95));
+            border-color: var(--success-color);
+            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.4);
+        }
+        .hint-tooltip.hint-mine {
+            background: linear-gradient(45deg, rgba(244, 67, 54, 0.95), rgba(229, 115, 115, 0.95));
+            border-color: var(--danger-color);
+            box-shadow: 0 8px 30px rgba(244, 67, 54, 0.4);
+        }
+        .hint-tooltip.hint-error {
+            background: linear-gradient(45deg, rgba(255, 193, 7, 0.95), rgba(255, 183, 77, 0.95));
+            border-color: var(--warning-color);
+            box-shadow: 0 8px 30px rgba(255, 193, 7, 0.4);
+        }
+        .hint-tooltip.hint-double-click {
+            background: linear-gradient(45deg, rgba(156, 39, 176, 0.95), rgba(186, 104, 200, 0.95));
+            border-color: #9c27b0;
+            box-shadow: 0 8px 30px rgba(156, 39, 176, 0.4);
+        }
+        @media (max-width: 768px) {
+            .hint-tooltip {
+                bottom: 20%;
+                font-size: 14px;
+                padding: 12px 20px;
+                max-width: 90vw;
+            }
+        }
+        @media (max-width: 480px) {
+            .hint-tooltip {
+                bottom: 25%;
+                font-size: 13px;
+                padding: 10px 16px;
+                max-width: 95vw;
+            }
+        }
+        /* ========== 连击指示器 ========== */
+        .combo-indicator {
+            position: fixed;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, var(--warning-color), #ffb74d);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            display: none;
+            z-index: 1001;
+            animation: comboShow 1s ease;
+            box-shadow: 0 8px 40px rgba(255, 152, 0, 0.4);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        /* ========== 模态框样式 ========== */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 35px;
+            border-radius: 25px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.4);
+            text-align: center;
+            max-width: 90%;
+            width: 500px;
+            animation: slideIn 0.4s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        body.dark .modal-content {
+            background: rgba(42, 42, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .modal h2 {
+            margin-bottom: 25px;
+            color: var(--primary-color);
+            font-size: 28px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        /* ========== 设置表单样式 ========== */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+        .settings-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .settings-item label {
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        .settings-item input, .settings-item select {
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 16px;
+            background: var(--revealed-bg);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        .settings-item input:focus, .settings-item select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+            transform: scale(1.02);
+        }
+        /* ========== 成就系统样式 ========== */
+        .achievements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .achievement {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        body.dark .achievement {
+            background: rgba(42, 42, 42, 0.9);
+        }
+        .achievement:hover {
+            transform: translateY(-5px) scale(1.05);
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 30px rgba(33, 150, 243, 0.3);
+        }
+        .achievement.unlocked {
+            background: linear-gradient(45deg, var(--success-color), #81c784);
+            color: white;
+            animation: unlock 0.6s ease;
+            border-color: var(--success-color);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+        .achievement-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        .achievement div:last-child {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        /* ========== 帮助内容样式 ========== */
+        .help-content {
+            text-align: left;
+            line-height: 1.8;
+        }
+        .help-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(249, 249, 249, 0.5);
+            border-radius: 15px;
+            border-left: 4px solid var(--primary-color);
+        }
+        body.dark .help-section {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .help-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .help-section ul {
+            margin-left: 25px;
+        }
+        .help-section li {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .help-section strong {
+            color: var(--primary-color);
+        }
+        /* ========== 版本信息样式 ========== */
+        .version-info {
+            text-align: center;
+            margin-top: 30px;
+            opacity: 0.7;
+            font-size: 14px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        body.dark .version-info {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .version-info small {
+            color: var(--text-color);
+            font-weight: 500;
+        }
+        /* ========== 特效样式 ========== */
+        .confetti {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            background: #f0f;
+            animation: confettiFall 3s linear infinite;
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        }
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: particle 1s ease-out forwards;
+            z-index: 999;
+            border-radius: 50%;
+        }
+        .power-up {
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, gold, orange);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            animation: powerUpFloat 2s ease infinite;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+        }
+        /* ========== 动画定义 ========== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes reveal {
+            from { transform: scale(0.8) rotateY(90deg); opacity: 0; }
+            to { transform: scale(1) rotateY(0deg); opacity: 1; }
+        }
+        @keyframes explode {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); background: linear-gradient(45deg, orange, yellow); }
+            100% { transform: scale(1); }
+        }
+        @keyframes plantFlag {
+            from { transform: scale(0) rotate(-45deg); }
+            60% { transform: scale(1.2) rotate(5deg); }
+            to { transform: scale(1) rotate(0deg); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-8px) scale(1.1); }
+        }
+        @keyframes hintSafeGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(76, 175, 80, 1);
+                transform: scale(1.05);
+            }
+        }
+        @keyframes hintMineGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(244, 67, 54, 0.8);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(244, 67, 54, 1);
+                transform: scale(1.05);
+            }
+        }
+        @keyframes hintErrorGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(255, 193, 7, 1);
+                transform: scale(1.05);
+            }
+        }
+        @keyframes hintDoubleClickGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(156, 39, 176, 0.8);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(156, 39, 176, 1);
+                transform: scale(1.05);
+            }
+        }
+        @keyframes tooltipShow {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+        }
+        @keyframes specialGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(254, 202, 87, 0.8);
+            }
+        }
+        @keyframes unlock {
+            from { transform: scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(0deg); opacity: 1; }
+            to { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        @keyframes particle {
+            to {
+                transform: translate(var(--x), var(--y)) scale(0);
+                opacity: 0;
+            }
+        }
+        @keyframes powerUpFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(180deg); }
+        }
+        @keyframes comboShow {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.3) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        @keyframes progressShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px);
+            }
+        }
+        /* ========== 响应式设计 ========== */
+        @media (max-width: 1024px) {
+            .container {
+                max-width: 95%;
+            }
+            .game-controls-extended {
+                gap: 20px;
+            }
+        }
+        @media (max-width: 768px) {
+            :root {
+                --cell-size: 25px;
+            }
+            .header h1 {
+                font-size: 2.5em;
+            }
+            .touch-controls {
+                display: flex;
+            }
+            .game-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                width: 220px;
+            }
+            .game-board-container {
+                max-height: 50vh;
+            }
+            .game-controls-extended {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            .zoom-control-section, .minimap-section {
+                min-width: 300px;
+                max-width: 90%;
+            }
+            .minimap {
+                width: 260px;
+                height: 160px;
+            }
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            .auto-solve-status {
+                top: 10px;
+                right: 10px;
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+        }
+        @media (max-width: 480px) {
+            :root {
+                --cell-size: 22px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .game-stats {
+                gap: 12px;
+            }
+            .stat-box {
+                padding: 15px 20px;
+                font-size: 14px;
+            }
+            .minimap {
+                width: 240px;
+                height: 140px;
+            }
+            .zoom-control-section, .minimap-section {
+                min-width: 280px;
+            }
+            .modal-content {
+                width: 95%;
+                padding: 25px;
+            }
+            .achievements {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
+            .header h1 {
+                font-size: 2.2em;
+            }
+        }
+        @media (max-width: 320px) {
+            :root {
+                --cell-size: 20px;
+            }
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            .game-stats {
+                flex-direction: column;
+                align-items: center;
+            }
+            .auto-solve-status {
+                position: fixed;
+                top: 5px;
+                right: 5px;
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -979,33 +1115,33 @@ body.dark .version-info {
             <button class="touch-btn btn danger" id="touch-flag">🚩</button>
             <button class="touch-btn btn warning" id="touch-question">❓</button>
         </div>
-<div class="game-controls-extended">
-    <!-- 缩放控制区 -->
-    <div class="zoom-control-section">
-        <h4>视图控制</h4>
-        <div class="zoom-controls">
-            <button class="btn small" id="btn-zoom-out">🔍-</button>
-            <span class="zoom-level" id="zoom-level">100%</span>
-            <button class="btn small" id="btn-zoom-in">🔍+</button>
-            <button class="btn small" id="btn-reset-zoom">📐</button>
+        <div class="game-controls-extended">
+            <!-- 缩放控制区 -->
+            <div class="zoom-control-section">
+                <h4>视图控制</h4>
+                <div class="zoom-controls">
+                    <button class="btn small" id="btn-zoom-out">🔍-</button>
+                    <span class="zoom-level" id="zoom-level">100%</span>
+                    <button class="btn small" id="btn-zoom-in">🔍+</button>
+                    <button class="btn small" id="btn-reset-zoom">📐</button>
+                </div>
+            </div>
+            <!-- 小地图区域 -->
+            <div class="minimap-section">
+                <h4>导航地图</h4>
+                <div class="minimap" id="minimap">
+                    <div class="minimap-board" id="minimap-board"></div>
+                    <div class="minimap-viewport" id="minimap-viewport"></div>
+                </div>
+            </div>
         </div>
-    </div>
-    <!-- 小地图区域 -->
-    <div class="minimap-section">
-        <h4>导航地图</h4>
-        <div class="minimap" id="minimap">
-            <div class="minimap-board" id="minimap-board"></div>
-            <div class="minimap-viewport" id="minimap-viewport"></div>
+        <div class="game-board-wrapper">
+            <div class="game-board-container" id="game-board-container">
+                <div id="game-board" class="game-board">
+                    <div class="mode-indicator" id="mode-indicator">经典模式</div>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-<div class="game-board-wrapper">
-    <div class="game-board-container" id="game-board-container">
-        <div id="game-board" class="game-board">
-            <div class="mode-indicator" id="mode-indicator">经典模式</div>
-        </div>
-    </div>
-</div>
         <div class="game-controls">
             <button class="btn" id="btn-restart">🔄 重新开始</button>
             <button class="btn info" id="btn-auto-solve">🤖 自动扫雷</button>
@@ -1042,7 +1178,7 @@ body.dark .version-info {
             </div>
         </div>
         <div class="version-info">
-            <small>by空城 版本 <span id="version-number">2.0.0</span></small>
+            <small>by空城 版本 <span id="version-number">1.1.5</span></small>
         </div>
     </div>
     <!-- 自动排雷状态指示器 -->
@@ -1148,6 +1284,8 @@ body.dark .version-info {
                         <li><strong>连击系统</strong>：连续成功操作获得加分</li>
                         <li><strong>进度条</strong>：显示当前游戏完成的进度</li>
                         <li><strong>特殊格子</strong>：闪烁格子提供额外奖励</li>
+                        <li><strong>智能提示</strong>：基于逻辑推理的人性化提示</li>
+                        <li><strong>双击功能</strong>：对已揭开的数字格子双击可自动展开相邻安全格子</li>
                     </ul>
                 </div>
                 <div class="help-section">
@@ -1182,7 +1320,7 @@ body.dark .version-info {
             class MinesweeperUltimate {
                 constructor() {
                     // 版本控制
-                    this.VERSION = '2.0.0';
+                    this.VERSION = '1.1.5';
                     this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
                     this.difficulties = {
                         beginner: { rows: 9, cols: 9, mines: 10 },
@@ -1218,7 +1356,8 @@ body.dark .version-info {
                         maxCombo: 0,
                         zoom: 1,
                         lives: 3,
-                        specialCellChance: 10
+                        specialCellChance: 10,
+                        batchRevealing: false  // 批量展开标记
                     };
                     this.achievements = {
                         firstWin: false,
@@ -1251,11 +1390,9 @@ body.dark .version-info {
                         this.bindEvents();
                         this.checkMobileDevice();
                         this.newGame('beginner');
-                        // 显示版本信息
                         this.displayVersionInfo();
                     } catch (error) {
                         console.error('初始化失败:', error);
-                        // 基本功能降级处理
                         this.bindBasicEvents();
                         this.newGame('beginner');
                         this.displayVersionInfo();
@@ -1309,21 +1446,17 @@ body.dark .version-info {
                 }
                 // 版本控制函数
                 isCompatibleVersion(dataVersion) {
-                    // 解析版本号
                     const parseVersion = (version) => {
                         return version.split('.').map(num => parseInt(num, 10));
                     };
                     try {
                         const currentVersion = parseVersion(this.VERSION);
                         const savedVersion = parseVersion(dataVersion);
-                        // 主版本号相同则兼容
                         if (currentVersion[0] === savedVersion[0]) {
                             return true;
                         }
-                        // 主版本号不同，检查是否可以向前兼容
                         if (currentVersion[0] > savedVersion[0]) {
-                            // 当前版本更高，检查是否在兼容列表中
-                            const compatibleVersions = ['1.9.0', '1.8.0']; // 可以根据需要调整
+                            const compatibleVersions = ['2.0.0', '1.9.0', '1.8.0'];
                             return compatibleVersions.includes(dataVersion);
                         }
                         return false;
@@ -1334,9 +1467,9 @@ body.dark .version-info {
                 }
                 migrateOldStats() {
                     try {
-                        // 尝试读取旧版本的统计数据
                         const oldKeys = [
                             'minesweeper-stats',
+                            'minesweeper_v2_0_0_stats',
                             'minesweeper_v1_9_0_stats',
                             'minesweeper_v1_8_0_stats'
                         ];
@@ -1349,8 +1482,6 @@ body.dark .version-info {
                                     if (migratedData) {
                                         this.stats = { ...this.stats, ...migratedData };
                                         console.log(`成功迁移统计数据从: ${key}`);
-                                        // 删除旧数据（可选）
-                                        // localStorage.removeItem(key);
                                         break;
                                     }
                                 } catch (e) {
@@ -1364,9 +1495,9 @@ body.dark .version-info {
                 }
                 migrateOldAchievements() {
                     try {
-                        // 尝试读取旧版本的成就数据
                         const oldKeys = [
                             'minesweeper-achievements',
+                            'minesweeper_v2_0_0_achievements',
                             'minesweeper_v1_9_0_achievements',
                             'minesweeper_v1_8_0_achievements'
                         ];
@@ -1380,8 +1511,6 @@ body.dark .version-info {
                                         this.achievements = { ...this.achievements, ...migratedData };
                                         this.updateAchievementDisplay();
                                         console.log(`成功迁移成就数据从: ${key}`);
-                                        // 删除旧数据（可选）
-                                        // localStorage.removeItem(key);
                                         break;
                                     }
                                 } catch (e) {
@@ -1395,11 +1524,9 @@ body.dark .version-info {
                 }
                 migrateStatsData(oldData) {
                     try {
-                        // 如果旧数据已经有版本号，直接使用
                         if (oldData.version) {
                             return oldData.data || oldData;
                         }
-                        // 旧版本数据结构迁移
                         const migratedStats = {
                             gamesPlayed: oldData.gamesPlayed || 0,
                             gamesWon: oldData.gamesWon || 0,
@@ -1419,11 +1546,9 @@ body.dark .version-info {
                 }
                 migrateAchievementData(oldData) {
                     try {
-                        // 如果旧数据已经有版本号，直接使用
                         if (oldData.version) {
                             return oldData.data || oldData;
                         }
-                        // 旧版本数据结构迁移
                         const migratedAchievements = {
                             firstWin: oldData.firstWin || false,
                             speedDemon: oldData.speedDemon || false,
@@ -1461,7 +1586,9 @@ body.dark .version-info {
                             'minesweeper_v1_8_0_stats',
                             'minesweeper_v1_8_0_achievements',
                             'minesweeper_v1_9_0_stats',
-                            'minesweeper_v1_9_0_achievements'
+                            'minesweeper_v1_9_0_achievements',
+                            'minesweeper_v2_0_0_stats',
+                            'minesweeper_v2_0_0_achievements'
                         ];
                         let cleanedCount = 0;
                         oldKeys.forEach(key => {
@@ -1489,7 +1616,8 @@ body.dark .version-info {
                             click: this.createSound(600, 0.05, 'sine'),
                             powerup: this.createSound(1000, 0.2, 'triangle'),
                             combo: this.createSound(1200, 0.3, 'sine'),
-                            special: this.createSound(800, 0.2, 'triangle')
+                            special: this.createSound(800, 0.2, 'triangle'),
+                            hint: this.createSound(880, 0.3, 'sine')
                         };
                     } catch (e) {
                         console.log('音频初始化失败:', e);
@@ -1544,7 +1672,6 @@ body.dark .version-info {
                     if (localStorage.getItem('theme') === 'dark') {
                         document.body.classList.add('dark');
                     }
-                    // 绑定所有按钮事件
                     this.bindBasicEvents();
                 }
                 // 游戏初始化
@@ -1582,7 +1709,8 @@ body.dark .version-info {
                         combo: 0,
                         maxCombo: 0,
                         zoom: 1,
-                        lives: this.gameState.mode === 'survival' ? 3 : 1
+                        lives: this.gameState.mode === 'survival' ? 3 : 1,
+                        batchRevealing: false
                     };
                     this.board = Array(rows).fill().map(() => Array(cols).fill(0));
                     this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
@@ -1599,7 +1727,6 @@ body.dark .version-info {
                     }
                     this.playSound('click');
                     this.resetZoom();
-                    // 绑定滚动事件
                     const container = document.getElementById('game-board-container');
                     if (container) {
                         container.addEventListener('scroll', () => {
@@ -1613,7 +1740,6 @@ body.dark .version-info {
                     if (!boardElement) return;
                     boardElement.innerHTML = '<div class="mode-indicator" id="mode-indicator">经典模式</div>';
                     boardElement.style.gridTemplateColumns = `repeat(${this.gameState.cols}, var(--cell-size))`;
-                    // 智能计算格子大小
                     this.calculateOptimalCellSize();
                     for (let row = 0; row < this.gameState.rows; row++) {
                         for (let col = 0; col < this.gameState.cols; col++) {
@@ -1621,13 +1747,11 @@ body.dark .version-info {
                             cell.className = 'cell';
                             cell.dataset.row = row;
                             cell.dataset.col = col;
-                            // 事件监听
                             this.addCellEventListeners(cell, row, col);
                             this.updateCell(cell, row, col);
                             boardElement.appendChild(cell);
                         }
                     }
-                    // 设置小地图
                     this.setupMinimap();
                     this.updateZoomDisplay();
                 }
@@ -1639,15 +1763,41 @@ body.dark .version-info {
                     const cellWidth = Math.floor(maxWidth / this.gameState.cols);
                     const cellHeight = Math.floor(maxHeight / this.gameState.rows);
                     let cellSize = Math.min(cellWidth, cellHeight, 40);
-                    cellSize = Math.max(cellSize, 15); // 最小尺寸
+                    cellSize = Math.max(cellSize, 15);
                     document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
                 }
                 addCellEventListeners(cell, row, col) {
+                    // 普通点击
                     cell.addEventListener('click', (e) => this.handleClick(row, col, e));
+                    
+                    // 右键点击
                     cell.addEventListener('contextmenu', (e) => this.handleRightClick(row, col, e));
-                    cell.addEventListener('dblclick', (e) => this.handleDoubleClick(row, col, e));
+                    
+                    // 修复：双击处理 - 设置更合理的双击延迟，防止误触
+                    let clickTimer = null;
+                    let clickCount = 0;
+                    
+                    cell.addEventListener('mousedown', (e) => {
+                        if (e.button !== 0) return; // 只处理左键
+                        
+                        clickCount++;
+                        
+                        if (clickCount === 1) {
+                            clickTimer = setTimeout(() => {
+                                clickCount = 0;
+                                // 这里不处理单击，因为已经在click事件中处理了
+                            }, 300);
+                        } else if (clickCount === 2) {
+                            clearTimeout(clickTimer);
+                            clickCount = 0;
+                            this.handleDoubleClick(row, col, e);
+                        }
+                    });
+                    
+                    // 触摸事件
                     let touchTimer;
                     let touchStartTime;
+                    
                     cell.addEventListener('touchstart', (e) => {
                         touchStartTime = Date.now();
                         touchTimer = setTimeout(() => {
@@ -1655,6 +1805,7 @@ body.dark .version-info {
                         }, 500);
                         e.preventDefault();
                     });
+                    
                     cell.addEventListener('touchend', (e) => {
                         clearTimeout(touchTimer);
                         const touchDuration = Date.now() - touchStartTime;
@@ -1663,6 +1814,7 @@ body.dark .version-info {
                         }
                         e.preventDefault();
                     });
+                    
                     cell.addEventListener('touchmove', () => {
                         clearTimeout(touchTimer);
                     });
@@ -1671,7 +1823,6 @@ body.dark .version-info {
                 setupMinimap() {
                     const minimapSection = document.querySelector('.minimap-section');
                     if (!minimapSection) return;
-                    // 判断是否需要显示小地图
                     if (this.gameState.rows <= 15 && this.gameState.cols <= 20) {
                         minimapSection.style.display = 'none';
                         return;
@@ -1680,20 +1831,17 @@ body.dark .version-info {
                     const minimapBoard = document.getElementById('minimap-board');
                     if (!minimapBoard) return;
                     minimapBoard.innerHTML = '';
-                    // 计算小地图网格
-                    const maxCells = 400; // 限制小地图格子总数
+                    const maxCells = 400;
                     const totalCells = this.gameState.rows * this.gameState.cols;
                     const scale = totalCells > maxCells ? Math.sqrt(maxCells / totalCells) : 1;
                     const minimapRows = Math.max(1, Math.floor(this.gameState.rows * scale));
                     const minimapCols = Math.max(1, Math.floor(this.gameState.cols * scale));
                     minimapBoard.style.gridTemplateColumns = `repeat(${minimapCols}, 1fr)`;
                     minimapBoard.style.gridTemplateRows = `repeat(${minimapRows}, 1fr)`;
-                    // 创建小地图格子
                     for (let row = 0; row < minimapRows; row++) {
                         for (let col = 0; col < minimapCols; col++) {
                             const minimapCell = document.createElement('div');
                             minimapCell.className = 'minimap-cell';
-                            // 映射到实际游戏板坐标
                             const actualRow = Math.floor(row / scale);
                             const actualCol = Math.floor(col / scale);
                             minimapCell.dataset.row = actualRow;
@@ -1732,9 +1880,8 @@ body.dark .version-info {
                     if (!boardElement) return;
                     const boardRect = boardElement.getBoundingClientRect();
                     if (!boardRect.width || !boardRect.height) return;
-                    // 计算小地图内容区域大小
-                    const minimapContentWidth = 210; // minimap width - padding
-                    const minimapContentHeight = 120; // minimap height - padding
+                    const minimapContentWidth = 210;
+                    const minimapContentHeight = 120;
                     const scaleX = minimapContentWidth / boardRect.width;
                     const scaleY = minimapContentHeight / boardRect.height;
                     const viewportWidth = Math.min(containerRect.width * scaleX, minimapContentWidth);
@@ -1757,7 +1904,6 @@ body.dark .version-info {
                         top: Math.max(0, targetY),
                         behavior: 'smooth'
                     });
-                    // 高亮目标格子
                     const targetCell = this.getCell(row, col);
                     if (targetCell) {
                         targetCell.style.boxShadow = '0 0 20px rgba(33, 150, 243, 0.8)';
@@ -1784,7 +1930,6 @@ body.dark .version-info {
                     const newSize = Math.round(baseSize * this.gameState.zoom);
                     document.documentElement.style.setProperty('--cell-size', `${newSize}px`);
                     this.updateZoomDisplay();
-                    // 延迟更新小地图视口
                     setTimeout(() => {
                         this.updateMinimapViewport();
                     }, 100);
@@ -1825,7 +1970,6 @@ body.dark .version-info {
                         const [r, c] = positions[i];
                         this.board[r][c] = -1;
                     }
-                    // 计算数字
                     for (let r = 0; r < this.gameState.rows; r++) {
                         for (let c = 0; c < this.gameState.cols; c++) {
                             if (this.board[r][c] !== -1) {
@@ -1833,7 +1977,6 @@ body.dark .version-info {
                             }
                         }
                     }
-                    // 特殊格子
                     this.addSpecialCells();
                     if (this.gameState.mode === 'no-guess') {
                         this.ensureNoGuessing();
@@ -1905,15 +2048,31 @@ body.dark .version-info {
                     if (event) event.preventDefault();
                     if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
                     if (!this.revealed[row][col] || this.board[row][col] <= 0) return;
+                    
                     let flagCount = 0;
                     this.forEachNeighbor(row, col, (nr, nc) => {
                         if (this.flags[nr][nc]) flagCount++;
                     });
+                    
+                    // 只有当标记的地雷数等于该格子的数字时才允许双击展开
                     if (flagCount === this.board[row][col]) {
+                        this.gameState.batchRevealing = true;
+                        const cellsToReveal = [];
                         this.forEachNeighbor(row, col, (nr, nc) => {
                             if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
-                                this.revealCell(nr, nc);
+                                cellsToReveal.push([nr, nc]);
                             }
+                        });
+                        
+                        // 批量展开，减少音效叠加
+                        cellsToReveal.forEach(([nr, nc], index) => {
+                            setTimeout(() => {
+                                this.revealCell(nr, nc);
+                                // 只在最后一个格子播放音效
+                                if (index === cellsToReveal.length - 1) {
+                                    this.gameState.batchRevealing = false;
+                                }
+                            }, index * 30); // 添加小延迟使展开更平滑
                         });
                     }
                 }
@@ -1963,7 +2122,7 @@ body.dark .version-info {
                         activeBtn.classList.add('active');
                     }
                 }
-                // 核心游戏逻辑
+                // 核心游戏逻辑 - 优化展开性能
                 revealCell(row, col) {
                     if (!this.isValid(row, col) || this.revealed[row][col] ||
                         this.flags[row][col] || this.questions[row][col]) {
@@ -1971,14 +2130,13 @@ body.dark .version-info {
                     }
                     this.revealed[row][col] = true;
                     const cell = this.getCell(row, col);
-                    // 处理特殊格子
                     if (this.specialCells[row][col]) {
                         this.handleSpecialCell(row, col);
                     }
                     if (this.board[row][col] === -1) {
                         if (this.gameState.mode === 'survival' && this.gameState.lives > 1) {
                             this.gameState.lives--;
-                            this.revealed[row][col] = false; // 撤销揭开
+                            this.revealed[row][col] = false;
                             alert(`踩到地雷！剩余生命：${this.gameState.lives}`);
                             return;
                         }
@@ -1993,13 +2151,17 @@ body.dark .version-info {
                     }
                     this.updateCell(cell, row, col);
                     this.updateMinimapCell(row, col);
-                    this.playSound('reveal');
-                    // 连击系统
+                    // 优化：批量展开时只播放一次音效
+                    if (!this.gameState.batchRevealing) {
+                        this.playSound('reveal');
+                    }
                     this.gameState.combo++;
                     this.gameState.maxCombo = Math.max(this.gameState.maxCombo, this.gameState.combo);
                     if (this.gameState.combo >= 5 && this.gameState.combo % 5 === 0) {
                         this.showComboIndicator(this.gameState.combo);
-                        this.playSound('combo');
+                        if (!this.gameState.batchRevealing) {
+                            this.playSound('combo');
+                        }
                     }
                     if (this.board[row][col] === 0) {
                         this.forEachNeighbor(row, col, (nr, nc) => {
@@ -2013,18 +2175,19 @@ body.dark .version-info {
                     const cell = this.getCell(row, col);
                     if (cell) {
                         cell.classList.add('special');
-                        this.playSound('special');
-                        // 特殊效果
+                        if (!this.gameState.batchRevealing) {
+                            this.playSound('special');
+                        }
                         const effects = [
-                            () => { // 额外时间
+                            () => {
                                 this.gameState.timer = Math.max(0, this.gameState.timer - 10);
                                 this.showFloatingText(cell, '-10s');
                             },
-                            () => { // 双倍连击
+                            () => {
                                 this.gameState.combo += 5;
                                 this.showFloatingText(cell, '+5 连击');
                             },
-                            () => { // 揭开相邻格子
+                            () => {
                                 this.forEachNeighbor(row, col, (nr, nc) => {
                                     if (!this.revealed[nr][nc] && !this.flags[nr][nc] && this.board[nr][nc] !== -1) {
                                         setTimeout(() => this.revealCell(nr, nc), 100);
@@ -2133,7 +2296,6 @@ body.dark .version-info {
                             if (timerElement) {
                                 timerElement.textContent = this.gameState.timer;
                             }
-                            // 极速模式时间限制
                             if (this.gameState.mode === 'speed' && this.gameState.timer >= 300) {
                                 this.gameOver(false);
                             }
@@ -2161,6 +2323,7 @@ body.dark .version-info {
                     this.gameState.gameOver = true;
                     this.gameState.won = won;
                     this.gameState.autoSolving = false;
+                    this.gameState.batchRevealing = false;
                     const autoStatus = document.getElementById('auto-solve-status');
                     if (autoStatus) {
                         autoStatus.style.display = 'none';
@@ -2171,7 +2334,6 @@ body.dark .version-info {
                         this.stats.gamesWon++;
                         this.stats.totalTime += this.gameState.timer;
                         const difficulty = this.gameState.difficulty;
-                        // 只保存预设难度的记录
                         if (difficulty !== 'custom' && this.gameState.timer < this.stats.bestTimes[difficulty]) {
                             this.stats.bestTimes[difficulty] = this.gameState.timer;
                         }
@@ -2179,7 +2341,7 @@ body.dark .version-info {
                         this.playSound('win');
                         this.createConfetti();
                     }
-                    this.saveStats(); // 保存统计数据
+                    this.saveStats();
                     if (!won) {
                         for (let r = 0; r < this.gameState.rows; r++) {
                             for (let c = 0; c < this.gameState.cols; c++) {
@@ -2232,6 +2394,180 @@ body.dark .version-info {
                             }
                         }, 100);
                     }
+                }
+                // 智能提示系统
+                hint() {
+                    if (this.gameState.gameOver || this.gameState.paused || this.gameState.firstClick) return;
+                    this.clearHints();
+                    const hint = this.findLogicalHint();
+                    if (hint) {
+                        this.showHint(hint);
+                        this.playSound('hint');
+                    } else {
+                        this.showNoHintMessage();
+                    }
+                }
+                findLogicalHint() {
+                    // 【优先级1：错误标记检查】- 最高优先级
+                    for (let r = 0; r < this.gameState.rows; r++) {
+                        for (let c = 0; c < this.gameState.cols; c++) {
+                            if (this.flags[r][c] && this.board[r][c] !== -1) {
+                                return {
+                                    type: 'error',
+                                    row: r,
+                                    col: c,
+                                    reason: '❌ 这个标记是错误的！此处并没有地雷，请移除旗帜标记'
+                                };
+                            }
+                        }
+                    }
+                    // 【优先级2：基于数字的确定安全格子】
+                    for (let r = 0; r < this.gameState.rows; r++) {
+                        for (let c = 0; c < this.gameState.cols; c++) {
+                            if (this.revealed[r][c] && this.board[r][c] > 0) {
+                                const neighbors = this.getNeighbors(r, c);
+                                const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
+                                const unrevealedNotFlagged = neighbors.filter(([nr, nc]) =>
+                                    !this.revealed[nr][nc] && !this.flags[nr][nc] && !this.questions[nr][nc]);
+                                // 如果已标记的地雷数等于该格子的数字，剩余未揭开的格子都是安全的
+                                if (flaggedCount === this.board[r][c] && unrevealedNotFlagged.length > 0) {
+                                    const safeCell = unrevealedNotFlagged[0];
+                                    return {
+                                        type: 'safe',
+                                        row: safeCell[0],
+                                        col: safeCell[1],
+                                        reason: `✅ 数字${this.board[r][c]}周围已标记${flaggedCount}个地雷，所以这个格子是安全的，可以点击揭开`
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    // 【优先级3：基于数字的确定地雷格子】
+                    for (let r = 0; r < this.gameState.rows; r++) {
+                        for (let c = 0; c < this.gameState.cols; c++) {
+                            if (this.revealed[r][c] && this.board[r][c] > 0) {
+                                const neighbors = this.getNeighbors(r, c);
+                                const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
+                                const unrevealedNotFlagged = neighbors.filter(([nr, nc]) =>
+                                    !this.revealed[nr][nc] && !this.flags[nr][nc] && !this.questions[nr][nc]);
+                                // 如果剩余未标记的格子数等于剩余地雷数，这些格子都是地雷
+                                if (unrevealedNotFlagged.length === this.board[r][c] - flaggedCount &&
+                                    unrevealedNotFlagged.length > 0 &&
+                                    this.board[r][c] - flaggedCount > 0) {
+                                    const mineCell = unrevealedNotFlagged[0];
+                                    return {
+                                        type: 'mine',
+                                        row: mineCell[0],
+                                        col: mineCell[1],
+                                        reason: `🚩 数字${this.board[r][c]}周围需要${this.board[r][c] - flaggedCount}个地雷，剩余格子正好${unrevealedNotFlagged.length}个，应该标记为地雷`
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    // 【优先级4：可双击的数字格子】
+                    for (let r = 0; r < this.gameState.rows; r++) {
+                        for (let c = 0; c < this.gameState.cols; c++) {
+                            if (this.revealed[r][c] && this.board[r][c] > 0) {
+                                const neighbors = this.getNeighbors(r, c);
+                                const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
+                                const unrevealedCount = neighbors.filter(([nr, nc]) =>
+                                    !this.revealed[nr][nc] && !this.flags[nr][nc]).length;
+                                if (flaggedCount === this.board[r][c] && unrevealedCount > 0) {
+                                    return {
+                                        type: 'double_click',
+                                        row: r,
+                                        col: c,
+                                        reason: `⚡ 双击数字${this.board[r][c]}可以自动揭开周围的安全格子，已正确标记了所有地雷`
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    // 【优先级5：随机安全格子】（仅在没有逻辑线索时使用）
+                    const safeCells = [];
+                    for (let r = 0; r < this.gameState.rows; r++) {
+                        for (let c = 0; c < this.gameState.cols; c++) {
+                            if (!this.revealed[r][c] && !this.flags[r][c] &&
+                                this.board[r][c] !== -1 && !this.questions[r][c]) {
+                                safeCells.push([r, c]);
+                            }
+                        }
+                    }
+                    if (safeCells.length > 0) {
+                        const randomSafe = safeCells[Math.floor(Math.random() * safeCells.length)];
+                        return {
+                            type: 'safe',
+                            row: randomSafe[0],
+                            col: randomSafe[1],
+                            reason: '💡 当前没有明确的逻辑线索，但这个格子是安全的（建议优先寻找有数字提示的区域）'
+                        };
+                    }
+                    return null;
+                }
+                showHint(hint) {
+                    const cell = this.getCell(hint.row, hint.col);
+                    if (!cell) return;
+                    // 添加对应的提示样式
+                    if (hint.type === 'safe') {
+                        cell.classList.add('hint-safe');
+                    } else if (hint.type === 'mine') {
+                        cell.classList.add('hint-mine');
+                    } else if (hint.type === 'error') {
+                        cell.classList.add('hint-error');
+                    } else if (hint.type === 'double_click') {
+                        cell.classList.add('hint-double-click');
+                    }
+                    // 滚动到提示位置
+                    this.scrollToCell(hint.row, hint.col);
+                    // 显示提示气泡
+                    this.showHintTooltip(cell, hint);
+                    // 5秒后清除提示
+                    setTimeout(() => {
+                        this.clearHints();
+                    }, 5000);
+                }
+                showHintTooltip(cell, hint) {
+                    // 移除现有的提示气泡
+                    const existingTooltip = document.querySelector('.hint-tooltip');
+                    if (existingTooltip) {
+                        existingTooltip.remove();
+                    }
+                    const tooltip = document.createElement('div');
+                    tooltip.className = `hint-tooltip hint-${hint.type}`;
+                    tooltip.textContent = hint.reason;
+                    // 直接添加到body，并正确居中
+                    document.body.appendChild(tooltip);
+                    // 点击任意地方关闭提示
+                    const closeTooltip = (e) => {
+                        if (!tooltip.contains(e.target)) {
+                            tooltip.remove();
+                            document.removeEventListener('click', closeTooltip);
+                        }
+                    };
+                    setTimeout(() => {
+                        document.addEventListener('click', closeTooltip);
+                    }, 100);
+                }
+                clearHints() {
+                    // 清除所有提示样式
+                    document.querySelectorAll('.cell.hint-safe, .cell.hint-mine, .cell.hint-error, .cell.hint-double-click').forEach(cell => {
+                        cell.classList.remove('hint-safe', 'hint-mine', 'hint-error', 'hint-double-click');
+                    });
+                    // 清除提示气泡
+                    const tooltip = document.querySelector('.hint-tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                }
+                showNoHintMessage() {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'hint-tooltip';
+                    tooltip.textContent = '🤔 当前没有可用的逻辑提示，请尝试自己推理或寻找有数字的区域！';
+                    document.body.appendChild(tooltip);
+                    setTimeout(() => {
+                        tooltip.remove();
+                    }, 3000);
                 }
                 // 自动扫雷系统
                 autoSolve() {
@@ -2361,12 +2697,14 @@ body.dark .version-info {
                 restart() {
                     this.closeModal('game-over-modal');
                     this.closeModal('pause-modal');
+                    this.clearHints();
                     this.startGame(this.gameState.rows, this.gameState.cols,
                                   this.gameState.totalMines, this.gameState.difficulty);
                 }
                 pause() {
                     if (this.gameState.gameOver || this.gameState.firstClick) return;
                     this.gameState.paused = true;
+                    this.clearHints();
                     const pauseModal = document.getElementById('pause-modal');
                     if (pauseModal) {
                         pauseModal.style.display = 'flex';
@@ -2376,28 +2714,9 @@ body.dark .version-info {
                     this.gameState.paused = false;
                     this.closeModal('pause-modal');
                 }
-                hint() {
-                    if (this.gameState.gameOver || this.gameState.paused || this.gameState.firstClick) return;
-                    const safeCells = [];
-                    for (let r = 0; r < this.gameState.rows; r++) {
-                        for (let c = 0; c < this.gameState.cols; c++) {
-                            if (!this.revealed[r][c] && !this.flags[r][c] && this.board[r][c] !== -1) {
-                                safeCells.push([r, c]);
-                            }
-                        }
-                    }
-                    if (safeCells.length > 0) {
-                        const [r, c] = safeCells[Math.floor(Math.random() * safeCells.length)];
-                        const cell = this.getCell(r, c);
-                        if (cell) {
-                            cell.classList.add('hint');
-                            this.scrollToCell(r, c);
-                            setTimeout(() => cell.classList.remove('hint'), 3000);
-                        }
-                    }
-                }
                 undo() {
                     if (this.gameState.moves.length === 0 || this.gameState.gameOver || this.gameState.autoSolving) return;
+                    this.clearHints();
                     const lastMove = this.gameState.moves.pop();
                     const { type, row, col } = lastMove;
                     if (type === 'click' && this.revealed[row][col]) {
@@ -2643,21 +2962,17 @@ body.dark .version-info {
                         const saved = localStorage.getItem(this.STORAGE_PREFIX + 'stats');
                         if (saved) {
                             const statsData = JSON.parse(saved);
-                            // 检查版本兼容性
                             if (statsData.version && this.isCompatibleVersion(statsData.version)) {
                                 this.stats = { ...this.stats, ...statsData.data };
                             } else {
                                 console.log('统计数据版本不兼容，使用默认数据');
-                                // 可选：迁移旧版本数据
                                 this.migrateOldStats();
                             }
                         } else {
-                            // 尝试迁移旧版本数据
                             this.migrateOldStats();
                         }
                     } catch (e) {
                         console.log('加载统计数据失败:', e);
-                        // 尝试迁移旧版本数据
                         this.migrateOldStats();
                     }
                 }
@@ -2678,22 +2993,18 @@ body.dark .version-info {
                         const saved = localStorage.getItem(this.STORAGE_PREFIX + 'achievements');
                         if (saved) {
                             const achievementData = JSON.parse(saved);
-                            // 检查版本兼容性
                             if (achievementData.version && this.isCompatibleVersion(achievementData.version)) {
                                 this.achievements = { ...this.achievements, ...achievementData.data };
                                 this.updateAchievementDisplay();
                             } else {
                                 console.log('成就数据版本不兼容，使用默认数据');
-                                // 可选：迁移旧版本数据
                                 this.migrateOldAchievements();
                             }
                         } else {
-                            // 尝试迁移旧版本数据
                             this.migrateOldAchievements();
                         }
                     } catch (e) {
                         console.log('加载成就数据失败:', e);
-                        // 尝试迁移旧版本数据
                         this.migrateOldAchievements();
                     }
                 }

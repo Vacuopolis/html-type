@@ -607,6 +607,16 @@ body.dark .leaderboard {
 .help-section li {
     margin-bottom: 5px;
 }
+/* ========== 版本信息样式 ========== */
+.version-info {
+    text-align: center;
+    margin-top: 20px;
+    opacity: 0.6;
+    font-size: 12px;
+}
+.version-info small {
+    color: var(--text-color);
+}
 /* ========== 特效样式 ========== */
 .confetti {
     position: fixed;
@@ -719,6 +729,16 @@ body.dark .leaderboard {
 @keyframes progressShine {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
+}
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
 }
 /* ========== 响应式设计 ========== */
 @media (max-width: 1024px) {
@@ -944,8 +964,11 @@ body.dark .leaderboard {
             <h3>排行榜</h3>
             <ul class="leaderboard-list" id="leaderboard"></ul>
         </div>
+        <div class="version-info">
+            <small>by空城 版本 <span id="version-number">2.0.0</span></small>
+        </div>
     </div>
-    <!-- 自动排雷状态指示器（移到全局位置） -->
+    <!-- 自动排雷状态指示器 -->
     <div class="auto-solve-status" id="auto-solve-status">自动扫雷中...</div>
     <!-- 连击指示器 -->
     <div class="combo-indicator" id="combo-indicator">连击 x5!</div>
@@ -1081,6 +1104,10 @@ body.dark .leaderboard {
         document.addEventListener('DOMContentLoaded', function() {
             class MinesweeperUltimate {
                 constructor() {
+                    // 版本控制
+                    this.VERSION = '2.0.0';
+                    this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
+                    
                     this.difficulties = {
                         beginner: { rows: 9, cols: 9, mines: 10 },
                         intermediate: { rows: 16, cols: 16, mines: 40 },
@@ -1150,11 +1177,15 @@ body.dark .leaderboard {
                         this.updateLeaderboard();
                         this.checkMobileDevice();
                         this.newGame('beginner');
+                        
+                        // 显示版本信息
+                        this.displayVersionInfo();
                     } catch (error) {
                         console.error('初始化失败:', error);
                         // 基本功能降级处理
                         this.bindBasicEvents();
                         this.newGame('beginner');
+                        this.displayVersionInfo();
                     }
                 }
                 
@@ -1204,6 +1235,196 @@ body.dark .leaderboard {
                             });
                         }
                     });
+                }
+                
+                // 版本控制函数
+                isCompatibleVersion(dataVersion) {
+                    // 解析版本号
+                    const parseVersion = (version) => {
+                        return version.split('.').map(num => parseInt(num, 10));
+                    };
+                    
+                    try {
+                        const currentVersion = parseVersion(this.VERSION);
+                        const savedVersion = parseVersion(dataVersion);
+                        
+                        // 主版本号相同则兼容
+                        if (currentVersion[0] === savedVersion[0]) {
+                            return true;
+                        }
+                        
+                        // 主版本号不同，检查是否可以向前兼容
+                        if (currentVersion[0] > savedVersion[0]) {
+                            // 当前版本更高，检查是否在兼容列表中
+                            const compatibleVersions = ['1.9.0', '1.8.0']; // 可以根据需要调整
+                            return compatibleVersions.includes(dataVersion);
+                        }
+                        
+                        return false;
+                    } catch (e) {
+                        console.log('版本检查失败:', e);
+                        return false;
+                    }
+                }
+                
+                migrateOldStats() {
+                    try {
+                        // 尝试读取旧版本的统计数据
+                        const oldKeys = [
+                            'minesweeper-stats',
+                            'minesweeper_v1_9_0_stats',
+                            'minesweeper_v1_8_0_stats'
+                        ];
+                        
+                        for (const key of oldKeys) {
+                            const oldData = localStorage.getItem(key);
+                            if (oldData) {
+                                try {
+                                    const parsed = JSON.parse(oldData);
+                                    const migratedData = this.migrateStatsData(parsed);
+                                    if (migratedData) {
+                                        this.stats = { ...this.stats, ...migratedData };
+                                        console.log(`成功迁移统计数据从: ${key}`);
+                                        // 删除旧数据（可选）
+                                        // localStorage.removeItem(key);
+                                        break;
+                                    }
+                                } catch (e) {
+                                    console.log(`迁移统计数据失败 ${key}:`, e);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log('统计数据迁移过程失败:', e);
+                    }
+                }
+                
+                migrateOldAchievements() {
+                    try {
+                        // 尝试读取旧版本的成就数据
+                        const oldKeys = [
+                            'minesweeper-achievements',
+                            'minesweeper_v1_9_0_achievements',
+                            'minesweeper_v1_8_0_achievements'
+                        ];
+                        
+                        for (const key of oldKeys) {
+                            const oldData = localStorage.getItem(key);
+                            if (oldData) {
+                                try {
+                                    const parsed = JSON.parse(oldData);
+                                    const migratedData = this.migrateAchievementData(parsed);
+                                    if (migratedData) {
+                                        this.achievements = { ...this.achievements, ...migratedData };
+                                        this.updateAchievementDisplay();
+                                        console.log(`成功迁移成就数据从: ${key}`);
+                                        // 删除旧数据（可选）
+                                        // localStorage.removeItem(key);
+                                        break;
+                                    }
+                                } catch (e) {
+                                    console.log(`迁移成就数据失败 ${key}:`, e);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log('成就数据迁移过程失败:', e);
+                    }
+                }
+                
+                migrateStatsData(oldData) {
+                    try {
+                        // 如果旧数据已经有版本号，直接使用
+                        if (oldData.version) {
+                            return oldData.data || oldData;
+                        }
+                        
+                        // 旧版本数据结构迁移
+                        const migratedStats = {
+                            gamesPlayed: oldData.gamesPlayed || 0,
+                            gamesWon: oldData.gamesWon || 0,
+                            totalTime: oldData.totalTime || 0,
+                            bestTimes: {
+                                beginner: oldData.bestTimes?.beginner || Infinity,
+                                intermediate: oldData.bestTimes?.intermediate || Infinity,
+                                expert: oldData.bestTimes?.expert || Infinity,
+                                mega: oldData.bestTimes?.mega || Infinity
+                            }
+                        };
+                        
+                        return migratedStats;
+                    } catch (e) {
+                        console.log('统计数据转换失败:', e);
+                        return null;
+                    }
+                }
+                
+                migrateAchievementData(oldData) {
+                    try {
+                        // 如果旧数据已经有版本号，直接使用
+                        if (oldData.version) {
+                            return oldData.data || oldData;
+                        }
+                        
+                        // 旧版本数据结构迁移
+                        const migratedAchievements = {
+                            firstWin: oldData.firstWin || false,
+                            speedDemon: oldData.speedDemon || false,
+                            perfect: oldData.perfect || false,
+                            lucky: oldData.lucky || false,
+                            comboMaster: oldData.comboMaster || false,
+                            giantSlayer: oldData.giantSlayer || false
+                        };
+                        
+                        return migratedAchievements;
+                    } catch (e) {
+                        console.log('成就数据转换失败:', e);
+                        return null;
+                    }
+                }
+                
+                updateAchievementDisplay() {
+                    Object.keys(this.achievements).forEach(key => {
+                        if (this.achievements[key]) {
+                            const id = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+                            const element = document.getElementById(`ach-${id}`);
+                            if (element) element.classList.add('unlocked');
+                        }
+                    });
+                }
+                
+                displayVersionInfo() {
+                    const versionElement = document.getElementById('version-number');
+                    if (versionElement) {
+                        versionElement.textContent = this.VERSION;
+                    }
+                }
+                
+                cleanOldVersionData() {
+                    try {
+                        const oldKeys = [
+                            'minesweeper-stats',
+                            'minesweeper-achievements',
+                            'minesweeper_v1_8_0_stats',
+                            'minesweeper_v1_8_0_achievements',
+                            'minesweeper_v1_9_0_stats',
+                            'minesweeper_v1_9_0_achievements'
+                        ];
+                        
+                        let cleanedCount = 0;
+                        oldKeys.forEach(key => {
+                            if (localStorage.getItem(key)) {
+                                localStorage.removeItem(key);
+                                cleanedCount++;
+                            }
+                        });
+                        
+                        if (cleanedCount > 0) {
+                            console.log(`清理了 ${cleanedCount} 个旧版本数据项`);
+                        }
+                    } catch (e) {
+                        console.log('清理旧版本数据失败:', e);
+                    }
                 }
                 
                 // 音频系统
@@ -2557,7 +2778,82 @@ body.dark .leaderboard {
                     console.log('无猜模式已启用 - 确保游戏有逻辑解');
                 }
                 
-                // 数据持久化
+                // 数据持久化（版本化）
+                saveStats() {
+                    try {
+                        const statsData = {
+                            version: this.VERSION,
+                            timestamp: Date.now(),
+                            data: this.stats
+                        };
+                        localStorage.setItem(this.STORAGE_PREFIX + 'stats', JSON.stringify(statsData));
+                    } catch (e) {
+                        console.log('保存统计数据失败:', e);
+                    }
+                }
+                
+                loadStats() {
+                    try {
+                        const saved = localStorage.getItem(this.STORAGE_PREFIX + 'stats');
+                        if (saved) {
+                            const statsData = JSON.parse(saved);
+                            // 检查版本兼容性
+                            if (statsData.version && this.isCompatibleVersion(statsData.version)) {
+                                this.stats = { ...this.stats, ...statsData.data };
+                            } else {
+                                console.log('统计数据版本不兼容，使用默认数据');
+                                // 可选：迁移旧版本数据
+                                this.migrateOldStats();
+                            }
+                        } else {
+                            // 尝试迁移旧版本数据
+                            this.migrateOldStats();
+                        }
+                    } catch (e) {
+                        console.log('加载统计数据失败:', e);
+                        // 尝试迁移旧版本数据
+                        this.migrateOldStats();
+                    }
+                }
+                
+                saveAchievements() {
+                    try {
+                        const achievementData = {
+                            version: this.VERSION,
+                            timestamp: Date.now(),
+                            data: this.achievements
+                        };
+                        localStorage.setItem(this.STORAGE_PREFIX + 'achievements', JSON.stringify(achievementData));
+                    } catch (e) {
+                        console.log('保存成就数据失败:', e);
+                    }
+                }
+                
+                loadAchievements() {
+                    try {
+                        const saved = localStorage.getItem(this.STORAGE_PREFIX + 'achievements');
+                        if (saved) {
+                            const achievementData = JSON.parse(saved);
+                            // 检查版本兼容性
+                            if (achievementData.version && this.isCompatibleVersion(achievementData.version)) {
+                                this.achievements = { ...this.achievements, ...achievementData.data };
+                                this.updateAchievementDisplay();
+                            } else {
+                                console.log('成就数据版本不兼容，使用默认数据');
+                                // 可选：迁移旧版本数据
+                                this.migrateOldAchievements();
+                            }
+                        } else {
+                            // 尝试迁移旧版本数据
+                            this.migrateOldAchievements();
+                        }
+                    } catch (e) {
+                        console.log('加载成就数据失败:', e);
+                        // 尝试迁移旧版本数据
+                        this.migrateOldAchievements();
+                    }
+                }
+                
                 updateLeaderboard() {
                     const leaderboard = document.getElementById('leaderboard');
                     if (!leaderboard) return;
@@ -2574,7 +2870,7 @@ body.dark .leaderboard {
                             item.className = 'leaderboard-item';
                             item.innerHTML = `
                                 <span>${names[index]}</span>
-                                <span>${this.formatTime(time)}</span>
+                                <span>${this。formatTime(time)}</span>
                             `;
                             leaderboard.appendChild(item);
                             hasRecords = true;
@@ -2585,68 +2881,7 @@ body.dark .leaderboard {
                         leaderboard.innerHTML = '<li class="leaderboard-item"><span>暂无记录</span><span>-</span></li>';
                     }
                 }
-                
-                saveStats() {
-                    try {
-                        localStorage.setItem('minesweeper-stats', JSON.stringify(this.stats));
-                    } catch (e) {
-                        console.log('保存统计数据失败:', e);
-                    }
-                }
-                
-                loadStats() {
-                    try {
-                        const saved = localStorage.getItem('minesweeper-stats');
-                        if (saved) {
-                            this.stats = { ...this.stats, ...JSON.parse(saved) };
-                        }
-                    } catch (e) {
-                        console.log('加载统计数据失败:', e);
-                    }
-                }
-                
-                saveAchievements() {
-                    try {
-                        localStorage.setItem('minesweeper-achievements', JSON.stringify(this.achievements));
-                    } catch (e) {
-                        console.log('保存成就数据失败:', e);
-                    }
-                }
-                
-                loadAchievements() {
-                    try {
-                        const saved = localStorage.getItem('minesweeper-achievements');
-                        if (saved) {
-                            this.achievements = { ...this.achievements, ...JSON.parse(saved) };
-                            Object.keys(this.achievements).forEach(key => {
-                                if (this.achievements[key]) {
-                                    const id = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-                                    const element = document.getElementById(`ach-${id}`);
-                                    if (element) element.classList.add('unlocked');
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.log('加载成就数据失败:', e);
-                    }
-                }
             }
-            
-            // CSS动画
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes floatUp {
-                    0% {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                    100% {
-                        opacity: 0;
-                        transform: translateY(-50px);
-                    }
-                }
-            `;
-            document.head.appendChild(style);
             
             // 初始化游戏 - 使用全局变量确保在Netlify环境下可以访问
             window.game = new MinesweeperUltimate();

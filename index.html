@@ -6,245 +6,540 @@
     <title>Vacuopolis - 创意互动实验室</title>
     <style>
         :root {
-            --primary-color: #3498db;
-            --secondary-color: #2980b9;
-            --background-color: #f8f9fa;
-            --card-color: #ffffff;
-            --text-color: #333333;
-            --hover-color: #e3f2fd;
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --background-color: #0f0f23;
+            --surface-color: rgba(255, 255, 255, 0.05);
+            --card-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --hover-glow: rgba(102, 126, 234, 0.3);
+            --border-color: rgba(255, 255, 255, 0.1);
         }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background-color);
+            color: var(--text-primary);
             line-height: 1.6;
-            padding: 0;
-            margin: 0;
+            overflow-x: hidden;
+            position: relative;
         }
+
+        /* 动态背景 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        /* 头部样式 */
         header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: var(--primary-gradient);
             color: white;
             text-align: center;
-            padding: 2rem 1rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            padding: 4rem 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
         }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+            z-index: 1;
+        }
+
+        header > * {
+            position: relative;
+            z-index: 2;
+        }
+
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 1rem;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1rem;
-        }
-        .category {
-            margin-bottom: 2rem;
-        }
-        .category-title {
-            font-size: 1.5rem;
+            font-size: clamp(2.5rem, 5vw, 4rem);
             margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--primary-color);
+            font-weight: 800;
+            background: linear-gradient(45deg, #ffffff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
+            animation: glow 3s ease-in-out infinite alternate;
         }
+
+        @keyframes glow {
+            from { text-shadow: 0 4px 20px rgba(255, 255, 255, 0.3); }
+            to { text-shadow: 0 4px 30px rgba(255, 255, 255, 0.5); }
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 300;
+            line-height: 1.8;
+        }
+
+        /* 容器样式 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .category {
+            margin-bottom: 4rem;
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .category:nth-child(1) { animation-delay: 0.1s; }
+        .category:nth-child(2) { animation-delay: 0.2s; }
+        .category:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .category-title {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            margin-bottom: 2rem;
+            padding: 1rem 0;
+            text-align: center;
+            position: relative;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .category-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: var(--accent-gradient);
+            border-radius: 2px;
+        }
+
+        /* 项目网格 */
         .projects {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
             margin-bottom: 2rem;
         }
+
         .project-card {
-            background-color: var(--card-color);
-            border-radius: 8px;
+            background: var(--card-color);
+            border-radius: 20px;
             overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 20px;
+            z-index: -1;
+        }
+
         .project-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
         }
+
+        .project-card:hover::before {
+            opacity: 0.1;
+        }
+
         .card-img {
-            height: 160px;
-            background-color: #ddd;
+            height: 200px;
+            background-color: rgba(255, 255, 255, 0.05);
             background-size: cover;
             background-position: center;
+            position: relative;
+            overflow: hidden;
         }
+
+        .card-img::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .project-card:hover .card-img::after {
+            transform: translateX(100%);
+        }
+
         .card-content {
-            padding: 1.5rem;
-            flex-grow: a;
-        }
-        .card-title {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-            color: var(--primary-color);
-        }
-        .card-description {
-            color: #666;
-            margin-bottom: 1rem;
+            padding: 2rem;
             flex-grow: 1;
+            display: flex;
+            flex-direction: column;
         }
+
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            flex-grow: 1;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
         .card-link {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             text-decoration: none;
             color: white;
-            background-color: var(--primary-color);
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
+            background: var(--primary-gradient);
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.95rem;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            align-self: flex-start;
         }
+
+        .card-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .card-link:hover::before {
+            left: 100%;
+        }
+
         .card-link:hover {
-            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            background: var(--secondary-gradient);
         }
+
+        /* 页脚样式 */
         footer {
             text-align: center;
-            padding: 2rem;
-            background-color: #f1f1f1;
-            margin-top: 2rem;
+            padding: 3rem 2rem;
+            background: var(--surface-color);
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
+
+        /* 响应式设计 */
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
+            header {
+                padding: 3rem 1rem;
             }
-            .projects {
-                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            
+            .container {
+                padding: 0 1rem;
             }
-        }
-        @media (max-width: 480px) {
+            
             .projects {
                 grid-template-columns: 1fr;
+                gap: 1.5rem;
             }
+            
+            .card-content {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .project-card {
+                border-radius: 15px;
+            }
+            
+            .card-img {
+                height: 160px;
+            }
+        }
+
+        /* 加载动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-gradient);
         }
     </style>
 </head>
 <body>
     <header>
         <h1>Vacuopolis 创意互动实验室</h1>
-        <p class="subtitle">探索互动可视化、游戏和创意编程的世界。点击下方卡片，体验各种有趣的网页实验。</p>
+        <p class="subtitle">探索互动可视化、游戏和创意编程的无限可能。沉浸在精心打造的数字体验中，每一次点击都是新的发现。</p>
     </header>
+    
     <div class="container">
         <div id="projects-container">
             <!-- 项目将通过JavaScript动态加载 -->
         </div>
     </div>
+    
     <footer>
-        <p>&copy; 2025 Vacuopolis. 保留所有权利。</p>
+        <p>&copy; 2025 Vacuopolis 创意互动实验室. 探索无限，创造未来。</p>
     </footer>
+
     <script>
-        // 项目数据 - 要添加新项目只需在对应类别数组中添加新对象
+        // 项目数据 - 移除了栗子相关类别，在游戏类别中添加了扫雷
         const projectsData = {
-            "与栗子相关": [
+            "互动": [
                 {
-                    title: "五一祝福",
-                    description: "一个给栗子的五一特别礼物（算是吧）。",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/wyzf.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/%E9%A2%9D%E5%A4%96%E7%9A%84%E4%BA%94%E4%B8%80%E7%A5%9D%E7%A6%8Ffor%20%F0%9F%8C%B0.html"
-                },
-                {
-                    title: "三八祝福",
-                    description: "为栗子准备的特别互动祝福。",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/38zf.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/%E7%89%B9%E5%88%AB%E7%9A%8438%E7%A5%9D%E7%A6%8F.html"
-                },
-                {
-                    title: "Get Well Soon Card",
-                    description: "送给栗子的康复祝福卡片。",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/kfxtd.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/get-well-soon-card%20for%F0%9F%8C%B0.html"
-                }
-            ],
-            "互动类": [
-            {
                     title: "文字磁场",
-                    description: "交互式文字动画，创造出文字跟随磁场的视觉效果。",
+                    description: "沉浸式文字动画体验，观看文字在虚拟磁场中优雅舞蹈，感受数字艺术的魅力与科技的诗意。",
                     imageUrl: "https://stellar-cat-4909aa.netlify.app/image/wzcc.png",
                     link: "https://stellar-cat-4909aa.netlify.app/%E6%96%87%E5%AD%97%E7%A3%81%E5%9C%BA%EF%BC%88%E6%9B%B4%E6%96%B0%E4%B8%89%E7%89%88%EF%BC%89.html"
                 },
                 {
                     title: "太阳系模拟",
-                    description: "交互式太阳系模拟，展示行星运行轨道和运动。",
+                    description: "精密的天体力学模拟，在浏览器中重现壮丽的宇宙奇观，探索行星运行的神秘轨迹。",
                     imageUrl: "https://stellar-cat-4909aa.netlify.app/image/tyxmn.png",
                     link: "https://stellar-cat-4909aa.netlify.app/%E5%A4%AA%E9%98%B3%E7%B3%BB%E6%A8%A1%E6%8B%9F.html"
                 }
             ],
-            "游戏类": [
+            "游戏": [
                 {
-                    title: "亮灯游戏",
-                    description: "一个挑战逻辑思维的拼图游戏，目标是点亮所有的灯。",
+                    title: "亮灯解谜",
+                    description: "经典逻辑拼图游戏的现代演绎，每一次点击都充满策略，挑战你的空间思维和逻辑推理能力。",
                     imageUrl: "https://stellar-cat-4909aa.netlify.app/image/ldyx.png",
                     link: "https://stellar-cat-4909aa.netlify.app/%E4%BA%AE%E7%81%AF%E6%B8%B8%E6%88%8F.html"
                 },
                 {
-                    title: "贪吃蛇游戏",
-                    description: "一个贪吃蛇游戏，多种模式可供游玩（多人模式暂不支持）。",
+                    title: "贪吃蛇大作战",
+                    description: "重新定义的经典贪吃蛇游戏，多种游戏模式带来全新体验，简单操作下的无穷乐趣。",
                     imageUrl: "https://stellar-cat-4909aa.netlify.app/image/tcs.png",
                     link: "https://stellar-cat-4909aa.netlify.app/%E8%B4%AA%E5%90%83%E8%9B%87.html"
                 },
                 {
-                    title: "轮盘赌游戏",
-                    description: "一个轮盘赌游戏，看运气的时候到了。",
+                    title: "轮盘赌",
+                    description: "命运之轮在此转动，体验紧张刺激的轮盘游戏，在概率与运气的交织中寻找属于你的幸运时刻。",
                     imageUrl: "https://stellar-cat-4909aa.netlify.app/image/lpd.png",
                     link: "https://stellar-cat-4909aa.netlify.app/%E8%BD%AE%E7%9B%98%E8%B5%8C.html"
+                },
+                {
+                    title: "经典扫雷",
+                    description: "重现童年记忆的经典扫雷游戏，在数字与地雷的博弈中，考验你的逻辑推理和细致观察。",
+                    imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/sl.png",
+                    link: "https://vacuopolis.netlify.app/%E6%89%AB%E9%9B%B7.html"
                 }
             ]
-            // 可以添加更多类别
-            // "其他类别": [ ... ]
         };
-        // 生成项目卡片
-        const projectsContainer = document.getElementById('projects-container');
-        Object.keys(projectsData).forEach(category => {
+
+        // 生成项目卡片的函数
+        function createProjectCard(project) {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            
+            // 添加加载动画
+            card.classList.add('loading');
+            
+            card.innerHTML = `
+                <div class="card-img" style="background-image: url(${project.imageUrl})"></div>
+                <div class="card-content">
+                    <h3 class="card-title">${project.title}</h3>
+                    <p class="card-description">${project.description}</p>
+                    <a href="${project.link}" class="card-link" target="_blank" rel="noopener noreferrer">
+                        体验项目
+                    </a>
+                </div>
+            `;
+            
+            // 移除加载动画
+            setTimeout(() => {
+                card.classList.remove('loading');
+            }, 100);
+            
+            return card;
+        }
+
+        // 生成类别区域的函数
+        function createCategorySection(categoryName, projects) {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'category';
+            
             const categoryTitle = document.createElement('h2');
             categoryTitle.className = 'category-title';
-            categoryTitle.textContent = category;
-            categoryDiv.appendChild(categoryTitle);
+            categoryTitle.textContent = categoryName;
+            
             const projectsGrid = document.createElement('div');
             projectsGrid.className = 'projects';
-            projectsData[category].forEach(project => {
-                const card = document.createElement('div');
-                card.className = 'project-card';
-                const cardImg = document.createElement('div');
-                cardImg.className = 'card-img';
-                cardImg.style.backgroundImage = `url(${project.imageUrl})`;
-                const cardContent = document.createElement('div');
-                cardContent.className = 'card-content';
-                const cardTitle = document.createElement('h3');
-                cardTitle.className = 'card-title';
-                cardTitle.textContent = project.title;
-                const cardDescription = document.createElement('p');
-                cardDescription.className = 'card-description';
-                cardDescription.textContent = project.description;
-                const cardLink = document.createElement('a');
-                cardLink.className = 'card-link';
-                cardLink.href = project.link;
-                cardLink.textContent = '查看项目';
-                cardLink.target = '_blank';
-                cardContent.appendChild(cardTitle);
-                cardContent.appendChild(cardDescription);
-                cardContent.appendChild(cardLink);
-                card.appendChild(cardImg);
-                card.appendChild(cardContent);
+            
+            projects.forEach((project, index) => {
+                const card = createProjectCard(project);
+                // 添加交错动画延迟
+                card.style.animationDelay = `${0.1 + index * 0.1}s`;
                 projectsGrid.appendChild(card);
             });
+            
+            categoryDiv.appendChild(categoryTitle);
             categoryDiv.appendChild(projectsGrid);
-            projectsContainer.appendChild(categoryDiv);
+            
+            return categoryDiv;
+        }
+
+        // 初始化页面
+        function initializePage() {
+            const projectsContainer = document.getElementById('projects-container');
+            
+            Object.entries(projectsData).forEach(([category, projects], categoryIndex) => {
+                const categorySection = createCategorySection(category, projects);
+                categorySection.style.animationDelay = `${categoryIndex * 0.2}s`;
+                projectsContainer.appendChild(categorySection);
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initializePage);
+
+        // 添加平滑滚动效果
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
         });
+
+        // 添加鼠标移动视差效果
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.project-card');
+            const mouseX = e.clientX / window.innerWidth;
+            const mouseY = e.clientY / window.innerHeight;
+            
+            cards.forEach((card, index) => {
+                const rect = card.getBoundingClientRect();
+                const cardCenterX = rect.left + rect.width / 2;
+                const cardCenterY = rect.top + rect.height / 2;
+                
+                const deltaX = (e.clientX - cardCenterX) * 0.01;
+                const deltaY = (e.clientY - cardCenterY) * 0.01;
+                
+                card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            });
+        });
+
+        // 观察器用于动画触发
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, observerOptions);
+
+        // 页面加载后设置观察器
+        setTimeout(() => {
+            document.querySelectorAll('.category').forEach(category => {
+                observer.observe(category);
+            });
+        }, 500);
     </script>
 </body>
 </html>

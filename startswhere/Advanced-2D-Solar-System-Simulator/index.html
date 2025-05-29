@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级二维太阳系模拟器</title> <!-- Version Update -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="simulation-container">
+        <canvas id="solar-system"></canvas>
+    </div>
+
+    <div id="status-indicator" class="status-indicator">
+        <span id="current-mode-status">自由视角</span> |
+        <span id="zoom-status">缩放: 1.0x</span> |
+        <span id="speed-status">速度: 0.010x</span> |
+        <span id="scale-status">尺度: 0.00 (视觉)</span> |
+        <span id="trail-duration-status">轨迹点: 300</span> |
+        <span id="star-density-status">星密: 300</span> |
+        <span id="star-layers-status">星层: 3</span> |
+        <span id="star-parallax-status">视差: 0.2</span>
+    </div>
+
+    <div id="control-panel" class="ui-panel">
+        <div class="panel-header">
+            <div class="panel-title">模拟控制</div>
+            <button id="toggle-control-panel-btn" class="toggle-collapse-btn"
+                onclick="togglePanelCollapse('control-panel')">−</button>
+        </div>
+        <div class="panel-main-content">
+            <div class="control-group">
+                <h3>基础控制</h3>
+                <div class="btn-group">
+                    <button id="pause-btn" class="btn">暂停</button>
+                    <button id="reset-btn" class="btn">重置</button>
+                    <button id="labels-btn" class="btn">隐藏标签</button>
+                    <button id="asteroid-btn" class="btn">显示小行星带</button> <!-- Moved -->
+                    <button id="compare-btn" class="btn">天体对比</button> <!-- Moved -->
+                </div>
+                <div class="slider-container">
+                    <label for="speed-slider">速度:</label>
+                    <!-- Value changed to 401 for default 0.01x with new max -->
+                    <input type="range" id="speed-slider" min="1" max="2000" step="1" value="401">
+                    <!-- Max increased for smoothness -->
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>视角控制</h3>
+                <select id="view-mode">
+                    <option value="free">自由视角</option>
+                    <option value="follow">跟随视角</option>
+                </select>
+                <select id="follow-target" style="display: none;">
+                    <option value="sun">太阳</option>
+                    <option value="mercury">水星</option>
+                    <option value="venus">金星</option>
+                    <option value="earth">地球</option>
+                    <option value="mars">火星</option>
+                    <option value="jupiter">木星</option>
+                    <option value="saturn">土星</option>
+                    <option value="uranus">天王星</option>
+                    <option value="neptune">海王星</option>
+                </select>
+                <div class="checkbox-container" id="follow-rotation-container" style="display: none;">
+                    <input type="checkbox" id="follow-rotation-checkbox">
+                    <label for="follow-rotation-checkbox">跟随目标自转</label>
+                </div>
+                <div class="btn-group" id="orbit-controls" style="display: none;">
+                    <button id="center-target-btn" class="btn">重置视角</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>显示比例</h3>
+                <div class="slider-container">
+                    <label for="scale-slider">尺度:</label>
+                    <input type="range" id="scale-slider" min="0" max="1" step="0.01" value="0">
+                </div>
+                <div style="font-size: 10px; color: #aaa; text-align: center;">左: 强调视觉 | 右: 趋近真实比例</div>
+                <div class="slider-container" style="margin-top: 10px;">
+                    <label for="zoom-level-slider">缩放:</label>
+                    <!-- Value changed to 698 for default 1x with new min zoom -->
+                    <input type="range" id="zoom-level-slider" min="1" max="1000" step="1" value="698">
+                </div>
+                <div style="font-size: 10px; color: #aaa; text-align: center;">左: 远 | 右: 近</div>
+            </div>
+
+            <div class="control-group">
+                <h3>轨迹与轨道</h3>
+                <div class="btn-group">
+                    <button id="planet-trails-btn" class="btn">行星轨迹</button>
+                    <button id="planet-orbits-btn" class="btn">行星轨道</button>
+                </div>
+                <div class="btn-group">
+                    <button id="moon-trails-btn" class="btn">卫星轨迹</button>
+                    <button id="moon-orbits-btn" class="btn">卫星轨道</button>
+                </div>
+                <div class="slider-container">
+                    <label for="trail-duration-slider">轨迹时长:</label>
+                    <input type="range" id="trail-duration-slider" min="50" max="10000" step="50" value="300">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>星空设置</h3>
+                <div class="slider-container">
+                    <label for="star-density">密度:</label>
+                    <input type="range" id="star-density" min="100" max="2000" step="50" value="300">
+                </div>
+                <div class="slider-container">
+                    <label for="star-layers">层数:</label>
+                    <input type="range" id="star-layers" min="1" max="10" step="1" value="3">
+                </div>
+                <div class="slider-container">
+                    <label for="star-parallax">视差:</label>
+                    <input type="range" id="star-parallax" min="0" max="1" step="0.1" value="0.2">
+                </div>
+                <button id="regenerate-stars-btn" class="btn btn-small">重新生成星空</button>
+            </div>
+
+            <!-- "其他选项" control group removed -->
+        </div>
+    </div>
+
+    <div id="info-panel" class="ui-panel">
+        <div class="panel-header">
+            <div class="panel-title">天体信息</div>
+            <button id="toggle-info-panel-btn" class="toggle-collapse-btn"
+                onclick="togglePanelCollapse('info-panel')">−</button>
+        </div>
+        <div class="panel-main-content">
+            <div id="intro-content">
+                <h2>太阳系模拟器</h2>
+                <p>这是一个高级的太阳系模拟器，提供了丰富的交互功能。</p>
+                <h3>控制方式:</h3>
+                <ul>
+                    <li>鼠标拖拽：平移视图 (自由视角)</li>
+                    <li>左键点击行星：查看详情</li>
+                    <li>键盘快捷键：见右下角提示</li>
+                </ul>
+            </div>
+            <div id="planet-info-content" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="shortcut-panel">
+        <h4>快捷键:</h4>
+        空格: 暂停/播放   R: 重置模拟<br>
+        L: 切换标签   F: 切换视角<br>
+        T: 行星轨迹   O: 行星轨道<br>
+        M: 卫星轨迹 B: 卫星轨道<br>
+        +/-: 调整速度
+    </div>
+
+    <div id="compare-panel" class="ui-panel">
+        <div class="panel-header">
+            <div class="panel-title">天体对比</div>
+            <button class="toggle-collapse-btn" onclick="toggleComparePanelVisibility()">×</button>
+        </div>
+        <div class="panel-main-content">
+            <div style="display: flex; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 5px;">
+                <select id="compare-select-1" style="flex: 1;">
+                    <option value="">选择天体1</option>
+                </select>
+                <select id="compare-select-2" style="flex: 1; margin: 0 5px;">
+                    <option value="">选择天体2</option>
+                </select>
+                <select id="compare-select-3" style="flex: 1;">
+                    <option value="">选择天体3</option>
+                </select>
+            </div>
+            <div id="compare-cards"></div>
+        </div>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+
+</html>

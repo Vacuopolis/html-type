@@ -333,7 +333,7 @@
             <button id="settings-btn" aria-label="打开或关闭设置面板">设置</button>
             <button id="theme-btn" aria-label="切换亮色或暗色主题">切换主题</button>
         </div>
-        <textarea id="text-input" placeholder="在此输入想要显示的文字内容...如果不知道写什么，那不妨输入“空城的小彩蛋”试试！😘"></textarea>
+        <textarea id="text-input" placeholder="在此输入想要显示的文字内容..."></textarea>
         <div id="container">
             <pre id="ascii-art-container"></pre>
             <div id="easter-egg-dialog"></div>
@@ -1099,7 +1099,7 @@ oOOOO^,o’**\OOoooo’..*.....****\ooOOOOOOO/ooooo\*.***..***..**..***..*****\\
         activeCharIndex = -1;
         cancelAnimationLoop();
         if (!text || text.trim() === '') {
-            text = '点击 "编辑文本" 按钮来添加内容...如果不知道写什么，那不妨输入"空城的小彩蛋"试试😘';
+            text = '点击 "编辑文本" 按钮来添加内容...';
         }
         containerRect = container.getBoundingClientRect();
         const computedStyle = getComputedStyle(container);

@@ -794,27 +794,33 @@
         }
         /* ========== 提示信息样式 ========== */
         .hint-tooltip {
-            position: fixed;
-            left: 50%;
-            bottom: 15%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 16px 24px;
-            border-radius: 15px;
-            font-size: 16px;
-            font-weight: 600;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            z-index: 10000;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            max-width: 85vw;
-            text-align: center;
-            backdrop-filter: blur(15px);
-            line-height: 1.4;
-        }
+    position: fixed;
+    left: 50%;
+    bottom: 15%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    z-index: 10000;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 85vw;
+    text-align: center;
+    backdrop-filter: blur(15px);
+    line-height: 1.4;
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+}
+
         .hint-tooltip::before {
             display: none;
         }
@@ -1570,7 +1576,7 @@
     </div>
 </div>
         <div class="version-info">
-            <small>by空城 版本 <span id="version-number">1.3.5</span></small>
+            <small>by空城 版本 <span id="version-number">1.3.6</span></small>
         </div>
     </div>
     <!-- 自动排雷状态指示器 -->
@@ -1835,7 +1841,7 @@
             class MinesweeperUltimate {
                 constructor() {
                     // 版本控制
-                    this.VERSION = '1.3.5';
+                    this.VERSION = '1.3.6';
                     this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
                     this.difficulties = {
                         beginner: { rows: 9, cols: 9, mines: 10 },
@@ -3474,7 +3480,16 @@ loadSavedGame(saveId) {
                 }
 
                 showFloatingMessage(message) {
+    // 清除现有的浮动消息，避免叠加
+    const existingMessages = document.querySelectorAll('.floating-message');
+    existingMessages.forEach(msg => {
+        if (msg.parentNode) {
+            msg.remove();
+        }
+    });
+
     const floatingDiv = document.createElement('div');
+    floatingDiv.className = 'floating-message';
     floatingDiv.style.cssText = `
         position: fixed;
         top: 30%;
@@ -3500,26 +3515,28 @@ loadSavedGame(saveId) {
     `;
     floatingDiv.textContent = message;
     document.body.appendChild(floatingDiv);
-    
+
     // 强制重绘，然后显示动画
     floatingDiv.offsetHeight;
     
     // 显示动画
-    floatingDiv.style.opacity = '1';
-    floatingDiv.style.transform = 'translateX(-50%) translateY(0)';
-    
-    // 2.5秒后开始消失动画
+    requestAnimationFrame(() => {
+        floatingDiv.style.opacity = '1';
+        floatingDiv.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
+    // 3秒后开始消失动画
     setTimeout(() => {
         if (floatingDiv.parentNode) {
             floatingDiv.style.opacity = '0';
             floatingDiv.style.transform = 'translateX(-50%) translateY(-20px)';
-        }
-    }, 2500);
-    
-    // 3秒后移除元素
-    setTimeout(() => {
-        if (floatingDiv.parentNode) {
-            floatingDiv.remove();
+            
+            // 动画完成后移除元素
+            setTimeout(() => {
+                if (floatingDiv.parentNode) {
+                    floatingDiv.remove();
+                }
+            }, 300);
         }
     }, 3000);
 }
@@ -4588,6 +4605,9 @@ executeHintAction(hintCell) {
     const cell = this.getCell(hint.row, hint.col);
     if (!cell) return;
     
+    // 清除现有高亮，避免叠加
+    this.clearHints();
+    
     // 对应的提示样式
     if (hint.type === 'safe') {
         cell.classList.add('hint-safe');
@@ -4605,9 +4625,10 @@ executeHintAction(hintCell) {
     // 显示提示气泡
     this.showHintTooltip(cell, hint);
     
+    // 5秒后自动清除提示
     setTimeout(() => {
         this.clearHints();
-    }, 5000); 
+    }, 5000);
 }
 
                 showHintTooltip(cell, hint) {
@@ -4634,32 +4655,58 @@ executeHintAction(hintCell) {
     
     tooltip.textContent = hint.reason + actionText;
     
-    // 添加到body，居中
+    // 设置样式，确保不会阻挡底部按钮
+    tooltip.style.cssText += `
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+    `;
+    
+    // 添加到body
     document.body.appendChild(tooltip);
     
     // 点击任意地方关闭提示
     const closeTooltip = (e) => {
-        if (!tooltip.contains(e.target)) {
+        // 确保点击的不是提示框本身
+        if (tooltip && tooltip.parentNode && !tooltip.contains(e.target)) {
             tooltip.remove();
             document.removeEventListener('click', closeTooltip);
+            document.removeEventListener('touchstart', closeTooltip);
         }
     };
+    
+    // 延迟绑定事件，避免立即触发
     setTimeout(() => {
         document.addEventListener('click', closeTooltip);
+        document.addEventListener('touchstart', closeTooltip);
     }, 100);
+    
+    // 5秒后自动移除
+    setTimeout(() => {
+        if (tooltip && tooltip.parentNode) {
+            tooltip.remove();
+            document.removeEventListener('click', closeTooltip);
+            document.removeEventListener('touchstart', closeTooltip);
+        }
+    }, 5000);
 }
 
 clearHints() {
     // 清除所有提示样式
-    document.querySelectorAll('.cell.hint-safe, .cell.hint-mine, .cell.hint-error, .cell.hint-double-click').forEach(cell => {
+    const hintCells = document.querySelectorAll('.cell.hint-safe, .cell.hint-mine, .cell.hint-error, .cell.hint-double-click');
+    hintCells.forEach(cell => {
         cell.classList.remove('hint-safe', 'hint-mine', 'hint-error', 'hint-double-click');
     });
     
     // 清除提示气泡
-    const tooltip = document.querySelector('.hint-tooltip');
-    if (tooltip) {
-        tooltip.remove();
-    }
+    const tooltips = document.querySelectorAll('.hint-tooltip');
+    tooltips.forEach(tooltip => {
+        if (tooltip.parentNode) {
+            tooltip.remove();
+        }
+    });
 }
 
                 showNoHintMessage() {

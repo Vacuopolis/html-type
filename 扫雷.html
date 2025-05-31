@@ -1350,6 +1350,51 @@
                 padding: 6px 12px;
             }
         }
+        /* ========== 浮动消息样式 ========== */
+.floating-message {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 10000;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    min-width: 200px;
+    max-width: 80vw;
+    word-wrap: break-word;
+    animation: floatingMessageShow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes floatingMessageShow {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+@keyframes floatingMessageHide {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px) scale(0.9);
+    }
+}
     </style>
 </head>
 <body>
@@ -1471,33 +1516,61 @@
             <button class="btn" id="btn-restart">🔄 重新开始</button>
         </div>
         <div class="achievements">
-            <div class="achievement" id="ach-first-win">
-                <div class="achievement-icon">🥇</div>
-                <div>首次胜利</div>
-            </div>
-            <div class="achievement" id="ach-speed-demon">
-                <div class="achievement-icon">⚡</div>
-                <div>极速通关</div>
-            </div>
-            <div class="achievement" id="ach-perfect">
-                <div class="achievement-icon">💯</div>
-                <div>完美游戏</div>
-            </div>
-            <div class="achievement" id="ach-lucky">
-                <div class="achievement-icon">🍀</div>
-                <div>幸运玩家</div>
-            </div>
-            <div class="achievement" id="ach-combo-master">
-                <div class="achievement-icon">🔥</div>
-                <div>连击大师</div>
-            </div>
-            <div class="achievement" id="ach-giant-slayer">
-                <div class="achievement-icon">🗿</div>
-                <div>巨型征服者</div>
-            </div>
+    <div class="achievement" id="ach-first-win" onclick="game.showAchievementDetails('first-win')">
+        <div class="achievement-icon">🥇</div>
+        <div>首次胜利</div>
+    </div>
+    <div class="achievement" id="ach-speed-demon" onclick="game.showAchievementDetails('speed-demon')">
+        <div class="achievement-icon">⚡</div>
+        <div>极速通关</div>
+    </div>
+    <div class="achievement" id="ach-perfect" onclick="game.showAchievementDetails('perfect')">
+        <div class="achievement-icon">💯</div>
+        <div>完美游戏</div>
+    </div>
+    <div class="achievement" id="ach-lucky" onclick="game.showAchievementDetails('lucky')">
+        <div class="achievement-icon">🍀</div>
+        <div>幸运玩家</div>
+    </div>
+    <div class="achievement" id="ach-combo-master" onclick="game.showAchievementDetails('combo-master')">
+        <div class="achievement-icon">🔥</div>
+        <div>连击大师</div>
+    </div>
+    <div class="achievement" id="ach-giant-slayer" onclick="game.showAchievementDetails('giant-slayer')">
+        <div class="achievement-icon">🗿</div>
+        <div>巨型征服者</div>
+    </div>
+    <div class="achievement" id="ach-mine-hunter" onclick="game.showAchievementDetails('mine-hunter')">
+        <div class="achievement-icon">🎯</div>
+        <div>地雷猎手</div>
+    </div>
+    <div class="achievement" id="ach-time-master" onclick="game.showAchievementDetails('time-master')">
+        <div class="achievement-icon">⏰</div>
+        <div>时间大师</div>
+    </div>
+    <div class="achievement" id="ach-flag-expert" onclick="game.showAchievementDetails('flag-expert')">
+        <div class="achievement-icon">🚩</div>
+        <div>标记专家</div>
+    </div>
+    <div class="achievement" id="ach-survival-king" onclick="game.showAchievementDetails('survival-king')">
+        <div class="achievement-icon">👑</div>
+        <div>生存之王</div>
+    </div>
+</div>
+<!-- 成就详情模态框 -->
+<div class="modal" id="achievement-modal">
+    <div class="modal-content">
+        <h2 id="achievement-modal-title">成就详情</h2>
+        <div id="achievement-modal-content">
+            <!-- 动态内容 -->
         </div>
+        <div class="modal-buttons">
+            <button class="btn" id="btn-close-achievement">关闭</button>
+        </div>
+    </div>
+</div>
         <div class="version-info">
-            <small>by空城 版本 <span id="version-number">1.3.0</span></small>
+            <small>by空城 版本 <span id="version-number">1.3.5</span></small>
         </div>
     </div>
     <!-- 自动排雷状态指示器 -->
@@ -1762,7 +1835,7 @@
             class MinesweeperUltimate {
                 constructor() {
                     // 版本控制
-                    this.VERSION = '1.3.0';
+                    this.VERSION = '1.3.5';
                     this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
                     this.difficulties = {
                         beginner: { rows: 9, cols: 9, mines: 10 },
@@ -1822,25 +1895,111 @@
                             autoFlag: { count: 3, active: false }
                         }
                     };
-                    this.achievements = {
-                        firstWin: false,
-                        speedDemon: false,
-                        perfect: false,
-                        lucky: false,
-                        comboMaster: false,
-                        giantSlayer: false
-                    };
-                    this.stats = {
-                        gamesPlayed: 0,
-                        gamesWon: 0,
-                        totalTime: 0,
-                        bestTimes: {
-                            beginner: Infinity,
-                            intermediate: Infinity,
-                            expert: Infinity,
-                            mega: Infinity
-                        }
-                    };
+    this.achievements = {
+    firstWin: { unlocked: false, unlockedAt: null },
+    speedDemon: { unlocked: false, unlockedAt: null },
+    perfect: { unlocked: false, unlockedAt: null },
+    lucky: { unlocked: false, unlockedAt: null },
+    comboMaster: { unlocked: false, unlockedAt: null },
+    giantSlayer: { unlocked: false, unlockedAt: null },
+    mineHunter: { unlocked: false, unlockedAt: null },
+    timeMaster: { unlocked: false, unlockedAt: null },
+    flagExpert: { unlocked: false, unlockedAt: null },
+    survivalKing: { unlocked: false, unlockedAt: null }
+};
+
+// 成就详情数据
+this.achievementDetails = {
+    'first-win': {
+        name: '首次胜利',
+        icon: '🥇',
+        description: '完成你的第一局扫雷游戏',
+        condition: '在任意难度下获得胜利',
+        tips: '点击空白格子开始游戏，避开所有地雷即可获胜！'
+    },
+    'speed-demon': {
+        name: '极速通关',
+        icon: '⚡',
+        description: '在初级难度下30秒内完成游戏',
+        condition: '初级难度(9×9)，用时少于30秒',
+        tips: '熟练掌握扫雷技巧，快速识别安全区域和地雷位置'
+    },
+    'perfect': {
+        name: '完美游戏',
+        icon: '💯',
+        description: '完成一局游戏且没有错误标记',
+        condition: '获胜且未标记任何错误的地雷',
+        tips: '谨慎标记，确保每个旗帜都标在正确的地雷上'
+    },
+    'lucky': {
+        name: '幸运玩家',
+        icon: '🍀',
+        description: '仅用一次点击就获得胜利',
+        condition: '只点击一个格子就完成游戏',
+        tips: '需要极大的运气！点击一个大的空白区域可能触发连锁反应'
+    },
+    'combo-master': {
+        name: '连击大师',
+        icon: '🔥',
+        description: '在一局游戏中达到20连击',
+        condition: '单局最大连击数达到20',
+        tips: '连续成功揭开格子可以增加连击数，踩雷会重置连击'
+    },
+    'giant-slayer': {
+        name: '巨型征服者',
+        icon: '🗿',
+        description: '完成巨型难度(30×50)的游戏',
+        condition: '在巨型难度下获得胜利',
+        tips: '这是最高难度！需要极大的耐心和精湛的技巧'
+    },
+    'mine-hunter': {
+        name: '地雷猎手',
+        icon: '🎯',
+        description: '累计正确标记100个地雷',
+        condition: '历史累计正确标记地雷数达到100',
+        tips: '多玩游戏，准确标记地雷，积累经验'
+    },
+    'time-master': {
+        name: '时间大师',
+        icon: '⏰',
+        description: '总游戏时间超过1小时',
+        condition: '累计游戏时间达到3600秒',
+        tips: '坚持游戏，时间会自然累积'
+    },
+    'flag-expert': {
+        name: '标记专家',
+        icon: '🚩',
+        description: '连续10局游戏无错误标记',
+        condition: '连续10局获胜且每局都没有错误标记',
+        tips: '需要极高的准确性！每次标记前都要仔细思考'
+    },
+    'survival-king': {
+        name: '生存之王',
+        icon: '👑',
+        description: '在生存模式下满血通关',
+        condition: '生存模式获胜且生命值未减少',
+        tips: '在生存模式中，避免踩到任何地雷，保持满血状态通关'
+    }
+};
+
+// 成就通知队列
+this.achievementQueue = [];
+this.isShowingAchievement = false;
+
+    this.stats = {
+    gamesPlayed: 0,
+    gamesWon: 0,
+    totalTime: 0,
+    bestTimes: {
+        beginner: Infinity,
+        intermediate: Infinity,
+        expert: Infinity,
+        mega: Infinity
+    },
+    totalCorrectFlags: 0,       
+    consecutivePerfectGames: 0,  
+    maxConsecutivePerfectGames: 0 
+};
                     this.audioContext = null;
                     this.sounds = {};
                     this.savedGames = []; // 存档列表
@@ -1889,6 +2048,7 @@
                         'btn-close-save-modal': () => this.closeModal('save-modal'),
                         'btn-save-controls': () => this.saveControlSettings(),
                         'btn-close-controls': () => this.closeModal('controls-modal'),
+                        'btn-close-achievement': () => this.closeModal('achievement-modal'),
                         // 禅意模式道具
                         'zen-time-stop': () => this.useZenItem('timeStop'),
                         'zen-x-ray': () => this.useZenItem('xray'),
@@ -2066,101 +2226,161 @@
                 }
 
                 // 存档功能
-                saveCurrentGame() {
-                    if (this.gameState.firstClick) {
-                        this.showFloatingMessage('❌ 游戏还未开始，无法保存！');
-                        return;
-                    }
+saveCurrentGame() {
+    if (this.gameState.firstClick) {
+        this.showFloatingMessage('❌ 游戏还未开始，无法保存！');
+        return;
+    }
+    
+    const timestamp = new Date();
+    const saveName = `${this.gameState.difficulty}_${timestamp.toLocaleString()}`;
+    
+    // 创建要保存的游戏状态副本
+    const gameStateToSave = JSON.parse(JSON.stringify(this.gameState));
+    
+    // 确保保存时的状态是正确的
+    gameStateToSave.autoSolving = false; // 强制设为false
+    // 不要强制设置 paused = true，保持当前状态
+    gameStateToSave.resumeAfterClick = false; // 清除这个标志
+    
+    const saveData = {
+        id: Date.now(),
+        name: saveName,
+        timestamp: timestamp.toISOString(),
+        gameState: gameStateToSave,
+        board: JSON.parse(JSON.stringify(this.board)),
+        revealed: JSON.parse(JSON.stringify(this.revealed)),
+        flags: JSON.parse(JSON.stringify(this.flags)),
+        questions: JSON.parse(JSON.stringify(this.questions)),
+        specialCells: JSON.parse(JSON.stringify(this.specialCells)),
+        achievements: JSON.parse(JSON.stringify(this.achievements)),
+        stats: JSON.parse(JSON.stringify(this.stats))
+    };
+    
+    this.savedGames.push(saveData);
+    this.saveSavedGames();
+    this.playSound('powerup');
+    this.showFloatingMessage('💾 游戏已保存！（自动扫雷已暂停）');
+}
 
-                    const timestamp = new Date();
-                    const saveName = `${this.gameState.difficulty}_${timestamp.toLocaleString()}`;
-                    
-                    const saveData = {
-                        id: Date.now(),
-                        name: saveName,
-                        timestamp: timestamp.toISOString(),
-                        gameState: JSON.parse(JSON.stringify(this.gameState)),
-                        board: JSON.parse(JSON.stringify(this.board)),
-                        revealed: JSON.parse(JSON.stringify(this.revealed)),
-                        flags: JSON.parse(JSON.stringify(this.flags)),
-                        questions: JSON.parse(JSON.stringify(this.questions)),
-                        specialCells: JSON.parse(JSON.stringify(this.specialCells)),
-                        achievements: JSON.parse(JSON.stringify(this.achievements)),
-                        stats: JSON.parse(JSON.stringify(this.stats))
-                    };
-
-                    this.savedGames.push(saveData);
-                    this.saveSavedGames();
-                    this.playSound('powerup');
-                    this.showFloatingMessage('💾 游戏已保存！');
-                }
-
-                loadSavedGame(saveId) {
-                    const saveData = this.savedGames.find(save => save.id === saveId);
-                    if (!saveData) {
-                        this.showFloatingMessage('❌ 存档不存在！');
-                        return false;
-                    }
-
-                    try {
-                        // 清理当前游戏状态
-                        if (this.gameState.timerInterval) {
-                            clearInterval(this.gameState.timerInterval);
-                        }
-                        this.clearHints();
-                        this.clearXrayEffect();
-                        this.clearSafeDetectEffect();
-
-                        // 恢复游戏数据
-                        this.gameState = JSON.parse(JSON.stringify(saveData.gameState));
-                        this.board = JSON.parse(JSON.stringify(saveData.board));
-                        this.revealed = JSON.parse(JSON.stringify(saveData.revealed));
-                        this.flags = JSON.parse(JSON.stringify(saveData.flags));
-                        this.questions = JSON.parse(JSON.stringify(saveData.questions));
-                        this.specialCells = JSON.parse(JSON.stringify(saveData.specialCells));
-                        this.achievements = JSON.parse(JSON.stringify(saveData.achievements));
-                        this.stats = JSON.parse(JSON.stringify(saveData.stats));
-
-                        // 重要：如果游戏未完成，暂停计时直到用户点击格子
-                        if (!this.gameState.gameOver && !this.gameState.firstClick) {
-                            this.gameState.paused = true;
-                            this.gameState.resumeAfterClick = true;
-                        }
-
-                        // 更新界面
-                        this.updateDisplay();
-                        this.renderBoard();
-                        this.updateModeIndicator();
-                        this.updateZenItemsDisplay();
-                        this.updateSurvivalHealthDisplay();
-                        this.updateProgress();
-                        this.updateAchievementDisplay();
-                        this.updateZoomDisplay();
-                        this.resetZoom();
-
-                        // 更新最佳成绩显示
-                        const bestTime = this.stats.bestTimes[this.gameState.difficulty];
-                        const bestTimeElement = document.getElementById('best-time');
-                        if (bestTimeElement) {
-                            bestTimeElement.textContent = bestTime === Infinity ? '-' : this.formatTime(bestTime);
-                        }
-
-                        this.playSound('powerup');
-                        this.showFloatingMessage('📂 存档加载成功！');
-
-                        // 延迟设置小地图
-                        setTimeout(() => {
-                            this.setupMinimap();
-                        }, 100);
-
-                        return true;
-                    } catch (error) {
-                        console.error('加载存档失败:', error);
-                        this.showFloatingMessage('❌ 存档加载失败！');
-                        return false;
+loadSavedGame(saveId) {
+    const saveData = this.savedGames.find(save => save.id === saveId);
+    if (!saveData) {
+        this.showFloatingMessage('❌ 存档不存在！');
+        return false;
+    }
+    
+    try {
+        // 清理当前游戏状态
+        if (this.gameState.timerInterval) {
+            clearInterval(this.gameState.timerInterval);
+        }
+        this.clearHints();
+        this.clearXrayEffect();
+        this.clearSafeDetectEffect();
+        
+        // 停止当前的自动扫雷
+        this.gameState.autoSolving = false;
+        const autoStatus = document.getElementById('auto-solve-status');
+        if (autoStatus) {
+            autoStatus.style.display = 'none';
+        }
+        
+        // 恢复游戏数据
+        this.gameState = JSON.parse(JSON.stringify(saveData.gameState));
+        this.board = JSON.parse(JSON.stringify(saveData.board));
+        this.revealed = JSON.parse(JSON.stringify(saveData.revealed));
+        this.flags = JSON.parse(JSON.stringify(saveData.flags));
+        this.questions = JSON.parse(JSON.stringify(saveData.questions));
+        this.specialCells = JSON.parse(JSON.stringify(saveData.specialCells));
+        this.achievements = JSON.parse(JSON.stringify(saveData.achievements));
+        this.stats = JSON.parse(JSON.stringify(saveData.stats));
+        
+        // 确保自动扫雷是停止状态
+        this.gameState.autoSolving = false;
+        
+        // 重要：正确设置游戏状态
+        if (!this.gameState.gameOver) {
+            // 检查是否有任何格子被揭开，如果有则游戏已开始
+            let hasRevealedCells = false;
+            for (let r = 0; r < this.gameState.rows && !hasRevealedCells; r++) {
+                for (let c = 0; c < this.gameState.cols && !hasRevealedCells; c++) {
+                    if (this.revealed[r][c]) {
+                        hasRevealedCells = true;
                     }
                 }
-
+            }
+            
+            if (hasRevealedCells) {
+                // 游戏已开始，暂停等待用户操作
+                this.gameState.firstClick = false;
+                this.gameState.paused = true; // 暂停游戏
+                this.gameState.resumeAfterClick = true; // 标记需要在用户操作后恢复
+                // 保存当前的计时器状态，用于恢复时重新计算开始时间
+                this.gameState.savedTimer = this.gameState.timer;
+                this.gameState.startTime = null; // 清空开始时间，等待恢复时重新设置
+            } else {
+                // 游戏还未开始
+                this.gameState.firstClick = true;
+                this.gameState.paused = false;
+                this.gameState.resumeAfterClick = false;
+                this.gameState.startTime = null;
+            }
+        } else {
+            // 游戏已结束
+            this.gameState.paused = false;
+            this.gameState.resumeAfterClick = false;
+        }
+        
+        // 重置自动扫雷按钮状态
+        const autoBtn = document.getElementById('btn-auto-solve');
+        if (autoBtn) {
+            autoBtn.textContent = '🤖 自动扫雷';
+            autoBtn.classList.remove('danger');
+            autoBtn.classList.add('info');
+        }
+        
+        // 更新界面
+        this.updateDisplay();
+        this.renderBoard();
+        this.updateModeIndicator();
+        this.updateZenItemsDisplay();
+        this.updateSurvivalHealthDisplay();
+        this.updateProgress();
+        this.updateAchievementDisplay();
+        this.updateZoomDisplay();
+        this.resetZoom();
+        
+        // 更新最佳成绩显示
+        const bestTime = this.stats.bestTimes[this.gameState.difficulty];
+        const bestTimeElement = document.getElementById('best-time');
+        if (bestTimeElement) {
+            bestTimeElement.textContent = bestTime === Infinity ? '-' : this.formatTime(bestTime);
+        }
+        
+        this.playSound('powerup');
+        
+        // 根据游戏状态显示不同的提示
+        if (this.gameState.gameOver) {
+            this.showFloatingMessage('📂 存档加载成功！（游戏已结束）');
+        } else if (this.gameState.firstClick) {
+            this.showFloatingMessage('📂 存档加载成功！（点击开始游戏）');
+        } else {
+            this.showFloatingMessage('📂 存档加载成功！（游戏已暂停，点击格子继续）');
+        }
+        
+        // 延迟设置小地图
+        setTimeout(() => {
+            this.setupMinimap();
+        }, 100);
+        
+        return true;
+    } catch (error) {
+        console.error('加载存档失败:', error);
+        this.showFloatingMessage('❌ 存档加载失败！');
+        return false;
+    }
+}
                 deleteSavedGame(saveId) {
                     const index = this.savedGames.findIndex(save => save.id === saveId);
                     if (index !== -1) {
@@ -2385,61 +2605,65 @@
                 }
 
                 migrateStatsData(oldData) {
-                    try {
-                        if (oldData.version) {
-                            return oldData.data || oldData;
-                        }
-
-                        const migratedStats = {
-                            gamesPlayed: oldData.gamesPlayed || 0,
-                            gamesWon: oldData.gamesWon || 0,
-                            totalTime: oldData.totalTime || 0,
-                            bestTimes: {
-                                beginner: oldData.bestTimes?.beginner || Infinity,
-                                intermediate: oldData.bestTimes?.intermediate || Infinity,
-                                expert: oldData.bestTimes?.expert || Infinity,
-                                mega: oldData.bestTimes?.mega || Infinity
-                            }
-                        };
-
-                        return migratedStats;
-                    } catch (e) {
-                        console.log('统计数据转换失败:', e);
-                        return null;
-                    }
-                }
+    try {
+        if (oldData.version) {
+            return oldData.data || oldData;
+        }
+        const migratedStats = {
+            gamesPlayed: oldData.gamesPlayed || 0,
+            gamesWon: oldData.gamesWon || 0,
+            totalTime: oldData.totalTime || 0,
+            bestTimes: {
+                beginner: oldData.bestTimes?.beginner || Infinity,
+                intermediate: oldData.bestTimes?.intermediate || Infinity,
+                expert: oldData.bestTimes?.expert || Infinity,
+                mega: oldData.bestTimes?.mega || Infinity
+            },
+            totalCorrectFlags: oldData.totalCorrectFlags || 0,
+            consecutivePerfectGames: oldData.consecutivePerfectGames || 0,
+            maxConsecutivePerfectGames: oldData.maxConsecutivePerfectGames || 0
+        };
+        return migratedStats;
+    } catch (e) {
+        console.log('统计数据转换失败:', e);
+        return null;
+    }
+}
 
                 migrateAchievementData(oldData) {
-                    try {
-                        if (oldData.version) {
-                            return oldData.data || oldData;
-                        }
-
-                        const migratedAchievements = {
-                            firstWin: oldData.firstWin || false,
-                            speedDemon: oldData.speedDemon || false,
-                            perfect: oldData.perfect || false,
-                            lucky: oldData.lucky || false,
-                            comboMaster: oldData.comboMaster || false,
-                            giantSlayer: oldData.giantSlayer || false
-                        };
-
-                        return migratedAchievements;
-                    } catch (e) {
-                        console.log('成就数据转换失败:', e);
-                        return null;
-                    }
-                }
+    try {
+        if (oldData.version) {
+            return oldData.data || oldData;
+        }
+        const migratedAchievements = {
+            firstWin: oldData.firstWin || false,
+            speedDemon: oldData.speedDemon || false,
+            perfect: oldData.perfect || false,
+            lucky: oldData.lucky || false,
+            comboMaster: oldData.comboMaster || false,
+            giantSlayer: oldData.giantSlayer || false,
+            mineHunter: oldData.mineHunter || false,
+            timeMaster: oldData.timeMaster || false,
+            flagExpert: oldData.flagExpert || false,
+            survivalKing: oldData.survivalKing || false
+        };
+        return migratedAchievements;
+    } catch (e) {
+        console.log('成就数据转换失败:', e);
+        return null;
+    }
+}
 
                 updateAchievementDisplay() {
-                    Object.keys(this.achievements).forEach(key => {
-                        if (this.achievements[key]) {
-                            const id = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-                            const element = document.getElementById(`ach-${id}`);
-                            if (element) element.classList.add('unlocked');
-                        }
-                    });
-                }
+    Object.keys(this.achievements).forEach(key => {
+        const achievement = this.achievements[key];
+        if (achievement && achievement.unlocked) {
+            const id = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+            const element = document.getElementById(`ach-${id}`);
+            if (element) element.classList.add('unlocked');
+        }
+    });
+}
 
                 displayVersionInfo() {
                     const versionElement = document.getElementById('version-number');
@@ -3250,31 +3474,55 @@
                 }
 
                 showFloatingMessage(message) {
-                    const floatingDiv = document.createElement('div');
-                    floatingDiv.style.cssText = `
-                        position: fixed;
-                        top: 30%;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        background: rgba(0, 0, 0, 0.8);
-                        color: white;
-                        padding: 15px 25px;
-                        border-radius: 15px;
-                        font-size: 18px;
-                        font-weight: bold;
-                        z-index: 10000;
-                        animation: fadeIn 0.5s ease, fadeOut 0.5s ease 2.5s;
-                        pointer-events: none;
-                    `;
-                    floatingDiv.textContent = message;
-                    document.body.appendChild(floatingDiv);
-
-                    setTimeout(() => {
-                        if (floatingDiv.parentNode) {
-                            floatingDiv.remove();
-                        }
-                    }, 3000);
-                }
+    const floatingDiv = document.createElement('div');
+    floatingDiv.style.cssText = `
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        z-index: 10000;
+        pointer-events: none;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        min-width: 200px;
+        max-width: 80vw;
+        word-wrap: break-word;
+    `;
+    floatingDiv.textContent = message;
+    document.body.appendChild(floatingDiv);
+    
+    // 强制重绘，然后显示动画
+    floatingDiv.offsetHeight;
+    
+    // 显示动画
+    floatingDiv.style.opacity = '1';
+    floatingDiv.style.transform = 'translateX(-50%) translateY(0)';
+    
+    // 2.5秒后开始消失动画
+    setTimeout(() => {
+        if (floatingDiv.parentNode) {
+            floatingDiv.style.opacity = '0';
+            floatingDiv.style.transform = 'translateX(-50%) translateY(-20px)';
+        }
+    }, 2500);
+    
+    // 3秒后移除元素
+    setTimeout(() => {
+        if (floatingDiv.parentNode) {
+            floatingDiv.remove();
+        }
+    }, 3000);
+}
 
                 // 生存模式血量显示
                 updateSurvivalHealthDisplay() {
@@ -3362,48 +3610,60 @@
 
                 // 事件处理系统
                 handleClick(row, col, event) {
-                    if (event) event.preventDefault();
-                    if (this.gameState.gameOver || this.gameState.autoSolving) return;
-
-                    // 根据设备类型和操作设置决定行为
-                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                    
-                    let action = 'open'; // 默认行为
-                    if (isMobile) {
-                        action = this.controlSettings.mobile.tap;
-                    } else {
-                        action = this.controlSettings.pc.left;
-                    }
-
-                    // 重要：如果是从存档恢复的游戏，首次点击时恢复计时
-                    if (this.gameState.resumeAfterClick) {
-                        this.gameState.paused = false;
-                        this.gameState.resumeAfterClick = false;
-                        this.showFloatingMessage('⏰ 计时器已恢复！');
-                    }
-
-                    if (this.gameState.paused) return;
-
-                    if (action === 'open') {
-                        this.performOpenAction(row, col);
-                    } else {
-                        this.performFlagAction(row, col);
-                    }
-                }
+    if (event) event.preventDefault();
+    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+    
+    // 根据设备类型和操作设置决定行为
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    let action = 'open'; // 默认行为
+    
+    if (isMobile) {
+        action = this.controlSettings.mobile.tap;
+    } else {
+        action = this.controlSettings.pc.left;
+    }
+    
+    // 如果是从存档恢复的游戏，首次点击时恢复计时
+    if (this.gameState.resumeAfterClick) {
+        this.resumeGameFromSave();
+    }
+    
+    if (this.gameState.paused) return;
+    
+    if (action === 'open') {
+        this.performOpenAction(row, col);
+    } else {
+        this.performFlagAction(row, col);
+    }
+}
 
                 handleRightClick(row, col, event) {
-                    if (event) event.preventDefault();
-                    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
-
-                    // 电脑端右键行为
-                    const action = this.controlSettings.pc.right;
-                    
-                    if (action === 'open') {
-                        this.performOpenAction(row, col);
-                    } else {
-                        this.performFlagAction(row, col);
-                    }
-                }
+    if (event) event.preventDefault();
+    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+    
+    // 根据设备类型和操作设置决定行为
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    let action = 'flag'; // 默认行为
+    
+    if (isMobile) {
+        action = this.controlSettings.mobile.longPress;
+    } else {
+        action = this.controlSettings.pc.right;
+    }
+    
+    // 如果是从存档恢复的游戏，首次操作时恢复计时
+    if (this.gameState.resumeAfterClick) {
+        this.resumeGameFromSave();
+    }
+    
+    if (this.gameState.paused) return;
+    
+    if (action === 'open') {
+        this.performOpenAction(row, col);
+    } else {
+        this.performFlagAction(row, col);
+    }
+}
 
                 handleDoubleClick(row, col, event) {
                     if (event) event.preventDefault();
@@ -3440,36 +3700,67 @@
                 }
 
                 handleTouch(row, col, event) {
-                    if (event) event.preventDefault();
-                    
-                    // 移动端触摸行为
-                    const action = this.controlSettings.mobile.tap;
-                    
-                    // 检查是否是点击已揭开的数字格子（用于自动展开）
-                    if (this.revealed[row][col] && this.board[row][col] > 0) {
-                        this.handleNumberCellClick(row, col);
-                        return;
-                    }
-
-                    if (action === 'open') {
-                        this.performOpenAction(row, col);
-                    } else {
-                        this.performFlagAction(row, col);
-                    }
-                }
+    if (event) event.preventDefault();
+    
+    // 如果是从存档恢复的游戏，首次操作时恢复计时
+    if (this.gameState.resumeAfterClick) {
+        this.resumeGameFromSave();
+    }
+    
+    if (this.gameState.paused) return;
+    
+    // 移动端触摸行为
+    const action = this.controlSettings.mobile.tap;
+    
+    // 检查是否是点击已揭开的数字格子（用于自动展开）
+    if (this.revealed[row][col] && this.board[row][col] > 0) {
+        this.handleNumberCellClick(row, col);
+        return;
+    }
+    
+    if (action === 'open') {
+        this.performOpenAction(row, col);
+    } else {
+        this.performFlagAction(row, col);
+    }
+}
 
                 handleLongPress(row, col, event) {
-                    if (event) event.preventDefault();
-                    
-                    // 移动端长按行为
-                    const action = this.controlSettings.mobile.long;
-                    
-                    if (action === 'open') {
-                        this.performOpenAction(row, col);
-                    } else {
-                        this.performFlagAction(row, col);
-                    }
-                }
+    if (event) event.preventDefault();
+    
+    // 如果是从存档恢复的游戏，首次操作时恢复计时
+    if (this.gameState.resumeAfterClick) {
+        this.resumeGameFromSave();
+    }
+    
+    if (this.gameState.paused) return;
+    
+    // 移动端长按行为
+    const action = this.controlSettings.mobile.long;
+    
+    if (action === 'open') {
+        this.performOpenAction(row, col);
+    } else {
+        this.performFlagAction(row, col);
+    }
+}
+
+resumeGameFromSave() {
+    this.gameState.paused = false;
+    this.gameState.resumeAfterClick = false;
+    
+    // 重新设置开始时间，基于保存的计时器值
+    if (this.gameState.savedTimer !== undefined) {
+        this.gameState.startTime = Date.now() - (this.gameState.savedTimer * 1000);
+        delete this.gameState.savedTimer; // 清除临时保存的计时器值
+    } else {
+        this.gameState.startTime = Date.now() - (this.gameState.timer * 1000);
+    }
+    
+    // 重新启动计时器
+    this.startTimer();
+    this.showFloatingMessage('⏰ 计时器已恢复！');
+}
 
                 // 处理点击已揭开的数字格子（移动端自动展开功能）
                 handleNumberCellClick(row, col) {
@@ -3736,21 +4027,31 @@
                 }
 
                 startTimer() {
-                    this.gameState.startTime = Date.now();
-                    this.gameState.timerInterval = setInterval(() => {
-                        if (!this.gameState.paused && !this.gameState.zenItems.timeStop.active) {
-                            this.gameState.timer = Math.floor((Date.now() - this.gameState.startTime) / 1000);
-                            const timerElement = document.getElementById('timer');
-                            if (timerElement) {
-                                timerElement.textContent = this.gameState.timer;
-                            }
-
-                            if (this.gameState.mode === 'speed' && this.gameState.timer >= 300) {
-                                this.gameOver(false);
-                            }
-                        }
-                    }, 100);
-                }
+    // 清除现有计时器
+    if (this.gameState.timerInterval) {
+        clearInterval(this.gameState.timerInterval);
+        this.gameState.timerInterval = null;
+    }
+    
+    // 如果没有开始时间，设置当前时间
+    if (!this.gameState.startTime) {
+        this.gameState.startTime = Date.now();
+    }
+    
+    this.gameState.timerInterval = setInterval(() => {
+        if (!this.gameState.paused && !this.gameState.gameOver && !this.gameState.zenItems.timeStop.active) {
+            this.gameState.timer = Math.floor((Date.now() - this.gameState.startTime) / 1000);
+            const timerElement = document.getElementById('timer');
+            if (timerElement) {
+                timerElement.textContent = this.gameState.timer;
+            }
+            
+            if (this.gameState.mode === 'speed' && this.gameState.timer >= 300) {
+                this.gameOver(false);
+            }
+        }
+    }, 100);
+}
 
                 checkWin() {
                     let allRevealed = true;
@@ -3822,63 +4123,358 @@
 
                 // 成就系统
                 checkAchievements() {
-                    if (!this.achievements.firstWin && this.stats.gamesWon === 1) {
-                        this.unlockAchievement('first-win');
-                    }
-
-                    if (!this.achievements.speedDemon &&
-                        this.gameState.difficulty === 'beginner' &&
-                        this.gameState.timer < 30) {
-                        this.unlockAchievement('speed-demon');
-                    }
-
-                    if (!this.achievements.perfect && this.countWrongFlags() === 0) {
-                        this.unlockAchievement('perfect');
-                    }
-
-                    if (!this.achievements.lucky && this.gameState.moves.length === 1) {
-                        this.unlockAchievement('lucky');
-                    }
-
-                    if (!this.achievements.comboMaster && this.gameState.maxCombo >= 20) {
-                        this.unlockAchievement('combo-master');
-                    }
-
-                    if (!this.achievements.giantSlayer && this.gameState.difficulty === 'mega' && this.gameState.won) {
-                        this.unlockAchievement('giant-slayer');
-                    }
-                }
+    //checkAchievements() {
+    // 首次胜利
+    if (!this.achievements.firstWin.unlocked && this.gameState.won) {
+        this.unlockAchievement('first-win');
+    }
+    
+    // 极速通关
+    if (!this.achievements.speedDemon.unlocked &&
+        this.gameState.difficulty === 'beginner' &&
+        this.gameState.timer < 30 &&
+        this.gameState.won) {
+        this.unlockAchievement('speed-demon');
+    }
+    
+    // 完美游戏
+    const wrongFlags = this.countWrongFlags();
+    if (!this.achievements.perfect.unlocked && wrongFlags === 0 && this.gameState.won) {
+        this.unlockAchievement('perfect');
+        this.stats.consecutivePerfectGames++;
+        this.stats.maxConsecutivePerfectGames = Math.max(
+            this.stats.maxConsecutivePerfectGames, 
+            this.stats.consecutivePerfectGames
+        );
+    } else if (wrongFlags > 0) {
+        this.stats.consecutivePerfectGames = 0;
+    }
+    
+    // 幸运玩家
+    if (!this.achievements.lucky.unlocked && this.gameState.moves.length === 1 && this.gameState.won) {
+        this.unlockAchievement('lucky');
+    }
+    
+    // 连击大师
+    if (!this.achievements.comboMaster.unlocked && this.gameState.maxCombo >= 20) {
+        this.unlockAchievement('combo-master');
+    }
+    
+    // 巨型征服者
+    if (!this.achievements.giantSlayer.unlocked && this.gameState.difficulty === 'mega' && this.gameState.won) {
+        this.unlockAchievement('giant-slayer');
+    }
+    
+    // 地雷猎手
+    this.stats.totalCorrectFlags += this.countCorrectFlags();
+    if (!this.achievements.mineHunter.unlocked && this.stats.totalCorrectFlags >= 100) {
+        this.unlockAchievement('mine-hunter');
+    }
+    
+    // 时间大师
+    if (!this.achievements.timeMaster.unlocked && this.stats.totalTime >= 3600) {
+        this.unlockAchievement('time-master');
+    }
+    
+    // 标记专家
+    if (!this.achievements.flagExpert.unlocked && this.stats.consecutivePerfectGames >= 10) {
+        this.unlockAchievement('flag-expert');
+    }
+    
+    // 生存之王
+    if (!this.achievements.survivalKing.unlocked && 
+        this.gameState.mode === 'survival' && 
+        this.gameState.won && 
+        this.gameState.lives === this.gameState.maxLives) {
+        this.unlockAchievement('survival-king');
+    }
+}
 
                 unlockAchievement(id) {
-                    const achievement = document.getElementById(`ach-${id}`);
-                    if (achievement && !achievement.classList.contains('unlocked')) {
-                        achievement.classList.add('unlocked');
-                        this.achievements[id.replace(/-/g, '')] = true;
-                        this.saveAchievements();
+    const achievement = document.getElementById(`ach-${id}`);
+    if (achievement && !achievement.classList.contains('unlocked')) {
+        achievement.classList.add('unlocked');
+        
+        // 更新成就状态
+        const achievementKey = id.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
+        this.achievements[achievementKey] = {
+            unlocked: true,
+            unlockedAt: Date.now()
+        };
+        
+        this.saveAchievements();
+        
+        // 添加到通知队列
+        const achievementText = achievement.querySelector('div:last-child');
+        if (achievementText) {
+            this.achievementQueue.push({
+                name: achievementText.textContent,
+                icon: this.achievementDetails[id]?.icon || '🏆'
+            });
+        }
+        
+        // 如果当前没有显示成就，开始显示队列
+        if (!this.isShowingAchievement) {
+            this.processAchievementQueue();
+        }
+        
+        // 播放解锁音效
+        this.playSound('powerup');
+    }
+}
 
-                        setTimeout(() => {
-                            const achievementText = achievement.querySelector('div:last-child');
-                            if (achievementText) {
-                                alert(`🏆 成就解锁: ${achievementText.textContent}`);
-                            }
-                        }, 100);
-                    }
+processAchievementQueue() {
+    if (this.achievementQueue.length === 0) {
+        this.isShowingAchievement = false;
+        return;
+    }
+    
+    this.isShowingAchievement = true;
+    const achievement = this.achievementQueue.shift();
+    
+    this.showAchievementUnlock(achievement.name, achievement.icon);
+    
+    // 4秒后处理下一个成就
+    setTimeout(() => {
+        this.processAchievementQueue();
+    }, 3000);
+}
+
+showAchievementUnlock(achievementName, icon = '🏆') {
+    // 创建成就解锁动画
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        color: #000;
+        padding: 20px 30px;
+        border-radius: 20px;
+        font-size: 20px;
+        font-weight: bold;
+        z-index: 10000;
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+        border: 3px solid #FFD700;
+        animation: achievementShow 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+        min-width: 300px;
+        pointer-events: none;
+    `;
+    
+    notification.innerHTML = `
+        <div style="font-size: 24px; margin-bottom: 10px;">🏆 成就解锁！</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <span style="font-size: 28px;">${icon}</span>
+            <span>${achievementName}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 检查是否已经添加过动画样式
+    if (!document.getElementById('achievement-animation-style')) {
+        const style = document.createElement('style');
+        style.id = 'achievement-animation-style';
+        style.textContent = `
+            @keyframes achievementShow {
+                0% { 
+                    opacity: 0; 
+                    transform: translateX(-50%) scale(0.5) rotate(-10deg); 
                 }
-
-                // 智能提示系统
-                hint() {
-                    if (this.gameState.gameOver || this.gameState.paused || this.gameState.firstClick) return;
-
-                    this.clearHints();
-                    const hint = this.findLogicalHint();
-
-                    if (hint) {
-                        this.showHint(hint);
-                        this.playSound('hint');
-                    } else {
-                        this.showNoHintMessage();
-                    }
+                50% { 
+                    opacity: 1; 
+                    transform: translateX(-50%) scale(1.1) rotate(2deg); 
                 }
+                100% { 
+                    opacity: 1; 
+                    transform: translateX(-50%) scale(1) rotate(0deg); 
+                }
+            }
+            @keyframes achievementFadeOut {
+                0% { 
+                    opacity: 1; 
+                    transform: translateX(-50%) scale(1); 
+                }
+                100% { 
+                    opacity: 0; 
+                    transform: translateX(-50%) scale(0.8); 
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // 3.5秒后移除通知
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'achievementFadeOut 0.5s ease-out forwards';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 500);
+        }
+    }, 3500);
+}
+
+showAchievementDetails(achievementId) {
+    const modal = document.getElementById('achievement-modal');
+    const title = document.getElementById('achievement-modal-title');
+    const content = document.getElementById('achievement-modal-content');
+    
+    if (!modal || !title || !content) return;
+    
+    const details = this.achievementDetails[achievementId];
+    const achievementKey = achievementId.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
+    const achievement = this.achievements[achievementKey];
+    
+    if (!details) return;
+    
+    title.innerHTML = `${details.icon} ${details.name}`;
+    
+    const isUnlocked = achievement && achievement.unlocked;
+    const unlockedDate = achievement && achievement.unlockedAt ? 
+        new Date(achievement.unlockedAt).toLocaleString() : null;
+    
+    // 计算当前进度
+    let progressInfo = '';
+    switch(achievementId) {
+        case 'mine-hunter':
+            progressInfo = `当前进度: ${this.stats.totalCorrectFlags || 0}/100`;
+            break;
+        case 'time-master':
+            const hours = Math.floor((this.stats.totalTime || 0) / 3600);
+            const minutes = Math.floor(((this.stats.totalTime || 0) % 3600) / 60);
+            progressInfo = `当前进度: ${hours}小时${minutes}分钟/1小时`;
+            break;
+        case 'flag-expert':
+            progressInfo = `当前进度: ${this.stats.consecutivePerfectGames || 0}/10局`;
+            break;
+        case 'combo-master':
+            progressInfo = `历史最高连击: ${this.gameState.maxCombo || 0}/20`;
+            break;
+        default:
+            progressInfo = isUnlocked ? '✅ 已完成' : '⏳ 未完成';
+    }
+    
+    content.innerHTML = `
+        <div style="text-align: left; line-height: 1.6;">
+            <div style="background: rgba(33, 150, 243, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h4 style="color: var(--primary-color); margin-bottom: 8px;">📝 描述</h4>
+                <p>${details.description}</p>
+            </div>
+            
+            <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h4 style="color: var(--success-color); margin-bottom: 8px;">🎯 解锁条件</h4>
+                <p>${details.condition}</p>
+            </div>
+            
+            <div style="background: rgba(255, 152, 0, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h4 style="color: var(--warning-color); margin-bottom: 8px;">💡 提示</h4>
+                <p>${details.tips}</p>
+            </div>
+            
+            <div style="background: rgba(156, 39, 176, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                <h4 style="color: #9c27b0; margin-bottom: 8px;">📊 进度</h4>
+                <p>${progressInfo}</p>
+            </div>
+            
+            ${isUnlocked ? `
+                <div style="background: rgba(76, 175, 80, 0.2); padding: 15px; border-radius: 10px; border: 2px solid var(--success-color);">
+                    <h4 style="color: var(--success-color); margin-bottom: 8px;">🏆 解锁信息</h4>
+                    <p>✅ 已于 ${unlockedDate} 解锁</p>
+                </div>
+            ` : `
+                <div style="background: rgba(158, 158, 158, 0.1); padding: 15px; border-radius: 10px; border: 2px dashed #999;">
+                    <h4 style="color: #666; margin-bottom: 8px;">🔒 未解锁</h4>
+                    <p>继续努力，完成条件即可解锁！</p>
+                </div>
+            `}
+        </div>
+    `;
+    
+    modal.style.display = 'flex';
+}
+
+                // 提示系统
+hint() {
+    if (this.gameState.gameOver) {
+        this.showFloatingMessage('❌ 游戏已结束，无法使用提示！');
+        return;
+    }
+    
+    if (this.gameState.firstClick) {
+        this.showFloatingMessage('💡 请先点击任意格子开始游戏！');
+        return;
+    }
+    
+    if (this.gameState.paused && this.gameState.resumeAfterClick) {
+        this.showFloatingMessage('⏸️ 游戏已暂停，请先点击格子恢复游戏！');
+        return;
+    }
+    
+    // 其他暂停状态
+    if (this.gameState.paused) {
+        this.showFloatingMessage('❌ 游戏已暂停，无法使用提示！');
+        return;
+    }
+    
+    // 检查是否已有提示显示
+    const existingHint = document.querySelector('.cell.hint-safe, .cell.hint-mine, .cell.hint-error, .cell.hint-double-click');
+    const existingTooltip = document.querySelector('.hint-tooltip');
+    if (existingHint && existingTooltip) {
+        // 如果已有提示显示，执行自动操作
+        this.executeHintAction(existingHint);
+        return;
+    }
+    
+    // 清除之前的提示
+    this.clearHints();
+    
+    const hint = this.findLogicalHint();
+    if (hint) {
+        this.showHint(hint);
+        this.playSound('hint');
+    } else {
+        this.showNoHintMessage();
+    }
+}
+
+executeHintAction(hintCell) {
+    const row = parseInt(hintCell.dataset.row);
+    const col = parseInt(hintCell.dataset.col);
+    
+    if (hintCell.classList.contains('hint-safe')) {
+        // 自动点击安全格子
+        this.performOpenAction(row, col);
+        this.showFloatingMessage('✅ 已自动点击安全格子！');
+    } else if (hintCell.classList.contains('hint-mine')) {
+        // 自动标记地雷
+        this.performFlagAction(row, col);
+        this.showFloatingMessage('🚩 已自动标记地雷！');
+    } else if (hintCell.classList.contains('hint-error')) {
+        // 自动清除错误标记
+        this.flags[row][col] = false;
+        this.questions[row][col] = false;
+        this.gameState.minesLeft++;
+        const cell = this.getCell(row, col);
+        this.updateCell(cell, row, col);
+        this.updateMinimapCell(row, col);
+        this.updateDisplay();
+        this.showFloatingMessage('❌ 已清除错误标记！');
+    } else if (hintCell.classList.contains('hint-double-click')) {
+        // 自动执行双击操作
+        this.handleDoubleClick(row, col, null);
+        this.showFloatingMessage('⚡ 已自动展开安全区域！');
+    }
+    
+    // 清除提示
+    this.clearHints();
+    this.playSound('powerup');
+}
+
 
                 findLogicalHint() {
                     // 【优先级1：错误标记检查】- 最高优先级
@@ -3989,71 +4585,82 @@
                 }
 
                 showHint(hint) {
-                    const cell = this.getCell(hint.row, hint.col);
-                    if (!cell) return;
-
-                    // 添加对应的提示样式
-                    if (hint.type === 'safe') {
-                        cell.classList.add('hint-safe');
-                    } else if (hint.type === 'mine') {
-                        cell.classList.add('hint-mine');
-                    } else if (hint.type === 'error') {
-                        cell.classList.add('hint-error');
-                    } else if (hint.type === 'double_click') {
-                        cell.classList.add('hint-double-click');
-                    }
-
-                    // 滚动到提示位置
-                    this.scrollToCell(hint.row, hint.col);
-
-                    // 显示提示气泡
-                    this.showHintTooltip(cell, hint);
-
-                    // 5秒后清除提示
-                    setTimeout(() => {
-                        this.clearHints();
-                    }, 5000);
-                }
+    const cell = this.getCell(hint.row, hint.col);
+    if (!cell) return;
+    
+    // 对应的提示样式
+    if (hint.type === 'safe') {
+        cell.classList.add('hint-safe');
+    } else if (hint.type === 'mine') {
+        cell.classList.add('hint-mine');
+    } else if (hint.type === 'error') {
+        cell.classList.add('hint-error');
+    } else if (hint.type === 'double_click') {
+        cell.classList.add('hint-double-click');
+    }
+    
+    // 滚动到提示位置
+    this.scrollToCell(hint.row, hint.col);
+    
+    // 显示提示气泡
+    this.showHintTooltip(cell, hint);
+    
+    setTimeout(() => {
+        this.clearHints();
+    }, 5000); 
+}
 
                 showHintTooltip(cell, hint) {
-                    // 移除现有的提示气泡
-                    const existingTooltip = document.querySelector('.hint-tooltip');
-                    if (existingTooltip) {
-                        existingTooltip.remove();
-                    }
+    // 移除现有的提示气泡
+    const existingTooltip = document.querySelector('.hint-tooltip');
+    if (existingTooltip) {
+        existingTooltip.remove();
+    }
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = `hint-tooltip hint-${hint.type}`;
+    
+    // 操作提示
+    let actionText = '';
+    if (hint.type === 'safe') {
+        actionText = '\n\n💡 再次点击提示按钮可自动点击此格子';
+    } else if (hint.type === 'mine') {
+        actionText = '\n\n💡 再次点击提示按钮可自动标记此格子';
+    } else if (hint.type === 'error') {
+        actionText = '\n\n💡 再次点击提示按钮可自动清除错误标记';
+    } else if (hint.type === 'double_click') {
+        actionText = '\n\n💡 再次点击提示按钮可自动展开安全区域';
+    }
+    
+    tooltip.textContent = hint.reason + actionText;
+    
+    // 添加到body，居中
+    document.body.appendChild(tooltip);
+    
+    // 点击任意地方关闭提示
+    const closeTooltip = (e) => {
+        if (!tooltip.contains(e.target)) {
+            tooltip.remove();
+            document.removeEventListener('click', closeTooltip);
+        }
+    };
+    setTimeout(() => {
+        document.addEventListener('click', closeTooltip);
+    }, 100);
+}
 
-                    const tooltip = document.createElement('div');
-                    tooltip.className = `hint-tooltip hint-${hint.type}`;
-                    tooltip.textContent = hint.reason;
-
-                    // 直接添加到body，并正确居中
-                    document.body.appendChild(tooltip);
-
-                    // 点击任意地方关闭提示
-                    const closeTooltip = (e) => {
-                        if (!tooltip.contains(e.target)) {
-                            tooltip.remove();
-                            document.removeEventListener('click', closeTooltip);
-                        }
-                    };
-
-                    setTimeout(() => {
-                        document.addEventListener('click', closeTooltip);
-                    }, 100);
-                }
-
-                clearHints() {
-                    // 清除所有提示样式
-                    document.querySelectorAll('.cell.hint-safe, .cell.hint-mine, .cell.hint-error, .cell.hint-double-click').forEach(cell => {
-                        cell.classList.remove('hint-safe', 'hint-mine', 'hint-error', 'hint-double-click');
-                    });
-
-                    // 清除提示气泡
-                    const tooltip = document.querySelector('.hint-tooltip');
-                    if (tooltip) {
-                        tooltip.remove();
-                    }
-                }
+clearHints() {
+    // 清除所有提示样式
+    document.querySelectorAll('.cell.hint-safe, .cell.hint-mine, .cell.hint-error, .cell.hint-double-click').forEach(cell => {
+        cell.classList.remove('hint-safe', 'hint-mine', 'hint-error', 'hint-double-click');
+    });
+    
+    // 清除提示气泡
+    const tooltip = document.querySelector('.hint-tooltip');
+    if (tooltip) {
+        tooltip.remove();
+    }
+}
 
                 showNoHintMessage() {
                     const tooltip = document.createElement('div');
@@ -4067,124 +4674,165 @@
                 }
 
                 // 自动扫雷系统
-                autoSolve() {
-                    if (this.gameState.gameOver || this.gameState.firstClick || this.gameState.autoSolving) {
-                        return;
-                    }
+autoSolve() {
+    if (this.gameState.gameOver || this.gameState.firstClick) {
+        return;
+    }
+    
+    // 切换自动扫雷状态
+    if (this.gameState.autoSolving) {
+        // 停止自动扫雷
+        this.gameState.autoSolving = false;
+        const autoStatus = document.getElementById('auto-solve-status');
+        if (autoStatus) {
+            autoStatus.style.display = 'none';
+        }
+        // 更新按钮文本
+        const autoBtn = document.getElementById('btn-auto-solve');
+        if (autoBtn) {
+            autoBtn.textContent = '🤖 自动扫雷';
+            autoBtn.classList.remove('danger');
+            autoBtn.classList.add('info');
+        }
+        this.showFloatingMessage('⏹️ 自动扫雷已停止');
+        return;
+    }
+    
+    // 开始自动扫雷
+    this.gameState.autoSolving = true;
+    const autoStatus = document.getElementById('auto-solve-status');
+    if (autoStatus) {
+        autoStatus.style.display = 'block';
+        autoStatus.textContent = '自动扫雷中...';
+    }
+    
+    // 更新按钮文本和样式
+    const autoBtn = document.getElementById('btn-auto-solve');
+    if (autoBtn) {
+        autoBtn.textContent = '⏹️ 停止扫雷';
+        autoBtn.classList.remove('info');
+        autoBtn.classList.add('danger');
+    }
+    
+    const speedSelect = document.getElementById('auto-speed');
+    this.gameState.autoSpeed = parseInt(speedSelect ? speedSelect.value : 200);
+    this.performAutoSolveStep();
+}
 
-                    this.gameState.autoSolving = true;
-                    const autoStatus = document.getElementById('auto-solve-status');
-                    if (autoStatus) {
-                        autoStatus.style.display = 'block';
-                    }
-
-                    const speedSelect = document.getElementById('auto-speed');
-                    this.gameState.autoSpeed = parseInt(speedSelect ? speedSelect.value : 200);
-
-                    this.performAutoSolveStep();
-                }
-
-                performAutoSolveStep() {
-                    if (!this.gameState.autoSolving || this.gameState.gameOver) {
-                        const autoStatus = document.getElementById('auto-solve-status');
-                        if (autoStatus) {
-                            autoStatus.style.display = 'none';
-                        }
-                        return;
-                    }
-
-                    let actionTaken = false;
-                    let actionRow = -1, actionCol = -1;
-
-                    // 基本逻辑推理
-                    for (let r = 0; r < this.gameState.rows && !actionTaken; r++) {
-                        for (let c = 0; c < this.gameState.cols && !actionTaken; c++) {
-                            if (this.revealed[r][c] && this.board[r][c] > 0) {
-                                const neighbors = this.getNeighbors(r, c);
-                                const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
-                                const unrevealedCount = neighbors.filter(([nr, nc]) =>
-                                    !this.revealed[nr][nc] && !this.flags[nr][nc]).length;
-
-                                // 如果已标记的地雷数等于该格子的数字，揭开剩余格子
-                                if (flaggedCount === this.board[r][c] && unrevealedCount > 0) {
-                                    for (const [nr, nc] of neighbors) {
-                                        if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
-                                            this.revealCell(nr, nc);
-                                            actionTaken = true;
-                                            actionRow = nr;
-                                            actionCol = nc;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                // 如果未揭开的格子数等于剩余地雷数，标记所有
-                                if (!actionTaken && unrevealedCount === this.board[r][c] - flaggedCount && unrevealedCount > 0) {
-                                    for (const [nr, nc] of neighbors) {
-                                        if (!this.revealed[nr][nc] && !this.flags[nr][nc] && !this.questions[nr][nc]) {
-                                            this.flags[nr][nc] = true;
-                                            this.gameState.minesLeft--;
-                                            const cell = this.getCell(nr, nc);
-                                            this.updateCell(cell, nr, nc);
-                                            this.updateMinimapCell(nr, nc);
-                                            this.updateDisplay();
-                                            this.playSound('flag');
-                                            actionTaken = true;
-                                            actionRow = nr;
-                                            actionCol = nc;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 如果没有明确的行动，尝试概率推理
-                    if (!actionTaken) {
-                        const result = this.performProbabilisticMove();
-                        actionTaken = result.actionTaken;
-                        if (result.row !== undefined) {
-                            actionRow = result.row;
-                            actionCol = result.col;
-                        }
-                    }
-
-                    // 最后的随机选择（作弊模式 - 只选择安全格子）
-                    if (!actionTaken) {
-                        const safeCells = [];
-                        for (let r = 0; r < this.gameState.rows; r++) {
-                            for (let c = 0; c < this.gameState.cols; c++) {
-                                if (!this.revealed[r][c] && !this.flags[r][c] && this.board[r][c] !== -1) {
-                                    safeCells.push([r, c]);
-                                }
-                            }
-                        }
-
-                        if (safeCells.length > 0) {
-                            const [r, c] = safeCells[Math.floor(Math.random() * safeCells.length)];
-                            this.revealCell(r, c);
+performAutoSolveStep() {
+    if (!this.gameState.autoSolving || this.gameState.gameOver) {
+        const autoStatus = document.getElementById('auto-solve-status');
+        if (autoStatus) {
+            autoStatus.style.display = 'none';
+        }
+        // 重置按钮状态
+        const autoBtn = document.getElementById('btn-auto-solve');
+        if (autoBtn) {
+            autoBtn.textContent = '🤖 自动扫雷';
+            autoBtn.classList.remove('danger');
+            autoBtn.classList.add('info');
+        }
+        return;
+    }
+    
+    let actionTaken = false;
+    let actionRow = -1, actionCol = -1;
+    
+    // 基本逻辑推理
+    for (let r = 0; r < this.gameState.rows && !actionTaken; r++) {
+        for (let c = 0; c < this.gameState.cols && !actionTaken; c++) {
+            if (this.revealed[r][c] && this.board[r][c] > 0) {
+                const neighbors = this.getNeighbors(r, c);
+                const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
+                const unrevealedCount = neighbors.filter(([nr, nc]) =>
+                    !this.revealed[nr][nc] && !this.flags[nr][nc]).length;
+                
+                // 如果已标记的地雷数等于该格子的数字，揭开剩余格子
+                if (flaggedCount === this.board[r][c] && unrevealedCount > 0) {
+                    for (const [nr, nc] of neighbors) {
+                        if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
+                            this.revealCell(nr, nc);
                             actionTaken = true;
-                            actionRow = r;
-                            actionCol = c;
-                        }
-                    }
-
-                    // 滚动到操作位置
-                    if (actionTaken && actionRow >= 0 && actionCol >= 0) {
-                        this.scrollToCell(actionRow, actionCol);
-                    }
-
-                    if (actionTaken && !this.gameState.gameOver) {
-                        setTimeout(() => this.performAutoSolveStep(), this.gameState.autoSpeed);
-                    } else {
-                        this.gameState.autoSolving = false;
-                        const autoStatus = document.getElementById('auto-solve-status');
-                        if (autoStatus) {
-                            autoStatus.style.display = 'none';
+                            actionRow = nr;
+                            actionCol = nc;
+                            break;
                         }
                     }
                 }
+                
+                // 如果未揭开的格子数等于剩余地雷数，标记所有
+                if (!actionTaken && unrevealedCount === this.board[r][c] - flaggedCount && unrevealedCount > 0) {
+                    for (const [nr, nc] of neighbors) {
+                        if (!this.revealed[nr][nc] && !this.flags[nr][nc] && !this.questions[nr][nc]) {
+                            this.flags[nr][nc] = true;
+                            this.gameState.minesLeft--;
+                            const cell = this.getCell(nr, nc);
+                            this.updateCell(cell, nr, nc);
+                            this.updateMinimapCell(nr, nc);
+                            this.updateDisplay();
+                            this.playSound('flag');
+                            actionTaken = true;
+                            actionRow = nr;
+                            actionCol = nc;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // 如果没有明确的行动，尝试概率推理
+    if (!actionTaken) {
+        const result = this.performProbabilisticMove();
+        actionTaken = result.actionTaken;
+        if (result.row !== undefined) {
+            actionRow = result.row;
+            actionCol = result.col;
+        }
+    }
+    
+    // 最后的随机选择（作弊模式 - 只选择安全格子）
+    if (!actionTaken) {
+        const safeCells = [];
+        for (let r = 0; r < this.gameState.rows; r++) {
+            for (let c = 0; c < this.gameState.cols; c++) {
+                if (!this.revealed[r][c] && !this.flags[r][c] && this.board[r][c] !== -1) {
+                    safeCells.push([r, c]);
+                }
+            }
+        }
+        if (safeCells.length > 0) {
+            const [r, c] = safeCells[Math.floor(Math.random() * safeCells.length)];
+            this.revealCell(r, c);
+            actionTaken = true;
+            actionRow = r;
+            actionCol = c;
+        }
+    }
+    
+    // 滚动到操作位置
+    if (actionTaken && actionRow >= 0 && actionCol >= 0) {
+        this.scrollToCell(actionRow, actionCol);
+    }
+    
+    if (actionTaken && !this.gameState.gameOver) {
+        setTimeout(() => this.performAutoSolveStep(), this.gameState.autoSpeed);
+    } else {
+        this.gameState.autoSolving = false;
+        const autoStatus = document.getElementById('auto-solve-status');
+        if (autoStatus) {
+            autoStatus.style.display = 'none';
+        }
+        // 重置按钮状态
+        const autoBtn = document.getElementById('btn-auto-solve');
+        if (autoBtn) {
+            autoBtn.textContent = '🤖 自动扫雷';
+            autoBtn.classList.remove('danger');
+            autoBtn.classList.add('info');
+        }
+    }
+}
 
                 getNeighbors(row, col) {
                     const neighbors = [];

@@ -6,26 +6,29 @@
     <title>创意互动实验室 - 好玩又有趣的项目集合</title>
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            --background-color: #0f0f23;
-            --surface-color: rgba(255, 255, 255, 0.05);
-            --card-color: rgba(255, 255, 255, 0.08);
-            --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.7);
-            --text-muted: rgba(255, 255, 255, 0.5);
-            --hover-glow: rgba(102, 126, 234, 0.3);
-            --border-color: rgba(255, 255, 255, 0.1);
+            /* 保持之前的舒适配色方案 */
+            --primary-gradient: linear-gradient(135deg, #4db6ac 0%, #5c6bc0 100%);
+            --secondary-gradient: linear-gradient(135deg, #81c784 0%, #64b5f6 100%);
+            --accent-gradient: linear-gradient(135deg, #64b5f6 0%, #8e99f3 100%);
+            --success-gradient: linear-gradient(135deg, #a5d6a7 0%, #80cbc4 100%);
+            --background-color: #1a1d2e;
+            --surface-color: rgba(230, 235, 250, 0.06);
+            --card-color: rgba(230, 235, 250, 0.09);
+            --text-primary: #f0f5ff;
+            --text-secondary: rgba(240, 245, 255, 0.75);
+            --text-muted: rgba(240, 245, 255, 0.55);
+            --hover-glow: rgba(77, 182, 172, 0.3);
+            --border-color: rgba(240, 245, 255, 0.15);
+            --ripple-color: rgba(255, 255, 255, 0.3); /* 点击波纹颜色 */
         }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        html {
+            scroll-behavior: smooth; /* 全局平滑滚动 */
+        }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--background-color);
@@ -34,104 +37,110 @@
             overflow-x: hidden;
             position: relative;
         }
-
-        /* 动态背景 */
-        body::before {
+        body::before { /* 背景径向渐变 */
             content: '';
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            background:
+                radial-gradient(circle at 20% 50%, rgba(77, 182, 172, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(92, 107, 192, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(100, 181, 246, 0.15) 0%, transparent 50%);
             z-index: -1;
+            animation: subtle-gradient-shift 25s ease infinite alternate;
         }
-
-        /* 头部样式 */
+        @keyframes subtle-gradient-shift {
+            0% { background-position: 0% 50%, 100% 0%, 50% 100%; }
+            100% { background-position: 100% 50%, 0% 100%, 0% 0%; }
+        }
         header {
             background: var(--primary-gradient);
             color: white;
             text-align: center;
-            padding: 4rem 2rem;
+            padding: 5rem 2rem; /* 增加一点内边距 */
             margin-bottom: 3rem;
             position: relative;
             overflow: hidden;
         }
-
-        header::before {
+        header::before { /* 页头背景纹理 */
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.3;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="100%" height="100%" fill="rgba(255,255,255,0.03)"/><circle cx="4" cy="4" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grain)"/></svg>');
+            opacity: 0.5;
             z-index: 1;
+        }
+        /* 页头动画背景 */
+        header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 300%; /* 更宽以实现平移效果 */
+            height: 100%;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.05) 75%, transparent 75%, transparent 100%);
+            background-size: 100px 100px;
+            opacity: 0.3;
+            z-index: 0;
+            animation: header-bg-slide 40s linear infinite;
+        }
+        @keyframes header-bg-slide {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); } /* 向左平移一个周期 */
         }
 
         header > * {
             position: relative;
             z-index: 2;
         }
-
         h1 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-size: clamp(2.8rem, 6vw, 4.5rem); /* 稍微增大标题 */
             margin-bottom: 1rem;
             font-weight: 800;
-            background: linear-gradient(45deg, #ffffff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
-            animation: glow 3s ease-in-out infinite alternate;
+            color: var(--text-primary);
+            text-shadow: 0 5px 20px rgba(0, 0, 0, 0.35);
+            animation: soft-glow 3s ease-in-out infinite alternate;
         }
-
-        @keyframes glow {
-            from { text-shadow: 0 4px 20px rgba(255, 255, 255, 0.3); }
-            to { text-shadow: 0 4px 30px rgba(255, 255, 255, 0.5); }
+        @keyframes soft-glow {
+            from { text-shadow: 0 5px 20px rgba(0, 0, 0, 0.35); opacity: 0.95; }
+            to { text-shadow: 0 5px 30px rgba(0, 0, 0, 0.45); opacity: 1; }
         }
-
         .subtitle {
-            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem); /* 稍微增大副标题 */
             opacity: 0.9;
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
             font-weight: 300;
             line-height: 1.8;
         }
-
-        /* 容器样式 */
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 0 2rem;
+            perspective: 1500px; /* 为卡片3D效果设置透视 */
         }
-
         .category {
-            margin-bottom: 4rem;
-            animation: fadeInUp 0.8s ease-out forwards;
+            margin-bottom: 4.5rem; /* 增加分类间距 */
+            /* 分类标题入场动画 (保持不变) */
+            animation: categoryFadeInUp 0.8s ease-out forwards;
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(40px);
+            animation-play-state: paused;
         }
-
-        .category:nth-child(1) { animation-delay: 0.1s; }
-        .category:nth-child(2) { animation-delay: 0.2s; }
-        .category:nth-child(3) { animation-delay: 0.3s; }
-
-        @keyframes fadeInUp {
+        @keyframes categoryFadeInUp {
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-
         .category-title {
-            font-size: clamp(1.5rem, 3vw, 2rem);
-            margin-bottom: 2rem;
+            font-size: clamp(1.6rem, 3.5vw, 2.2rem); /* 增大分类标题 */
+            margin-bottom: 2.5rem;
             padding: 1rem 0;
             text-align: center;
             position: relative;
@@ -140,43 +149,54 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            color: transparent;
         }
-
         .category-title::after {
             content: '';
             position: absolute;
-            bottom: 0;
+            bottom: -5px; /* 微调下划线位置 */
             left: 50%;
             transform: translateX(-50%);
-            width: 80px;
-            height: 3px;
+            width: 90px; /* 加宽下划线 */
+            height: 4px; /* 加粗下划线 */
             background: var(--accent-gradient);
-            border-radius: 2px;
+            border-radius: 3px;
         }
-
-        /* 项目网格 */
         .projects {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
+            gap: 2.5rem; /* 增加卡片间距 */
             margin-bottom: 2rem;
         }
-
         .project-card {
             background: var(--card-color);
             border-radius: 20px;
             overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* 注意：视差效果的 transform 会覆盖这里的 transform */
+            transition: box-shadow 0.4s ease, border-color 0.4s ease, opacity 0.6s ease, transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); /* 添加 transform 过渡 */
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             height: 100%;
             position: relative;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transform-style: preserve-3d; /* 允许子元素3D变换 */
+             /* 卡片入场动画 */
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+            animation: cardFadeInScale .6s ease-out forwards;
+            animation-play-state: paused; /* 由 JS 控制 */
         }
 
-        .project-card::before {
+         @keyframes cardFadeInScale {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .project-card::before { /* 卡片悬停背景光晕 */
             content: '';
             position: absolute;
             top: 0;
@@ -185,72 +205,69 @@
             bottom: 0;
             background: var(--primary-gradient);
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.4s ease;
             border-radius: 20px;
             z-index: -1;
         }
-
         .project-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 
-                0 20px 40px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.2);
+            /* 悬停效果由 JS 视差控制，这里只定义阴影和边框 */
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, 0.3),
+                0 0 0 1.5px rgba(240, 245, 255, 0.2);
+            border-color: rgba(240, 245, 255, 0.3);
         }
-
         .project-card:hover::before {
             opacity: 0.1;
         }
-
         .card-img {
             height: 200px;
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 255, 0.04);
             background-size: cover;
             background-position: center;
             position: relative;
             overflow: hidden;
+            border-bottom: 1px solid var(--border-color); /* 图片和内容分割线 */
+            transition: transform 0.4s ease; /* 图片悬停效果 */
+        }
+        .project-card:hover .card-img {
+             transform: scale(1.03); /* 图片轻微放大 */
         }
 
-        .card-img::after {
+        .card-img::after { /* 图片悬停扫光 */
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-            transform: translateX(-100%);
-            transition: transform 0.6s ease;
+            background: linear-gradient(60deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            transform: translateX(-110%);
+            transition: transform 0.7s ease;
+            pointer-events: none;
         }
-
         .project-card:hover .card-img::after {
-            transform: translateX(100%);
+            transform: translateX(110%);
         }
-
         .card-content {
-            padding: 2rem;
+            padding: 1.8rem; /* 调整内边距 */
             flex-grow: 1;
             display: flex;
             flex-direction: column;
         }
-
         .card-title {
-            font-size: 1.4rem;
-            margin-bottom: 1rem;
+            font-size: 1.5rem; /* 增大卡片标题 */
+            margin-bottom: 0.8rem;
             color: var(--text-primary);
             font-weight: 600;
-            line-height: 1.3;
+            line-height: 1.4;
         }
-
         .card-description {
             color: var(--text-secondary);
-            margin-bottom: 2rem;
+            margin-bottom: 1.8rem;
             flex-grow: 1;
             line-height: 1.6;
             font-size: 0.95rem;
         }
-
         .card-link {
             display: inline-flex;
             align-items: center;
@@ -258,7 +275,7 @@
             text-decoration: none;
             color: white;
             background: var(--primary-gradient);
-            padding: 0.8rem 2rem;
+            padding: 0.8rem 1.8rem; /* 调整按钮内边距 */
             border-radius: 50px;
             transition: all 0.3s ease;
             font-weight: 500;
@@ -267,279 +284,336 @@
             overflow: hidden;
             text-align: center;
             align-self: flex-start;
+            border: none;
+            cursor: pointer;
+            z-index: 1; /* 确保按钮在波纹效果之上 */
         }
-
-        .card-link::before {
+        .card-link .icon { /* 外部链接图标样式 */
+            margin-left: 8px;
+            font-size: 0.9em;
+            opacity: 0.8;
+            display: inline-block;
+        }
+        /* 点击波纹效果 */
+        .card-link::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s ease;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: var(--ripple-color);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+        }
+        @keyframes ripple {
+            0% {
+                transform: scale(0) translate(-50%, -50%);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(15) translate(-50%, -50%); /* 控制波纹大小 */
+                opacity: 0;
+            }
+        }
+        .card-link.ripple::after {
+            animation: ripple 0.6s ease-out;
         }
 
-        .card-link:hover::before {
-            left: 100%;
+        .project-card:hover .card-link { /* 卡片悬停时按钮的变化 */
+             transform: translateY(-3px);
+             background: var(--secondary-gradient);
+             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .card-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-            background: var(--secondary-gradient);
+        .card-link:focus { /* 保持焦点样式 */
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.4); /* 焦点光环 */
+        }
+        .card-link:focus-visible { /* 键盘导航焦点 */
+             box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.6);
         }
 
-        /* 页脚样式 */
         footer {
             text-align: center;
             padding: 3rem 2rem;
             background: var(--surface-color);
-            margin-top: 4rem;
+            margin-top: 5rem; /* 增加底部间距 */
             border-top: 1px solid var(--border-color);
             color: var(--text-muted);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
-
-        /* 响应式设计 */
         @media (max-width: 768px) {
-            header {
-                padding: 3rem 1rem;
-            }
-            
-            .container {
-                padding: 0 1rem;
-            }
-            
-            .projects {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-            
-            .card-content {
-                padding: 1.5rem;
-            }
+            header { padding: 4rem 1rem; }
+            .container { padding: 0 1rem; perspective: none; } /* 移动端禁用透视 */
+            .projects { gap: 1.8rem; }
+            .card-content { padding: 1.5rem; }
+             h1 { font-size: clamp(2.5rem, 8vw, 3.5rem); }
+            .subtitle { font-size: clamp(1rem, 4vw, 1.2rem); }
+            .category-title { font-size: clamp(1.5rem, 6vw, 1.8rem); }
         }
-
         @media (max-width: 480px) {
-            .project-card {
-                border-radius: 15px;
-            }
-            
-            .card-img {
-                height: 160px;
-            }
+            .project-card { border-radius: 15px; }
+            .card-img { height: 180px; } /* 调整小屏图片高度 */
+            .card-title { font-size: 1.3rem; }
         }
+        /* 加载骨架屏样式 (保持不变) */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .loading .card-img, .loading .card-title, .loading .card-description, .loading .card-link {
+            background-color: rgba(240, 245, 255, 0.1); color: transparent !important; border-radius: 4px; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .loading .card-img { height: 200px; margin-bottom: 1rem;}
+        .loading .card-title { height: 1.5rem; width: 70%; margin-bottom: 0.8rem; } /* 匹配新标题大小 */
+        .loading .card-description { height: 4rem; width: 95%; margin-bottom: 1.8rem; }
+        .loading .card-link { width: 130px; height: 2.8rem; padding: 0; background-image: none; } /* 匹配新按钮大小 */
 
-        /* 加载动画 */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .loading {
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        /* 滚动条样式 */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--background-color);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary-gradient);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--secondary-gradient);
-        }
+        /* 滚动条样式 (保持不变) */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--background-color); }
+        ::-webkit-scrollbar-thumb { background: var(--primary-gradient); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--secondary-gradient); }
     </style>
 </head>
 <body>
     <header>
-        <h1>创意互动实验室 by空城</h1>
+        <h1>创意互动实验室</h1>
         <p class="subtitle">这里汇集了各种有趣的互动项目和游戏，每个项目都精心制作，点击即可体验！</p>
     </header>
-    
     <div class="container">
         <div id="projects-container">
-            <!-- 项目将通过JavaScript动态加载 -->
+            <!-- 初始骨架屏占位 -->
+            <div class="category">
+                 <h2 class="category-title" style="color: transparent; background: rgba(240, 245, 255, 0.1); width: 220px; margin: 1rem auto 2.5rem auto; height: 2.2rem; border-radius: 4px; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;">&nbsp;</h2>
+                <div class="projects">
+                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
+                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
+                </div>
+            </div>
+             <div class="category">
+                 <h2 class="category-title" style="color: transparent; background: rgba(240, 245, 255, 0.1); width: 180px; margin: 1rem auto 2.5rem auto; height: 2.2rem; border-radius: 4px; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;">&nbsp;</h2>
+                <div class="projects">
+                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
+                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
+                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
+                </div>
+            </div>
         </div>
     </div>
-    
     <footer>
-        <p>&copy; 2025 创意互动实验室. 发现乐趣，体验创意。</p>
+        <p>&copy; 2025 创意互动实验室. 发现乐趣，体验创意。<br>by空城</p>
     </footer>
-
     <script>
-        // 项目数据
         const projectsData = {
             "互动项目": [
-                {
-                    title: "文字磁场",
-                    description: "文字像被磁铁吸引一样在屏幕上运动，长按触碰或鼠标滑动形成有趣的动态效果！",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/wzcc.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/%E6%96%87%E5%AD%97%E7%A3%81%E5%9C%BA%EF%BC%88%E6%9B%B4%E6%96%B0%E4%B8%89%E7%89%88%EF%BC%89.html"
-                },
-                {
-                    title: "太阳系模拟",
-                    description: "模拟太阳系中行星围绕太阳运行的场景，观察行星的轨道和运动规律，了解宇宙的奇妙之处。",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/tyxmn.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/%E5%A4%AA%E9%98%B3%E7%B3%BB%E6%A8%A1%E6%8B%9F.html"
-                }
+                { title: "文字磁场", description: "文字像被磁铁吸引一样在屏幕上运动，长按触碰或鼠标滑动形成有趣的动态效果！", imageUrl: "https://vacuopolis.netlify.app/image/wzcc.png", link: "https://vacuopolis.netlify.app/%E6%96%87%E5%AD%97%E7%A3%81%E5%9C%BA%EF%BC%88%E6%9B%B4%E6%96%B0%E4%B8%89%E7%89%88%EF%BC%89.html" },
+                { title: "太阳系模拟", description: "模拟太阳系中行星围绕太阳运行的场景，观察行星的轨道和运动规律，了解宇宙的奇妙之处。", imageUrl: "https://vacuopolis.netlify.app/image/tyxmn.png", link: "https://vacuopolis.netlify.app/%E5%A4%AA%E9%98%B3%E7%B3%BB%E6%A8%A1%E6%8B%9F.html" }
             ],
             "小游戏": [
-                {
-                    title: "亮灯解谜",
-                    description: "经典亮灯游戏，点击方块改变灯的状态，目标是将所有的灯都点亮。考验你的逻辑能力！",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/ldyx.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/%E4%BA%AE%E7%81%AF%E6%B8%B8%E6%88%8F.html"
-                },
-                {
-                    title: "贪吃蛇大作战",
-                    description: "控制小蛇吃掉食物，让它变得越来越长。小心不要撞到墙壁或自己的身体哦！多种模式等你挑战。",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/tcs.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/%E8%B4%AA%E5%90%83%E8%9B%87.html"
-                },
-                {
-                    title: "轮盘赌",
-                    description: "转动轮盘，猜猜小球会停在哪个数字？试试你的运气！",
-                    imageUrl: "https://stellar-cat-4909aa.netlify.app/image/lpd.png",
-                    link: "https://stellar-cat-4909aa.netlify.app/%E8%BD%AE%E7%9B%98%E8%B5%8C.html"
-                },
-                {
-                    title: "经典扫雷",
-                    description: "根据数字提示避开地雷，开动脑筋，看看你能在多快的时间内完成挑战！",
-                    imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/sl.png",
-                    link: "https://vacuopolis.netlify.app/%E6%89%AB%E9%9B%B7.html"
-                }
+                { title: "亮灯解谜", description: "经典亮灯游戏，点击方块改变灯的状态，目标是将所有的灯都点亮。考验你的逻辑能力！", imageUrl: "https://vacuopolis.netlify.app/image/ldyx.png", link: "https://vacuopolis.netlify.app/%E4%BA%AE%E7%81%AF%E6%B8%B8%E6%88%8F.html" },
+                { title: "贪吃蛇大作战", description: "控制小蛇吃掉食物，让它变得越来越长。小心不要撞到墙壁或自己的身体哦！多种模式等你挑战。", imageUrl: "https://vacuopolis.netlify.app/image/tcs.png", link: "https://vacuopolis.netlify.app/%E8%B4%AA%E5%90%83%E8%9B%87.html" },
+                { title: "轮盘赌", description: "转动轮盘，猜猜小球会停在哪个数字？试试你的运气！", imageUrl: "https://vacuopolis.netlify.app/image/lpd.png", link: "https://vacuopolis.netlify.app/%E8%BD%AE%E7%9B%98%E8%B5%8C.html" },
+                { title: "经典扫雷", description: "根据数字提示避开地雷，开动脑筋，看看你能在多快的时间内完成挑战！", imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/sl.png", link: "https://vacuopolis.netlify.app/%E6%89%AB%E9%9B%B7.html" }
             ]
         };
 
-        // 生成项目卡片的函数
-        function createProjectCard(project) {
+        function createProjectCard(project, index) { // 接收 index 用于动画延迟
             const card = document.createElement('div');
             card.className = 'project-card';
-            
-            // 添加加载动画
-            card.classList.add('loading');
-            
+             card.style.setProperty('--card-index', index); // 将索引存为 CSS 变量，用于交错动画
+            card.dataset.index = index; // 也存为 data属性，方便 JS 读取
+
+            const img = new Image();
+            img.src = project.imageUrl;
+            img.onload = () => {
+                const imgDiv = card.querySelector('.card-img');
+                if (imgDiv) imgDiv.style.backgroundImage = `url(${project.imageUrl})`;
+                setTimeout(() => card.classList.remove('loading'), 50);
+            };
+            img.onerror = () => {
+                 const imgDiv = card.querySelector('.card-img');
+                 if (imgDiv) imgDiv.style.backgroundImage = 'none'; // Or default image
+                 card.classList.remove('loading');
+            };
+
+            // Unicode 外部链接图标：↗ (U+2197) 或 🔗 (U+1F517)
+            const externalLinkIcon = '↗';
+
             card.innerHTML = `
-                <div class="card-img" style="background-image: url(${project.imageUrl})"></div>
+                <div class="card-img" style="background-color: rgba(240, 245, 255, 0.1);"></div>
                 <div class="card-content">
                     <h3 class="card-title">${project.title}</h3>
                     <p class="card-description">${project.description}</p>
                     <a href="${project.link}" class="card-link" target="_blank" rel="noopener noreferrer">
-                        马上体验
+                        马上体验 <span class="icon">${externalLinkIcon}</span>
                     </a>
                 </div>
             `;
-            
-            // 移除加载动画
-            setTimeout(() => {
+
+            if (img.complete && img.naturalHeight > 0) {
+                const imgDiv = card.querySelector('.card-img');
+                if (imgDiv) imgDiv.style.backgroundImage = `url(${project.imageUrl})`;
+                setTimeout(() => card.classList.remove('loading'), 50);
+            } else if (img.complete && img.naturalHeight === 0) {
+                const imgDiv = card.querySelector('.card-img');
+                if (imgDiv) imgDiv.style.backgroundImage = 'none';
                 card.classList.remove('loading');
-            }, 100);
-            
+            } else {
+                 card.classList.add('loading');
+            }
+
+            // 添加点击波纹效果的事件监听
+            const link = card.querySelector('.card-link');
+            if (link) {
+                link.addEventListener('mousedown', (e) => { // 使用 mousedown 触发更及时
+                    link.classList.add('ripple');
+                    // 动画结束后移除类，以便下次点击
+                    link.addEventListener('animationend', () => {
+                         link.classList.remove('ripple');
+                    }, { once: true }); // 确保只触发一次
+                });
+            }
+
             return card;
         }
 
-        // 生成类别区域的函数
         function createCategorySection(categoryName, projects) {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'category';
-            
             const categoryTitle = document.createElement('h2');
             categoryTitle.className = 'category-title';
             categoryTitle.textContent = categoryName;
-            
             const projectsGrid = document.createElement('div');
             projectsGrid.className = 'projects';
-            
+
             projects.forEach((project, index) => {
-                const card = createProjectCard(project);
-                // 添加交错动画延迟
-                card.style.animationDelay = `${0.1 + index * 0.1}s`;
+                const card = createProjectCard(project, index); // 传递 index
                 projectsGrid.appendChild(card);
             });
-            
+
             categoryDiv.appendChild(categoryTitle);
             categoryDiv.appendChild(projectsGrid);
-            
             return categoryDiv;
         }
 
-        // 初始化页面
-        function initializePage() {
+         function initializePage() {
             const projectsContainer = document.getElementById('projects-container');
-            
+            projectsContainer.innerHTML = ''; // 清空骨架屏
+
             Object.entries(projectsData).forEach(([category, projects], categoryIndex) => {
                 const categorySection = createCategorySection(category, projects);
+                 // 分类标题的入场动画延迟
                 categorySection.style.animationDelay = `${categoryIndex * 0.2}s`;
                 projectsContainer.appendChild(categorySection);
             });
+
+            // 设置 IntersectionObserver 观察分类和卡片
+            setupIntersectionObserver();
+             // 启动视差效果 (如果需要且非触摸设备)
+             if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
+                setupParallaxEffect();
+            }
         }
 
-        // 页面加载完成后初始化
+        function setupIntersectionObserver() {
+             const categoryObserverOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+             const cardObserverOptions = { threshold: 0.2, rootMargin: '0px 0px -80px 0px' }; // 卡片阈值可以高一点
+
+             const categoryObserver = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationPlayState = 'running';
+                         // obs.unobserve(entry.target); // 分类标题动画只播放一次
+                    }
+                });
+            }, categoryObserverOptions);
+
+             const cardObserver = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // 根据卡片索引计算延迟时间，实现交错动画
+                        const index = parseInt(entry.target.dataset.index || '0', 10);
+                        entry.target.style.animationDelay = `${index * 0.08}s`; // 微调延迟
+                        entry.target.style.animationPlayState = 'running';
+                         obs.unobserve(entry.target); // 卡片动画也只播放一次
+                    }
+                });
+            }, cardObserverOptions);
+
+             document.querySelectorAll('.category').forEach(category => {
+                categoryObserver.observe(category);
+            });
+
+            document.querySelectorAll('.project-card').forEach(card => {
+                 cardObserver.observe(card);
+            });
+        }
+
+         // 鼠标视差效果 (Throttle function to limit execution rate)
+         function throttle(func, limit) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+                }
+            }
+        }
+
+        function setupParallaxEffect() {
+            const container = document.querySelector('.container'); // 获取容器用于计算相对位置
+            if (!container) return;
+
+            const cards = document.querySelectorAll('.project-card');
+            const parallaxIntensity = 0.015; // 调整视差强度
+            const rotateIntensity = 5; // 调整旋转强度 (角度)
+
+             const handleMouseMove = throttle((e) => {
+                const containerRect = container.getBoundingClientRect();
+                 // 使用相对于 container 中心的坐标，减少页面滚动的影响
+                const mouseX = e.clientX - containerRect.left - containerRect.width / 2;
+                const mouseY = e.clientY - containerRect.top - containerRect.height / 2;
+
+
+                cards.forEach((card) => {
+                    // 根据鼠标位置计算旋转和位移
+                    const rotateY = mouseX * parallaxIntensity * rotateIntensity * -1; // Y轴旋转与X鼠标位置相关
+                    const rotateX = mouseY * parallaxIntensity * rotateIntensity;      // X轴旋转与Y鼠标位置相关
+                    const translateX = mouseX * parallaxIntensity * 15; // 轻微位移
+                    const translateY = mouseY * parallaxIntensity * 10;
+
+
+                    // 应用 transform，注意保留卡片入场动画的最终状态 (scale(1))
+                     // 如果卡片动画未完成，不应用视差，避免冲突
+                    if (card.style.animationPlayState === 'running' || getComputedStyle(card).opacity !== '1') {
+                         // return; // 取消这行注释如果你想严格等动画结束再视差
+                     }
+
+                     // 平滑过渡 transform
+                    card.style.transition = 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1)'; // 使用快速缓动
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateX(${translateX}px) translateY(${translateY}px) scale(1)`;
+                });
+            }, 16); // 大约 60fps
+
+             container.addEventListener('mousemove', handleMouseMove);
+
+            // 鼠标离开容器区域时，卡片恢复原状
+            container.addEventListener('mouseleave', () => {
+                 cards.forEach((card) => {
+                    card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'; // 恢复时慢一点
+                    card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateX(0px) translateY(0px) scale(1)';
+                 });
+            });
+        }
+
+
         document.addEventListener('DOMContentLoaded', initializePage);
 
-        // 添加平滑滚动效果
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // 添加鼠标移动视差效果
-        document.addEventListener('mousemove', (e) => {
-            const cards = document.querySelectorAll('.project-card');
-            const mouseX = e.clientX / window.innerWidth;
-            const mouseY = e.clientY / window.innerHeight;
-            
-            cards.forEach((card, index) => {
-                const rect = card.getBoundingClientRect();
-                const cardCenterX = rect.left + rect.width / 2;
-                const cardCenterY = rect.top + rect.height / 2;
-                
-                const deltaX = (e.clientX - cardCenterX) * 0.01;
-                const deltaY = (e.clientY - cardCenterY) * 0.01;
-                
-                card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-            });
-        });
-
-        // 观察器用于动画触发
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.animationPlayState = 'running';
-                }
-            });
-        }, observerOptions);
-
-        // 页面加载后设置观察器
-        setTimeout(() => {
-            document.querySelectorAll('.category').forEach(category => {
-                observer.observe(category);
-            });
-        }, 500);
     </script>
 </body>
 </html>

@@ -6,455 +6,553 @@
     <title>毕业季祝福老师</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap');
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Noto Serif SC', serif;
-            height: 100vh;
-            overflow: hidden;
-            background-color: #f0f0f0;
-            cursor: default;
-        }
-        .page {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transform: scale(0.9) rotate(-5deg);
-            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s 0.8s;
-            z-index: 1;
-        }
-        .page.active {
-            opacity: 1;
-            visibility: visible;
-            transform: scale(1) rotate(0deg);
-            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s;
-            z-index: 2;
-        }
-        .page.exiting {
-            transform: scale(1.1) rotate(5deg);
-            opacity: 0;
-            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
-        }
-        
-        .page1 {
-            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-            color: #fff;
-        }
-        .page1::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M0 10 L10 0 L20 10 L10 20 Z" fill="rgba(255,255,255,0.1)" transform="rotate(30 50 50)"><animateTransform attributeName="transform" type="rotate" from="30 50 50" to="390 50 50" dur="20s" repeatCount="indefinite"/></path><path d="M70 30 L80 20 L90 30 L80 40 Z" fill="rgba(255,255,255,0.15)" transform="rotate(-15 50 50)"><animateTransform attributeName="transform" type="rotate" from="-15 50 50" to="345 50 50" dur="25s" repeatCount="indefinite"/></path><circle cx="30" cy="70" r="3" fill="rgba(255,255,255,0.12)"><animate attributeName="cy" values="70;80;70" dur="5s" repeatCount="indefinite"/><animate attributeName="cx" values="30;35;30" dur="6s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 200px 200px;
-            animation: floatShapes 30s infinite linear alternate;
-            opacity: 0.8;
-        }
-        .welcome-text {
-            font-size: 5rem;
-            font-weight: 900;
-            text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
-            margin-bottom: 2rem;
-            text-align: center;
-            background: linear-gradient(45deg, #ffffff, #e0f7fa, #ffffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: shimmerText 3s ease-in-out infinite;
-        }
-        .subtitle {
-            font-size: 2rem;
-            margin-bottom: 4rem;
-            opacity: 0.9;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-            animation: fadeInUp 1s ease-out 0.5s backwards;
-        }
-        
-        .page2 {
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            color: #5f4b32;
-        }
-        .page2::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><polygon points="50,5 61.8,35.3 95.1,40.2 70.5,61.9 78.4,95.1 50,80 21.6,95.1 29.5,61.9 4.9,40.2 38.2,35.3" fill="rgba(255, 255, 255, 0.2)"><animateTransform attributeName="transform" type="scale" values="1;1.2;1" dur="4s" repeatCount="indefinite"/></polygon><circle cx="15" cy="15" r="5" fill="rgba(255,255,255,0.15)"><animate attributeName="r" values="5;8;5" dur="3s" repeatCount="indefinite"/></circle><circle cx="85" cy="85" r="4" fill="rgba(255,255,255,0.1)"><animate attributeName="r" values="4;6;4" dur="3.5s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 150px 150px;
-            animation: spinZoom 25s infinite linear;
-            opacity: 0.7;
-        }
-        
-        .page3 {
-            background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
-            color: #4a5c8b;
-        }
-        .page3::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M20,30 Q50,10 80,30 T140,30" stroke="rgba(255,255,255,0.2)" stroke-width="3" fill="none"><animate attributeName="d" values="M20,30 Q50,10 80,30 T140,30; M20,40 Q50,20 80,40 T140,40; M20,30 Q50,10 80,30 T140,30" dur="6s" repeatCount="indefinite"/></path><path d="M-40,70 Q-10,50 20,70 T80,70" stroke="rgba(255,255,255,0.15)" stroke-width="2" fill="none"><animate attributeName="d" values="M-40,70 Q-10,50 20,70 T80,70; M-40,80 Q-10,60 20,80 T80,80; M-40,70 Q-10,50 20,70 T80,70" dur="7s" repeatCount="indefinite"/></path></svg>');
-            background-size: 120px 120px;
-            animation: wave 15s infinite linear;
-            opacity: 0.6;
-        }
-        
-        .page4 {
-            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
-            color: #2c5b7b;
-        }
-        .page4::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="25" cy="25" r="1.5" fill="rgba(255,255,255,0.3)"><animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite"/></circle><circle cx="75" cy="75" r="2" fill="rgba(255,255,255,0.4)"><animate attributeName="r" values="2;4;2" dur="2.5s" repeatCount="indefinite"/></circle><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.2)"><animate attributeName="r" values="1;2.5;1" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="20" cy="80" r="1.8" fill="rgba(255,255,255,0.35)"><animate attributeName="r" values="1.8;3.5;1.8" dur="2.2s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 80px 80px;
-            animation: twinkleDots 3s infinite linear;
-            opacity: 0.7;
-        }
-        
-        .page5 {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            color: #a56855;
-        }
-        .page5::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M10 10 L90 90 M90 10 L10 90" stroke="rgba(255,215,0,0.15)" stroke-width="1"/><circle cx="50" cy="50" r="3" fill="rgba(255,215,0,0.3)"><animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 50px 50px;
-            animation: subtleGrid 20s infinite linear, glowGold 2s infinite alternate;
-            opacity: 0.8;
-        }
-        
-        .countdown-number {
-            font-size: 20rem;
-            font-weight: 900;
-            text-shadow: 6px 6px 15px rgba(0, 0, 0, 0.15);
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, #ffffff, #fff7e0, #ffffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: pulseNumber 1.5s infinite ease-in-out;
-            line-height: 1;
-            transition: transform 0.3s ease;
-        }
-        
-        .page.active .countdown-number {
-            animation: numberAppear 0.8s ease-out, pulseNumber 1.5s infinite ease-in-out 0.8s;
-        }
-        .final-message {
-            font-size: 7rem;
-            font-weight: 900;
-            text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            background: linear-gradient(45deg, #ffc107, #fffde7, #ffb74d);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: glowText 2s infinite alternate, finalTextAppear 1.5s ease-out;
-            padding: 0 2rem;
-        }
-        
-        .btn-container {
-            position: relative;
-            margin-top: 3rem;
-            animation: fadeInButton 1s 0.5s ease backwards;
-        }
-        .main-btn {
-            padding: 25px 50px;
-            font-size: 2rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 50px;
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            font-family: 'Noto Serif SC', serif;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
-        
-        .page1 .main-btn { background: linear-gradient(45deg, #29b6f6, #0097a7); }
-        .page2 .main-btn { background: linear-gradient(45deg, #ffa726, #fb8c00); }
-        .page3 .main-btn { background: linear-gradient(45deg, #ec407a, #d81b60); }
-        .page4 .main-btn { background: linear-gradient(45deg, #42a5f5, #1e88e5); }
-        
-        .main-btn:hover {
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-            cursor: pointer;
-        }
-        .main-btn:active {
-            transform: translateY(-2px) scale(0.98);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-        }
-        
-        .main-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        .main-btn:active::before {
-            width: 300px;
-            height: 300px;
-        }
-        .btn-hint {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-15px);
-            font-size: 1.4rem;
-            color: rgba(255, 255, 255, 0.95);
-            background: rgba(0, 0, 0, 0.4);
-            padding: 10px 20px;
-            border-radius: 25px;
-            white-space: nowrap;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            animation: hintPulse 2s ease-in-out infinite;
-        }
-        
-        .page2 .btn-hint, .page4 .btn-hint {
-            color: rgba(60,60,60,0.9);
-            background: rgba(255,255,255,0.5);
-        }
-        .page3 .btn-hint {
-            color: rgba(255,255,255,0.95);
-            background: rgba(0,0,0,0.4);
-        }
-        .page1 .btn-hint {
-            color: rgba(255,255,255,0.95);
-            background: rgba(0,0,0,0.4);
-        }
-        
-        .arrow {
-            position: absolute;
-            bottom: calc(100% + 5px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 18px solid transparent;
-            border-right: 18px solid transparent;
-            border-top: 24px solid rgba(0, 0, 0, 0.4);
-            animation: bounceArrow 1.8s infinite ease-in-out;
-        }
-        
-        .page2 .arrow, .page4 .arrow {
-            border-top-color: rgba(255,255,255,0.5);
-        }
-        .page3 .arrow {
-            border-top-color: rgba(0,0,0,0.4);
-        }
-        .page1 .arrow {
-            border-top-color: rgba(0,0,0,0.4);
-        }
-        
-        #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        
-        @keyframes floatShapes {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-25px) rotate(15deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
-        }
-        @keyframes spinZoom {
-            from { transform: rotate(0deg) scale(1); }
-            to { transform: rotate(360deg) scale(1.1); }
-        }
-        @keyframes wave {
-            0% { background-position: 0 0; }
-            100% { background-position: 120px 60px; }
-        }
-        @keyframes twinkleDots {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; }
-        }
-        @keyframes subtleGrid {
-            from { background-position: 0 0; }
-            to { background-position: 100px 100px; }
-        }
-        @keyframes glowGold {
-            from { filter: brightness(1); }
-            to { filter: brightness(1.3); }
-        }
-        @keyframes pulseNumber {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
-        @keyframes bounceArrow {
-            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
-            40% { transform: translateX(-50%) translateY(-12px); }
-            60% { transform: translateX(-50%) translateY(-6px); }
-        }
-        @keyframes glowText {
-            from {
-                text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 193, 7, 0.4);
-                filter: brightness(1);
-            }
-            to {
-                text-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 193, 7, 0.7);
-                filter: brightness(1.1);
-            }
-        }
-        @keyframes fadeInButton {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shimmerText {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 0.9;
-                transform: translateY(0);
-            }
-        }
-        @keyframes numberAppear {
-            0% {
-                transform: scale(0) rotate(-180deg);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2) rotate(-90deg);
-            }
-            100% {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
-            }
-        }
-        @keyframes finalTextAppear {
-            0% {
-                transform: scale(0.5) translateY(50px);
-                opacity: 0;
-            }
-            60% {
-                transform: scale(1.1) translateY(-10px);
-            }
-            100% {
-                transform: scale(1) translateY(0);
-                opacity: 1;
-            }
-        }
-        @keyframes hintPulse {
-            0%, 100% {
-                transform: translateX(-50%) translateY(-15px) scale(1);
-            }
-            50% {
-                transform: translateX(-50%) translateY(-15px) scale(1.05);
-            }
-        }
-        @keyframes pulseScale {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        @media (max-width: 1200px) {
-            .welcome-text { font-size: 4rem; }
-            .subtitle { font-size: 1.8rem; }
-            .countdown-number { font-size: 15rem; }
-            .final-message { font-size: 5rem; }
-            .main-btn { font-size: 1.8rem; padding: 20px 40px; }
-            .btn-hint { font-size: 1.2rem; padding: 8px 16px;}
-            .arrow { border-left-width: 15px; border-right-width: 15px; border-top-width: 20px;}
-        }
-        @media (max-width: 768px) {
-            .welcome-text { font-size: 3rem; }
-            .subtitle { font-size: 1.5rem; }
-            .countdown-number { font-size: 10rem; }
-            .final-message { font-size: 4rem; }
-            .main-btn { font-size: 1.5rem; padding: 15px 30px; }
-            .btn-hint { font-size: 1rem; padding: 6px 12px;}
-            .arrow { border-left-width: 12px; border-right-width: 12px; border-top-width: 16px;}
-        }
-        @media (max-height: 600px) {
-            .countdown-number { font-size: 12rem; margin-bottom: 0.5rem;}
-            .final-message { font-size: 4.5rem; }
-            .btn-container { margin-top: 1.5rem; }
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Noto Serif SC', serif;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    cursor: default;
+}
+.page {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.9) rotate(-5deg);
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s 0.8s;
+    z-index: 1;
+}
+.page.active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) rotate(0deg);
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s;
+    z-index: 2;
+}
+.page.exiting {
+    transform: scale(1.1) rotate(5deg);
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+}
+
+/* Page 1: 初始页 - 青春启航 (蓝绿) */
+.page1 {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    color: #fff;
+}
+.page1::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M0 10 L10 0 L20 10 L10 20 Z" fill="rgba(255,255,255,0.1)" transform="rotate(30 50 50)"><animateTransform attributeName="transform" type="rotate" from="30 50 50" to="390 50 50" dur="20s" repeatCount="indefinite"/></path><path d="M70 30 L80 20 L90 30 L80 40 Z" fill="rgba(255,255,255,0.15)" transform="rotate(-15 50 50)"><animateTransform attributeName="transform" type="rotate" from="-15 50 50" to="345 50 50" dur="25s" repeatCount="indefinite"/></path><circle cx="30" cy="70" r="3" fill="rgba(255,255,255,0.12)"><animate attributeName="cy" values="70;80;70" dur="5s" repeatCount="indefinite"/><animate attributeName="cx" values="30;35;30" dur="6s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 200px 200px;
+    animation: floatShapes 30s infinite linear alternate;
+    opacity: 0.8;
+}
+.welcome-text {
+    font-size: 5rem;
+    font-weight: 900;
+    text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+    margin-bottom: 2rem;
+    text-align: center;
+    background: linear-gradient(45deg, #ffffff, #e0f7fa, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerText 3s ease-in-out infinite;
+}
+.subtitle {
+    font-size: 2rem;
+    margin-bottom: 4rem;
+    opacity: 0.9;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    animation: fadeInUp 1s ease-out 0.5s backwards;
+}
+
+/* Page 2: 倒计时 3 - 活力暖阳 (橙黄) */
+.page2 {
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    color: #5f4b32;
+}
+.page2::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><polygon points="50,5 61.8,35.3 95.1,40.2 70.5,61.9 78.4,95.1 50,80 21.6,95.1 29.5,61.9 4.9,40.2 38.2,35.3" fill="rgba(255, 255, 255, 0.2)"><animateTransform attributeName="transform" type="scale" values="1;1.2;1" dur="4s" repeatCount="indefinite"/></polygon><circle cx="15" cy="15" r="5" fill="rgba(255,255,255,0.15)"><animate attributeName="r" values="5;8;5" dur="3s" repeatCount="indefinite"/></circle><circle cx="85" cy="85" r="4" fill="rgba(255,255,255,0.1)"><animate attributeName="r" values="4;6;4" dur="3.5s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 150px 150px;
+    animation: spinZoom 25s infinite linear;
+    opacity: 0.7;
+}
+
+/* Page 3: 倒计时 2 - 温柔梦想 (粉紫) */
+.page3 {
+    background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+    color: #4a5c8b;
+}
+.page3::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M20,30 Q50,10 80,30 T140,30" stroke="rgba(255,255,255,0.2)" stroke-width="3" fill="none"><animate attributeName="d" values="M20,30 Q50,10 80,30 T140,30; M20,40 Q50,20 80,40 T140,40; M20,30 Q50,10 80,30 T140,30" dur="6s" repeatCount="indefinite"/></path><path d="M-40,70 Q-10,50 20,70 T80,70" stroke="rgba(255,255,255,0.15)" stroke-width="2" fill="none"><animate attributeName="d" values="M-40,70 Q-10,50 20,70 T80,70; M-40,80 Q-10,60 20,80 T80,80; M-40,70 Q-10,50 20,70 T80,70" dur="7s" repeatCount="indefinite"/></path></svg>');
+    background-size: 120px 120px;
+    animation: wave 15s infinite linear;
+    opacity: 0.6;
+}
+
+/* Page 4: 倒计时 1 - 清新希望 (蓝青) */
+.page4 {
+    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+    color: #2c5b7b;
+}
+.page4::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="25" cy="25" r="1.5" fill="rgba(255,255,255,0.3)"><animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite"/></circle><circle cx="75" cy="75" r="2" fill="rgba(255,255,255,0.4)"><animate attributeName="r" values="2;4;2" dur="2.5s" repeatCount="indefinite"/></circle><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.2)"><animate attributeName="r" values="1;2.5;1" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="20" cy="80" r="1.8" fill="rgba(255,255,255,0.35)"><animate attributeName="r" values="1.8;3.5;1.8" dur="2.2s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 80px 80px;
+    animation: twinkleDots 3s infinite linear;
+    opacity: 0.7;
+}
+
+/* Page 5: 最终页 - 感恩回望 (暖金) */
+.page5 {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: #a56855;
+}
+.page5::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M10 10 L90 90 M90 10 L10 90" stroke="rgba(255,215,0,0.15)" stroke-width="1"/><circle cx="50" cy="50" r="3" fill="rgba(255,215,0,0.3)"><animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 50px 50px;
+    animation: subtleGrid 20s infinite linear, glowGold 2s infinite alternate;
+    opacity: 0.8;
+}
+
+/* 内容样式 */
+.countdown-number {
+    font-size: 20rem;
+    font-weight: 900;
+    text-shadow: 6px 6px 15px rgba(0, 0, 0, 0.15);
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #ffffff, #fff7e0, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: pulseNumber 1.5s infinite ease-in-out;
+    line-height: 1;
+    transition: transform 0.3s ease;
+}
+
+.page.active .countdown-number {
+    animation: numberAppear 0.8s ease-out, pulseNumber 1.5s infinite ease-in-out 0.8s;
+}
+.final-message {
+    font-size: 7rem;
+    font-weight: 900;
+    text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    background: linear-gradient(45deg, #ffc107, #fffde7, #ffb74d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: glowText 2s infinite alternate, finalTextAppear 1.5s ease-out;
+    padding: 0 2rem;
+}
+
+/* 按钮和提示 - 修改为固定在右下角 */
+.btn-container {
+    position: fixed;
+    bottom: 50px;
+    right: 50px;
+    margin-top: 0;
+    animation: fadeInButton 1s 0.5s ease backwards;
+    z-index: 100;
+}
+
+.main-btn {
+    padding: 20px 40px;
+    font-size: 1.8rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 50px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    font-family: 'Noto Serif SC', serif;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    min-width: 180px;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+/* 为不同页面的按钮容器添加特定样式 */
+.btn-container.page1-btn .main-btn {
+    background: linear-gradient(45deg, #29b6f6, #0097a7);
+}
+
+.btn-container.page2-btn .main-btn {
+    background: linear-gradient(45deg, #ffa726, #fb8c00);
+}
+
+.btn-container.page3-btn .main-btn {
+    background: linear-gradient(45deg, #ec407a, #d81b60);
+}
+
+.btn-container.page4-btn .main-btn {
+    background: linear-gradient(45deg, #42a5f5, #1e88e5);
+}
+
+/* 按钮悬停效果增强 */
+.btn-container .main-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+}
+
+.btn-container .main-btn:active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮点击波纹效果 */
+.main-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+.main-btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* 修改提示文字位置 - 在按钮上方 */
+.btn-hint {
+    position: absolute;
+    bottom: calc(100% + 20px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border-radius: 25px;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    animation: hintPulse 2s ease-in-out infinite;
+    backdrop-filter: blur(10px);
+}
+
+/* 不同页面的提示文字样式调整 */
+.btn-container.page1-btn .btn-hint {
+    color: rgba(255,255,255,0.95);
+    background: rgba(0,0,0,0.7);
+}
+
+.btn-container.page2-btn .btn-hint {
+    color: rgba(80,60,40,0.95);
+    background: rgba(255,255,255,0.8);
+}
+
+.btn-container.page3-btn .btn-hint {
+    color: rgba(255,255,255,0.95);
+    background: rgba(74,92,139,0.8);
+}
+
+.btn-container.page4-btn .btn-hint {
+    color: rgba(44,91,123,0.95);
+    background: rgba(255,255,255,0.8);
+}
+
+/* 修改箭头位置 - 在提示文字上方 */
+.arrow {
+    position: absolute;
+    bottom: calc(100% + 60px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 20px solid rgba(255, 255, 255, 0.8);
+    animation: bounceArrow 1.8s infinite ease-in-out;
+}
+
+/* 不同页面的箭头颜色调整 */
+.btn-container.page1-btn .arrow {
+    border-top-color: rgba(255,255,255,0.8);
+}
+
+.btn-container.page2-btn .arrow {
+    border-top-color: rgba(80,60,40,0.7);
+}
+
+.btn-container.page3-btn .arrow {
+    border-top-color: rgba(74,92,139,0.8);
+}
+
+.btn-container.page4-btn .arrow {
+    border-top-color: rgba(44,91,123,0.7);
+}
+
+/* 彩带画布样式 */
+#confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* 动画效果 */
+@keyframes floatShapes {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-25px) rotate(15deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+@keyframes spinZoom {
+    from { transform: rotate(0deg) scale(1); }
+    to { transform: rotate(360deg) scale(1.1); }
+}
+@keyframes wave {
+    0% { background-position: 0 0; }
+    100% { background-position: 120px 60px; }
+}
+@keyframes twinkleDots {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+@keyframes subtleGrid {
+    from { background-position: 0 0; }
+    to { background-position: 100px 100px; }
+}
+@keyframes glowGold {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.3); }
+}
+@keyframes pulseNumber {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+@keyframes bounceArrow {
+    0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+    40% { transform: translateX(-50%) translateY(-12px); }
+    60% { transform: translateX(-50%) translateY(-6px); }
+}
+@keyframes glowText {
+    from {
+        text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 193, 7, 0.4);
+        filter: brightness(1);
+    }
+    to {
+        text-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 193, 7, 0.7);
+        filter: brightness(1.1);
+    }
+}
+@keyframes fadeInButton {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmerText {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 0.9;
+        transform: translateY(0);
+    }
+}
+@keyframes numberAppear {
+    0% {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2) rotate(-90deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+@keyframes finalTextAppear {
+    0% {
+        transform: scale(0.5) translateY(50px);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1) translateY(-10px);
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+@keyframes hintPulse {
+    0%, 100% {
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        transform: translateX(-50%) scale(1.05);
+    }
+}
+@keyframes pulseScale {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .welcome-text { font-size: 4rem; }
+    .subtitle { font-size: 1.8rem; }
+    .countdown-number { font-size: 15rem; }
+    .final-message { font-size: 5rem; }
+}
+
+@media (max-width: 768px) {
+    .welcome-text { font-size: 3rem; }
+    .subtitle { font-size: 1.5rem; }
+    .countdown-number { font-size: 10rem; }
+    .final-message { font-size: 4rem; }
+    
+    .btn-container {
+        bottom: 30px;
+        right: 30px;
+    }
+    
+    .main-btn {
+        font-size: 1.4rem;
+        padding: 15px 30px;
+        min-width: 150px;
+    }
+    
+    .btn-hint {
+        font-size: 1rem;
+        padding: 8px 15px;
+        bottom: calc(100% + 15px);
+    }
+    
+    .arrow {
+        bottom: calc(100% + 45px);
+        border-left-width: 12px;
+        border-right-width: 12px;
+        border-top-width: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn-container {
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .main-btn {
+        font-size: 1.2rem;
+        padding: 12px 25px;
+        min-width: 130px;
+    }
+    
+    .btn-hint {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-height: 600px) {
+    .countdown-number { font-size: 12rem; margin-bottom: 0.5rem;}
+    .final-message { font-size: 4.5rem; }
+}
+
+/* 添加页面切换时的背景过渡 */
+body {
+    transition: background-color 0.5s ease;
+}
     </style>
 </head>
 <body>
+    <!-- 初始页面 -->
     <div class="page page1 active" id="page1">
         <h1 class="welcome-text">亲爱的老师</h1>
         <p class="subtitle">一份来自我们的毕业季祝福</p>
-        <div class="btn-container">
-            <div class="arrow"></div>
-            <div class="btn-hint">请点这里开启</div>
-            <button class="main-btn">开始</button>
-        </div>
     </div>
     
+    <!-- 倒计时3 -->
     <div class="page page2" id="page2">
         <div class="countdown-number">3</div>
-        <div class="btn-container">
-            <div class="btn-hint">继续</div>
-            <button class="main-btn">继续</button>
-        </div>
     </div>
     
+    <!-- 倒计时2 -->
     <div class="page page3" id="page3">
         <div class="countdown-number">2</div>
-        <div class="btn-container">
-            <div class="btn-hint">继续</div>
-            <button class="main-btn">继续</button>
-        </div>
     </div>
     
+    <!-- 倒计时1 -->
     <div class="page page4" id="page4">
         <div class="countdown-number">1</div>
-        <div class="btn-container">
-            <div class="btn-hint">最后一次点击</div>
-            <button class="main-btn">最后一次</button>
-        </div>
     </div>
     
+    <!-- 最终祝福页面 -->
     <div class="page page5" id="page5">
         <h1 class="final-message">请老师，回头看！</h1>
     </div>
     
+    <!-- 全局固定按钮容器 -->
+    <div class="btn-container" id="globalBtnContainer">
+        <div class="arrow" id="btnArrow"></div>
+        <div class="btn-hint" id="btnHint">请点这里开启</div>
+        <button class="main-btn" id="globalBtn">开始</button>
+    </div>
+    
+    <!-- 彩带画布 -->
     <canvas id="confetti-canvas"></canvas>
     
     <script>
         let currentPage = 1;
         const totalPages = 5;
         
+        // 按钮内容配置
+        const buttonConfig = {
+            1: { text: '开始', hint: '请点这里开启', showArrow: true },
+            2: { text: '继续', hint: '继续', showArrow: false },
+            3: { text: '继续', hint: '继续', showArrow: false },
+            4: { text: '最后一次', hint: '最后一次点击', showArrow: false }
+        };
+        
+        // 彩带效果类
         class ConfettiParticle {
             constructor(canvas) {
                 this.canvas = canvas;
@@ -503,6 +601,7 @@
             }
         }
         
+        // 创建彩带效果
         function createConfetti() {
             const canvas = document.getElementById('confetti-canvas');
             const ctx = canvas.getContext('2d');
@@ -538,6 +637,7 @@
             }, 10000);
         }
         
+        // 音效函数
         function playSound(type) {
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -561,6 +661,43 @@
             }
         }
         
+        // 更新按钮内容和样式的函数
+        function updateButton() {
+            const btnContainer = document.getElementById('globalBtnContainer');
+            const btn = document.getElementById('globalBtn');
+            const btnHint = document.getElementById('btnHint');
+            const arrow = document.getElementById('btnArrow');
+            
+            if (currentPage <= 4) {
+                const config = buttonConfig[currentPage];
+                btn.textContent = config.text;
+                btnHint.textContent = config.hint;
+                
+                // 显示或隐藏箭头
+                if (config.showArrow) {
+                    arrow.style.display = 'block';
+                } else {
+                    arrow.style.display = 'none';
+                }
+                
+                // 更新按钮容器的页面类，用于样式切换
+                btnContainer.className = 'btn-container';
+                btnContainer.classList.add(`page${currentPage}-btn`);
+                
+                // 显示按钮
+                btnContainer.style.display = 'block';
+                btnContainer.style.opacity = '1';
+            } else {
+                // 隐藏按钮（最终页面）
+                btnContainer.style.transition = 'opacity 0.5s ease';
+                btnContainer.style.opacity = '0';
+                setTimeout(() => {
+                    btnContainer.style.display = 'none';
+                }, 500);
+            }
+        }
+        
+        // 页面切换函数
         function goToPage(pageNumber) {
             if (pageNumber >= 1 && pageNumber <= totalPages) {
                 const currentPageEl = document.getElementById(`page${currentPage}`);
@@ -580,6 +717,9 @@
                     }
                     currentPage = pageNumber;
                     
+                    // 更新按钮
+                    updateButton();
+                    
                     try {
                         if (currentPage === totalPages) {
                             playSound('final');
@@ -597,23 +737,16 @@
             }
         }
         
+        // 下一页函数
         function nextPage() {
             if (currentPage < totalPages) {
                 goToPage(currentPage + 1);
             }
         }
         
+        // 处理最终页面
         function handleFinalPage() {
-            const buttons = document.querySelectorAll('.main-btn');
-            buttons.forEach(button => {
-                const btnContainer = button.closest('.btn-container');
-                if(btnContainer) {
-                    btnContainer.style.transition = 'opacity 0.5s ease';
-                    btnContainer.style.opacity = '0';
-                    setTimeout(() => { btnContainer.style.display = 'none'; }, 500);
-                }
-            });
-            
+            // 按钮已经在updateButton函数中处理了隐藏
             document.removeEventListener('keydown', handleKeyPress);
             
             setTimeout(() => {
@@ -628,51 +761,58 @@
             console.log("到达最终页面，彩带效果已启动！");
         }
         
+        // 键盘事件处理函数
         function handleKeyPress(event) {
             if (currentPage < totalPages && (event.code === 'Space' || event.code === 'Enter')) {
                 event.preventDefault();
-                const currentButton = document.querySelector(`#page${currentPage} .main-btn`);
-                if (currentButton) {
-                    currentButton.click();
+                const globalBtn = document.getElementById('globalBtn');
+                if (globalBtn) {
+                    globalBtn.click();
                 }
             }
         }
         
+        // 页面加载完成后的初始化
         document.addEventListener('DOMContentLoaded', () => {
-            const allButtons = document.querySelectorAll('.main-btn');
+            const globalBtn = document.getElementById('globalBtn');
             
-            allButtons.forEach((button, index) => {
-                const parentPage = button.closest('.page');
-                if(parentPage && parentPage.id !== 'page5') {
-                    button.addEventListener('click', (e) => {
-                        button.style.transform = 'scale(0.95)';
+            // 为全局按钮添加事件监听器
+            if (globalBtn) {
+                globalBtn.addEventListener('click', (e) => {
+                    if (currentPage < totalPages) {
+                        globalBtn.style.transform = 'scale(0.95)';
                         setTimeout(() => {
-                            button.style.transform = '';
+                            globalBtn.style.transform = '';
                             nextPage();
                         }, 100);
-                    });
-                    
-                    button.addEventListener('mouseenter', () => {
-                        const hint = button.parentElement.querySelector('.btn-hint');
-                        if (hint) {
-                            hint.style.transform = 'translateX(-50%) translateY(-15px) scale(1.1)';
-                        }
-                    });
-                    
-                    button.addEventListener('mouseleave', () => {
-                        const hint = button.parentElement.querySelector('.btn-hint');
-                        if (hint) {
-                            hint.style.transform = 'translateX(-50%) translateY(-15px) scale(1)';
-                        }
-                    });
-                }
-            });
+                    }
+                });
+                
+                globalBtn.addEventListener('mouseenter', () => {
+                    const hint = document.getElementById('btnHint');
+                    if (hint) {
+                        hint.style.transform = 'translateX(-50%) scale(1.1)';
+                    }
+                });
+                
+                globalBtn.addEventListener('mouseleave', () => {
+                    const hint = document.getElementById('btnHint');
+                    if (hint) {
+                        hint.style.transform = 'translateX(-50%) scale(1)';
+                    }
+                });
+            }
             
+            // 初始化按钮状态
+            updateButton();
+            
+            // 添加键盘事件支持
             document.addEventListener('keydown', handleKeyPress);
             
             console.log("页面初始化完成，当前页面:", currentPage);
         });
         
+        // 窗口大小改变时重新设置画布大小
         window.addEventListener('resize', () => {
             const canvas = document.getElementById('confetti-canvas');
             if (canvas && canvas.style.display !== 'none') {
@@ -681,6 +821,7 @@
             }
         });
         
+        // 页面可见性变化监听，优化性能
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 const canvas = document.getElementById('confetti-canvas');
@@ -690,12 +831,14 @@
             }
         });
         
+        // 防止双击选中文字
         document.addEventListener('selectstart', (e) => {
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
             }
         });
         
+        // 触摸设备支持
         let touchStartY = 0;
         document.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
@@ -704,6 +847,7 @@
         document.addEventListener('touchend', (e) => {
             const touchEndY = e.changedTouches[0].clientY;
             const deltaY = touchStartY - touchEndY;
+            // 向上滑动切换到下一页
             if (Math.abs(deltaY) > 50 && deltaY > 0 && currentPage < totalPages) {
                 nextPage();
             }

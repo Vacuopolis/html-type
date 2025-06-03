@@ -3,516 +3,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毕业季神秘祝福</title>
+    <title>毕业季祝福</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap');
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Noto Serif SC', serif;
-            height: 100vh;
-            overflow: hidden;
-            background-color: #f0f0f0;
-            cursor: default;
-        }
-        .page {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transform: scale(0.9) rotate(-5deg);
-            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s 0.8s;
-            z-index: 1;
-        }
-        .page.active {
-            opacity: 1;
-            visibility: visible;
-            transform: scale(1) rotate(0deg);
-            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s;
-            z-index: 2;
-        }
-        .page.exiting {
-            transform: scale(1.1) rotate(5deg);
-            opacity: 0;
-            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
-        }
-        .page1 {
-            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-            color: #fff;
-        }
-        .page1::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M0 10 L10 0 L20 10 L10 20 Z" fill="rgba(255,255,255,0.1)" transform="rotate(30 50 50)"><animateTransform attributeName="transform" type="rotate" from="30 50 50" to="390 50 50" dur="20s" repeatCount="indefinite"/></path><path d="M70 30 L80 20 L90 30 L80 40 Z" fill="rgba(255,255,255,0.15)" transform="rotate(-15 50 50)"><animateTransform attributeName="transform" type="rotate" from="-15 50 50" to="345 50 50" dur="25s" repeatCount="indefinite"/></path><circle cx="30" cy="70" r="3" fill="rgba(255,255,255,0.12)"><animate attributeName="cy" values="70;80;70" dur="5s" repeatCount="indefinite"/><animate attributeName="cx" values="30;35;30" dur="6s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 200px 200px;
-            animation: floatShapes 30s infinite linear alternate;
-            opacity: 0.8;
-        }
-        .welcome-text {
-            font-size: 5rem;
-            font-weight: 900;
-            text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
-            margin-bottom: 2rem;
-            text-align: center;
-            background: linear-gradient(45deg, #ffffff, #e0f7fa, #ffffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: shimmerText 3s ease-in-out infinite;
-        }
-        .subtitle {
-            font-size: 2rem;
-            margin-bottom: 4rem;
-            opacity: 0.9;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-            animation: fadeInUp 1s ease-out 0.5s backwards;
-        }
-        .page2 {
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            color: #5f4b32;
-        }
-        .page2::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><polygon points="50,5 61.8,35.3 95.1,40.2 70.5,61.9 78.4,95.1 50,80 21.6,95.1 29.5,61.9 4.9,40.2 38.2,35.3" fill="rgba(255, 255, 255, 0.2)"><animateTransform attributeName="transform" type="scale" values="1;1.2;1" dur="4s" repeatCount="indefinite"/></polygon><circle cx="15" cy="15" r="5" fill="rgba(255,255,255,0.15)"><animate attributeName="r" values="5;8;5" dur="3s" repeatCount="indefinite"/></circle><circle cx="85" cy="85" r="4" fill="rgba(255,255,255,0.1)"><animate attributeName="r" values="4;6;4" dur="3.5s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 150px 150px;
-            animation: spinZoom 25s infinite linear;
-            opacity: 0.7;
-        }
-        .page3 {
-            background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
-            color: #4a5c8b;
-        }
-        .page3::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M20,30 Q50,10 80,30 T140,30" stroke="rgba(255,255,255,0.2)" stroke-width="3" fill="none"><animate attributeName="d" values="M20,30 Q50,10 80,30 T140,30; M20,40 Q50,20 80,40 T140,40; M20,30 Q50,10 80,30 T140,30" dur="6s" repeatCount="indefinite"/></path><path d="M-40,70 Q-10,50 20,70 T80,70" stroke="rgba(255,255,255,0.15)" stroke-width="2" fill="none"><animate attributeName="d" values="M-40,70 Q-10,50 20,70 T80,70; M-40,80 Q-10,60 20,80 T80,80; M-40,70 Q-10,50 20,70 T80,70" dur="7s" repeatCount="indefinite"/></path></svg>');
-            background-size: 120px 120px;
-            animation: wave 15s infinite linear;
-            opacity: 0.6;
-        }
-        .page4 {
-            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
-            color: #2c5b7b;
-        }
-        .page4::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="25" cy="25" r="1.5" fill="rgba(255,255,255,0.3)"><animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite"/></circle><circle cx="75" cy="75" r="2" fill="rgba(255,255,255,0.4)"><animate attributeName="r" values="2;4;2" dur="2.5s" repeatCount="indefinite"/></circle><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.2)"><animate attributeName="r" values="1;2.5;1" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="20" cy="80" r="1.8" fill="rgba(255,255,255,0.35)"><animate attributeName="r" values="1.8;3.5;1.8" dur="2.2s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 80px 80px;
-            animation: twinkleDots 3s infinite linear;
-            opacity: 0.7;
-        }
-        .page5 {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            color: #a56855;
-            position: relative;
-        }
-        .page5::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M10 10 L90 90 M90 10 L10 90" stroke="rgba(255,215,0,0.15)" stroke-width="1"/><circle cx="50" cy="50" r="3" fill="rgba(255,215,0,0.3)"><animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/></circle></svg>');
-            background-size: 50px 50px;
-            animation: subtleGrid 20s infinite linear, glowGold 2s infinite alternate;
-            opacity: 0.8;
-        }
-        .countdown-number {
-            font-size: 20rem;
-            font-weight: 900;
-            text-shadow: 6px 6px 15px rgba(0, 0, 0, 0.15);
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, #ffffff, #fff7e0, #ffffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: pulseNumber 1.5s infinite ease-in-out;
-            line-height: 1;
-            transition: transform 0.3s ease;
-        }
-        .page.active .countdown-number {
-            animation: numberAppear 0.8s ease-out, pulseNumber 1.5s infinite ease-in-out 0.8s;
-        }
-        .final-message {
-            font-size: 7rem;
-            font-weight: 900;
-            font-family: 'Noto Serif SC', '华文黑体', '微软雅黑', serif;
-            text-shadow:
-                1px 1px 0 #A36209,
-                2px 2px 0 #A36209,
-                3px 3px 0 #A36209,
-                4px 4px 8px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            color: #FFDD00;
-            padding: 0 2rem;
-            animation: finalTextAppear 1.5s ease-out;
-            letter-spacing: 4px;
-            position: relative; /* Needed for z-index stacking */
-            z-index: 10; /* Ensure text is above emojis */
-        }
-        .heart-emoji {
-            position: absolute;
-            font-size: 2.5rem; /* Adjust size as needed */
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            z-index: 5; /* Below the text */
-            pointer-events: none;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-        }
-        .heart-emoji.visible {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-        .btn-container {
-            position: fixed;
-            bottom: 50px;
-            right: 50px;
-            margin-top: 0;
-            animation: fadeInButton 1s 0.5s ease backwards;
-            z-index: 100;
-        }
-        .main-btn {
-            padding: 20px 40px;
-            font-size: 1.8rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 50px;
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            font-family: 'Noto Serif SC', serif;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-            min-width: 180px;
-            text-align: center;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
-        .btn-container.page1-btn .main-btn {
-            background: linear-gradient(45deg, #29b6f6, #0097a7);
-        }
-        .btn-container.page2-btn .main-btn {
-            background: linear-gradient(45deg, #ffa726, #fb8c00);
-        }
-        .btn-container.page3-btn .main-btn {
-            background: linear-gradient(45deg, #ec407a, #d81b60);
-        }
-        .btn-container.page4-btn .main-btn {
-            background: linear-gradient(45deg, #42a5f5, #1e88e5);
-        }
-        .btn-container .main-btn:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
-        }
-        .btn-container .main-btn:active {
-            transform: translateY(-1px) scale(0.98);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
-        .main-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        .main-btn:active::before {
-            width: 300px;
-            height: 300px;
-        }
-        .btn-hint {
-            position: absolute;
-            bottom: calc(100% + 20px);
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.95);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 12px 20px;
-            border-radius: 25px;
-            white-space: nowrap;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            animation: hintPulse 2s ease-in-out infinite;
-            backdrop-filter: blur(10px);
-        }
-        .btn-container.page1-btn .btn-hint {
-            color: rgba(255,255,255,0.95);
-            background: rgba(0,0,0,0.7);
-        }
-        .btn-container.page2-btn .btn-hint {
-            color: rgba(80,60,40,0.95);
-            background: rgba(255,255,255,0.8);
-        }
-        .btn-container.page3-btn .btn-hint {
-            color: rgba(255,255,255,0.95);
-            background: rgba(74,92,139,0.8);
-        }
-        .btn-container.page4-btn .btn-hint {
-            color: rgba(44,91,123,0.95);
-            background: rgba(255,255,255,0.8);
-        }
-        .arrow {
-            position: absolute;
-            bottom: calc(100% + 60px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 20px solid rgba(255, 255, 255, 0.8);
-            animation: bounceArrow 1.8s infinite ease-in-out;
-        }
-        .btn-container.page1-btn .arrow {
-            border-top-color: rgba(255,255,255,0.8);
-        }
-        .btn-container.page2-btn .arrow {
-            border-top-color: rgba(80,60,40,0.7);
-        }
-        .btn-container.page3-btn .arrow {
-            border-top-color: rgba(74,92,139,0.8);
-        }
-        .btn-container.page4-btn .arrow {
-            border-top-color: rgba(44,91,123,0.7);
-        }
-        #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        @keyframes floatShapes {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-25px) rotate(15deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
-        }
-        @keyframes spinZoom {
-            from { transform: rotate(0deg) scale(1); }
-            to { transform: rotate(360deg) scale(1.1); }
-        }
-        @keyframes wave {
-            0% { background-position: 0 0; }
-            100% { background-position: 120px 60px; }
-        }
-        @keyframes twinkleDots {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; }
-        }
-        @keyframes subtleGrid {
-            from { background-position: 0 0; }
-            to { background-position: 100px 100px; }
-        }
-        @keyframes glowGold {
-            from { filter: brightness(1); }
-            to { filter: brightness(1.3); }
-        }
-        @keyframes pulseNumber {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
-        @keyframes bounceArrow {
-            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
-            40% { transform: translateX(-50%) translateY(-12px); }
-            60% { transform: translateX(-50%) translateY(-6px); }
-        }
-        @keyframes glowText {
-            from {
-                text-shadow: 1px 1px 0 #A36209, 2px 2px 0 #A36209, 3px 3px 0 #A36209, 4px 4px 8px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 193, 7, 0.4);
-                filter: brightness(1);
-            }
-            to {
-                text-shadow: 1px 1px 0 #A36209, 2px 2px 0 #A36209, 3px 3px 0 #A36209, 4px 4px 12px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 193, 7, 0.7);
-                filter: brightness(1.1);
-            }
-        }
-        @keyframes fadeInButton {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shimmerText {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 0.9;
-                transform: translateY(0);
-            }
-        }
-        @keyframes numberAppear {
-            0% {
-                transform: scale(0) rotate(-180deg);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2) rotate(-90deg);
-            }
-            100% {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
-            }
-        }
-        @keyframes finalTextAppear {
-            0% {
-                transform: scale(0.5) translateY(50px);
-                opacity: 0;
-            }
-            60% {
-                transform: scale(1.1) translateY(-10px);
-            }
-            100% {
-                transform: scale(1) translateY(0);
-                opacity: 1;
-            }
-        }
-        @keyframes hintPulse {
-            0%, 100% {
-                transform: translateX(-50%) scale(1);
-            }
-            50% {
-                transform: translateX(-50%) scale(1.05);
-            }
-        }
-        @keyframes pulseScale {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        @media (max-width: 1200px) {
-            .welcome-text { font-size: 4rem; }
-            .subtitle { font-size: 1.8rem; }
-            .countdown-number { font-size: 15rem; }
-            .final-message { font-size: 5rem; }
-            .heart-emoji { font-size: 2rem; }
-        }
-        @media (max-width: 768px) {
-            .welcome-text { font-size: 3rem; }
-            .subtitle { font-size: 1.5rem; }
-            .countdown-number { font-size: 10rem; }
-            .final-message { font-size: 4rem; }
-            。heart-emoji { font-size: 1.8rem; }
-            。btn-container {
-                bottom: 30px;
-                right: 30px;
-            }
-            。main-btn {
-                font-size: 1.4rem;
-                padding: 15px 30px;
-                min-width: 150px;
-            }
-            。btn-hint {
-                font-size: 1rem;
-                padding: 8px 15px;
-                bottom: calc(100% + 15px);
-            }
-            。arrow {
-                bottom: calc(100% + 45px);
-                border-left-width: 12px;
-                border-right-width: 12px;
-                border-top-width: 16px;
-            }
-        }
-        @media (max-width: 480px) {
-            。final-message { font-size: 3rem; }
-            。heart-emoji { font-size: 1.5rem; }
-            。btn-container {
-                bottom: 20px;
-                right: 20px;
-            }
-            。main-btn {
-                font-size: 1.2rem;
-                padding: 12px 25px;
-                min-width: 130px;
-            }
-            。btn-hint {
-                font-size: 0.9rem;
-                padding: 6px 12px;
-            }
-        }
-        @media (max-height: 600px) {
-            。countdown-number { font-size: 12rem; margin-bottom: 0.5rem;}
-            。final-message { font-size: 4.5rem; }
-            。heart-emoji { font-size: 1.7rem; }
-        }
-        body {
-            transition: background-color 0.5s ease;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Noto Serif SC', serif;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    cursor: default;
+}
+。page {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.9) rotate(-5deg);
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s 0.8s;
+    z-index: 1;
+}
+。page.active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) rotate(0deg);
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s;
+    z-index: 2;
+}
+.page.exiting {
+    transform: scale(1.1) rotate(5deg);
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+}
+
+/* Page 1: 初始页 - 青春启航 (蓝绿) */
+.page1 {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    color: #fff;
+}
+.page1::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M0 10 L10 0 L20 10 L10 20 Z" fill="rgba(255,255,255,0.1)" transform="rotate(30 50 50)"><animateTransform attributeName="transform" type="rotate" from="30 50 50" to="390 50 50" dur="20s" repeatCount="indefinite"/></path><path d="M70 30 L80 20 L90 30 L80 40 Z" fill="rgba(255,255,255,0.15)" transform="rotate(-15 50 50)"><animateTransform attributeName="transform" type="rotate" from="-15 50 50" to="345 50 50" dur="25s" repeatCount="indefinite"/></path><circle cx="30" cy="70" r="3" fill="rgba(255,255,255,0.12)"><animate attributeName="cy" values="70;80;70" dur="5s" repeatCount="indefinite"/><animate attributeName="cx" values="30;35;30" dur="6s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 200px 200px;
+    animation: floatShapes 30s infinite linear alternate;
+    opacity: 0.8;
+}
+.welcome-text {
+    font-size: 5rem;
+    font-weight: 900;
+    text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+    margin-bottom: 2rem;
+    text-align: center;
+    background: linear-gradient(45deg, #ffffff, #e0f7fa, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerText 3s ease-in-out infinite;
+}
+.subtitle {
+    font-size: 2rem;
+    margin-bottom: 4rem;
+    opacity: 0.9;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    animation: fadeInUp 1s ease-out 0.5s backwards;
+}
+
+/* Page 2: 倒计时 3 - 活力暖阳 (橙黄) */
+.page2 {
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    color: #5f4b32;
+}
+.page2::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><polygon points="50,5 61.8,35.3 95.1,40.2 70.5,61.9 78.4,95.1 50,80 21.6,95.1 29.5,61.9 4.9,40.2 38.2,35.3" fill="rgba(255, 255, 255, 0.2)"><animateTransform attributeName="transform" type="scale" values="1;1.2;1" dur="4s" repeatCount="indefinite"/></polygon><circle cx="15" cy="15" r="5" fill="rgba(255,255,255,0.15)"><animate attributeName="r" values="5;8;5" dur="3s" repeatCount="indefinite"/></circle><circle cx="85" cy="85" r="4" fill="rgba(255,255,255,0.1)"><animate attributeName="r" values="4;6;4" dur="3.5s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 150px 150px;
+    animation: spinZoom 25s infinite linear;
+    opacity: 0.7;
+}
+
+/* Page 3: 倒计时 2 - 温柔梦想 (粉紫) */
+.page3 {
+    background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+    color: #4a5c8b;
+}
+.page3::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M20,30 Q50,10 80,30 T140,30" stroke="rgba(255,255,255,0.2)" stroke-width="3" fill="none"><animate attributeName="d" values="M20,30 Q50,10 80,30 T140,30; M20,40 Q50,20 80,40 T140,40; M20,30 Q50,10 80,30 T140,30" dur="6s" repeatCount="indefinite"/></path><path d="M-40,70 Q-10,50 20,70 T80,70" stroke="rgba(255,255,255,0.15)" stroke-width="2" fill="none"><animate attributeName="d" values="M-40,70 Q-10,50 20,70 T80,70; M-40,80 Q-10,60 20,80 T80,80; M-40,70 Q-10,50 20,70 T80,70" dur="7s" repeatCount="indefinite"/></path></svg>');
+    background-size: 120px 120px;
+    animation: wave 15s infinite linear;
+    opacity: 0.6;
+}
+
+/* Page 4: 倒计时 1 - 清新希望 (蓝青) */
+.page4 {
+    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+    color: #2c5b7b;
+}
+.page4::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="25" cy="25" r="1.5" fill="rgba(255,255,255,0.3)"><animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite"/></circle><circle cx="75" cy="75" r="2" fill="rgba(255,255,255,0.4)"><animate attributeName="r" values="2;4;2" dur="2.5s" repeatCount="indefinite"/></circle><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.2)"><animate attributeName="r" values="1;2.5;1" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="20" cy="80" r="1.8" fill="rgba(255,255,255,0.35)"><animate attributeName="r" values="1.8;3.5;1.8" dur="2.2s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 80px 80px;
+    animation: twinkleDots 3s infinite linear;
+    opacity: 0.7;
+}
+
+/* Page 5: 最终页 - 感恩回望 (暖金) */
+.page5 {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: #a56855;
+}
+.page5::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M10 10 L90 90 M90 10 L10 90" stroke="rgba(255,215,0,0.15)" stroke-width="1"/><circle cx="50" cy="50" r="3" fill="rgba(255,215,0,0.3)"><animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/></circle></svg>');
+    background-size: 50px 50px;
+    animation: subtleGrid 20s infinite linear, glowGold 2s infinite alternate;
+    opacity: 0.8;
+}
+
+/* 内容样式 */
+.countdown-number {
+    font-size: 20rem;
+    font-weight: 900;
+    text-shadow: 6px 6px 15px rgba(0, 0, 0, 0.15);
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #ffffff, #fff7e0, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: pulseNumber 1.5s infinite ease-in-out;
+    line-height: 1;
+    transition: transform 0.3s ease;
+}
+
+.page.active .countdown-number {
+    animation: numberAppear 0.8s ease-out, pulseNumber 1.5s infinite ease-in-out 0.8s;
+}
+.final-message {
+    font-size: 7rem;
+    font-weight: 900;
+    font-family: 'Noto Serif SC', '华文黑体', '微软雅黑', serif;
+    text-shadow: 
+        1px 1px 0 #A36209,
+        2px 2px 0 #A36209,
+        3px 3px 0 #A36209,
+        4px 4px 8px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    color: #FFDD00;
+    padding: 0 2rem;
+    animation: finalTextAppear 1.5s ease-out;
+    letter-spacing: 4px;
+}
+
+/* 按钮和提示 - 修改为固定在右下角 */
+.btn-container {
+    position: fixed;
+    bottom: 50px;
+    right: 50px;
+    margin-top: 0;
+    animation: fadeInButton 1s 0.5s ease backwards;
+    z-index: 100;
+}
+
+.main-btn {
+    padding: 20px 40px;
+    font-size: 1.8rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 50px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    font-family: 'Noto Serif SC', serif;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    min-width: 180px;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+/* 不同页面的按钮容器特定样式 */
+.btn-container.page1-btn .main-btn {
+    background: linear-gradient(45deg, #29b6f6, #0097a7);
+}
+
+.btn-container.page2-btn .main-btn {
+    background: linear-gradient(45deg, #ffa726, #fb8c00);
+}
+
+.btn-container.page3-btn .main-btn {
+    background: linear-gradient(45deg, #ec407a, #d81b60);
+}
+
+.btn-container.page4-btn .main-btn {
+    background: linear-gradient(45deg, #42a5f5, #1e88e5);
+}
+
+/* 按钮悬停效果增强 */
+.btn-container .main-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+}
+
+.btn-container .main-btn:active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮点击波纹效果 */
+.main-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+.main-btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* 修改提示文字位置 - 在按钮上方 */
+.btn-hint {
+    position: absolute;
+    bottom: calc(100% + 20px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.95);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 12px 20px;
+    border-radius: 25px;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    animation: hintPulse 2s ease-in-out infinite;
+    backdrop-filter: blur(10px);
+}
+
+/* 不同页面的提示文字样式调整 */
+.btn-container.page1-btn .btn-hint {
+    color: rgba(255,255,255,0.95);
+    background: rgba(0,0,0,0.7);
+}
+
+.btn-container.page2-btn .btn-hint {
+    color: rgba(80,60,40,0.95);
+    background: rgba(255,255,255,0.8);
+}
+
+.btn-container.page3-btn .btn-hint {
+    color: rgba(255,255,255,0.95);
+    background: rgba(74,92,139,0.8);
+}
+
+.btn-container.page4-btn .btn-hint {
+    color: rgba(44,91,123,0.95);
+    background: rgba(255,255,255,0.8);
+}
+
+/* 修改箭头位置 - 在提示文字上方 */
+.arrow {
+    position: absolute;
+    bottom: calc(100% + 60px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 20px solid rgba(255, 255, 255, 0.8);
+    animation: bounceArrow 1.8s infinite ease-in-out;
+}
+
+/* 不同页面的箭头颜色调整 */
+.btn-container.page1-btn .arrow {
+    border-top-color: rgba(255,255,255,0.8);
+}
+
+.btn-container.page2-btn .arrow {
+    border-top-color: rgba(80,60,40,0.7);
+}
+
+.btn-container.page3-btn .arrow {
+    border-top-color: rgba(74,92,139,0.8);
+}
+
+.btn-container.page4-btn .arrow {
+    border-top-color: rgba(44,91,123,0.7);
+}
+
+/* 彩带画布样式 */
+#confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* 动画效果 */
+@keyframes floatShapes {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-25px) rotate(15deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+@keyframes spinZoom {
+    from { transform: rotate(0deg) scale(1); }
+    to { transform: rotate(360deg) scale(1.1); }
+}
+@keyframes wave {
+    0% { background-position: 0 0; }
+    100% { background-position: 120px 60px; }
+}
+@keyframes twinkleDots {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+@keyframes subtleGrid {
+    from { background-position: 0 0; }
+    to { background-position: 100px 100px; }
+}
+@keyframes glowGold {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.3); }
+}
+@keyframes pulseNumber {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+@keyframes bounceArrow {
+    0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+    40% { transform: translateX(-50%) translateY(-12px); }
+    60% { transform: translateX(-50%) translateY(-6px); }
+}
+@keyframes glowText {
+    from {
+        text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 193, 7, 0.4);
+        filter: brightness(1);
+    }
+    to {
+        text-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 193, 7, 0.7);
+        filter: brightness(1.1);
+    }
+}
+@keyframes fadeInButton {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmerText {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 0.9;
+        transform: translateY(0);
+    }
+}
+@keyframes numberAppear {
+    0% {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2) rotate(-90deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+@keyframes finalTextAppear {
+    0% {
+        transform: scale(0.5) translateY(50px);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1) translateY(-10px);
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+@keyframes hintPulse {
+    0%, 100% {
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        transform: translateX(-50%) scale(1.05);
+    }
+}
+@keyframes pulseScale {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .welcome-text { font-size: 4rem; }
+    .subtitle { font-size: 1.8rem; }
+    .countdown-number { font-size: 15rem; }
+    .final-message { font-size: 5rem; }
+}
+
+@media (max-width: 768px) {
+    .welcome-text { font-size: 3rem; }
+    .subtitle { font-size: 1.5rem; }
+    .countdown-number { font-size: 10rem; }
+    .final-message { font-size: 4rem; }
+    
+    .btn-container {
+        bottom: 30px;
+        right: 30px;
+    }
+    
+    .main-btn {
+        font-size: 1.4rem;
+        padding: 15px 30px;
+        min-width: 150px;
+    }
+    
+    .btn-hint {
+        font-size: 1rem;
+        padding: 8px 15px;
+        bottom: calc(100% + 15px);
+    }
+    
+    .arrow {
+        bottom: calc(100% + 45px);
+        border-left-width: 12px;
+        border-right-width: 12px;
+        border-top-width: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    。btn-container {
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    。main-btn {
+        font-size: 1.2rem;
+        padding: 12px 25px;
+        min-width: 130px;
+    }
+    
+    。btn-hint {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-height: 600px) {
+    。countdown-number { font-size: 12rem; margin-bottom: 0.5rem;}
+    。final-message { font-size: 4.5rem; }
+}
+
+/* 页面切换时的背景过渡 */
+body {
+    transition: background-color 0.5s ease;
+}
     </style>
 </head>
 <body>
-
+    <!-- 初始页面 -->
     <div class="page page1 active" id="page1">
         <h1 class="welcome-text">亲爱的超哥</h1>
-        <p class="subtitle">这是一份来自我们的毕业季祝福</p>
+        <p class="subtitle">一份来自我们的毕业季祝福</p>
     </div>
-
+    
+    <!-- 倒计时3 -->
     <div class="page page2" id="page2">
         <div class="countdown-number">3</div>
     </div>
-
+    
+    <!-- 倒计时2 -->
     <div class="page page3" id="page3">
         <div class="countdown-number">2</div>
     </div>
-
+    
+    <!-- 倒计时1 -->
     <div class="page page4" id="page4">
         <div class="countdown-number">1</div>
     </div>
-
+    
+    <!-- 最终祝福页面 -->
     <div class="page page5" id="page5">
         <h1 class="final-message">请老师，回头看！</h1>
     </div>
-
+    
+    <!-- 全局固定按钮容器 -->
     <div class="btn-container" id="globalBtnContainer">
         <div class="arrow" id="btnArrow"></div>
         <div class="btn-hint" id="btnHint">请点这里开启</div>
         <button class="main-btn" id="globalBtn">开始</button>
     </div>
-
+    
+    <!-- 彩带画布 -->
     <canvas id="confetti-canvas"></canvas>
-
+    
     <script>
         let currentPage = 1;
         const totalPages = 5;
-
+        
+        // 按钮内容配置
         const buttonConfig = {
             1: { text: '开始', hint: '请点这里开启', showArrow: true },
             2: { text: '继续', hint: '继续', showArrow: false },
             3: { text: '继续', hint: '继续', showArrow: false },
             4: { text: '最后一次', hint: '最后一次点击', showArrow: false }
         };
-
+        
+        // 彩带效果类
         class ConfettiParticle {
             constructor(canvas) {
                 this.canvas = canvas;
@@ -560,48 +603,44 @@
                 this.ctx.restore();
             }
         }
-
+        
+        // 创建彩带效果
         function createConfetti() {
             const canvas = document.getElementById('confetti-canvas');
-            if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            canvas.style.display = 'block';
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             const particles = [];
             const particleCount = 300;
+            
             for (let i = 0; i < particleCount; i++) {
                 particles.push(new ConfettiParticle(canvas));
             }
-            let animationFrameId;
+            
             function animate() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 particles.forEach(particle => {
                     particle.update();
                     particle.draw();
                 });
-                animationFrameId = requestAnimationFrame(animate);
+                requestAnimationFrame(animate);
             }
             animate();
+            
             setTimeout(() => {
                 let fadeOut = setInterval(() => {
-                    let allFaded = true;
                     particles.forEach(particle => {
-                        if (particle.opacity > 0) {
-                            particle.opacity -= 0.02;
-                            if (particle.opacity < 0) particle.opacity = 0;
-                            allFaded = false;
-                        }
+                        particle.opacity -= 0.02;
                     });
-                    if (allFaded) {
+                    if (particles[0].opacity <= 0) {
                         clearInterval(fadeOut);
-                        cancelAnimationFrame(animationFrameId);
                         canvas.style.display = 'none';
                     }
                 }, 50);
-            }, 8000);
+            }, 10000);
         }
-
+        
+        // 音效函数
         function playSound(type) {
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -610,66 +649,68 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 if (type === 'click') {
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-                    oscillator.start(audioContext.currentTime);
+                    oscillator.frequency.value = 800;
+                    gainNode.gain.value = 0.1;
+                    oscillator.start();
                     oscillator.stop(audioContext.currentTime + 0.1);
                 } else if (type === 'final') {
-                    oscillator.type = 'triangle';
-                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-                    oscillator.frequency.linearRampToValueAtTime(1200, audioContext.currentTime + 0.15);
-                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-                    oscillator.start(audioContext.currentTime);
+                    oscillator.frequency.value = 1200;
+                    gainNode.gain.value = 0.2;
+                    oscillator.start();
                     oscillator.stop(audioContext.currentTime + 0.3);
                 }
             } catch (e) {
-                console.log('音频播放失败:', e);
+                console.log('音频播放失败');
             }
         }
-
+        
+        // 更新按钮内容和样式的函数
         function updateButton() {
             const btnContainer = document.getElementById('globalBtnContainer');
             const btn = document.getElementById('globalBtn');
             const btnHint = document.getElementById('btnHint');
             const arrow = document.getElementById('btnArrow');
-
-            if (!btnContainer || !btn || !btnHint || !arrow) return;
-
+            
             if (currentPage <= 4) {
                 const config = buttonConfig[currentPage];
                 btn.textContent = config.text;
                 btnHint.textContent = config.hint;
-                arrow.style.display = config.showArrow ? 'block' : 'none';
+                
+                // 显示或隐藏箭头
+                if (config.showArrow) {
+                    arrow.style.display = 'block';
+                } else {
+                    arrow.style.display = 'none';
+                }
+                
+                // 更新按钮容器的页面类，用于样式切换
                 btnContainer.className = 'btn-container';
                 btnContainer.classList.add(`page${currentPage}-btn`);
+                
+                // 显示按钮
                 btnContainer.style.display = 'block';
                 btnContainer.style.opacity = '1';
-                btnContainer.style.pointerEvents = 'auto';
             } else {
+                // 隐藏按钮（最终页面）
                 btnContainer.style.transition = 'opacity 0.5s ease';
                 btnContainer.style.opacity = '0';
-                btnContainer.style.pointerEvents = 'none';
                 setTimeout(() => {
-                    if (currentPage > 4) {
-                       btnContainer.style.display = 'none';
-                    }
+                    btnContainer.style.display = 'none';
                 }, 500);
             }
         }
-
+        
+        // 页面切换函数
         function goToPage(pageNumber) {
             if (pageNumber >= 1 && pageNumber <= totalPages) {
                 const currentPageEl = document.getElementById(`page${currentPage}`);
                 const targetPageEl = document.getElementById(`page${pageNumber}`);
-
+                
                 if (currentPageEl) {
                     currentPageEl.classList.add('exiting');
                     currentPageEl.classList.remove('active');
                 }
-
+                
                 setTimeout(() => {
                     if (currentPageEl) {
                         currentPageEl.classList.remove('exiting');
@@ -678,7 +719,10 @@
                         targetPageEl.classList.add('active');
                     }
                     currentPage = pageNumber;
+                    
+                    // 更新按钮
                     updateButton();
+                    
                     try {
                         if (currentPage === totalPages) {
                             playSound('final');
@@ -688,178 +732,129 @@
                     } catch (e) {
                         console.log('音频播放失败');
                     }
+                    
                     if (currentPage === totalPages) {
                         handleFinalPage();
                     }
-                }, 400);
+                }, 200);
             }
         }
-
+        
+        // 下一页函数
         function nextPage() {
             if (currentPage < totalPages) {
                 goToPage(currentPage + 1);
             }
         }
-
+        
+        // 处理最终页面
         function handleFinalPage() {
+            // 按钮已经在updateButton函数中处理了隐藏
             document.removeEventListener('keydown', handleKeyPress);
-            document.removeEventListener('touchend', handleTouchEnd);
-
+            
             setTimeout(() => {
                 createConfetti();
-                createHeartEmojis();
             }, 500);
-
-            const finalMessage = document.querySelector('.page5 .final-message');
+            
+            const finalMessage = document.querySelector('.final-message');
             if (finalMessage) {
-                 finalMessage.style.animation = 'glowText 2s infinite alternate 1.5s, finalTextAppear 1.5s ease-out, pulseScale 1s ease-out 1.5s';
+                finalMessage.style.animation = 'glowText 2s infinite alternate, finalTextAppear 1.5s ease-out, pulseScale 1s ease-out 1.5s';
             }
-            console.log("到达最终页面，效果启动！");
+            
+            console.log("到达最终页面，彩带效果已启动！");
         }
-
-        function createHeartEmojis() {
-            const finalMessage = document.querySelector('.page5 .final-message');
-            const page5 = document.getElementById('page5');
-            if (!finalMessage || !page5) return;
-
-             // 清除旧的 emojis (如果需要重复触发)
-            const oldEmojis = page5.querySelectorAll('.heart-emoji');
-            oldEmojis.forEach(emoji => emoji.remove());
-
-
-            setTimeout(() => {
-                const rect = finalMessage.getBoundingClientRect();
-                const pageRect = page5.getBoundingClientRect();
-
-                const relativeCenterX = rect.left - pageRect.left + rect.width / 2;
-                const relativeCenterY = rect.top - pageRect.top + rect.height / 2;
-
-                const numEmojis = 16;
-                const radiusX = rect.width / 2 + 60; // 水平半径稍大
-                const radiusY = rect.height / 2 + 70; // 垂直半径更大
-
-                const points = [];
-                for (let i = 0; i < numEmojis; i++) {
-                    const angle = (Math.PI * 2 * i) / numEmojis;
-                    // Parametric equation for heart shape
-                    const x = radiusX * Math.sin(angle) * Math.sin(angle) * Math.sin(angle) * 1.1; // Adjust multiplier for width
-                    const y = -radiusY * (0.8 * Math.cos(angle) - 0.3 * Math.cos(2 * angle) - 0.2 * Math.cos(3 * angle) - 0.1 * Math.cos(4 * angle)); // Adjust coefficients for shape
-                    points.push({ x, y });
-                }
-
-                points.forEach((point, index) => {
-                    const emojiSpan = document.createElement('span');
-                    emojiSpan.classList.add('heart-emoji');
-                    emojiSpan.textContent = '🏵';
-                    emojiSpan.style.left = `${relativeCenterX + point.x}px`;
-                    emojiSpan.style.top = `${relativeCenterY + point.y}px`;
-
-                    page5.appendChild(emojiSpan);
-
-                    setTimeout(() => {
-                        emojiSpan.classList.add('visible');
-                    }, index * 100 + 500); // 延迟出现 + 初始延迟
-                });
-
-            }, 100); // 短暂延迟确保 finalMessage 渲染完成
-        }
-
-
+        
+        // 键盘事件处理函数
         function handleKeyPress(event) {
             if (currentPage < totalPages && (event.code === 'Space' || event.code === 'Enter')) {
                 event.preventDefault();
                 const globalBtn = document.getElementById('globalBtn');
-                if (globalBtn && globalBtn.style.opacity !== '0') {
+                if (globalBtn) {
                     globalBtn.click();
                 }
             }
         }
-
-        let touchStartY = 0;
-        let touchHandled = false; // 防止多点触控或意外触发
-
-        function handleTouchStart(e) {
-             if (currentPage < totalPages) {
-                touchStartY = e.touches[0].clientY;
-                touchHandled = false;
-             }
-        }
-
-        function handleTouchEnd(e) {
-             if (currentPage < totalPages && !touchHandled) {
-                const touchEndY = e.changedTouches[0].clientY;
-                const deltaY = touchStartY - touchEndY;
-
-                if (Math.abs(deltaY) > 50 && deltaY > 0) { // 向上滑动超过50px
-                    touchHandled = true; // 标记已处理
-                    nextPage();
-                }
-             }
-        }
-
+        
+        // 页面加载完成后的初始化
         document.addEventListener('DOMContentLoaded', () => {
             const globalBtn = document.getElementById('globalBtn');
-
+            
+            // 为全局按钮添加事件监听器
             if (globalBtn) {
                 globalBtn.addEventListener('click', (e) => {
                     if (currentPage < totalPages) {
-                        // 简单的点击动画
                         globalBtn.style.transform = 'scale(0.95)';
                         setTimeout(() => {
                             globalBtn.style.transform = '';
+                            nextPage();
                         }, 100);
-                        // 立即禁用按钮防止重复点击
-                        globalBtn.style.pointerEvents = 'none';
-                        nextPage();
-                         // 页面切换动画结束后再启用按钮（如果需要）
-                         // 这里由 updateButton 处理
                     }
                 });
-
+                
                 globalBtn.addEventListener('mouseenter', () => {
                     const hint = document.getElementById('btnHint');
-                    if (hint && hint.style.opacity !== '0') {
+                    if (hint) {
                         hint.style.transform = 'translateX(-50%) scale(1.1)';
                     }
                 });
+                
                 globalBtn.addEventListener('mouseleave', () => {
                     const hint = document.getElementById('btnHint');
-                     if (hint) {
+                    if (hint) {
                         hint.style.transform = 'translateX(-50%) scale(1)';
-                     }
+                    }
                 });
             }
-
+            
+            // 初始化按钮状态
             updateButton();
+            
+            // 键盘事件支持
             document.addEventListener('keydown', handleKeyPress);
-            document.addEventListener('touchstart', handleTouchStart, { passive: false });
-            document.addEventListener('touchend', handleTouchEnd, { passive: false });
-
+            
             console.log("页面初始化完成，当前页面:", currentPage);
         });
-
+        
+        // 窗口大小改变时重新设置画布大小
         window.addEventListener('resize', () => {
             const canvas = document.getElementById('confetti-canvas');
             if (canvas && canvas.style.display !== 'none') {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
             }
-             // 如果最终页面可见，重新计算心形位置
-             if (currentPage === totalPages) {
-                createHeartEmojis();
-             }
         });
-
+        
+        // 页面可见性变化监听，优化性能
         document.addEventListener('visibilitychange', () => {
-            // 可以选择暂停/恢复动画或音效
+            if (document.hidden) {
+                const canvas = document.getElementById('confetti-canvas');
+                if (canvas) {
+                    canvas.style.display = 'none';
+                }
+            }
         });
-
+        
+        // 防止双击选中文字
         document.addEventListener('selectstart', (e) => {
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
             }
         });
-
+        
+        // 触摸设备支持
+        let touchStartY = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchStartY - touchEndY;
+            // 向上滑动切换到下一页
+            if (Math.abs(deltaY) > 50 && deltaY > 0 && currentPage < totalPages) {
+                nextPage();
+            }
+        });
     </script>
 </body>
 </html>

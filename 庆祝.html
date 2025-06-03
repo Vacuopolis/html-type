@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毕业季祝福</title>
+    <title>毕业季祝福老师</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap');
 * {
@@ -18,7 +18,7 @@ body {
     background-color: #f0f0f0;
     cursor: default;
 }
-。page {
+.page {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -32,7 +32,7 @@ body {
     transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s 0.8s;
     z-index: 1;
 }
-。page.active {
+.page.active {
     opacity: 1;
     visibility: visible;
     transform: scale(1) rotate(0deg);
@@ -165,17 +165,14 @@ body {
 .final-message {
     font-size: 7rem;
     font-weight: 900;
-    font-family: 'Noto Serif SC', '华文黑体', '微软雅黑', serif;
-    text-shadow: 
-        1px 1px 0 #A36209,
-        2px 2px 0 #A36209,
-        3px 3px 0 #A36209,
-        4px 4px 8px rgba(0, 0, 0, 0.3);
+    text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
     text-align: center;
-    color: #FFDD00;
+    background: linear-gradient(45deg, #ffc107, #fffde7, #ffb74d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: glowText 2s infinite alternate, finalTextAppear 1.5s ease-out;
     padding: 0 2rem;
-    animation: finalTextAppear 1.5s ease-out;
-    letter-spacing: 4px;
 }
 
 /* 按钮和提示 - 修改为固定在右下角 */
@@ -208,7 +205,7 @@ body {
     user-select: none;
 }
 
-/* 不同页面的按钮容器特定样式 */
+/* 为不同页面的按钮容器添加特定样式 */
 .btn-container.page1-btn .main-btn {
     background: linear-gradient(45deg, #29b6f6, #0097a7);
 }
@@ -478,29 +475,29 @@ body {
 }
 
 @media (max-width: 480px) {
-    。btn-container {
+    .btn-container {
         bottom: 20px;
         right: 20px;
     }
     
-    。main-btn {
+    .main-btn {
         font-size: 1.2rem;
         padding: 12px 25px;
         min-width: 130px;
     }
     
-    。btn-hint {
+    .btn-hint {
         font-size: 0.9rem;
         padding: 6px 12px;
     }
 }
 
 @media (max-height: 600px) {
-    。countdown-number { font-size: 12rem; margin-bottom: 0.5rem;}
-    。final-message { font-size: 4.5rem; }
+    .countdown-number { font-size: 12rem; margin-bottom: 0.5rem;}
+    .final-message { font-size: 4.5rem; }
 }
 
-/* 页面切换时的背景过渡 */
+/* 添加页面切换时的背景过渡 */
 body {
     transition: background-color 0.5s ease;
 }
@@ -509,7 +506,7 @@ body {
 <body>
     <!-- 初始页面 -->
     <div class="page page1 active" id="page1">
-        <h1 class="welcome-text">亲爱的超哥</h1>
+        <h1 class="welcome-text">亲爱的老师</h1>
         <p class="subtitle">一份来自我们的毕业季祝福</p>
     </div>
     
@@ -809,7 +806,7 @@ body {
             // 初始化按钮状态
             updateButton();
             
-            // 键盘事件支持
+            // 添加键盘事件支持
             document.addEventListener('keydown', handleKeyPress);
             
             console.log("页面初始化完成，当前页面:", currentPage);

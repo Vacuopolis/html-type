@@ -156,8 +156,8 @@
 
         /* 内容样式 */
         .countdown-number {
-            font-size: 20rem;
-            font-weight: 900;
+            font-size: 1rem;
+            font-weight: 100;
             text-shadow: 6px 6px 15px rgba(0, 0, 0, 0.15);
             margin-bottom: 1rem;
             background: linear-gradient(45deg, #ffffff, #fff7e0, #ffffff);
@@ -218,7 +218,7 @@
             position: absolute;
             font-size: 4rem;
             opacity: 0;
-            animation: flowerFade 3s infinite ease-in-out;
+            animation: flowerFade 4s infinite ease-in-out;
             z-index: 1;
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
         }
@@ -518,7 +518,7 @@
         @media (max-width: 1200px) {
             .welcome-text { font-size: 4rem; }
             .subtitle { font-size: 1.8rem; }
-            .countdown-number { font-size: 15rem; }
+            .countdown-number { font-size: 1rem; }
             .final-message { font-size: 5rem; }
             .chemical-formula { font-size: 2.5rem; }
             .flower { font-size: 3.5rem; }
@@ -527,7 +527,7 @@
         @media (max-width: 768px) {
             .welcome-text { font-size: 3rem; }
             .subtitle { font-size: 1.5rem; }
-            .countdown-number { font-size: 10rem; }
+            .countdown-number { font-size: 1rem; }
             .final-message { font-size: 3rem; }
             .chemical-formula { font-size: 2rem; }
             .flower { font-size: 3rem; }
@@ -597,7 +597,7 @@
         }
 
         @media (max-height: 600px) {
-            .countdown-number { font-size: 12rem; margin-bottom: 0.5rem;}
+            .countdown-number { font-size: 1rem; margin-bottom: 0.5rem;}
             .final-message { font-size: 3rem; }
             .chemical-formula { font-size: 1.8rem; margin-top: 1rem; }
             .chemistry-icon {
@@ -625,20 +625,20 @@
     
     <!-- 倒计时3 -->
     <div class="page page2" id="page2">
-        <div class="countdown-number">3</div>
         <div class="chemical-formula">H₂O → H₂ + O₂</div>
+        <div class="countdown-number">此化学方程式意为：<br>感谢老师将复杂知识（水分子）<br>拆解为基础原理（元素）</div>
     </div>
     
     <!-- 倒计时2 -->
     <div class="page page3" id="page3">
-        <div class="countdown-number">2</div>
         <div class="chemical-formula">2H₂ + O₂ → 2H₂O</div>
+        <div class="countdown-number">我们将在老师引导下（氧气助燃）<br>将零散知识融会贯通（合成新物质）<br>在未来释放巨大能量（燃烧发光放热）</div>
     </div>
     
     <!-- 倒计时1 -->
     <div class="page page4" id="page4">
-        <div class="countdown-number">1</div>
         <div class="chemical-formula">C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O</div>
+        <div class="countdown-number">老师如同"氧气"<br>催化我们（意为葡萄糖）的潜能<br>转化为更多的智慧（CO₂代表思考，H₂O象征滋养）</div>
     </div>
     
     <!-- 最终祝福页面 -->
@@ -806,10 +806,10 @@
             const centerY = rect.top + rect.height / 2;
             
             // 爱心的大小（半径）
-            const heartRadius = Math.max(rect.width, rect.height) * 1.5;
+            const heartRadius = Math.max(rect.width, rect.height) * 1;
             
             // 生成爱心形状的花环
-            const flowerCount = 20; // 花朵数量
+            const flowerCount = 25; // 花朵数量
             for (let i = 0; i < flowerCount; i++) {
                 // 参数t（0到2π）
                 const t = (i / flowerCount) * 2 * Math.PI;
@@ -828,7 +828,7 @@
                 flower.style.left = `${left}px`;
                 flower.style.top = `${top}px`;
                 // 设置不同的动画延迟，使花朵依次出现
-                flower.style.animationDelay = `${i * 0.15}s`;
+                flower.style.animationDelay = `${i * 0.1}s`;
                 // 随机大小
                 const size = 0.8 + Math.random() * 0.4;
                 flower.style.transform = `scale(${size})`;

@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毕业季祝福物理老师</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Serif SC', serif;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            cursor: default;
+        }
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.9) rotate(-5deg);
+            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s 0.8s;
+            z-index: 1;
+        }
+        .page.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) rotate(0deg);
+            transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out, visibility 0s;
+            z-index: 2;
+        }
+        .page.exiting {
+            transform: scale(1.1) rotate(5deg);
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+
+        /* Page 1: 初始页 - 物理启航 (蓝) */
+        .page1 {
+            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            color: #fff;
+        }
+        .page1::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M50,10 L60,40 L90,40 L65,60 L75,90 L50,70 L25,90 L35,60 L10,40 L40,40 Z" fill="rgba(255,255,255,0.15)"/><circle cx="50" cy="50" r="8" fill="rgba(255,255,255,0.2)"/><path d="M30,30 L70,70 M70,30 L30,70" stroke="rgba(255,255,255,0.2)" stroke-width="2"/></svg>');
+            background-size: 150px 150px;
+            animation: floatShapes 30s infinite linear alternate;
+            opacity: 0.8;
+        }
+        .welcome-text {
+            font-size: 5rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+            margin-bottom: 1rem;
+            text-align: center;
+            background: linear-gradient(45deg, #ffffff, #e0f7fa, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmerText 3s ease-in-out infinite;
+        }
+        .subtitle {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 1s ease-out 0.5s backwards;
+        }
+        .physics-icon {
+            width: 120px;
+            height: 120px;
+            margin-top: 20px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="3"/><path d="M30,30 L70,70 M70,30 L30,70" stroke="rgba(255,255,255,0.8)" stroke-width="3"/><circle cx="50" cy="50" r="4" fill="rgba(255,255,255,0.8)"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+
+        /* Page 2: 倒计时 3 - 力学探索 (紫) */
+        .page2 {
+            background: linear-gradient(135deg, #5d69b6 0%, #a594f9 100%);
+            color: #fff;
+        }
+        .page2::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M10,50 L90,50" stroke="rgba(255,255,255,0.15)" stroke-width="1"/><path d="M50,10 L50,90" stroke="rgba(255,255,255,0.15)" stroke-width="1"/><circle cx="50" cy="50" r="20" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="5,5"/><path d="M50,50 L70,70" stroke="rgba(255,255,255,0.3)" stroke-width="3" marker-end="url(#arrow)"><animate attributeName="d" values="M50,50 L70,70; M50,50 L60,60; M50,50 L70,70" dur="3s" repeatCount="indefinite"/></path><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="rgba(255,255,255,0.3)"/></marker></defs></svg>');
+            background-size: 150px 150px;
+            animation: spinZoom 25s infinite linear;
+            opacity: 0.7;
+        }
+
+        /* Page 3: 倒计时 2 - 电磁学 (橙) */
+        .page3 {
+            background: linear-gradient(135deg, #ff9a8b 0%, #ff6a88 100%);
+            color: #fff;
+        }
+        .page3::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M50,10 C70,30 70,70 50,90 C30,70 30,30 50,10 Z" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/><path d="M50,50 L80,50" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><path d="M50,50 L50,80" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><circle cx="50" cy="50" r="15" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"><animate attributeName="r" values="15;20;15" dur="4s" repeatCount="indefinite"/></circle></svg>');
+            background-size: 120px 120px;
+            animation: wave 15s infinite linear;
+            opacity: 0.6;
+        }
+
+        /* Page 4: 倒计时 1 - 光学 (青) */
+        .page4 {
+            background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
+            color: #2c5b7b;
+        }
+        .page4::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><path d="M10,50 L40,50" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><path d="M60,50 L90,50" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><path d="M50,10 L50,40" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><path d="M50,60 L50,90" stroke="rgba(255,255,255,0.3)" stroke-width="2"/><path d="M50,50 L70,70" stroke="rgba(255,255,255,0.4)" stroke-width="3"><animate attributeName="d" values="M50,50 L70,70; M50,50 L65,65; M50,50 L70,70" dur="2s" repeatCount="indefinite"/></path><circle cx="50" cy="50" r="5" fill="rgba(255,255,255,0.5)"/></svg>');
+            background-size: 100px 100px;
+            animation: twinkleDots 3s infinite linear;
+            opacity: 0.7;
+        }
+
+        /* Page 5: 最终页 - 物理烟花 (金) */
+        .page5 {
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
+            color: #fff;
+        }
+        .page5::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="50" cy="50" r="5" fill="rgba(255,215,0,0.3)"><animate attributeName="r" values="5;8;5" dur="1.5s" repeatCount="indefinite"/></circle><circle cx="30" cy="30" r="3" fill="rgba(255,100,100,0.3)"><animate attributeName="r" values="3;6;3" dur="1.8s" repeatCount="indefinite"/></circle><circle cx="70" cy="70" r="4" fill="rgba(100,200,255,0.3)"><animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite"/></circle></svg>');
+            background-size: 80px 80px;
+            animation: subtleGrid 20s infinite linear, glowGold 2s infinite alternate;
+            opacity: 0.8;
+        }
+
+        .countdown-number {
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 6px 6px 15px rgba(0, 0, 0, 0.15);
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ffffff, #fff7e0, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulseNumber 1.5s infinite ease-in-out;
+            line-height: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .page.active .countdown-number {
+            animation: numberAppear 0.8s ease-out, pulseNumber 1.5s infinite ease-in-out 0.8s;
+        }
+        .final-message {
+            font-size: 6rem;
+            font-weight: 900;
+            font-family: 'Noto Serif SC', '华文中宋', '微软雅黑', serif;
+            text-align: center;
+            color: #FFD700;
+            padding: 0 2rem;
+            animation: finalTextAppear 1.5s ease-out;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #ff5722, 0 0 20px #ff9800, 0 0 30px #ffc107;
+            max-width: 90%;
+            line-height: 1.2;
+            position: relative;
+            z-index: 10;
+        }
+
+        .physics-formula {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-top: 2rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            animation: fadeIn 2s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        .flower-heart-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .flower {
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0;
+            animation: flowerFade 4s infinite ease-in-out;
+            z-index: 1;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+        }
+
+        @keyframes flowerFade {
+            0%, 100% { 
+                opacity: 0; 
+                transform: scale(0.5) translateY(20px);
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .btn-container {
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            margin-top: 0;
+            animation: fadeInButton 1s 0.5s ease backwards;
+            z-index: 100;
+        }
+
+        .main-btn {
+            padding: 20px 40px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            font-family: 'Noto Serif SC', serif;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            min-width: 180px;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            background: linear-gradient(45deg, #2196f3, #3f51b5);
+        }
+
+        .btn-container .main-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+            background: linear-gradient(45deg, #3f51b5, #2196f3);
+        }
+
+        .btn-container .main-btn:active {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .main-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        .main-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-hint {
+            position: absolute;
+            bottom: calc(100% + 20px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.95);
+            background: rgba(33, 150, 243, 0.9);
+            padding: 12px 20px;
+            border-radius: 25px;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: hintPulse 2s ease-in-out infinite;
+            backdrop-filter: blur(10px);
+        }
+
+        .arrow {
+            position: absolute;
+            bottom: calc(100% + 60px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 20px solid rgba(33, 150, 243, 0.9);
+            animation: bounceArrow 1.8s infinite ease-in-out;
+        }
+
+        .lab-equipment {
+            position: absolute;
+            width: 100px;
+            height: 200px;
+            bottom: 0;
+            left: 50px;
+            z-index: 5;
+        }
+        .pendulum {
+            position: absolute;
+            width: 80px;
+            height: 120px;
+            bottom: 0;
+            left: 10px;
+            overflow: hidden;
+        }
+        .pendulum-string {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.7);
+            transform-origin: top center;
+            animation: pendulumSwing 3s infinite ease-in-out;
+        }
+        .pendulum-ball {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2196f3, #3f51b5);
+        }
+        .circuit {
+            position: absolute;
+            width: 100px;
+            height: 80px;
+            bottom: 0;
+            left: 100px;
+        }
+        .circuit-path {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            stroke: rgba(255, 255, 255, 0.7);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        @keyframes floatShapes {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-25px) rotate(15deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        @keyframes spinZoom {
+            from { transform: rotate(0deg) scale(1); }
+            to { transform: rotate(360deg) scale(1.1); }
+        }
+        @keyframes wave {
+            0% { background-position: 0 0; }
+            100% { background-position: 120px 60px; }
+        }
+        @keyframes twinkleDots {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        @keyframes subtleGrid {
+            from { background-position: 0 0; }
+            to { background-position: 100px 100px; }
+        }
+        @keyframes glowGold {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.3); }
+        }
+        @keyframes pulseNumber {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        @keyframes bounceArrow {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-12px); }
+            60% { transform: translateX(-50%) translateY(-6px); }
+        }
+        @keyframes glowText {
+            from {
+                text-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 193, 7, 0.4);
+                filter: brightness(1);
+            }
+            to {
+                text-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 193, 7, 0.7);
+                filter: brightness(1.1);
+            }
+        }
+        @keyframes fadeInButton {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmerText {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 0.9;
+                transform: translateY(0);
+            }
+        }
+        @keyframes numberAppear {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(-90deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        @keyframes finalTextAppear {
+            0% {
+                transform: scale(0.5) translateY(50px);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.1) translateY(-10px);
+            }
+            100% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes hintPulse {
+            0%, 100% {
+                transform: translateX(-50%) scale(1);
+            }
+            50% {
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+        @keyframes pulseScale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes pendulumSwing {
+            0%, 100% { transform: rotate(-20deg); }
+            50% { transform: rotate(20deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 1200px) {
+            .welcome-text { font-size: 4rem; }
+            .subtitle { font-size: 1.8rem; }
+            .countdown-number { font-size: 1rem; }
+            .final-message { font-size: 5rem; }
+            .physics-formula { font-size: 2.5rem; }
+            .flower { font-size: 3.5rem; }
+        }
+
+        @media (max-width: 768px) {
+            .welcome-text { font-size: 3rem; }
+            .subtitle { font-size: 1.5rem; }
+            .countdown-number { font-size: 1rem; }
+            .final-message { font-size: 3rem; }
+            .physics-formula { font-size: 2rem; }
+            .flower { font-size: 3rem; }
+            
+            .btn-container {
+                bottom: 30px;
+                right: 30px;
+            }
+            
+            .main-btn {
+                font-size: 1.4rem;
+                padding: 15px 30px;
+                min-width: 150px;
+            }
+            
+            .btn-hint {
+                font-size: 1rem;
+                padding: 8px 15px;
+                bottom: calc(100% + 15px);
+            }
+            
+            .arrow {
+                bottom: calc(100% + 45px);
+                border-left-width: 12px;
+                border-right-width: 12px;
+                border-top-width: 16px;
+            }
+            
+            .physics-icon {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .lab-equipment {
+                transform: scale(0.7);
+                left: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .btn-container {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .main-btn {
+                font-size: 1.2rem;
+                padding: 12px 25px;
+                min-width: 130px;
+            }
+            
+            .btn-hint {
+                font-size: 0.9rem;
+                padding: 6px 12px;
+            }
+            
+            .final-message { font-size: 2.5rem; }
+            .physics-formula { font-size: 1.5rem; }
+            .physics-icon {
+                width: 60px;
+                height: 60px;
+            }
+            .lab-equipment {
+                display: none;
+            }
+            .flower { font-size: 2.5rem; }
+        }
+
+        @media (max-height: 600px) {
+            .countdown-number { font-size: 1rem; margin-bottom: 0.5rem;}
+            .final-message { font-size: 3rem; }
+            .physics-formula { font-size: 1.8rem; margin-top: 1rem; }
+            .physics-icon {
+                width: 60px;
+                height: 60px;
+                margin-top: 10px;
+            }
+            .flower { font-size: 3rem; }
+        }
+
+        body {
+            transition: background-color 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="page page1 active" id="page1">
+        <h1 class="welcome-text">敬爱的物理老师</h1>
+        <p class="subtitle">感谢您为我们揭示宇宙的奥秘</p>
+        <p class="subtitle">一份特别的毕业祝福即将呈现</p>
+        <div class="physics-icon"></div>
+    </div>
+    
+    <div class="page page2" id="page2">
+        <div class="physics-formula">F = m·a</div>
+        <div class="countdown-number">牛顿第二定律：<br>老师如力（F），推动我们（质量m）<br>不断加速（a）前行</div>
+    </div>
+    
+    <div class="page page3" id="page3">
+        <div class="physics-formula">E = m·c²</div>
+        <div class="countdown-number">质能方程：<br>我们小小的身躯（质量m）蕴含巨大能量（E）<br>在老师引导下（光速c的平方）点燃未来</div>
+    </div>
+    
+    <div class="page page4" id="page4">
+        <div class="physics-formula">U = I·R</div>
+        <div class="countdown-number">欧姆定律：<br>老师如电压（U），激励我们（电流I）<br>克服阻力（R），在知识的电路上勇往直前</div>
+    </div>
+    
+    <div class="page page5" id="page5">
+        <h1 class="final-message">老师，请您<br>慢慢回头看！</h1>
+        <div class="physics-formula">感谢您激发了我们的潜能！</div>
+        <div class="flower-heart-container" id="flowerHeart"></div>
+    </div>
+    
+    <div class="lab-equipment">
+        <div class="pendulum">
+            <div class="pendulum-string"></div>
+            <div class="pendulum-ball"></div>
+        </div>
+        <div class="circuit">
+            <svg viewBox="0 0 100 80" class="circuit-path">
+                <path d="M10,40 Q30,10 50,40 T90,40" fill="none" stroke="rgba(255,255,255,0.7)"/>
+                <circle cx="50" cy="40" r="8" fill="none" stroke="rgba(255,255,255,0.7)"/>
+                <path d="M30,60 L70,60" stroke="rgba(255,255,255,0.7)"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="btn-container" id="globalBtnContainer">
+        <div class="arrow" id="btnArrow"></div>
+        <div class="btn-hint" id="btnHint">请点这里开启</div>
+        <button class="main-btn" id="globalBtn">开始演示</button>
+    </div>
+    
+    <canvas id="confetti-canvas"></canvas>
+    
+    <script>
+        let currentPage = 1;
+        const totalPages = 5;
+        
+        const buttonConfig = {
+            1: { text: '开始演示', hint: '请点这里开启', showArrow: true },
+            2: { text: '下一步', hint: '继续演示', showArrow: false },
+            3: { text: '下一步', hint: '继续演示', showArrow: false },
+            4: { text: '点燃', hint: '最后一次点击', showArrow: false }
+        };
+        
+        class ConfettiParticle {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height;
+                this.w = Math.random() * 12 + 8;
+                this.h = Math.random() * 6 + 4;
+                this.vx = Math.random() * 4 - 2;
+                this.vy = Math.random() * 5 + 3;
+                this.angle = Math.random() * 360;
+                this.angleVel = Math.random() * 0.2 - 0.1;
+                this.color = this.getRandomColor();
+                this.opacity = 1;
+            }
+            getRandomColor() {
+                const colors = [
+                    '#29b6f6', '#4fc3f7', '#81d4fa',
+                    '#ff9800', '#ffa726', '#ffb74d',
+                    '#66bb6a', '#81c784', '#a5d6a7',
+                    '#f48fb1', '#ce93d8', '#b39ddb'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.angle += this.angleVel;
+                this.vy += 0.1;
+                this.vx *= 0.99;
+                if (this.y > this.canvas.height + 20) {
+                    this.y = -20;
+                    this.x = Math.random() * this.canvas.width;
+                    this.vx = Math.random() * 4 - 2;
+                    this.vy = Math.random() * 5 + 3;
+                }
+            }
+            draw() {
+                this.ctx.save();
+                this.ctx.translate(this.x, this.y);
+                this.ctx.rotate(this.angle);
+                this.ctx.globalAlpha = this.opacity;
+                this.ctx.fillStyle = this.color;
+                this.ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+                this.ctx.restore();
+            }
+        }
+        
+        function createConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.display = 'block';
+            const particles = [];
+            const particleCount = 300;
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new ConfettiParticle(canvas));
+            }
+            
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(particle => {
+                    particle.update();
+                    particle.draw();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+            
+            setTimeout(() => {
+                let fadeOut = setInterval(() => {
+                    particles.forEach(particle => {
+                        particle.opacity -= 0.01;
+                    });
+                    if (particles[0].opacity <= 0) {
+                        clearInterval(fadeOut);
+                        canvas.style.display = 'none';
+                    }
+                }, 50);
+            }, 10000);
+        }
+        
+        function createFlowerHeart() {
+            const container = document.getElementById('flowerHeart');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const message = document.querySelector('.final-message');
+            if (!message) return;
+            
+            const rect = message.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const heartRadius = Math.max(rect.width, rect.height) * 0.5;
+            
+            const flowerCount = 25;
+            for (let i = 0; i < flowerCount; i++) {
+                const t = (i / flowerCount) * 2 * Math.PI;
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                
+                const scale = heartRadius / 20;
+                const left = centerX + x * scale;
+                const top = centerY + y * scale;
+                
+                const flower = document.createElement('div');
+                flower.className = 'flower';
+                flower.innerHTML = '🏵';
+                flower.style.left = `${left}px`;
+                flower.style.top = `${top}px`;
+                flower.style.animationDelay = `${i * 0.1}s`;
+                const size = 0.8 + Math.random() * 0.4;
+                flower.style.transform = `scale(${size})`;
+                
+                container.appendChild(flower);
+            }
+        }
+        
+        function playSound(type) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                if (type === 'click') {
+                    oscillator.frequency.value = 800;
+                    gainNode.gain.value = 0.1;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                } else if (type === 'final') {
+                    oscillator.frequency.value = 1200;
+                    gainNode.gain.value = 0.2;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                }
+            } catch (e) {
+                console.log('音频播放失败');
+            }
+        }
+        
+        function updateButton() {
+            const btnContainer = document.getElementById('globalBtnContainer');
+            const btn = document.getElementById('globalBtn');
+            const btnHint = document.getElementById('btnHint');
+            const arrow = document.getElementById('btnArrow');
+            
+            if (currentPage <= 4) {
+                const config = buttonConfig[currentPage];
+                btn.textContent = config.text;
+                btnHint.textContent = config.hint;
+                
+                if (config.showArrow) {
+                    arrow.style.display = 'block';
+                } else {
+                    arrow.style.display = 'none';
+                }
+                
+                btnContainer.style.display = 'block';
+                btnContainer.style.opacity = '1';
+            } else {
+                btnContainer.style.transition = 'opacity 0.5s ease';
+                btnContainer.style.opacity = '0';
+                setTimeout(() => {
+                    btnContainer.style.display = 'none';
+                }, 500);
+            }
+        }
+        
+        function goToPage(pageNumber) {
+            if (pageNumber >= 1 && pageNumber <= totalPages) {
+                const currentPageEl = document.getElementById(`page${currentPage}`);
+                const targetPageEl = document.getElementById(`page${pageNumber}`);
+                
+                if (currentPageEl) {
+                    currentPageEl.classList.add('exiting');
+                    currentPageEl.classList.remove('active');
+                }
+                
+                setTimeout(() => {
+                    if (currentPageEl) {
+                        currentPageEl.classList.remove('exiting');
+                    }
+                    if (targetPageEl) {
+                        targetPageEl.classList.add('active');
+                    }
+                    currentPage = pageNumber;
+                    
+                    updateButton();
+                    
+                    try {
+                        if (currentPage === totalPages) {
+                            playSound('final');
+                        } else {
+                            playSound('click');
+                        }
+                    } catch (e) {
+                        console.log('音频播放失败');
+                    }
+                    
+                    if (currentPage === totalPages) {
+                        handleFinalPage();
+                    }
+                }, 200);
+            }
+        }
+        
+        function nextPage() {
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        }
+        
+        function handleFinalPage() {
+            document.removeEventListener('keydown', handleKeyPress);
+            
+            setTimeout(() => {
+                createConfetti();
+            }, 500);
+            
+            const finalMessage = document.querySelector('.final-message');
+            if (finalMessage) {
+                finalMessage.style.animation = 'glowText 2s infinite alternate, finalTextAppear 1.5s ease-out, pulseScale 1s ease-out 1.5s';
+            }
+            
+            setTimeout(() => {
+                createFlowerHeart();
+            }, 1000);
+        }
+        
+        function handleKeyPress(event) {
+            if (currentPage < totalPages && (event.code === 'Space' || event.code === 'Enter')) {
+                event.preventDefault();
+                const globalBtn = document.getElementById('globalBtn');
+                if (globalBtn) {
+                    globalBtn.click();
+                }
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const globalBtn = document.getElementById('globalBtn');
+            
+            if (globalBtn) {
+                globalBtn.addEventListener('click', (e) => {
+                    if (currentPage < totalPages) {
+                        globalBtn.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            globalBtn.style.transform = '';
+                            nextPage();
+                        }, 100);
+                    }
+                });
+                
+                globalBtn.addEventListener('mouseenter', () => {
+                    const hint = document.getElementById('btnHint');
+                    if (hint) {
+                        hint.style.transform = 'translateX(-50%) scale(1.1)';
+                    }
+                });
+                
+                globalBtn.addEventListener('mouseleave', () => {
+                    const hint = document.getElementById('btnHint');
+                    if (hint) {
+                        hint.style.transform = 'translateX(-50%) scale(1)';
+                    }
+                });
+            }
+            
+            updateButton();
+            
+            document.addEventListener('keydown', handleKeyPress);
+        });
+        
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('confetti-canvas');
+            if (canvas && canvas.style.display !== 'none') {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            if (currentPage === 5) {
+                createFlowerHeart();
+            }
+        });
+        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                const canvas = document.getElementById('confetti-canvas');
+                if (canvas) {
+                    canvas.style.display = 'none';
+                }
+            }
+        });
+        
+        document.addEventListener('selectstart', (e) => {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+            }
+        });
+        
+        let touchStartY = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchStartY - touchEndY;
+            if (Math.abs(deltaY) > 50 && deltaY > 0 && currentPage < totalPages) {
+                nextPage();
+            }
+        });
+    </script>
+</body>
+</html>

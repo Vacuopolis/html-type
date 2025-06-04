@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1425,11 +1426,13 @@
             <!-- 个性化设置下拉菜单 -->
             <div class="dropdown">
                 <button class="btn warning" id="btn-audio-theme">🎨 个性化设置</button>
-                <div class="dropdown-content" id="audio-theme-dropdown">
-                    <div class="dropdown-item" id="dropdown-sound">🔊 音效开关</div>
-                    <div class="dropdown-item" id="dropdown-theme">🌓 切换主题</div>
-                    <div class="dropdown-item" id="dropdown-controls">🎮 操作设置</div>
-                </div>
+                <!-- 在个性化设置下拉菜单中添加存档设置选项 -->
+            <div class="dropdown-content" id="audio-theme-dropdown">
+                <div class="dropdown-item" id="dropdown-sound">🔊 音效开关</div>
+                <div class="dropdown-item" id="dropdown-theme">🌓 切换主题</div>
+                <div class="dropdown-item" id="dropdown-controls">🎮 操作设置</div>
+                <div class="dropdown-item" id="dropdown-save-settings">💾 存档设置</div>
+            </div>
             </div>
             <!-- 存档管理下拉菜单 -->
             <div class="dropdown">
@@ -1724,6 +1727,26 @@
             </div>
         </div>
     </div>
+    <!-- 存档设置模态框 -->
+<div class="modal" id="save-settings-modal">
+    <div class="modal-content">
+        <h2>存档设置</h2>
+        <div class="settings-grid">
+            <div class="settings-item">
+                <label>自动存档间隔（展开次数）</label>
+                <input type="number" id="auto-save-interval" min="5" max="50" value="10">
+            </div>
+            <div class="settings-item">
+                <label>临时存档最大数量</label>
+                <input type="number" id="max-temp-saves" min="1" max="10" value="3">
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn success" id="btn-save-save-settings">保存设置</button>
+            <button class="btn" id="btn-close-save-settings">取消</button>
+        </div>
+    </div>
+</div>
     <!-- 游戏结束模态框 -->
     <div class="modal" id="game-over-modal">
         <div class="modal-content">
@@ -1794,7 +1817,6 @@
                         <li><strong>滚动查看</strong>：游戏板支持滚动浏览</li>
                         <li><strong>连击系统</strong>：连续成功排雷的操作可获得更多加分</li>
                         <li><strong>进度条</strong>：显示当前游戏完成的进度</li>
-                        <li><strong>特殊格子</strong>：闪烁格子将提供额外分数奖励</li>
                         <li><strong>智能提示</strong>：基于逻辑推理的人性化提示（可获知原因）</li>
                         <li><strong>存档功能</strong>：可保存和加载当前进度，包括游戏状态、成就、设置等</li>
                     </ul>
@@ -1806,6 +1828,7 @@
                         <li><strong>透视镜</strong>：显示随机区域的地雷位置</li>
                         <li><strong>安全探测</strong>：高亮显示安全格子</li>
                         <li><strong>自动标记</strong>：自动标记明显的地雷</li>
+                        <li><strong>特殊格子</strong>：闪烁格子将提供额外分数奖励</li>
                     </ul>
                 </div>
                 <div class="help-section">
@@ -1815,6 +1838,7 @@
                         <li><strong>加载存档</strong>：从已保存的存档中恢复游戏</li>
                         <li><strong>管理存档</strong>：可加载、删除和查看存档文件</li>
                         <li><strong>自动保存</strong>：游戏会自动保存设置和成就进度</li>
+                        <li><strong>临时存档</strong>：自动保存后的存档将会被存于此</li>
                     </ul>
                 </div>
                 <div class="help-section">
@@ -1893,7 +1917,10 @@
                         specialCellChance: 10,
                         batchRevealing: false,
                         difficulty: 'beginner',
-                        customSettings: null,
+                        customSettings: null,                        
+                        expandCount: 0, 
+                        autoSaveInterval: 10, 
+                        maxTempSaves: 3, 
                         zenItems: {
                             timeStop: { count: 3, active: false, duration: 30 },
                             xray: { count: 2, active: false, cells: [] },
@@ -2010,6 +2037,7 @@ this.isShowingAchievement = false;
                     this.sounds = {};
                     this.savedGames = []; // 存档列表
                     this.init();
+                    this.tempSaves = [];
                 }
 
                 init() {
@@ -2018,11 +2046,13 @@ this.isShowingAchievement = false;
                         this.loadStats();
                         this.loadAchievements();
                         this.loadSavedGames();
+                        this.loadTempSaves();
                         this.initAudio();
                         this.bindEvents();
                         this.checkMobileDevice();
                         this.newGame('beginner');
                         this.displayVersionInfo();
+                        this.loadSaveSettings();
                     } catch (error) {
                         console.error('初始化失败:', error);
                         this.bindBasicEvents();
@@ -2055,6 +2085,10 @@ this.isShowingAchievement = false;
                         'btn-save-controls': () => this.saveControlSettings(),
                         'btn-close-controls': () => this.closeModal('controls-modal'),
                         'btn-close-achievement': () => this.closeModal('achievement-modal'),
+                        'btn-save-save-settings': () => this.saveSaveSettings(),
+                        'btn-close-save-settings': () => this.closeModal('save-settings-modal'),
+                        'btn-copy-export': () => this.copyExportContent(),
+                        'btn-close-export': () => this.closeExportDialog(),
                         // 禅意模式道具
                         'zen-time-stop': () => this.useZenItem('timeStop'),
                         'zen-x-ray': () => this.useZenItem('xray'),
@@ -2139,6 +2173,10 @@ this.isShowingAchievement = false;
 
                         document.getElementById('dropdown-controls')?.addEventListener('click', () => {
                             this.showControlsDialog();
+                            this.closeAllDropdowns();
+                        });
+                        document.getElementById('dropdown-save-settings')?.addEventListener('click', () => {
+                            this.showSaveSettingsDialog();
                             this.closeAllDropdowns();
                         });
                     }
@@ -2423,59 +2461,112 @@ loadSavedGame(saveId) {
                 }
 
                 generateSaveListHTML(mode) {
-                    if (this.savedGames.length === 0) {
-                        return '<p style="text-align: center; opacity: 0.7;">暂无存档</p>';
-                    }
+    let html = '';
+    
+    if (mode === 'manage') {
+        // 导入导出按钮
+        html += `
+            <div style="margin-bottom: 20px; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                <button class="btn success small" onclick="game.exportSaves()" style="margin-right: 10px;">📤 导出存档</button>
+                <button class="btn info small" onclick="game.importSaves()">📥 导入存档</button>
+                <input type="file" id="import-file" accept=".json" style="display: none;" onchange="game.handleImportFile(event)">
+            </div>
+        `;
+    }
+    
+    if (this.savedGames.length === 0 && this.tempSaves.length === 0) {
+        return html + '<p style="text-align: center; opacity: 0.7;">暂无存档</p>';
+    }
 
-                    const sortedSaves = [...this.savedGames].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                    let html = '<div class="save-list">';
+    html += '<div class="save-list">';
+    
+    // 显示临时存档
+    if (this.tempSaves.length > 0) {
+        html += '<h4 style="color: var(--warning-color); margin: 15px 0 10px 0;">⏰ 临时存档</h4>';
+        const sortedTempSaves = [...this.tempSaves].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        sortedTempSaves.forEach(save => {
+            const date = new Date(save.timestamp);
+            const difficultyNames = {
+                beginner: '初级', intermediate: '中级', expert: '高级', mega: '巨型', custom: '自定义'
+            };
+            const difficultyName = difficultyNames[save.gameState.difficulty] || '未知';
+            const progress = save.gameState.gameOver ? 
+                (save.gameState.won ? '已完成' : '已失败') : 
+                `进行中 (${this.formatTime(save.gameState.timer)})`;
 
-                    sortedSaves.forEach(save => {
-                        const date = new Date(save.timestamp);
-                        const difficultyNames = {
-                            beginner: '初级',
-                            intermediate: '中级',
-                            expert: '高级',
-                            mega: '巨型',
-                            custom: '自定义'
-                        };
-                        const difficultyName = difficultyNames[save.gameState.difficulty] || '未知';
-                        const progress = save.gameState.gameOver ?
-                            (save.gameState.won ? '已完成' : '已失败') :
-                            `进行中 (${this.formatTime(save.gameState.timer)})`;
+            html += `
+                <div class="save-item" data-save-id="${save.id}" style="border-left: 4px solid var(--warning-color);">
+                    <div class="save-item-header">
+                        <div class="save-item-title">${difficultyName} - ${save.gameState.mode} (临时)</div>
+                        <div class="save-item-date">${date.toLocaleString()}</div>
+                    </div>
+                    <div class="save-item-info">
+                        状态: ${progress}<br>
+                        地雷: ${save.gameState.minesLeft}/${save.gameState.totalMines} |
+                        连击: ${save.gameState.combo}
+                    </div>
+                    <div class="save-item-actions">
+            `;
+            
+            if (mode === 'load') {
+                html += `<button class="btn success small" onclick="game.loadTempSaveAndClose(${save.id})">加载</button>`;
+            } else if (mode === 'manage') {
+                html += `
+                    <button class="btn success small" onclick="game.loadTempSaveAndClose(${save.id})">加载</button>
+                    <button class="btn danger small" onclick="game.deleteTempSaveAndRefresh(${save.id})">删除</button>
+                `;
+            }
+            
+            html += '</div></div>';
+        });
+    }
+    
+    // 显示正常存档
+    if (this.savedGames.length > 0) {
+        html += '<h4 style="color: var(--primary-color); margin: 15px 0 10px 0;">💾 正常存档</h4>';
+        const sortedSaves = [...this.savedGames].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        sortedSaves.forEach(save => {
+            const date = new Date(save.timestamp);
+            const difficultyNames = {
+                beginner: '初级', intermediate: '中级', expert: '高级', mega: '巨型', custom: '自定义'
+            };
+            const difficultyName = difficultyNames[save.gameState.difficulty] || '未知';
+            const progress = save.gameState.gameOver ? 
+                (save.gameState.won ? '已完成' : '已失败') : 
+                `进行中 (${this.formatTime(save.gameState.timer)})`;
 
-                        html += `
-                            <div class="save-item" data-save-id="${save.id}">
-                                <div class="save-item-header">
-                                    <div class="save-item-title">${difficultyName} - ${save.gameState.mode}</div>
-                                    <div class="save-item-date">${date.toLocaleString()}</div>
-                                </div>
-                                <div class="save-item-info">
-                                    状态: ${progress}<br>
-                                    地雷: ${save.gameState.minesLeft}/${save.gameState.totalMines} |
-                                    连击: ${save.gameState.combo}
-                                </div>
-                                <div class="save-item-actions">
-                        `;
-
-                        if (mode === 'load') {
-                            html += `<button class="btn success small" onclick="game.loadSaveAndClose(${save.id})">加载</button>`;
-                        } else if (mode === 'manage') {
-                            html += `
-                                <button class="btn success small" onclick="game.loadSaveAndClose(${save.id})">加载</button>
-                                <button class="btn danger small" onclick="game.deleteSaveAndRefresh(${save.id})">删除</button>
-                            `;
-                        }
-
-                        html += `
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    html += '</div>';
-                    return html;
-                }
+            html += `
+                <div class="save-item" data-save-id="${save.id}">
+                    <div class="save-item-header">
+                        <div class="save-item-title">${difficultyName} - ${save.gameState.mode}</div>
+                        <div class="save-item-date">${date.toLocaleString()}</div>
+                    </div>
+                    <div class="save-item-info">
+                        状态: ${progress}<br>
+                        地雷: ${save.gameState.minesLeft}/${save.gameState.totalMines} |
+                        连击: ${save.gameState.combo}
+                    </div>
+                    <div class="save-item-actions">
+            `;
+            
+            if (mode === 'load') {
+                html += `<button class="btn success small" onclick="game.loadSaveAndClose(${save.id})">加载</button>`;
+            } else if (mode === 'manage') {
+                html += `
+                    <button class="btn success small" onclick="game.loadSaveAndClose(${save.id})">加载</button>
+                    <button class="btn danger small" onclick="game.deleteSaveAndRefresh(${save.id})">删除</button>
+                `;
+            }
+            
+            html += '</div></div>';
+        });
+    }
+    
+    html += '</div>';
+    return html;
+}
 
                 loadSaveAndClose(saveId) {
                     if (this.loadSavedGame(saveId)) {
@@ -2522,6 +2613,491 @@ loadSavedGame(saveId) {
                         this.savedGames = [];
                     }
                 }
+                
+                // 导出存档
+exportSaves() {
+    try {
+        const exportData = {
+            version: this.VERSION,
+            timestamp: Date.now(),
+            normalSaves: this.savedGames,
+            tempSaves: this.tempSaves,
+            stats: this.stats,
+            achievements: this.achievements
+        };
+        
+        const jsonString = JSON.stringify(exportData, null, 2);
+        
+        // 生成文件名
+        const now = new Date();
+        const dateStr = now.getFullYear() + '-' + 
+                       String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(now.getDate()).padStart(2, '0');
+        const timeStr = String(now.getHours()).padStart(2, '0') + '-' + 
+                       String(now.getMinutes()).padStart(2, '0');
+        const filename = `扫雷存档_${dateStr}_${timeStr}.json`;
+        
+        // 调试：在浏览器控制台打印将要使用的文件名
+        console.log('[DEBUG] Exporting with filename:', filename); 
+        
+        // 使用 application/json MIME 类型
+        const dataStr = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonString);
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute('href', dataStr);
+        downloadAnchorNode.setAttribute('download', filename);
+        downloadAnchorNode.style.display = 'none';
+        
+        // 必须添加到DOM才能在某些浏览器中工作
+        document.body.appendChild(downloadAnchorNode);
+        
+        // 延迟触发下载，确保DOM操作完成
+        setTimeout(() => {
+            downloadAnchorNode.click();
+            
+            // 清理DOM
+            setTimeout(() => {
+                if (downloadAnchorNode.parentNode) {
+                    document.body.removeChild(downloadAnchorNode);
+                }
+            }, 100);
+        }, 10);
+        
+        this.showFloatingMessage('📤 存档导出成功！');
+        
+    } catch (error) {
+        console.error('导出失败:', error);
+        
+        // 备用方案：显示JSON内容让用户手动复制
+        this.showExportDialog();
+    }
+}
+
+// 备用导出对话框
+showExportDialog() {
+    try {
+        const exportData = {
+            version: this.VERSION,
+            timestamp: Date.now(),
+            normalSaves: this.savedGames,
+            tempSaves: this.tempSaves,
+            stats: this.stats,
+            achievements: this.achievements
+        };
+        
+        const jsonString = JSON.stringify(exportData, null, 2);
+        
+        // 创建模态框显示JSON内容
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 80%; max-height: 80%;">
+                <h2>存档导出</h2>
+                <p>请复制下面的内容并保存为 .json 文件：</p>
+                <textarea readonly style="width: 100%; height: 400px; font-family: monospace; font-size: 12px; resize: vertical;" id="export-json-content">${jsonString}</textarea>
+                <div class="modal-buttons">
+                    <button class="btn success" onclick="game.copyExportContent()">📋 复制内容</button>
+                    <button class="btn" onclick="game.closeExportDialog()">关闭</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 自动选择文本
+        setTimeout(() => {
+            const textarea = document.getElementById('export-json-content');
+            if (textarea) {
+                textarea.select();
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('显示导出对话框失败:', error);
+        this.showFloatingMessage('❌ 导出功能异常，请刷新页面重试！');
+    }
+}
+
+// 复制导出内容
+copyExportContent() {
+    const textarea = document.getElementById('export-json-content');
+    if (textarea) {
+        textarea.select();
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textarea.value).then(() => {
+                    this.showFloatingMessage('📋 已复制到剪贴板！');
+                });
+            } else {
+                document.execCommand('copy');
+                this.showFloatingMessage('📋 已复制到剪贴板！');
+            }
+        } catch (error) {
+            console.error('复制失败:', error);
+            this.showFloatingMessage('❌ 复制失败，请手动选择并复制！');
+        }
+    }
+}
+
+// 关闭导出对话框
+closeExportDialog() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (modal.innerHTML.includes('存档导出')) {
+            modal.remove();
+        }
+    });
+}
+
+// 导入存档
+importSaves() {
+    const fileInput = document.getElementById('import-file');
+    if (fileInput) {
+        fileInput.click();
+    }
+}
+
+// 处理导入文件
+handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importData = JSON.parse(e.target.result);
+            
+            if (!importData.version || !this.isCompatibleVersion(importData.version)) {
+                this.showFloatingMessage('❌ 存档版本不兼容！');
+                return;
+            }
+            
+            let importCount = 0;
+            
+            // 导入正常存档
+            if (importData.normalSaves && Array.isArray(importData.normalSaves)) {
+                importData.normalSaves.forEach(save => {
+                    // 检查是否已存在相同ID的存档
+                    if (!this.savedGames.find(existing => existing.id === save.id)) {
+                        this.savedGames.push(save);
+                        importCount++;
+                    }
+                });
+            }
+            
+            // 导入临时存档
+            if (importData.tempSaves && Array.isArray(importData.tempSaves)) {
+                importData.tempSaves.forEach(save => {
+                    if (!this.tempSaves.find(existing => existing.id === save.id)) {
+                        this.tempSaves.push(save);
+                        importCount++;
+                    }
+                });
+                // 限制临时存档数量
+                this.limitTempSaves();
+            }
+            
+            // 保存数据
+            this.saveSavedGames();
+            this.saveTempSaves();
+            
+            // 可选择是否导入统计和成就数据
+            if (confirm('是否同时导入统计数据和成就？')) {
+                if (importData.stats) {
+                    this.stats = { ...this.stats, ...importData.stats };
+                    this.saveStats();
+                }
+                if (importData.achievements) {
+                    this.achievements = { ...this.achievements, ...importData.achievements };
+                    this.saveAchievements();
+                    this.updateAchievementDisplay();
+                }
+            }
+            
+            this.showFloatingMessage(`📥 导入成功！共导入${importCount}个存档`);
+            this.showManageSavesDialog(); // 刷新列表
+            
+        } catch (error) {
+            console.error('导入失败:', error);
+            this.showFloatingMessage('❌ 导入失败，文件格式错误！');
+        }
+    };
+    reader.readAsText(file);
+    
+    // 清空文件输入，允许重复选择同一文件
+    event.target.value = '';
+}
+
+                // 临时存档方法
+createTempSave() {
+    if (this.gameState.firstClick || this.gameState.gameOver) {
+        return;
+    }
+    
+    const timestamp = new Date();
+    const saveName = `临时存档_${timestamp.toLocaleString()}`;
+    
+    const gameStateToSave = JSON.parse(JSON.stringify(this.gameState));
+    gameStateToSave.autoSolving = false;
+    gameStateToSave.resumeAfterClick = false;
+    
+    const saveData = {
+        id: Date.now() + Math.random(), // 确保唯一性
+        name: saveName,
+        timestamp: timestamp.toISOString(),
+        gameState: gameStateToSave,
+        board: JSON.parse(JSON.stringify(this.board)),
+        revealed: JSON.parse(JSON.stringify(this.revealed)),
+        flags: JSON.parse(JSON.stringify(this.flags)),
+        questions: JSON.parse(JSON.stringify(this.questions)),
+        specialCells: JSON.parse(JSON.stringify(this.specialCells)),
+        achievements: JSON.parse(JSON.stringify(this.achievements)),
+        stats: JSON.parse(JSON.stringify(this.stats))
+    };
+    
+    this.tempSaves.push(saveData);
+    this.limitTempSaves();
+    this.saveTempSaves();
+    
+    this.showFloatingMessage('💾 已自动保存临时存档');
+}
+
+// 限制临时存档数量
+limitTempSaves() {
+    while (this.tempSaves.length > this.gameState.maxTempSaves) {
+        this.tempSaves.shift(); // 删除最旧的
+    }
+}
+
+// 保存临时存档到本地存储
+saveTempSaves() {
+    try {
+        const saveData = {
+            version: this.VERSION,
+            timestamp: Date.now(),
+            data: this.tempSaves
+        };
+        localStorage.setItem(this.STORAGE_PREFIX + 'temp_saves', JSON.stringify(saveData));
+    } catch (e) {
+        console.log('保存临时存档失败:', e);
+    }
+}
+
+// 加载临时存档
+loadTempSaves() {
+    try {
+        const saved = localStorage.getItem(this.STORAGE_PREFIX + 'temp_saves');
+        if (saved) {
+            const saveData = JSON.parse(saved);
+            if (saveData.version && this.isCompatibleVersion(saveData.version)) {
+                this.tempSaves = saveData.data || [];
+            } else {
+                console.log('临时存档版本不兼容，清空临时存档');
+                this.tempSaves = [];
+            }
+        }
+    } catch (e) {
+        console.log('加载临时存档失败:', e);
+        this.tempSaves = [];
+    }
+}
+
+// 加载临时存档并关闭窗口
+loadTempSaveAndClose(saveId) {
+    const saveData = this.tempSaves.find(save => save.id === saveId);
+    if (!saveData) {
+        this.showFloatingMessage('❌ 临时存档不存在！');
+        return;
+    }
+    
+    if (this.loadSavedGameFromData(saveData)) {
+        this.closeModal('save-modal');
+    }
+}
+
+// 删除临时存档并刷新
+deleteTempSaveAndRefresh(saveId) {
+    if (confirm('确定要删除这个临时存档吗？')) {
+        const index = this.tempSaves.findIndex(save => save.id === saveId);
+        if (index !== -1) {
+            this.tempSaves.splice(index, 1);
+            this.saveTempSaves();
+            this.showManageSavesDialog(); // 刷新列表
+            this.showFloatingMessage('🗑️ 临时存档已删除！');
+        }
+    }
+}
+
+// 通用的存档加载方法
+loadSavedGameFromData(saveData) {
+    try {
+        // 清理当前游戏状态
+        if (this.gameState.timerInterval) {
+            clearInterval(this.gameState.timerInterval);
+        }
+        this.clearHints();
+        this.clearXrayEffect();
+        this.clearSafeDetectEffect();
+        
+        // 停止当前的自动扫雷
+        this.gameState.autoSolving = false;
+        const autoStatus = document.getElementById('auto-solve-status');
+        if (autoStatus) {
+            autoStatus.style.display = 'none';
+        }
+        
+        // 恢复游戏数据
+        this.gameState = JSON.parse(JSON.stringify(saveData.gameState));
+        this.board = JSON.parse(JSON.stringify(saveData.board));
+        this.revealed = JSON.parse(JSON.stringify(saveData.revealed));
+        this.flags = JSON.parse(JSON.stringify(saveData.flags));
+        this.questions = JSON.parse(JSON.stringify(saveData.questions));
+        this.specialCells = JSON.parse(JSON.stringify(saveData.specialCells));
+        this.achievements = JSON.parse(JSON.stringify(saveData.achievements));
+        this.stats = JSON.parse(JSON.stringify(saveData.stats));
+        
+        // 确保自动扫雷是停止状态
+        this.gameState.autoSolving = false;
+        
+        // 正确设置游戏状态
+        if (!this.gameState.gameOver) {
+            let hasRevealedCells = false;
+            for (let r = 0; r < this.gameState.rows && !hasRevealedCells; r++) {
+                for (let c = 0; c < this.gameState.cols && !hasRevealedCells; c++) {
+                    if (this.revealed[r][c]) {
+                        hasRevealedCells = true;
+                    }
+                }
+            }
+            
+            if (hasRevealedCells) {
+                this.gameState.firstClick = false;
+                this.gameState.paused = true;
+                this.gameState.resumeAfterClick = true;
+                this.gameState.savedTimer = this.gameState.timer;
+                this.gameState.startTime = null;
+            } else {
+                this.gameState.firstClick = true;
+                this.gameState.paused = false;
+                this.gameState.resumeAfterClick = false;
+                this.gameState.startTime = null;
+            }
+        } else {
+            this.gameState.paused = false;
+            this.gameState.resumeAfterClick = false;
+        }
+        
+        // 重置自动扫雷按钮状态
+        const autoBtn = document.getElementById('btn-auto-solve');
+        if (autoBtn) {
+            autoBtn.textContent = '🤖 自动扫雷';
+            autoBtn.classList.remove('danger');
+            autoBtn.classList.add('info');
+        }
+        
+        // 更新界面
+        this.updateDisplay();
+        this.renderBoard();
+        this.updateModeIndicator();
+        this.updateZenItemsDisplay();
+        this.updateSurvivalHealthDisplay();
+        this.updateProgress();
+        this.updateAchievementDisplay();
+        this.updateZoomDisplay();
+        this.resetZoom();
+        
+        // 更新最佳成绩显示
+        const bestTime = this.stats.bestTimes[this.gameState.difficulty];
+        const bestTimeElement = document.getElementById('best-time');
+        if (bestTimeElement) {
+            bestTimeElement.textContent = bestTime === Infinity ? '-' : this.formatTime(bestTime);
+        }
+        
+        this.playSound('powerup');
+        
+        // 根据游戏状态显示不同的提示
+        if (this.gameState.gameOver) {
+            this.showFloatingMessage('📂 存档加载成功！（游戏已结束）');
+        } else if (this.gameState.firstClick) {
+            this.showFloatingMessage('📂 存档加载成功！（点击开始游戏）');
+        } else {
+            this.showFloatingMessage('📂 存档加载成功！（游戏已暂停，点击格子继续）');
+        }
+        
+        // 延迟设置小地图
+        setTimeout(() => {
+            this.setupMinimap();
+        }, 100);
+        
+        return true;
+    } catch (error) {
+        console.error('加载存档失败:', error);
+        this.showFloatingMessage('❌ 存档加载失败！');
+        return false;
+    }
+}
+
+                // 显示存档设置对话框
+showSaveSettingsDialog() {
+    const modal = document.getElementById('save-settings-modal');
+    if (modal) {
+        // 设置当前值
+        document.getElementById('auto-save-interval').value = this.gameState.autoSaveInterval;
+        document.getElementById('max-temp-saves').value = this.gameState.maxTempSaves;
+        modal.style.display = 'flex';
+    }
+}
+
+// 保存存档设置
+saveSaveSettings() {
+    const autoSaveInterval = parseInt(document.getElementById('auto-save-interval').value);
+    const maxTempSaves = parseInt(document.getElementById('max-temp-saves').value);
+    
+    if (autoSaveInterval < 5 || autoSaveInterval > 50) {
+        this.showFloatingMessage('❌ 自动存档间隔应在5-50之间！');
+        return;
+    }
+    
+    if (maxTempSaves < 1 || maxTempSaves > 10) {
+        this.showFloatingMessage('❌ 临时存档数量应在1-10之间！');
+        return;
+    }
+    
+    this.gameState.autoSaveInterval = autoSaveInterval;
+    this.gameState.maxTempSaves = maxTempSaves;
+    
+    // 立即限制临时存档数量
+    this.limitTempSaves();
+    this.saveTempSaves();
+    
+    // 保存设置到本地存储
+    try {
+        const saveSettings = {
+            autoSaveInterval: this.gameState.autoSaveInterval,
+            maxTempSaves: this.gameState.maxTempSaves
+        };
+        localStorage.setItem(this.STORAGE_PREFIX + 'save_settings', JSON.stringify(saveSettings));
+        this.showFloatingMessage('💾 存档设置已保存！');
+    } catch (e) {
+        console.log('保存存档设置失败:', e);
+    }
+    
+    this.closeModal('save-settings-modal');
+}
+
+// 加载存档设置
+loadSaveSettings() {
+    try {
+        const saved = localStorage.getItem(this.STORAGE_PREFIX + 'save_settings');
+        if (saved) {
+            const settings = JSON.parse(saved);
+            this.gameState.autoSaveInterval = settings.autoSaveInterval || 10;
+            this.gameState.maxTempSaves = settings.maxTempSaves || 3;
+        }
+    } catch (e) {
+        console.log('加载存档设置失败:', e);
+    }
+}
 
                 // 版本控制函数
                 isCompatibleVersion(dataVersion) {
@@ -3593,17 +4169,18 @@ loadSavedGame(saveId) {
                 }
 
                 addSpecialCells() {
-                    if (this.gameState.specialCellChance === 0) return;
-
-                    const chance = this.gameState.specialCellChance / 100;
-                    for (let r = 0; r < this.gameState.rows; r++) {
-                        for (let c = 0; c < this.gameState.cols; c++) {
-                            if (this.board[r][c] !== -1 && Math.random() < chance) {
-                                this.specialCells[r][c] = true;
-                            }
-                        }
-                    }
-                }
+    // 只在禅意模式下添加特殊格子
+    if (this.gameState.mode !== 'zen' || this.gameState.specialCellChance === 0) return;
+    
+    const chance = this.gameState.specialCellChance / 100;
+    for (let r = 0; r < this.gameState.rows; r++) {
+        for (let c = 0; c < this.gameState.cols; c++) {
+            if (this.board[r][c] !== -1 && Math.random() < chance) {
+                this.specialCells[r][c] = true;
+            }
+        }
+    }
+}
 
                                 countAdjacentMines(row, col) {
                     let count = 0;
@@ -3905,6 +4482,16 @@ resumeGameFromSave() {
                             this.revealCell(nr, nc);
                         });
                     }
+                    
+                    // 计数展开操作（只计算成功的揭开操作，不包括标记和问号）
+                    if (this.revealed[row][col] && !this.gameState.firstClick && !this.gameState.gameOver) {
+                    this.gameState.expandCount++;
+        
+        // 检查是否需要自动保存临时存档
+                    if (this.gameState.expandCount % this.gameState.autoSaveInterval === 0) {
+                        this.createTempSave();
+                    }
+                }
 
                     this.updateProgress();
                     this.checkWin();

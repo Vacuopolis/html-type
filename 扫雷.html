@@ -1426,7 +1426,6 @@
             <!-- 个性化设置下拉菜单 -->
             <div class="dropdown">
                 <button class="btn warning" id="btn-audio-theme">🎨 个性化设置</button>
-                <!-- 在个性化设置下拉菜单中添加存档设置选项 -->
             <div class="dropdown-content" id="audio-theme-dropdown">
                 <div class="dropdown-item" id="dropdown-sound">🔊 音效开关</div>
                 <div class="dropdown-item" id="dropdown-theme">🌓 切换主题</div>
@@ -1863,6 +1862,260 @@
         // 等待DOM完全加载后再初始化
         document.addEventListener('DOMContentLoaded', function() {
             class MinesweeperUltimate {
+            // ========== 压缩工具函数 ==========
+compressBooleanArray(array2D) {
+    if (!array2D || !Array.isArray(array2D) || array2D.length === 0) {
+        return { compressed: '', rows: 0, cols: 0 };
+    }
+    
+    const rows = array2D.length;
+    const cols = array2D[0].length;
+    let binaryString = '';
+    
+    // 将二维布尔数组转换为二进制字符串
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            binaryString += array2D[r][c] ? '1' : '0';
+        }
+    }
+    
+    // 将二进制字符串按8位分组转换为字节
+    const bytes = [];
+    for (let i = 0; i < binaryString.length; i += 8) {
+        const chunk = binaryString.substr(i, 8).padEnd(8, '0');
+        bytes.push(parseInt(chunk, 2));
+    }
+    
+    // 转换为Base64字符串
+    const compressed = btoa(String.fromCharCode.apply(null, bytes));
+    
+    return {
+        compressed,
+        rows,
+        cols
+    };
+}
+
+decompressBooleanArray(compressedData) {
+    if (!compressedData || !compressedData.compressed) {
+        return [];
+    }
+    
+    const { compressed, rows, cols } = compressedData;
+    
+    if (rows === 0 || cols === 0) {
+        return [];
+    }
+    
+    try {
+        // 从Base64解码
+        const decodedString = atob(compressed);
+        let binaryString = '';
+        
+        // 转换为二进制字符串
+        for (let i = 0; i < decodedString.length; i++) {
+            const byte = decodedString.charCodeAt(i);
+            binaryString += byte.toString(2).padStart(8, '0');
+        }
+        
+        // 转换回二维数组
+        const array2D = Array(rows).fill().map(() => Array(cols).fill(false));
+        let index = 0;
+        
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (index < binaryString.length) {
+                    array2D[r][c] = binaryString[index] === '1';
+                    index++;
+                }
+            }
+        }
+        
+        return array2D;
+    } catch (error) {
+        console.error('解压缩布尔数组失败:', error);
+        return Array(rows).fill().map(() => Array(cols).fill(false));
+    }
+}
+
+compressBoard(board) {
+    if (!board || !Array.isArray(board) || board.length === 0) {
+        return { compressed: '', rows: 0, cols: 0 };
+    }
+    
+    const rows = board.length;
+    const cols = board[0].length;
+    
+    // 将数字编码：-1(地雷)映射为9，0-8保持不变
+    const flatData = [];
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const value = board[r][c];
+            flatData.push(value === -1 ? 9 : value);
+        }
+    }
+    
+    // 运行长度编码(RLE)
+    const rleData = [];
+    let current = flatData[0];
+    let count = 1;
+    
+    for (let i = 1; i < flatData.length; i++) {
+        if (flatData[i] === current && count < 255) {
+            count++;
+        } else {
+            rleData.push(current, count);
+            current = flatData[i];
+            count = 1;
+        }
+    }
+    rleData.push(current, count);
+    
+    // 转换为Base64
+    const compressed = btoa(String.fromCharCode.apply(null, rleData));
+    
+    return {
+        compressed,
+        rows,
+        cols
+    };
+}
+
+decompressBoard(compressedData) {
+    if (!compressedData || !compressedData.compressed) {
+        return [];
+    }
+    
+    const { compressed, rows, cols } = compressedData;
+    
+    if (rows === 0 || cols === 0) {
+        return [];
+    }
+    
+    try {
+        // 从Base64解码
+        const decodedString = atob(compressed);
+        const rleData = [];
+        for (let i = 0; i < decodedString.length; i++) {
+            rleData.push(decodedString.charCodeAt(i));
+        }
+        
+        // 解码RLE
+        const flatData = [];
+        for (let i = 0; i < rleData.length; i += 2) {
+            const value = rleData[i];
+            const count = rleData[i + 1];
+            for (let j = 0; j < count; j++) {
+                flatData.push(value === 9 ? -1 : value);
+            }
+        }
+        
+        // 转换回二维数组
+        const board = Array(rows).fill().map(() => Array(cols).fill(0));
+        let index = 0;
+        
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (index < flatData.length) {
+                    board[r][c] = flatData[index];
+                    index++;
+                }
+            }
+        }
+        
+        return board;
+    } catch (error) {
+        console.error('解压缩棋盘失败:', error);
+        return Array(rows).fill().map(() => Array(cols).fill(0));
+    }
+}
+
+// ========== 辅助工具函数 ==========
+calculateOriginalSize() {
+    // 估算未压缩时的大小
+    let totalSize = 0;
+    
+    this.savedGames.forEach(save => {
+        if (save.board) {
+            totalSize += JSON.stringify(save).length * 2; // UTF-16编码估算
+        }
+    });
+    
+    this.tempSaves.forEach(save => {
+        if (save.board) {
+            totalSize += JSON.stringify(save).length * 2;
+        }
+    });
+    
+    return totalSize;
+}
+
+formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// 在加载存档时检查并转换格式
+migrateToCompressedFormat() {
+    let migrated = false;
+    
+    // 转换正常存档
+    this.savedGames = this.savedGames.map(save => {
+        if (!save.compressed && save.board) {
+            migrated = true;
+            return {
+                ...save,
+                compressedBoard: this.compressBoard(save.board),
+                compressedRevealed: this.compressBooleanArray(save.revealed),
+                compressedFlags: this.compressBooleanArray(save.flags),
+                compressedQuestions: this.compressBooleanArray(save.questions),
+                compressedSpecialCells: this.compressBooleanArray(save.specialCells),
+                compressed: true,
+                version: this.VERSION,
+                // 删除原始数据
+                board: undefined,
+                revealed: undefined,
+                flags: undefined,
+                questions: undefined,
+                specialCells: undefined
+            };
+        }
+        return save;
+    });
+    
+    // 转换临时存档
+    this.tempSaves = this.tempSaves.map(save => {
+        if (!save.compressed && save.board) {
+            migrated = true;
+            return {
+                ...save,
+                compressedBoard: this.compressBoard(save.board),
+                compressedRevealed: this.compressBooleanArray(save.revealed),
+                compressedFlags: this.compressBooleanArray(save.flags),
+                compressedQuestions: this.compressBooleanArray(save.questions),
+                compressedSpecialCells: this.compressBooleanArray(save.specialCells),
+                compressed: true,
+                version: this.VERSION,
+                board: undefined,
+                revealed: undefined,
+                flags: undefined,
+                questions: undefined,
+                specialCells: undefined
+            };
+        }
+        return save;
+    });
+    
+    if (migrated) {
+        this.saveSavedGames();
+        this.saveTempSaves();
+        console.log('存档格式已升级为压缩版本');
+    }
+}
+
                 constructor() {
                     // 版本控制
                     this.VERSION = '1.3.6';
@@ -2053,6 +2306,8 @@ this.isShowingAchievement = false;
                         this.newGame('beginner');
                         this.displayVersionInfo();
                         this.loadSaveSettings();
+                        // 在所有存档数据加载完毕后，统一进行格式迁移检查
+                        this.migrateToCompressedFormat();
                     } catch (error) {
                         console.error('初始化失败:', error);
                         this.bindBasicEvents();
@@ -2281,24 +2536,26 @@ saveCurrentGame() {
     
     // 创建要保存的游戏状态副本
     const gameStateToSave = JSON.parse(JSON.stringify(this.gameState));
+    gameStateToSave.autoSolving = false;
+    gameStateToSave.resumeAfterClick = false;
     
-    // 确保保存时的状态是正确的
-    gameStateToSave.autoSolving = false; // 强制设为false
-    // 不要强制设置 paused = true，保持当前状态
-    gameStateToSave.resumeAfterClick = false; // 清除这个标志
-    
+    // 使用压缩存储
     const saveData = {
         id: Date.now(),
         name: saveName,
         timestamp: timestamp.toISOString(),
         gameState: gameStateToSave,
-        board: JSON.parse(JSON.stringify(this.board)),
-        revealed: JSON.parse(JSON.stringify(this.revealed)),
-        flags: JSON.parse(JSON.stringify(this.flags)),
-        questions: JSON.parse(JSON.stringify(this.questions)),
-        specialCells: JSON.parse(JSON.stringify(this.specialCells)),
+        // 压缩数据
+        compressedBoard: this.compressBoard(this.board),
+        compressedRevealed: this.compressBooleanArray(this.revealed),
+        compressedFlags: this.compressBooleanArray(this.flags),
+        compressedQuestions: this.compressBooleanArray(this.questions),
+        compressedSpecialCells: this.compressBooleanArray(this.specialCells),
         achievements: JSON.parse(JSON.stringify(this.achievements)),
-        stats: JSON.parse(JSON.stringify(this.stats))
+        stats: JSON.parse(JSON.stringify(this.stats)),
+        // 压缩标记
+        compressed: true,
+        version: this.VERSION
     };
     
     this.savedGames.push(saveData);
@@ -2617,28 +2874,76 @@ loadSavedGame(saveId) {
                 // 导出存档
 exportSaves() {
     try {
+        // 在导出前先压缩存档
+        const compressedNormalSaves = this.savedGames.map(save => {
+            if (!save.compressed) {
+                // 转换旧格式为压缩格式
+                return {
+                    ...save,
+                    compressedBoard: this.compressBoard(save.board),
+                    compressedRevealed: this.compressBooleanArray(save.revealed),
+                    compressedFlags: this.compressBooleanArray(save.flags),
+                    compressedQuestions: this.compressBooleanArray(save.questions),
+                    compressedSpecialCells: this.compressBooleanArray(save.specialCells),
+                    compressed: true,
+                    // 删除原始数据
+                    board: undefined,
+                    revealed: undefined,
+                    flags: undefined,
+                    questions: undefined,
+                    specialCells: undefined
+                };
+            }
+            return save;
+        });
+        
+        const compressedTempSaves = this.tempSaves.map(save => {
+            if (!save.compressed) {
+                return {
+                    ...save,
+                    compressedBoard: this.compressBoard(save.board),
+                    compressedRevealed: this.compressBooleanArray(save.revealed),
+                    compressedFlags: this.compressBooleanArray(save.flags),
+                    compressedQuestions: this.compressBooleanArray(save.questions),
+                    compressedSpecialCells: this.compressBooleanArray(save.specialCells),
+                    compressed: true,
+                    board: undefined,
+                    revealed: undefined,
+                    flags: undefined,
+                    questions: undefined,
+                    specialCells: undefined
+                };
+            }
+            return save;
+        });
+        
         const exportData = {
             version: this.VERSION,
             timestamp: Date.now(),
-            normalSaves: this.savedGames,
-            tempSaves: this.tempSaves,
+            normalSaves: compressedNormalSaves,
+            tempSaves: compressedTempSaves,
             stats: this.stats,
-            achievements: this.achievements
+            achievements: this.achievements,
+            compressed: true
         };
         
-        const jsonString = JSON.stringify(exportData, null, 2);
+        const jsonString = JSON.stringify(exportData);
+        
+        // 计算压缩率
+        const originalSize = this.calculateOriginalSize();
+        const compressedSize = new Blob([jsonString]).size;
+        const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+        
+        console.log(`压缩效果: 原始大小 ${this.formatFileSize(originalSize)}, 压缩后 ${this.formatFileSize(compressedSize)}, 节省 ${compressionRatio}%`);
         
         // 生成文件名
         const now = new Date();
-        const dateStr = now.getFullYear() + '-' + 
-                       String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+        const dateStr = now.getFullYear() + '-' +
+                       String(now.getMonth() + 1).padStart(2, '0') + '-' +
                        String(now.getDate()).padStart(2, '0');
-        const timeStr = String(now.getHours()).padStart(2, '0') + '-' + 
+        const timeStr = String(now.getHours()).padStart(2, '0') + '-' +
                        String(now.getMinutes()).padStart(2, '0');
-        const filename = `扫雷存档_${dateStr}_${timeStr}.json`;
-        
-        // 调试：在浏览器控制台打印将要使用的文件名
-        console.log('[DEBUG] Exporting with filename:', filename); 
+        const filename = `扫雷存档_压缩版_${dateStr}_${timeStr}.json`;
         
         // 使用 application/json MIME 类型
         const dataStr = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonString);
@@ -2647,14 +2952,10 @@ exportSaves() {
         downloadAnchorNode.setAttribute('download', filename);
         downloadAnchorNode.style.display = 'none';
         
-        // 必须添加到DOM才能在某些浏览器中工作
         document.body.appendChild(downloadAnchorNode);
         
-        // 延迟触发下载，确保DOM操作完成
         setTimeout(() => {
             downloadAnchorNode.click();
-            
-            // 清理DOM
             setTimeout(() => {
                 if (downloadAnchorNode.parentNode) {
                     document.body.removeChild(downloadAnchorNode);
@@ -2662,12 +2963,9 @@ exportSaves() {
             }, 100);
         }, 10);
         
-        this.showFloatingMessage('📤 存档导出成功！');
-        
+        this.showFloatingMessage(`📤 存档导出成功！节省空间 ${compressionRatio}%`);
     } catch (error) {
         console.error('导出失败:', error);
-        
-        // 备用方案：显示JSON内容让用户手动复制
         this.showExportDialog();
     }
 }
@@ -2841,24 +3139,28 @@ createTempSave() {
     gameStateToSave.autoSolving = false;
     gameStateToSave.resumeAfterClick = false;
     
+    // 使用压缩存储
     const saveData = {
-        id: Date.now() + Math.random(), // 确保唯一性
+        id: Date.now() + Math.random(),
         name: saveName,
         timestamp: timestamp.toISOString(),
         gameState: gameStateToSave,
-        board: JSON.parse(JSON.stringify(this.board)),
-        revealed: JSON.parse(JSON.stringify(this.revealed)),
-        flags: JSON.parse(JSON.stringify(this.flags)),
-        questions: JSON.parse(JSON.stringify(this.questions)),
-        specialCells: JSON.parse(JSON.stringify(this.specialCells)),
+        // 压缩数据
+        compressedBoard: this.compressBoard(this.board),
+        compressedRevealed: this.compressBooleanArray(this.revealed),
+        compressedFlags: this.compressBooleanArray(this.flags),
+        compressedQuestions: this.compressBooleanArray(this.questions),
+        compressedSpecialCells: this.compressBooleanArray(this.specialCells),
         achievements: JSON.parse(JSON.stringify(this.achievements)),
-        stats: JSON.parse(JSON.stringify(this.stats))
+        stats: JSON.parse(JSON.stringify(this.stats)),
+        // 压缩标记
+        compressed: true,
+        version: this.VERSION
     };
     
     this.tempSaves.push(saveData);
     this.limitTempSaves();
     this.saveTempSaves();
-    
     this.showFloatingMessage('💾 已自动保存临时存档');
 }
 
@@ -2948,13 +3250,25 @@ loadSavedGameFromData(saveData) {
         
         // 恢复游戏数据
         this.gameState = JSON.parse(JSON.stringify(saveData.gameState));
-        this.board = JSON.parse(JSON.stringify(saveData.board));
-        this.revealed = JSON.parse(JSON.stringify(saveData.revealed));
-        this.flags = JSON.parse(JSON.stringify(saveData.flags));
-        this.questions = JSON.parse(JSON.stringify(saveData.questions));
-        this.specialCells = JSON.parse(JSON.stringify(saveData.specialCells));
         this.achievements = JSON.parse(JSON.stringify(saveData.achievements));
         this.stats = JSON.parse(JSON.stringify(saveData.stats));
+        
+        // 检查是否为压缩格式
+        if (saveData.compressed && saveData.version) {
+            // 解压缩数据
+            this.board = this.decompressBoard(saveData.compressedBoard);
+            this.revealed = this.decompressBooleanArray(saveData.compressedRevealed);
+            this.flags = this.decompressBooleanArray(saveData.compressedFlags);
+            this.questions = this.decompressBooleanArray(saveData.compressedQuestions);
+            this.specialCells = this.decompressBooleanArray(saveData.compressedSpecialCells);
+        } else {
+            // 兼容旧格式
+            this.board = JSON.parse(JSON.stringify(saveData.board || []));
+            this.revealed = JSON.parse(JSON.stringify(saveData.revealed || []));
+            this.flags = JSON.parse(JSON.stringify(saveData.flags || []));
+            this.questions = JSON.parse(JSON.stringify(saveData.questions || []));
+            this.specialCells = JSON.parse(JSON.stringify(saveData.specialCells || []));
+        }
         
         // 确保自动扫雷是停止状态
         this.gameState.autoSolving = false;
@@ -2964,7 +3278,7 @@ loadSavedGameFromData(saveData) {
             let hasRevealedCells = false;
             for (let r = 0; r < this.gameState.rows && !hasRevealedCells; r++) {
                 for (let c = 0; c < this.gameState.cols && !hasRevealedCells; c++) {
-                    if (this.revealed[r][c]) {
+                    if (this.revealed[r] && this.revealed[r][c]) {
                         hasRevealedCells = true;
                     }
                 }
@@ -4288,7 +4602,7 @@ loadSaveSettings() {
                                 if (index === cellsToReveal.length - 1) {
                                     this.gameState.batchRevealing = false;
                                 }
-                            }, index * 30); // 添加小延迟使展开更平滑
+                            }, index * 30);
                         });
                     }
                 }

@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亮灯游戏 - 经典益智</title>
+    <!-- 引入外部库 -->
+        <!-- 引入外部库 (使用 BootCDN 国内加速) -->
+<script src="https://cdn.bootcdn.net/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/howler/2.2.4/howler.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/three.js/0.128.0/three.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/cannon/0.15.1/cannon.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        body.dark-theme {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            max-width: 650px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 10;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .game-info {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            font-size: 1.1rem;
+        }
+        .moves { justify-self: start; }
+        .timer {
+            justify-self: center;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .timer:hover { background: rgba(255, 255, 255, 0.2); }
+        .score { justify-self: end; }
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-group label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+        .control-group input, .control-group select {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s;
+            outline: none;
+        }
+        .control-group input:focus, .control-group select:focus {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        .game-board {
+            display: grid;
+            gap: 10px;
+            margin: 30px auto;
+            max-width: 100%;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 15px;
+            perspective: 1000px;
+        }
+        .cell {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+            z-index: 1;
+        }
+        .cell::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 2;
+        }
+        .cell:hover::before {
+            transform: translateX(100%);
+        }
+        .cell:hover::after {
+            opacity: 1;
+        }
+        .cell:hover {
+            transform: scale(1.05) rotateZ(2deg) rotateX(5deg);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+        .cell.on {
+            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+            color: #333;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), inset 0 2px 10px rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+        .cell.off {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+        .cell.hint-glow {
+            animation: hintPulse 1.5s infinite;
+            background: #ffffff !important;
+            color: #333 !important;
+        }
+        .cell.impact {
+            animation: metalImpact 0.6s ease-out;
+        }
+        @keyframes metalImpact {
+            0% { 
+                transform: scale(1) rotateZ(0deg);
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            }
+            15% { 
+                transform: scale(1.2) rotateZ(-5deg);
+                box-shadow: 0 0 25px rgba(255, 255, 255, 1);
+            }
+            30% { 
+                transform: scale(0.95) rotateZ(3deg);
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+            }
+            45% { 
+                transform: scale(1.05) rotateZ(-2deg);
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            }
+            60% { 
+                transform: scale(0.98) rotateZ(1deg);
+                box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+            }
+            100% { 
+                transform: scale(1) rotateZ(0deg);
+                box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+            }
+        }
+        @keyframes hintPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(255, 255, 255, 1);
+                transform: scale(1.1);
+            }
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            min-width: 120px;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+        .btn-secondary { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: #fff; }
+        .btn-success { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #fff; }
+        .btn-warning { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #333; }
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        .switch {
+            position: relative;
+            width: 60px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .switch::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .switch.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .switch.active::before {
+            transform: translateX(28px);
+        }
+        .history-panel {
+            margin-top: 20px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .win-message {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 0;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+        .win-message.show {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 200px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        @keyframes confettiFall {
+            to {
+                transform: translateY(110vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        .help-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .help-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        .help-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .help-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .help-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #333;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .help-modal.show .help-content {
+            transform: scale(1) translateY(0);
+        }
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+        .help-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+            margin: 0;
+        }
+        .help-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #666;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .help-close:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .help-section {
+            margin-bottom: 25px;
+        }
+        .help-section h3 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .help-section p, .help-section li {
+            line-height: 1.6;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        .help-section ul {
+            padding-left: 20px;
+        }
+        .button-demo {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin: 2px;
+            border: none;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 30px);
+            gap: 4px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .demo-cell {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        .demo-cell.on {
+            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+            color: #333;
+        }
+        .demo-cell.off {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            color: #fff;
+        }
+        body.dark-theme .help-content {
+            background: rgba(30, 60, 114, 0.95);
+            color: #fff;
+        }
+        body.dark-theme .help-section h3 {
+            color: #a0c4ff;
+        }
+        body.dark-theme .help-section p,
+        body.dark-theme .help-section li {
+            color: #e0e0e0;
+        }
+        body.dark-theme .help-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        /* 粒子效果容器 */
+        .particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        /* 3D场景容器 */
+        .three-scene {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            h1 { font-size: 2rem; }
+            .controls-panel { grid-template-columns: 1fr; }
+            .game-board { gap: 8px; padding: 15px; }
+            .cell { font-size: 1.4rem; }
+            .button-group { gap: 8px; }
+            .btn { min-width: 100px; padding: 10px 16px; font-size: 0.9rem; }
+            .help-button {
+                top: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
+            }
+            .help-content {
+                padding: 20px;
+                width: 95%;
+            }
+            .help-title {
+                font-size: 1.5rem;
+            }
+            .help-section h3 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D场景容器 -->
+    <div class="three-scene" id="threeScene"></div>
+    <!-- 粒子效果容器 -->
+    <div class="particle-container" id="particleContainer"></div>
+    <!-- 彩带容器 -->
+    <div class="confetti-container" id="confetti"></div>
+    
+    <!-- 帮助按钮 -->
+    <button class="help-button" id="helpButton" title="游戏帮助">?</button>
+    
+    <!-- 帮助弹窗 -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-content">
+            <div class="help-header">
+                <h2 class="help-title">🎮 游戏帮助</h2>
+                <button class="help-close" id="helpClose">×</button>
+            </div>
+            <div class="help-section">
+                <h3>🎯 游戏目标</h3>
+                <p>通过点击格子使所有格子都变亮（显示💡）</p>
+            </div>
+            <div class="help-section">
+                <h3>📋 游戏规则</h3>
+                <p>点击一个格子会改变该格子及其上下左右相邻格子的状态：</p>
+                <div class="demo-grid">
+                    <div class="demo-cell off">⬛</div>
+                    <div class="demo-cell on">💡</div>
+                    <div class="demo-cell off">⬛</div>
+                    <div class="demo-cell on">💡</div>
+                    <div class="demo-cell on" style="border: 2px solid #ff6b6b;">💡</div>
+                    <div class="demo-cell on">💡</div>
+                    <div class="demo-cell off">⬛</div>
+                    <div class="demo-cell on">💡</div>
+                    <div class="demo-cell off">⬛</div>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 0.9rem;">↑ 点击中心格子将影响红框标记的5个亮色格子</p>
+            </div>
+            <div class="help-section">
+                <h3>⚙️ 游戏设置</h3>
+                <ul>
+                    <li><strong>行数/列数：</strong>可设置2-10行/列，创建不同大小的棋盘</li>
+                    <li><strong>难度选择：</strong>影响初始棋盘的复杂程度</li>
+                    <li><strong>🌟 简单：</strong>较少的初始混乱</li>
+                    <li><strong>⭐ 中等：</strong>中等复杂度（推荐）</li>
+                    <li><strong>💫 困难：</strong>更多挑战</li>
+                    <li><strong>🔥 专家：</strong>最高难度</li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>🔧 功能按钮</h3>
+                <ul>
+                    <li><span class="button-demo">🎮 新游戏</span> 开始新的游戏</li>
+                    <li><span class="button-demo">↶ 撤销</span> 撤销上一步操作</li>
+                    <li><span class="button-demo">💡 提示</span> 获取智能提示</li>
+                    <li><span class="button-demo">🔍 解法</span> 自动演示完整解法</li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>🎛️ 其他功能</h3>
+                <ul>
+                    <li><strong>⏱️ 计时器：</strong>点击可暂停/继续计时</li>
+                    <li><strong>👕 主题切换：</strong>切换浅色/暗黑主题</li>
+                    <li><strong>🔊 音效：</strong>开启/关闭游戏音效</li>
+                    <li><strong>📝 游戏日志：</strong>查看操作历史记录</li>
+                    <li><strong>🏆 分数系统：</strong>基于步数、时间、难度计算</li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>💡 游戏技巧</h3>
+                <ul>
+                    <li>观察棋盘整体模式，寻找关键位置</li>
+                    <li>善用撤销功能尝试不同策略</li>
+                    <li>困难时可使用提示或查看解法学习</li>
+                    <li>较小的棋盘适合练习基本技巧</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>✨ 亮灯游戏</h1>
+        <div class="game-info">
+            <div class="moves">步数: <span id="moveCount">0</span></div>
+            <div class="timer" id="timer" title="点击暂停/继续">⏱️ 00:00</div>
+            <div class="score">分数: <span id="scoreDisplay">0</span></div>
+        </div>
+        <div class="controls-panel">
+            <div class="control-group">
+                <label>行数</label>
+                <input type="number" id="rows" value="3" min="2" max="10">
+            </div>
+            <div class="control-group">
+                <label>列数</label>
+                <input type="number" id="cols" value="3" min="2" max="10">
+            </div>
+            <div class="control-group">
+                <label>难度</label>
+                <select id="difficulty">
+                    <option value="easy">🌟 简单</option>
+                    <option value="medium" selected>⭐ 中等</option>
+                    <option value="hard">💫 困难</option>
+                    <option value="expert">🔥 专家</option>
+                </select>
+            </div>
+        </div>
+        <div class="game-board" id="gameBoard"></div>
+        <div class="button-group">
+            <button class="btn btn-primary" id="newGame">🎮 新游戏</button>
+            <button class="btn btn-secondary" id="undoMove">↶ 撤销</button>
+            <button class="btn btn-warning" id="showHint">💡 提示</button>
+            <button class="btn btn-success" id="showSolution">🔍 解法</button>
+        </div>
+        <div class="toggle-switch">
+            <span>👕 主题切换</span>
+            <div class="switch" id="themeSwitch"></div>
+        </div>
+        <div class="toggle-switch">
+            <span>🔊 音效</span>
+            <div class="switch active" id="soundSwitch"></div>
+        </div>
+        <div class="win-message" id="winMessage"></div>
+        <div class="history-panel" id="history">
+            📝 游戏日志：
+        </div>
+    </div>
+
+    <script>
+        class EnhancedEffects {
+    constructor() {
+        this.audioInitialized = false;
+        this.initializeThreeJS();
+        this.initializePhysics();
+        this.particles = [];
+        this.sounds = null;
+    }
+
+    initializeAudio() {
+        if (this.audioInitialized) return;
+        
+        try {
+            // 使用 Howler.js 初始化音频系统
+            this.sounds = {
+                click: new Howl({
+                    src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMeAjKNzsLNfigEKXjC7+Gq'],
+                    volume: 0.3,
+                    preload: true
+                }),
+                impact: new Howl({
+                    src: ['data:audio/wav;base64,UklGRqQEAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YYAEAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMeAjKNzsLNfigEKXjC7+GQQwkSWK/i7KxaGQlAndt7wWMgA'],
+                    volume: 0.5,
+                    preload: true
+                }),
+                win: new Howl({
+                    src: ['data:audio/wav;base64,UklGRsQHAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YaAHAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMeAjKNzsLNfigEKXjC7+GQQwkSWK/i7KxaGQlAndt7wWMgAzWN0MLPfyQEJnTF8NyNPwcTYrLo6qtZGAlDnN5+xGUjAzqJ0cjMfSYDJXTC7+2QQAsTXbXl67JYGwlEmeBzymMhAjaN08PJgSoEJnnE7eGSOAwTYrPo6axXGgdGndx+w2QgAjWK08HKgCkEJ3fF8N+NOAYSXrHk6q5YGwlDleFyx2QiAy'],
+                    volume: 0.4,
+                    preload: true
+                })
+            };
+            this.audioInitialized = true;
+        } catch (e) {
+            console.warn('音频初始化失败:', e);
+        }
+    }
+
+    initializeThreeJS() {
+        try {
+            // Three.js 3D场景初始化
+            this.scene = new THREE.Scene();
+            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.setClearColor(0x000000, 0);
+            
+            const threeContainer = document.getElementById('threeScene');
+            if (threeContainer) {
+                threeContainer.appendChild(this.renderer.domElement);
+            }
+
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            this.scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 0.5);
+            this.scene.add(directionalLight);
+
+            this.camera.position.z = 5;
+            this.metalCubes = [];
+            this.animateThree();
+        } catch (e) {
+            console.warn('Three.js 初始化失败:', e);
+        }
+    }
+
+    initializePhysics() {
+        try {
+            // Cannon.js 物理世界初始化 (兼容 0.15.1 版本)
+            this.world = new CANNON.World();
+            this.world.gravity.set(0, -9.82, 0);
+            this.world.broadphase = new CANNON.NaiveBroadphase();
+            this.physicsBodies = [];
+        } catch (e) {
+            console.warn('物理引擎初始化失败:', e);
+            this.world = null;
+        }
+    }
+
+    createMetalCube(position) {
+        if (!this.scene || !this.world) return;
+        
+        try {
+            // 创建金属立方体
+            const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xffd700,
+                shininess: 100,
+                specular: 0x444444
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.copy(position);
+            cube.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            this.scene.add(cube);
+
+            // 物理体 (使用 0.15.1 版本的 API)
+            const shape = new CANNON.Sphere(0.15);
+            const body = new CANNON.Body({ mass: 1 });
+            body.addShape(shape);
+            body.position.set(position.x, position.y + 2, position.z);
+            body.velocity.set(
+                (Math.random() - 0.5) * 10,
+                Math.random() * 5,
+                (Math.random() - 0.5) * 10
+            );
+            this.world.add(body);
+
+            this.metalCubes.push({ mesh: cube, body: body, life: 100 });
+            this.physicsBodies.push(body);
+
+            // 5秒后移除
+            setTimeout(() => {
+                this.removeCube(cube, body);
+            }, 5000);
+        } catch (e) {
+            console.warn('创建金属立方体失败:', e);
+        }
+    }
+
+    removeCube(mesh, body) {
+        try {
+            if (this.scene && mesh) {
+                this.scene.remove(mesh);
+            }
+            if (this.world && body) {
+                this.world.remove(body);
+            }
+            this.metalCubes = this.metalCubes.filter(cube => cube.mesh !== mesh);
+            this.physicsBodies = this.physicsBodies.filter(b => b !== body);
+        } catch (e) {
+            console.warn('移除立方体失败:', e);
+        }
+    }
+
+    createImpactEffect(element) {
+        // 初始化音频（如果还没有）
+        if (!this.audioInitialized) {
+            this.initializeAudio();
+        }
+
+        // 获取元素位置
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        // 创建粒子效果
+        this.createParticleEffect(centerX, centerY);
+
+        // 如果3D场景可用，创建3D效果
+        if (this.scene && this.camera) {
+            try {
+                // 转换为3D世界坐标
+                const worldPos = new THREE.Vector3(
+                    (centerX / window.innerWidth) * 2 - 1,
+                    -(centerY / window.innerHeight) * 2 + 1,
+                    0
+                );
+                worldPos.unproject(this.camera);
+
+                // 创建多个金属块
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        const pos = worldPos.clone();
+                        pos.x += (Math.random() - 0.5) * 0.5;
+                        pos.y += (Math.random() - 0.5) * 0.5;
+                        this.createMetalCube(pos);
+                    }, i * 50);
+                }
+            } catch (e) {
+                console.warn('3D效果创建失败:', e);
+            }
+        }
+
+        // 播放音效
+        this.playSound('impact');
+    }
+
+    createParticleEffect(x, y) {
+        const particleContainer = document.getElementById('particleContainer');
+        if (!particleContainer) return;
+        
+        for (let i = 0; i < 15; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.width = '4px';
+            particle.style.height = '4px';
+            particle.style.backgroundColor = '#ffd700';
+            particle.style.borderRadius = '50%';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '999';
+            
+            particleContainer.appendChild(particle);
+
+            const angle = (Math.PI * 2 * i) / 15;
+            const velocity = 50 + Math.random() * 100;
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+
+            // 使用 GSAP 动画
+            if (typeof gsap !== 'undefined') {
+                gsap.to(particle, {
+                    duration: 1,
+                    x: vx,
+                    y: vy,
+                    scale: 0,
+                    opacity: 0,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        if (particle.parentNode) {
+                            particleContainer.removeChild(particle);
+                        }
+                    }
+                });
+            } else {
+                // 回退到CSS动画
+                particle.style.transition = 'all 1s ease-out';
+                particle.style.transform = `translate(${vx}px, ${vy}px) scale(0)`;
+                particle.style.opacity = '0';
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particleContainer.removeChild(particle);
+                    }
+                }, 1000);
+            }
+        }
+    }
+
+    animateThree() {
+        if (!this.scene || !this.renderer || !this.camera) return;
+        
+        try {
+            requestAnimationFrame(() => this.animateThree());
+
+            // 更新物理世界
+            if (this.world) {
+                this.world.step(1/60);
+            }
+
+            // 同步渲染物体和物理体
+            this.metalCubes.forEach((cubeData, index) => {
+                if (cubeData.mesh && cubeData.body) {
+                    cubeData.mesh.position.copy(cubeData.body.position);
+                    cubeData.mesh.quaternion.copy(cubeData.body.quaternion);
+                    
+                    // 添加生命值递减
+                    cubeData.life--;
+                    if (cubeData.life <= 0) {
+                        this.removeCube(cubeData.mesh, cubeData.body);
+                    }
+                }
+            });
+
+            this.renderer.render(this.scene, this.camera);
+        } catch (e) {
+            console.warn('Three.js 渲染错误:', e);
+        }
+    }
+
+    playSound(type) {
+        if (!this.audioInitialized) {
+            this.initializeAudio();
+        }
+        
+        try {
+            if (this.sounds && this.sounds[type]) {
+                this.sounds[type].play();
+            }
+        } catch (e) {
+            console.warn('音效播放失败:', e);
+        }
+    }
+
+    onWindowResize() {
+        if (this.camera && this.renderer) {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    }
+}
+
+        class LightsOutGame {
+            constructor() {
+                this.effects = new EnhancedEffects();
+                this.initializeState();
+                this.initializeElements();
+                this.bindEvents();
+                this.loadSettings();
+                this.createGame();
+                
+                // 窗口大小改变事件
+                window.addEventListener('resize', () => {
+                    this.effects.onWindowResize();
+                });
+            }
+
+            initializeState() {
+                this.state = {
+                    rows: 3,
+                    cols: 3,
+                    board: [],
+                    moves: 0,
+                    score: 0,
+                    timer: 0,
+                    isPlaying: false,
+                    isPaused: false,
+                    difficulty: 'medium',
+                    moveHistory: [],
+                    boardHistory: [],
+                    timerInterval: null,
+                    hintTimeout: null,
+                    isShowingSolution: false,
+                    soundEnabled: true,
+                    darkTheme: false
+                };
+            }
+
+            initializeElements() {
+                this.elements = {
+                    gameBoard: document.getElementById('gameBoard'),
+                    moveCount: document.getElementById('moveCount'),
+                    timer: document.getElementById('timer'),
+                    scoreDisplay: document.getElementById('scoreDisplay'),
+                    rows: document.getElementById('rows'),
+                    cols: document.getElementById('cols'),
+                    difficulty: document.getElementById('difficulty'),
+                    newGame: document.getElementById('newGame'),
+                    undoMove: document.getElementById('undoMove'),
+                    showHint: document.getElementById('showHint'),
+                    showSolution: document.getElementById('showSolution'),
+                    themeSwitch: document.getElementById('themeSwitch'),
+                    soundSwitch: document.getElementById('soundSwitch'),
+                    winMessage: document.getElementById('winMessage'),
+                    history: document.getElementById('history'),
+                    confetti: document.getElementById('confetti'),
+                    helpButton: document.getElementById('helpButton'),
+                    helpModal: document.getElementById('helpModal'),
+                    helpClose: document.getElementById('helpClose')
+                };
+            }
+
+            bindEvents() {
+                this.elements.newGame.onclick = () => this.startNewGame();
+                this.elements.undoMove.onclick = () => this.undoLastMove();
+                this.elements.showHint.onclick = () => this.showHint();
+                this.elements.showSolution.onclick = () => this.showSolution();
+                this.elements.timer.onclick = () => this.toggleTimer();
+                this.elements.themeSwitch.onclick = () => this.toggleTheme();
+                this.elements.soundSwitch.onclick = () => this.toggleSound();
+                
+                this.elements.helpButton.onclick = () => this.showHelp();
+                this.elements.helpClose.onclick = () => this.hideHelp();
+                this.elements.helpModal.onclick = (e) => {
+                    if (e.target === this.elements.helpModal) {
+                        this.hideHelp();
+                    }
+                };
+                
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.elements.helpModal.classList.contains('show')) {
+                        this.hideHelp();
+                    }
+                });
+
+                ['rows', 'cols', 'difficulty'].forEach(id => {
+                    this.elements[id].onchange = () => this.handleSettingsChange();
+                });
+            }
+
+            loadSettings() {
+                const settings = JSON.parse(localStorage.getItem('lightsOutSettings') || '{}');
+                this.state.soundEnabled = settings.soundEnabled !== false;
+                this.state.darkTheme = settings.darkTheme === true;
+                this.updateTheme();
+                this.updateSoundToggle();
+            }
+
+            showHelp() {
+                this.elements.helpModal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                this.logAction('📖 查看游戏帮助');
+            }
+
+            hideHelp() {
+                this.elements.helpModal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+
+            saveSettings() {
+                localStorage.setItem('lightsOutSettings', JSON.stringify({
+                    soundEnabled: this.state.soundEnabled,
+                    darkTheme: this.state.darkTheme
+                }));
+            }
+
+            createGame() {
+                this.resetGameState();
+                this.updateGameSettings();
+                this.generateBoard();
+                this.createPuzzle();
+                this.renderBoard();
+                this.updateUI();
+                this.logAction('🎮 新游戏开始');
+            }
+
+            resetGameState() {
+                this.state.moves = 0;
+                this.state.score = 0;
+                this.state.timer = 0;
+                this.state.isPlaying = false;
+                this.state.isPaused = false;
+                this.state.moveHistory = [];
+                this.state.boardHistory = [];
+                this.state.isShowingSolution = false;
+                this.clearTimers();
+                this.elements.winMessage.classList.remove('show');
+                this.elements.confetti.innerHTML = '';
+            }
+
+            updateGameSettings() {
+                this.state.rows = Math.max(2, Math.min(10, parseInt(this.elements.rows.value) || 3));
+                this.state.cols = Math.max(2, Math.min(10, parseInt(this.elements.cols.value) || 3));
+                this.state.difficulty = this.elements.difficulty.value;
+                this.elements.rows.value = this.state.rows;
+                this.elements.cols.value = this.state.cols;
+            }
+
+            generateBoard() {
+                this.state.board = Array(this.state.rows).fill().map(() =>
+                    Array(this.state.cols).fill(true)
+                );
+            }
+
+            createPuzzle() {
+                const difficultySettings = {
+                    easy: 3, medium: 5, hard: 8, expert: 12
+                };
+                const totalCells = this.state.rows * this.state.cols;
+                const baseClicks = difficultySettings[this.state.difficulty] || 5;
+                const clicks = Math.max(1, Math.floor(baseClicks * Math.sqrt(totalCells) / 3));
+                for (let i = 0; i < clicks; i++) {
+                    const row = Math.floor(Math.random() * this.state.rows);
+                    const col = Math.floor(Math.random() * this.state.cols);
+                    this.toggleCellsAt(row, col, false);
+                }
+            }
+
+            renderBoard() {
+                this.elements.gameBoard.innerHTML = '';
+                this.elements.gameBoard.style.gridTemplateColumns = `repeat(${this.state.cols}, 1fr)`;
+                for (let row = 0; row < this.state.rows; row++) {
+                    for (let col = 0; col < this.state.cols; col++) {
+                        const cell = this.createCell(row, col);
+                        this.elements.gameBoard.appendChild(cell);
+                    }
+                }
+            }
+
+            createCell(row, col) {
+                const cell = document.createElement('div');
+                cell.className = `cell ${this.state.board[row][col] ? 'on' : 'off'}`;
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                cell.textContent = this.state.board[row][col] ? '💡' : '⬛';
+                cell.onclick = () => this.handleCellClick(row, col);
+                return cell;
+            }
+
+            handleCellClick(row, col) {
+                if (this.state.isShowingSolution) return;
+                
+                this.saveBoardState();
+                
+                if (!this.state.isPlaying) {
+                    this.startTimer();
+                    this.state.isPlaying = true;
+                }
+
+                const cell = this.elements.gameBoard.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                
+                // 添加撞击动画类
+                cell.classList.add('impact');
+                setTimeout(() => {
+                    cell.classList.remove('impact');
+                }, 600);
+
+                // 创建增强的撞击效果
+                this.effects.createImpactEffect(cell);
+
+                // 使用 GSAP 创建按钮点击动画
+                gsap.to(cell, {
+                    duration: 0.1,
+                    scale: 0.95,
+                    yoyo: true,
+                    repeat: 1,
+                    ease: "power2.inOut"
+                });
+
+                this.toggleCellsAt(row, col);
+                this.state.moves++;
+                this.updateUI();
+                
+                if (this.state.soundEnabled) {
+                    this.effects.playSound('click');
+                }
+                
+                this.logAction(`点击 (${row + 1}, ${col + 1})`);
+                
+                if (this.checkWin()) {
+                    this.handleWin();
+                }
+            }
+
+            toggleCellsAt(row, col, updateUI = true) {
+                const directions = [[0,0], [-1,0], [1,0], [0,-1], [0,1]];
+                const affectedCells = [];
+                
+                directions.forEach(([dr, dc]) => {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    if (newRow >= 0 && newRow < this.state.rows &&
+                        newCol >= 0 && newCol < this.state.cols) {
+                        this.state.board[newRow][newCol] = !this.state.board[newRow][newCol];
+                        affectedCells.push([newRow, newCol]);
+                    }
+                });
+
+                if (updateUI) {
+                    this.updateBoardDisplayAnimated(affectedCells);
+                }
+            }
+
+            updateBoardDisplayAnimated(affectedCells) {
+                affectedCells.forEach(([row, col], index) => {
+                    setTimeout(() => {
+                        const cell = this.elements.gameBoard.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                        if (cell) {
+                            const isOn = this.state.board[row][col];
+                            
+                            // 使用 GSAP 创建翻转动画
+                            gsap.to(cell, {
+                                duration: 0.3,
+                                rotationY: 180,
+                                ease: "power2.inOut",
+                                onComplete: () => {
+                                    cell.className = `cell ${isOn ? 'on' : 'off'}`;
+                                    cell.textContent = isOn ? '💡' : '⬛';
+                                    gsap.set(cell, { rotationY: 0 });
+                                }
+                            });
+                        }
+                    }, index * 50);
+                });
+            }
+
+            updateBoardDisplay() {
+                const cells = this.elements.gameBoard.querySelectorAll('.cell');
+                cells.forEach((cell, index) => {
+                    const row = Math.floor(index / this.state.cols);
+                    const col = index % this.state.cols;
+                    const isOn = this.state.board[row][col];
+                    cell.className = `cell ${isOn ? 'on' : 'off'}`;
+                    cell.textContent = isOn ? '💡' : '⬛';
+                });
+            }
+
+            checkWin() {
+                return this.state.board.every(row => row.every(cell => cell === true));
+            }
+
+            handleWin() {
+                this.stopTimer();
+                this.state.score = this.calculateScore();
+                this.updateUI();
+                
+                if (this.state.soundEnabled) {
+                    this.effects.playSound('win');
+                }
+                
+                this.showWinMessage();
+                this.createConfetti();
+                this.logAction(`🏆 游戏完成！分数: ${this.state.score}`);
+            }
+
+            calculateScore() {
+                const baseScore = 1000;
+                const sizeMultiplier = this.state.rows * this.state.cols;
+                const difficultyMultiplier = { easy: 1, medium: 1.5, hard: 2, expert: 3 }[this.state.difficulty];
+                const movesPenalty = Math.max(0.1, 1 - (this.state.moves / (sizeMultiplier * 2)));
+                const timePenalty = Math.max(0.1, 1 - (this.state.timer / 300));
+                return Math.round(baseScore * sizeMultiplier * difficultyMultiplier * movesPenalty * timePenalty);
+            }
+
+            showWinMessage() {
+                const minutes = Math.floor(this.state.timer / 60).toString().padStart(2, '0');
+                const seconds = (this.state.timer % 60).toString().padStart(2, '0');
+                this.elements.winMessage.innerHTML = `
+                    🎉 恭喜完成！<br>
+                    🏆 分数: ${this.state.score}<br>
+                    👟 步数: ${this.state.moves}<br>
+                    ⏱️ 时间: ${minutes}:${seconds}
+                `;
+                
+                // 使用 GSAP 动画显示获胜消息
+                gsap.fromTo(this.elements.winMessage, 
+                    { scale: 0, opacity: 0 },
+                    { 
+                        scale: 1, 
+                        opacity: 1, 
+                        duration: 0.5, 
+                        ease: "back.out(1.7)",
+                        onStart: () => {
+                            this.elements.winMessage.classList.add('show');
+                        }
+                    }
+                );
+            }
+
+            createConfetti() {
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                        confetti.style.left = Math.random() * 100 + '%';
+                        confetti.style.top = '-20px';
+                        confetti.style.opacity = '1';
+                        this.elements.confetti.appendChild(confetti);
+
+                        // 使用 GSAP 创建彩带动画
+                        gsap.to(confetti, {
+                            duration: 3 + Math.random() * 2,
+                            y: '110vh',
+                            rotation: 720,
+                            opacity: 0,
+                            ease: "power2.out",
+                            onComplete: () => {
+                                if (confetti.parentNode) {
+                                    confetti.remove();
+                                }
+                            }
+                        });
+                    }, i * 50);
+                }
+            }
+
+            startNewGame() {
+                // 使用 GSAP 添加按钮点击动画
+                gsap.to(this.elements.newGame, {
+                    duration: 0.1,
+                    scale: 0.95,
+                    yoyo: true,
+                    repeat: 1,
+                    ease: "power2.inOut"
+                });
+                this.createGame();
+            }
+
+            saveBoardState() {
+                this.state.boardHistory.push(this.state.board.map(row => [...row]));
+                this.state.moveHistory.push({ moves: this.state.moves });
+            }
+
+            undoLastMove() {
+                if (this.state.boardHistory.length === 0 || this.state.isShowingSolution) return;
+                this.state.board = this.state.boardHistory.pop();
+                this.state.moveHistory.pop();
+                this.state.moves = Math.max(0, this.state.moves - 1);
+                this.updateBoardDisplay();
+                this.updateUI();
+                this.logAction('↶ 撤销操作');
+            }
+
+            showHint() {
+                if (this.state.isShowingSolution || this.checkWin()) return;
+                const solution = this.solvePuzzle();
+                if (solution && solution.length > 0) {
+                    const randomHint = solution[Math.floor(Math.random() * solution.length)];
+                    const cell = this.elements.gameBoard.querySelector(
+                        `[data-row="${randomHint.row}"][data-col="${randomHint.col}"]`
+                    );
+                    if (cell) {
+                        cell.classList.add('hint-glow');
+                        this.hintTimeout = setTimeout(() => {
+                            cell.classList.remove('hint-glow');
+                        }, 3000);
+                        this.logAction(`💡 提示: 尝试点击 (${randomHint.row + 1}, ${randomHint.col + 1})`);
+                    }
+                }
+            }
+
+            showSolution() {
+                if (this.state.isShowingSolution || this.checkWin()) return;
+                const solution = this.solvePuzzle();
+                if (!solution || solution.length === 0) {
+                    this.logAction('❌ 无法计算解法');
+                    return;
+                }
+                this.state.isShowingSolution = true;
+                this.pauseTimer();
+                this.logAction(`🔍 开始演示解法，共${solution.length}步`);
+                let stepIndex = 0;
+                const showNextStep = () => {
+                    if (stepIndex >= solution.length) {
+                        this.state.isShowingSolution = false;
+                        this.logAction('✅ 解法演示完成');
+                        return;
+                    }
+                    const { row, col } = solution[stepIndex];
+                    const cell = this.elements.gameBoard.querySelector(
+                        `[data-row="${row}"][data-col="${col}"]`
+                    );
+                    if (cell) {
+                        // 使用 GSAP 创建解法演示动画
+                        gsap.to(cell, {
+                            duration: 0.4,
+                            scale: 1.2,
+                            backgroundColor: '#ff6b6b',
+                            ease: "power2.out",
+                            onComplete: () => {
+                                gsap.to(cell, {
+                                    duration: 0.4,
+                                    scale: 1,
+                                    backgroundColor: 'transparent',
+                                    ease: "power2.out",
+                                    onComplete: () => {
+                                        this.toggleCellsAt(row, col);
+                                        stepIndex++;
+                                        if (this.checkWin()) {
+                                            this.handleWin();
+                                            this.state.isShowingSolution = false;
+                                            return;
+                                        }
+                                        setTimeout(showNextStep, 800);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                };
+                showNextStep();
+            }
+
+            solvePuzzle() {
+                const rows = this.state.rows;
+                const cols = this.state.cols;
+                const totalCells = rows * cols;
+                const matrix = Array(totalCells).fill().map(() => Array(totalCells + 1).fill(0));
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const cellIndex = r * cols + c;
+                        const directions = [[0,0], [-1,0], [1,0], [0,-1], [0,1]];
+                        directions.forEach(([dr, dc]) => {
+                            const newRow = r + dr;
+                            const newCol = c + dc;
+                            if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+                                const affectedIndex = newRow * cols + newCol;
+                                matrix[affectedIndex][cellIndex] = 1;
+                            }
+                        });
+                        matrix[cellIndex][totalCells] = this.state.board[r][c] ? 0 : 1;
+                    }
+                }
+                return this.gaussianElimination(matrix);
+            }
+
+            gaussianElimination(matrix) {
+                const rows = matrix.length;
+                const cols = matrix[0].length - 1;
+                for (let i = 0; i < Math.min(rows, cols); i++) {
+                    let pivot = i;
+                    while (pivot < rows && matrix[pivot][i] === 0) pivot++;
+                    if (pivot < rows) {
+                        [matrix[i], matrix[pivot]] = [matrix[pivot], matrix[i]];
+                        for (let j = 0; j < rows; j++) {
+                            if (j !== i && matrix[j][i] === 1) {
+                                for (let k = 0; k <= cols; k++) {
+                                    matrix[j][k] ^= matrix[i][k];
+                                }
+                            }
+                        }
+                    }
+                }
+                const solution = [];
+                for (let i = 0; i < cols; i++) {
+                    if (matrix[i] && matrix[i][i] === 1 && matrix[i][cols] === 1) {
+                        const row = Math.floor(i / this.state.cols);
+                        const col = i % this.state.cols;
+                        solution.push({ row, col });
+                    }
+                }
+                return solution;
+            }
+
+            startTimer() {
+                this.clearTimers();
+                this.state.timerInterval = setInterval(() => {
+                    if (!this.state.isPaused) {
+                        this.state.timer++;
+                        this.updateTimerDisplay();
+                    }
+                }, 1000);
+            }
+
+            stopTimer() {
+                this.clearTimers();
+            }
+
+            toggleTimer() {
+                if (!this.state.isPlaying) return;
+                this.state.isPaused = !this.state.isPaused;
+                this.elements.timer.style.opacity = this.state.isPaused ? '0.5' : '1';
+                this.logAction(this.state.isPaused ? '⏸️ 游戏暂停' : '▶️ 游戏继续');
+            }
+
+            pauseTimer() {
+                this.state.isPaused = true;
+                this.elements.timer.style.opacity = '0.5';
+            }
+
+            clearTimers() {
+                if (this.state.timerInterval) {
+                    clearInterval(this.state.timerInterval);
+                    this.state.timerInterval = null;
+                }
+                if (this.state.hintTimeout) {
+                    clearTimeout(this.state.hintTimeout);
+                    this.state.hintTimeout = null;
+                }
+            }
+
+            updateUI() {
+                this.elements.moveCount.textContent = this.state.moves;
+                this.elements.scoreDisplay.textContent = this.state.score;
+                this.updateTimerDisplay();
+            }
+
+            updateTimerDisplay() {
+                const minutes = Math.floor(this.state.timer / 60).toString().padStart(2, '0');
+                const seconds = (this.state.timer % 60).toString().padStart(2, '0');
+                this.elements.timer.textContent = `⏱️ ${minutes}:${seconds}`;
+            }
+
+            handleSettingsChange() {
+                if (this.state.isPlaying) {
+                    this.logAction('⚙️ 设置已更改，重新开始游戏');
+                }
+                this.createGame();
+            }
+
+            toggleTheme() {
+                this.state.darkTheme = !this.state.darkTheme;
+                this.updateTheme();
+                this.saveSettings();
+            }
+
+            updateTheme() {
+                document.body.classList.toggle('dark-theme', this.state.darkTheme);
+                this.elements.themeSwitch.classList.toggle('active', this.state.darkTheme);
+            }
+
+            toggleSound() {
+                this.state.soundEnabled = !this.state.soundEnabled;
+                this.updateSoundToggle();
+                this.saveSettings();
+                this.logAction(this.state.soundEnabled ? '🔊 音效已开启' : '🔇 音效已关闭');
+            }
+
+            updateSoundToggle() {
+                this.elements.soundSwitch.classList.toggle('active', this.state.soundEnabled);
+            }
+
+            logAction(message) {
+                const timestamp = new Date().toLocaleTimeString('zh-CN');
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                this.elements.history.insertBefore(logEntry, this.elements.history.firstChild?.nextSibling || null);
+                while (this.elements.history.children.length > 50) {
+                    this.elements.history.removeChild(this.elements.history.lastChild);
+                }
+            }
+        }
+
+        // 启动游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            new LightsOutGame();
+        });
+    </script>
+</body>
+</html>

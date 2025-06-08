@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高考英语读后续写核心知识点速记宝典</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .content {
+            padding: 20px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        
+        .section-header:hover {
+            background: linear-gradient(45deg, #5a6fd8, #6a4190);
+        }
+        
+        .toggle-icon {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .section-content {
+            padding: 20px;
+            display: none;
+            background: #f8f9fa;
+        }
+        
+        .section-content.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .subsection {
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subsection h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        
+        .expression-item {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .expression-item:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .english-text {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            font-family: 'Georgia', serif;
+        }
+        
+        .chinese-text {
+            color: #7f8c8d;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .structure-text {
+            color: #27ae60;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            background: #ecf0f1;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .tip-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tip-box h4 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .search-box {
+            position: sticky;
+            top: 0px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 500;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        .search-input:focus {
+            border-color: #667eea;
+        }
+        
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: none;
+            transition: all 0.3s ease;
+        }
+        
+        .back-to-top:hover {
+            transform: scale(1.1);
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .section-header {
+                font-size: 1.1rem;
+                padding: 12px;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .expression-item {
+                padding: 12px;
+            }
+            
+            .english-text {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 高考英语读后续写核心知识点速记宝典</h1>
+            <p>专为高考冲刺设计 | 移动端优化</p>
+        </div>
+        
+        <div class="content">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="🔍 搜索表达式或知识点..." id="searchInput">
+            </div>
+            
+            <!-- 情感描写万能表达 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>🎯 一、情感描写万能表达（必背！）</span>
+                    <span class="toggle-icon">+</span>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3>😊 喜乐情感描写</h3>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">Her eyes twinkled with pleasure.</div>
+                            <div class="chinese-text">中文：她的眼睛因快乐而闪闪发光。</div>
+                            <div class="structure-text">结构：主语 + 谓语 + 介词短语（with + 抽象名词）</div>
+                            <div class="structure-text">构成：twinkle（闪烁）+ with（表伴随状态）+ pleasure（快乐）</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">Her eyes sparkled like diamonds</div>
+                            <div class="chinese-text">中文：她的眼睛像钻石一样闪闪发光。</div>
+                            <div class="structure-text">结构：主语 + 谓语 + 比喻（like + 名词）</div>
+                            <div class="structure-text">构成：sparkle（闪耀）+ like（像...一样）+ diamonds（钻石）</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">The smile on her face shone like a diamond.</div>
+                            <div class="chinese-text">中文：她脸上的笑容像钻石一样闪耀。</div>
+                            <div class="structure-text">结构：主语（the smile + 介词短语定语）+ 谓语 + 比喻</div>
+                            <div class="structure-text">构成：定语从句省略 + shine（发光）+ like（比喻）</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">She was overflowing with happiness.</div>
+                            <div class="chinese-text">中文：她洋溢着幸福。</div>
+                            <div class="structure-text">结构：主语 + be动词 + 现在分词 + 介词短语</div>
+                            <div class="structure-text">构成：overflow（溢出）+ with（表伴随）+ happiness（幸福）</div>
+                        </div>
+                        
+                        <div class="tip-box">
+                            <h4>💡 高分表达积累</h4>
+                            <p><strong>A ripple of excitement ran through them.</strong><br>
+                            中文：一阵兴奋的涟漪穿过他们。</p>
+                            <p><strong>Joy welled up inside her.</strong><br>
+                            中文：喜悦在她心中涌起。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="subsection">
+                        <h3>😡 愤怒情感描写</h3>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">I was seized by anger.</div>
+                            <div class="chinese-text">中文：我被愤怒所控制。</div>
+                            <div class="structure-text">结构：主语 + be动词 + 过去分词 + 介词短语（被动语态）</div>
+                            <div class="structure-text">构成：seize（抓住）的被动 + by anger（被愤怒）</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">His anger boiled over.</div>
+                            <div class="chinese-text">中文：他的愤怒爆发了。</div>
+                            <div class="structure-text">结构：主语 + 谓语（动词短语）</div>
+                            <div class="structure-text">构成：boil over（沸腾溢出，比喻情绪爆发）</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">He glared at me with burning eyes.</div>
+                            <div class="chinese-text">中文：他用燃烧的眼神怒视着我。</div>
+                            <div class="structure-text">结构：主语 + 谓语 + 介词短语 + 介词短语</div>
+                            <div class="structure-text">构成：glare at（怒视）+ with（伴随状态）+ burning eyes（燃烧的眼睛）</div>
+                        </div>
+                    </div>
+                    
+                    <div class="subsection">
+                        <h3>😢 悲伤恐惧描写</h3>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">He stood silently, tears rolling down his cheeks.</div>
+                            <div class="chinese-text">中文：他静静地站着，眼泪顺着脸颊流下。</div>
+                            <div class="structure-text">结构：主语 + 谓语 + 状语 + 独立主格结构</div>
+                            <div class="structure-text">构成：stand silently（静静站立）+ tears rolling（眼泪滚落）+ down his cheeks（沿着脸颊）</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">I am frozen/rigid with fear.</div>
+                            <div class="chinese-text">中文：我吓得僵住了。</div>
+                            <div class="structure-text">结构：主语 + be动词 + 形容词 + 介词短语</div>
+                            <div class="structure-text">构成：frozen/rigid（僵硬的）+ with fear（因恐惧）</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 万能结尾句式 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>🚀 二、万能结尾句式（考试必用！）</span>
+                    <span class="toggle-icon">+</span>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3>🌟 万能续写结尾句</h3>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">Today's experience was like an everlasting flower, blooming in the river of my memories.</div>
+                            <div class="chinese-text">中文：今天的经历就像一朵永不凋谢的花朵，在我的记忆里绽放。</div>
+                            <div class="structure-text">结构：主语 + be动词 + 介词短语（比喻）+ 现在分词短语</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">Never before had I believed so firmly that her presence was a ray of light, lightening up the day in the darkest time.</div>
+                            <div class="chinese-text">中文：从未如此深信，她的出现是一束光，照亮最黑暗时刻的日子。</div>
+                            <div class="structure-text">结构：否定词前置倒装句 + 宾语从句 + 现在分词短语</div>
+                        </div>
+                    </div>
+                    
+                    <div class="subsection">
+                        <h3>🎯 主旨升华四大类型</h3>
+                        
+                        <div class="tip-box">
+                            <h4>1️⃣ 成长型主旨句</h4>
+                            <p><strong>It's never too late to learn. Each individual has the right to accept more challenges and make more attempts.</strong></p>
+                            <p>中文：学习永远不嫌晚。每个人都有权利接受更多挑战，做更多尝试。</p>
+                        </div>
+                        
+                        <div class="tip-box">
+                            <h4>2️⃣ 助人型主旨句</h4>
+                            <p><strong>From then on, I would try my best to help someone like him. Only in this way could more and more people help each other in the future.</strong></p>
+                            <p>中文：从那时起，我会尽力帮助像他这样的人。只有这样，将来才能有越来越多的人互相帮助。</p>
+                        </div>
+                        
+                        <div class="tip-box">
+                            <h4>3️⃣ 脱险型主旨句</h4>
+                            <p><strong>Only then did I realize that it was bravery that can conquer whatever difficulty came in the way.</strong></p>
+                            <p>中文：直到那时我才意识到，正是勇敢才能征服路上遇到的任何困难。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 场景描写万能句式 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>📝 三、21个场景描写万能句式</span>
+                    <span class="toggle-icon">+</span>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3>万能公式</h3>
+                        <div class="tip-box">
+                            <p><span class="highlight">A flush of + 情绪名词 = a wave of = a feeling/sense of</span></p>
+                            <p>情绪词汇：joy/excitement/pride/anger/rage/panic/terror/sorrow/sadness/grief/embarrassment/disappointment/guilt/shame</p>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">A flush of pride swept over him as he watched his children.</div>
+                            <div class="chinese-text">中文：当他看着自己的孩子时，一阵自豪感涌上心头。</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">A wave of happiness flooded over me.</div>
+                            <div class="chinese-text">中文：一阵幸福感涌过我心头。</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">Her heart beat so violently that she felt nearly suffocated.</div>
+                            <div class="chinese-text">中文：她的心跳得如此剧烈，以至于她感到几乎窒息。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 考试实战技巧 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>🔥 四、考试实战技巧</span>
+                    <span class="toggle-icon">+</span>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3>写作策略</h3>
+                        <div class="tip-box">
+                            <p>✅ 开头要快速承接原文情节</p>
+                            <p>✅ 中间要有丰富的情感描写和细节</p>
+                            <p>✅ 结尾必须有主旨升华</p>
+                            <p>✅ 全文要保持情感连贯性</p>
+                        </div>
+                    </div>
+                    
+                    <div class="subsection">
+                        <h3>时间分配建议</h3>
+                        <div class="tip-box">
+                            <p><strong>5分钟：</strong> 理解原文，构思情节</p>
+                            <p><strong>20分钟：</strong> 写作第一段</p>
+                            <p><strong>20分钟：</strong> 写作第二段</p>
+                            <p><strong>5分钟：</strong> 检查修改</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 最后冲刺要点 -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>💡 五、最后冲刺要点</span>
+                    <span class="toggle-icon">+</span>
+                </div>
+                <div class="section-content">
+                    <div class="subsection">
+                        <h3>必背万能句式（考前15分钟复习）</h3>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">Her eyes sparkled like diamonds, shining with happiness.</div>
+                            <div class="chinese-text">中文：她的眼睛像钻石一样闪闪发光，闪烁着幸福。</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">It was love that made the world go around, which I felt deep in my heart.</div>
+                            <div class="chinese-text">中文：正是爱让世界运转，我在心中深深地感受到了这一点。</div>
+                        </div>
+                        
+                        <div class="expression-item">
+                            <div class="english-text">From then on, I made up my mind to pass on love to others.</div>
+                            <div class="chinese-text">中文：从那时起，我下定决心要把爱传递给别人。</div>
+                        </div>
+                    </div>
+                    
+                    <div class="subsection">
+                        <h3>考试注意事项</h3>
+                        <div class="tip-box">
+                            <p>✅ 字数控制在150词左右每段</p>
+                            <p>✅ 使用多样化的句式结构</p>
+                            <p>✅ 情感描写要具体生动</p>
+                            <p>✅ 主旨升华要自然不突兀</p>
+                            <p>✅ 书写工整，卷面整洁</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tip-box" style="text-align: center; font-size: 1.2rem;">
+                        <strong>🌟 祝您高考顺利，金榜题名！🌟</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="back-to-top" onclick="backToTop()">↑</button>
+    
+    <script>
+        // 折叠展开功能
+        function toggleSection(element) {
+            const content = element.nextElementSibling;
+            const icon = element.querySelector('.toggle-icon');
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                icon.textContent = '+';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('active');
+                icon.textContent = '−';
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+        
+        // 搜索功能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const expressionItems = document.querySelectorAll('.expression-item, .tip-box');
+            
+            expressionItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm) || searchTerm === '') {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+        
+        // 返回顶部功能
+        window.addEventListener('scroll', function() {
+            const backToTopBtn = document.querySelector('.back-to-top');
+            if (window.pageYOffset > 300) {
+                backToTopBtn.style.display = 'block';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+        
+        function backToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // 页面加载时展开第一个部分
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstSection = document.querySelector('.section-header');
+            if (firstSection) {
+                toggleSection(firstSection);
+            }
+        });
+        
+        // 添加点击效果
+        document.querySelectorAll('.expression-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = 'translateY(-2px)';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

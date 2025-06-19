@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌡️ 为栗子而战 - 免疫系统塔防游戏</title>
+    
+    <!-- 引入游戏引擎和库 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://unpkg.com/matter-js@0.19.0/build/matter.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #gameCanvas {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        
+        #sidePanel {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 2px solid #00ff88;
+        }
+        
+        .status-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .status-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+        
+        .symptom-bar {
+            margin: 10px 0;
+        }
+        
+        .symptom-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .star-rating {
+            display: inline-block;
+        }
+        
+        .star {
+            color: #ffd700;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .star.filled {
+            text-shadow: 0 0 10px #ffd700;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .cell-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .cell-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cell-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .cell-button:active {
+            transform: translateY(0);
+        }
+        
+        .cell-icon {
+            font-size: 30px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .quiz-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.5);
+            z-index: 1000;
+            display: none;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .quiz-question {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #00ff88;
+        }
+        
+        .quiz-options {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .quiz-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-option:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            transform: translateX(5px);
+        }
+        
+        #victoryScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .victory-content {
+            text-align: center;
+            animation: victoryAppear 1s ease-out;
+        }
+        
+        @keyframes victoryAppear {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .victory-title {
+            font-size: 48px;
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px #ffd700;
+        }
+        
+        .immune-cells-parade {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .parade-cell {
+            font-size: 60px;
+            animation: salute 2s infinite;
+        }
+        
+        @keyframes salute {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-10px) rotate(-10deg); }
+            75% { transform: translateY(-10px) rotate(10deg); }
+        }
+        
+        .health-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin: 10px 0;
+            border: 2px solid #ff0066;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0066 0%, #ff3366 100%);
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .health-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        .virus-dialogue {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(139, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            display: none;
+            z-index: 500;
+            max-width: 400px;
+        }
+        
+        .virus-dialogue::before {
+            content: "👿";
+            font-size: 30px;
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        #chartContainer {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="sidePanel">
+            <div class="status-panel">
+                <div class="status-title">🏥 栗子身体状态</div>
+                
+                <div class="symptom-bar">
+                    <div class="symptom-label">
+                        <span>🌡️ 体温</span>
+                        <span id="temperature">38.5°C</span>
+                    </div>
+                </div>
+                
+                <div class="symptom-bar">
+                    <div class="symptom-label">
+                        <span>💢 头痛程度</span>
+                        <span class="star-rating" id="headacheStars">
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">☆</span>
+                            <span class="star">☆</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="symptom-bar">
+                    <div class="symptom-label">
+                        <span>🤢 恶心程度</span>
+                        <span class="star-rating" id="nauseaStars">
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">☆</span>
+                            <span class="star">☆</span>
+                            <span class="star">☆</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="symptom-bar">
+                    <div class="symptom-label">
+                        <span>🩸 白细胞计数</span>
+                        <span id="wbcCount">6.2 × 10⁹/L</span>
+                    </div>
+                </div>
+                
+                <div class="health-bar">
+                    <div class="health-fill" id="playerHealth" style="width: 100%;">
+                        <div class="health-text">100/100 HP</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-panel">
+                <div class="status-title">🛡️ 免疫细胞部署</div>
+                <div class="cell-selector">
+                    <button class="cell-button" onclick="selectCell('macrophage')">
+                        <span class="cell-icon">🛡️</span>
+                        <div>巨噬细胞</div>
+                        <small>基础防御</small>
+                    </button>
+                    <button class="cell-button" onclick="selectCell('nk')">
+                        <span class="cell-icon">🎯</span>
+                        <div>NK细胞</div>
+                        <small>远程狙击</small>
+                    </button>
+                    <button class="cell-button" onclick="selectCell('tcell')">
+                        <span class="cell-icon">⚡</span>
+                        <div>T细胞</div>
+                        <small>高机动性</small>
+                    </button>
+                    <button class="cell-button" onclick="selectCell('bcell')">
+                        <span class="cell-icon">🧪</span>
+                        <div>B细胞</div>
+                        <small>抗体导弹</small>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="chartContainer">
+                <canvas id="immuneChart" width="260" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="quiz-modal" id="quizModal">
+        <div class="quiz-question" id="quizQuestion"></div>
+        <div class="quiz-options" id="quizOptions"></div>
+    </div>
+    
+    <div class="virus-dialogue" id="virusDialogue">
+        <p id="virusText"></p>
+    </div>
+    
+    <div id="victoryScreen">
+        <div class="victory-content">
+            <h1 class="victory-title">🎉 胜利！</h1>
+            <p style="font-size: 24px; margin-bottom: 20px;">栗子战胜了病毒！</p>
+            <div class="immune-cells-parade">
+                <span class="parade-cell">🛡️</span>
+                <span class="parade-cell">🎯</span>
+                <span class="parade-cell">⚡</span>
+                <span class="parade-cell">🧪</span>
+            </div>
+            <p style="font-size: 18px; color: #00ff88;">免疫系统经验值 +100！</p>
+            <p style="margin-top: 20px;">所有免疫细胞向你敬礼！</p>
+        </div>
+    </div>
+    
+    <script>
+        // 游戏配置
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth - 300,
+            height: window.innerHeight,
+            parent: 'gameCanvas',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+        
+        // 游戏变量
+        let selectedCellType = 'macrophage';
+        let playerHealth = 100;
+        let gameStage = 1;
+        let immuneCells = [];
+        let viruses = [];
+        let bullets = [];
+        let game;
+        
+        // 医学问题库
+        const medicalQuiz = [
+            {
+                question: "IgG抗体的主要功能是什么？",
+                options: ["激活补体系统", "致敏肥大细胞", "穿越胎盘提供免疫", "黏膜免疫"],
+                answer: 2
+            },
+            {
+                question: "人体最大的免疫器官是？",
+                options: ["胸腺", "脾脏", "淋巴结", "骨髓"],
+                answer: 1
+            },
+            {
+                question: "白细胞正常值范围是？",
+                options: ["2-4×10⁹/L", "4-10×10⁹/L", "10-15×10⁹/L", "15-20×10⁹/L"],
+                answer: 1
+            },
+            {
+                question: "发热的生理意义包括？",
+                options: ["降低免疫力", "促进病原体生长", "增强免疫细胞活性", "减少抗体产生"],
+                answer: 2
+            },
+            {
+                question: "巨噬细胞的主要功能是？",
+                options: ["产生抗体", "吞噬病原体", "分泌胰岛素", "传导神经冲动"],
+                answer: 1
+            }
+        ];
+        
+        // 症状管理系统
+        const symptomsStatus = {
+            fever: 38.5,
+            headache: 3,
+            nausea: 2,
+            whiteBloodCells: 6.2
+        };
+        
+        // 细胞类型配置
+        const cellTypes = {
+            macrophage: {
+                name: '巨噬细胞',
+                icon: '🛡️',
+                damage: 10,
+                range: 100,
+                speed: 50,
+                cost: 50,
+                color: 0x00ff00
+            },
+            nk: {
+                name: 'NK细胞',
+                icon: '🎯',
+                damage: 15,
+                range: 200,
+                speed: 30,
+                cost: 75,
+                color: 0x0099ff
+            },
+            tcell: {
+                name: 'T细胞',
+                icon: '⚡',
+                damage: 20,
+                range: 150,
+                speed: 80,
+                cost: 100,
+                color: 0xffff00
+            },
+            bcell: {
+                name: 'B细胞',
+                icon: '🧪',
+                damage: 25,
+                range: 250,
+                speed: 20,
+                cost: 150,
+                color: 0xff00ff
+            }
+        };
+        
+        // 病毒类型配置
+        const virusTypes = {
+            common: {
+                name: '普通流感病毒',
+                health: 30,
+                speed: 30,
+                color: 0x00ff00,
+                reward: 10
+            },
+            adeno: {
+                name: '腺病毒潜伏者',
+                health: 50,
+                speed: 40,
+                color: 0x0000ff,
+                reward: 20,
+                special: 'invisible'
+            },
+            strep: {
+                name: '链球菌分裂者',
+                health: 40,
+                speed: 35,
+                color: 0xff0000,
+                reward: 25,
+                special: 'split'
+            },
+            corona: {
+                name: '冠状病毒装甲种',
+                health: 100,
+                speed: 20,
+                color: 0xffd700,
+                reward: 50,
+                special: 'armor'
+            },
+            boss: {
+                name: '变异终极毒王',
+                health: 500,
+                speed: 15,
+                color: 0x000000,
+                reward: 200,
+                special: 'boss'
+            }
+        };
+        
+        // Phaser游戏函数
+        function preload() {
+            // 创建简单的图形资源
+            this.load.image('particle', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+        }
+        
+        function create() {
+            // 创建游戏背景
+            const graphics = this.add.graphics();
+            
+            // 绘制血管路径
+            graphics.lineStyle(4, 0xff6666, 0.5);
+            const path = new Phaser.Curves.Path(50, 300);
+            path.lineTo(200, 300);
+            path.lineTo(300, 200);
+            path.lineTo(500, 200);
+            path.lineTo(600, 300);
+            path.lineTo(800, 300);
+            path.draw(graphics);
+            
+            // 创建粒子效果
+            const particles = this.add.particles(0, 0, 'particle', {
+                speed: { min: 50, max: 150 },
+                scale: { start: 0.5, end: 0 },
+                blendMode: 'ADD',
+                tint: 0xff0000
+            });
+            
+            // 点击事件处理
+            this.input.on('pointerdown', (pointer) => {
+                if (selectedCellType) {
+                    deployCell.call(this, pointer.x, pointer.y);
+                }
+            });
+            
+            // 创建病毒生成器
+            this.time.addEvent({
+                delay: 3000,
+                callback: () => spawnVirus.call(this),
+                loop: true
+            });
+            
+            // 显示病毒对话
+            showVirusDialogue("哈哈哈！这个疲惫的医学生身体将成为我的新王国！");
+        }
+        
+        function update(time, delta) {
+            // 更新免疫细胞
+            immuneCells.forEach(cell => {
+                // 寻找最近的病毒
+                let nearestVirus = null;
+                let minDistance = Infinity;
+                
+                viruses.forEach(virus => {
+                    if (virus.active) {
+                        const distance = Phaser.Math.Distance.Between(
+                            cell.x, cell.y, virus.x, virus.y
+                        );
+                        if (distance < minDistance && distance <= cell.range) {
+                            minDistance = distance;
+                            nearestVirus = virus;
+                        }
+                    }
+                });
+                
+                // 攻击最近的病毒
+                if (nearestVirus && time > cell.lastFire + 1000) {
+                    fireAtVirus.call(this, cell, nearestVirus);
+                    cell.lastFire = time;
+                }
+            });
+            
+            // 更新病毒移动
+            viruses.forEach(virus => {
+                if (virus.active) {
+                    virus.x += virus.speed * delta / 1000;
+                    
+                    // 检查是否到达终点
+                    if (virus.x > config.width - 50) {
+                        damagePlayer(10);
+                        virus.destroy();
+                        viruses = viruses.filter(v => v !== virus);
+                    }
+                }
+            });
+            
+            // 更新子弹
+            bullets.forEach(bullet => {
+                if (bullet.active) {
+                    // 移动向目标
+                    const angle = Phaser.Math.Angle.Between(
+                        bullet.x, bullet.y,
+                        bullet.target.x, bullet.target.y
+                    );
+                    bullet.x += Math.cos(angle) * 300 * delta / 1000;
+                    bullet.y += Math.sin(angle) * 300 * delta / 1000;
+                    
+                    // 检查碰撞
+                    if (Phaser.Math.Distance.Between(
+                        bullet.x, bullet.y,
+                        bullet.target.x, bullet.target.y
+                    ) < 20) {
+                        hitVirus(bullet.target, bullet.damage);
+                        bullet.destroy();
+                        bullets = bullets.filter(b => b !== bullet);
+                    }
+                }
+            });
+        }
+        
+        // 部署免疫细胞
+        function deployCell(x, y) {
+            const cellData = cellTypes[selectedCellType];
+            
+            const cell = this.add.circle(x, y, 20, cellData.color);
+            cell.setStrokeStyle(2, 0xffffff);
+            
+            // 添加细胞图标
+            const icon = this.add.text(x, y, cellData.icon, {
+                fontSize: '24px',
+                align: 'center'
+            }).setOrigin(0.5);
+            
+            cell.type = selectedCellType;
+            cell.damage = cellData.damage;
+            cell.range = cellData.range;
+            cell.lastFire = 0;
+            
+            immuneCells.push(cell);
+            
+            // 添加部署动画
+            this.tweens.add({
+                targets: cell,
+                scaleX: 1.2,
+                scaleY: 1.2,
+                duration: 200,
+                yoyo: true
+            });
+        }
+        
+        // 生成病毒
+        function spawnVirus() {
+            const virusTypeKeys = Object.keys(virusTypes);
+            let selectedType = 'common';
+            
+            // 根据游戏阶段选择病毒类型
+            if (gameStage >= 2) {
+                selectedType = virusTypeKeys[Math.floor(Math.random() * 3)];
+            }
+            if (gameStage >= 3 && Math.random() < 0.3) {
+                selectedType = 'corona';
+            }
+            if (gameStage === 4 && viruses.length === 0) {
+                selectedType = 'boss';
+            }
+            
+            const virusData = virusTypes[selectedType];
+            const virus = this.add.circle(50, 300, selectedType === 'boss' ? 40 : 15, virusData.color);
+            virus.setStrokeStyle(2, 0xffffff);
+            
+            virus.health = virusData.health;
+            virus.maxHealth = virusData.health;
+            virus.speed = virusData.speed;
+            virus.type = selectedType;
+            virus.active = true;
+            
+            // 添加病毒特效
+            if (selectedType === 'boss') {
+                this.tweens.add({
+                    targets: virus,
+                    scaleX: 1.1,
+                    scaleY: 1.1,
+                    duration: 1000,
+                    yoyo: true,
+                    repeat: -1
+                });
+                showVirusDialogue("终极毒王降临！准备接受毁灭吧！");
+            }
+            
+            viruses.push(virus);
+        }
+        
+        // 发射攻击
+        function fireAtVirus(cell, virus) {
+            const bullet = this.add.circle(cell.x, cell.y, 5, 0xffff00);
+            bullet.target = virus;
+            bullet.damage = cell.damage;
+            bullet.active = true;
+            
+            bullets.push(bullet);
+            
+            // 发射特效
+            this.tweens.add({
+                targets: cell,
+                scaleX: 0.8,
+                scaleY: 0.8,
+                duration: 100,
+                yoyo: true
+            });
+        }
+        
+        // 击中病毒
+        function hitVirus(virus, damage) {
+            virus.health -= damage;
+            
+            // 击中特效
+            game.scene.scenes[0].tweens.add({
+                targets: virus,
+                tint: 0xff0000,
+                duration: 100,
+                yoyo: true
+            });
+            
+            if (virus.health <= 0) {
+                // 病毒死亡
+                if (virus.type === 'boss') {
+                    showVirusDialogue("不可能...医学生的意志...竟然...");
+                    setTimeout(showVictory, 2000);
+                }
+                
+                virus.destroy();
+                viruses = viruses.filter(v => v !== virus);
+                
+                // 特殊效果处理
+                if (virus.type === 'strep') {
+                    // 分裂效果
+                    for (let i = 0; i < 2; i++) {
+                        const miniVirus = game.scene.scenes[0].add.circle(
+                            virus.x, virus.y, 10, 0xff0000
+                        );
+                        miniVirus.health = 20;
+                        miniVirus.speed = 40;
+                        miniVirus.active = true;
+                        viruses.push(miniVirus);
+                    }
+                }
+            }
+        }
+        
+        // 玩家受到伤害
+        function damagePlayer(damage) {
+            playerHealth -= damage;
+            
+            if (playerHealth <= 0) {
+                playerHealth = 100;
+                showVirusDialogue("怎...怎么可能！？");
+                
+                // 触发回血特效
+                const healthBar = document.getElementById('playerHealth');
+                healthBar.style.width = '100%';
+                document.querySelector('.health-text').textContent = '100/100 HP';
+                
+                // 显示不屈意志特效
+                anime({
+                    targets: '#gameCanvas',
+                    backgroundColor: ['#ff0000', '#1e3c72'],
+                    duration: 1000,
+                    easing: 'easeInOutQuad'
+                });
+                
+                alert("我永不会放弃！！");
+            } else {
+                updateHealthBar();
+            }
+        }
+        
+        // 更新血条
+        function updateHealthBar() {
+            const healthBar = document.getElementById('playerHealth');
+            healthBar.style.width = playerHealth + '%';
+            document.querySelector('.health-text').textContent = `${playerHealth}/100 HP`;
+        }
+        
+        // 选择细胞类型
+        function selectCell(type) {
+            selectedCellType = type;
+            
+            // 更新按钮样式
+            document.querySelectorAll('.cell-button').forEach(btn => {
+                btn.style.transform = 'scale(1)';
+            });
+            event.target.closest('.cell-button').style.transform = 'scale(1.1)';
+        }
+        
+        // 显示病毒对话
+        function showVirusDialogue(text) {
+            const dialogue = document.getElementById('virusDialogue');
+            const virusText = document.getElementById('virusText');
+            
+            virusText.textContent = text;
+            dialogue.style.display = 'block';
+            
+            anime({
+                targets: dialogue,
+                translateY: [-50, 0],
+                opacity: [0, 1],
+                duration: 500,
+                easing: 'easeOutElastic'
+            });
+            
+            setTimeout(() => {
+                anime({
+                    targets: dialogue,
+                    opacity: 0,
+                    duration: 500,
+                    complete: () => dialogue.style.display = 'none'
+                });
+            }, 3000);
+        }
+        
+        // 显示胜利画面
+        function showVictory() {
+            document.getElementById('victoryScreen').style.display = 'flex';
+            
+            // 更新症状状态
+            symptomsStatus.fever = 36.5;
+            symptomsStatus.headache = 0;
+            symptomsStatus.nausea = 0;
+            symptomsStatus.whiteBloodCells = 8.5;
+            
+            updateSymptomDisplay();
+            
+            // 播放胜利动画
+            anime({
+                targets: '.parade-cell',
+                translateY: [-20, 0],
+                rotate: [0, 360],
+                duration: 2000,
+                delay: anime.stagger(200),
+                loop: true
+            });
+        }
+        
+        // 显示医学问答
+        function showQuiz() {
+            const modal = document.getElementById('quizModal');
+            const questionEl = document.getElementById('quizQuestion');
+            const optionsEl = document.getElementById('quizOptions');
+            
+            // 随机选择问题
+            const question = medicalQuiz[Math.floor(Math.random() * medicalQuiz.length)];
+            
+            questionEl.textContent = question.question;
+            optionsEl.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'quiz-option';
+                optionDiv.textContent = option;
+                optionDiv.onclick = () => checkAnswer(index, question.answer);
+                optionsEl.appendChild(optionDiv);
+            });
+            
+            modal.style.display = 'block';
+            
+            anime({
+                targets: modal,
+                scale: [0, 1],
+                opacity: [0, 1],
+                duration: 500,
+                easing: 'easeOutElastic'
+            });
+        }
+        
+        // 检查答案
+        function checkAnswer(selected, correct) {
+            const modal = document.getElementById('quizModal');
+            
+            if (selected === correct) {
+                // 正确答案 - 给予增益
+                alert('回答正确！所有免疫细胞攻击力+20%！');
+                
+                immuneCells.forEach(cell => {
+                    cell.damage *= 1.2;
+                    
+                    // 添加增益特效
+                    game.scene.scenes[0].tweens.add({
+                        targets: cell,
+                        tint: 0x00ff00,
+                        scaleX: 1.3,
+                        scaleY: 1.3,
+                        duration: 500,
+                        yoyo: true
+                    });
+                });
+            } else {
+                alert('回答错误，但不要放弃！');
+            }
+            
+            anime({
+                targets: modal,
+                scale: 0,
+                opacity: 0,
+                duration: 300,
+                complete: () => modal.style.display = 'none'
+            });
+        }
+        
+        // 更新症状显示
+        function updateSymptomDisplay() {
+            // 更新体温
+            document.getElementById('temperature').textContent = symptomsStatus.fever.toFixed(1) + '°C';
+            
+            // 更新头痛星级
+            updateStarRating('headacheStars', symptomsStatus.headache);
+            
+            // 更新恶心星级
+            updateStarRating('nauseaStars', symptomsStatus.nausea);
+            
+            // 更新白细胞计数
+            document.getElementById('wbcCount').textContent = symptomsStatus.whiteBloodCells.toFixed(1) + ' × 10⁹/L';
+            
+            // 根据症状触发特殊效果
+            if (symptomsStatus.fever > 39) {
+                triggerFeverEffect();
+            }
+            
+            if (symptomsStatus.headache >= 4) {
+                triggerHeadacheEffect();
+            }
+        }
+        
+        // 更新星级显示
+        function updateStarRating(elementId, rating) {
+            const stars = document.querySelectorAll(`#${elementId} .star`);
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.textContent = '★';
+                    star.classList.add('filled');
+                } else {
+                    star.textContent = '☆';
+                    star.classList.remove('filled');
+                }
+            });
+        }
+        
+        // 发热效果
+        function triggerFeverEffect() {
+            showVirusDialogue("体温升高！病毒增殖加速！");
+            
+            // 加速所有病毒
+            viruses.forEach(virus => {
+                virus.speed *= 1.5;
+            });
+            
+            // 屏幕发红效果
+            anime({
+                targets: '#gameCanvas',
+                backgroundColor: ['#1e3c72', '#ff6666', '#1e3c72'],
+                duration: 2000,
+                easing: 'easeInOutQuad'
+            });
+        }
+        
+        // 头痛效果
+        function triggerHeadacheEffect() {
+            showVirusDialogue("集中注意力...坚持复习...");
+            
+            // 屏幕晃动效果
+            const canvas = document.getElementById('gameCanvas');
+            anime({
+                targets: canvas,
+                translateX: [-5, 5, -5, 5, 0],
+                translateY: [-3, 3, -3, 3, 0],
+                duration: 1000,
+                easing: 'easeInOutQuad'
+            });
+            
+            // 暂时降低免疫细胞精准度
+            immuneCells.forEach(cell => {
+                cell.range *= 0.8;
+                setTimeout(() => cell.range /= 0.8, 5000);
+            });
+        }
+        
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('immuneChart').getContext('2d');
+            const immuneChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['0s', '10s', '20s', '30s', '40s', '50s', '60s'],
+                    datasets: [{
+                        label: '免疫活性',
+                        data: [100, 95, 90, 85, 88, 92, 98],
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: '病毒载量',
+                        data: [0, 20, 35, 45, 40, 25, 5],
+                        borderColor: '#ff0066',
+                        backgroundColor: 'rgba(255, 0, 102, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'white'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: 'white'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 定期更新图表
+            setInterval(() => {
+                const newData = immuneChart.data.datasets[0].data;
+                newData.shift();
+                newData.push(Math.random() * 20 + 80);
+                
+                const virusData = immuneChart.data.datasets[1].data;
+                virusData.shift();
+                virusData.push(viruses.length * 5);
+                
+                immuneChart.update();
+            }, 2000);
+        }
+        
+        // 游戏阶段管理
+        function advanceStage() {
+            gameStage++;
+            
+            switch(gameStage) {
+                case 2:
+                    showVirusDialogue("病毒进入血液系统！解锁T细胞特种部队！");
+                    symptomsStatus.fever = 39.2;
+                    updateSymptomDisplay();
+                    break;
+                case 3:
+                    showVirusDialogue("病毒向神经系统进攻！头痛加剧！");
+                    symptomsStatus.headache = 4;
+                    updateSymptomDisplay();
+                    break;
+                case 4:
+                    showVirusDialogue("终极战斗！所有免疫细胞，全力以赴！");
+                    break;
+            }
+        }
+        
+        // 定期触发医学问答
+        setInterval(() => {
+            if (Math.random() < 0.3 && viruses.length > 0) {
+                showQuiz();
+            }
+        }, 20000);
+        
+        // 定期更新症状
+        setInterval(() => {
+            // 随机波动症状
+            if (viruses.length > 5) {
+                symptomsStatus.fever = Math.min(40, symptomsStatus.fever + 0.1);
+                symptomsStatus.headache = Math.min(5, symptomsStatus.headache + 0.2);
+            } else if (viruses.length < 3) {
+                symptomsStatus.fever = Math.max(36.5, symptomsStatus.fever - 0.1);
+                symptomsStatus.headache = Math.max(0, symptomsStatus.headache - 0.3);
+            }
+            
+            updateSymptomDisplay();
+        }, 5000);
+        
+        // 阶段进度检查
+        let virusesDefeated = 0;
+        setInterval(() => {
+            virusesDefeated += 1; // 简化计数
+            
+            if (virusesDefeated > 10 && gameStage === 1) {
+                advanceStage();
+            } else if (virusesDefeated > 25 && gameStage === 2) {
+                advanceStage();
+            } else if (virusesDefeated > 40 && gameStage === 3) {
+                advanceStage();
+            }
+        }, 1000);
+        
+        // 初始化游戏
+        window.onload = function() {
+            game = new Phaser.Game(config);
+            initChart();
+            updateSymptomDisplay();
+            
+            // 添加键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case '1':
+                        selectedCellType = 'macrophage';
+                        break;
+                    case '2':
+                        selectedCellType = 'nk';
+                        break;
+                    case '3':
+                        selectedCellType = 'tcell';
+                        break;
+                    case '4':
+                        selectedCellType = 'bcell';
+                        break;
+                    case 'q':
+                        showQuiz();
+                        break;
+                }
+            });
+            
+            // 窗口大小调整
+            window.addEventListener('resize', () => {
+                game.scale.resize(window.innerWidth - 300, window.innerHeight);
+            });
+        };
+        
+        // 添加粒子效果系统
+        function createParticleEffect(x, y, color) {
+            const particles = game.scene.scenes[0].add.particles(x, y, 'particle', {
+                speed: { min: 100, max: 200 },
+                scale: { start: 1, end: 0 },
+                blendMode: 'ADD',
+                lifespan: 1000,
+                quantity: 10,
+                tint: color
+            });
+            
+            setTimeout(() => particles.destroy(), 1500);
+        }
+        
+        // 特殊技能系统
+        const specialSkills = {
+            immuneBoost: {
+                name: '免疫增强',
+                cooldown: 30000,
+                effect: () => {
+                    immuneCells.forEach(cell => {
+                        cell.damage *= 2;
+                        cell.range *= 1.5;
+                        
+                        game.scene.scenes[0].tweens.add({
+                            targets: cell,
+                            scaleX: 1.5,
+                            scaleY: 1.5,
+                            tint: 0xffffff,
+                            duration: 500,
+                            yoyo: true,
+                            repeat: 5
+                        });
+                    });
+                    
+                    setTimeout(() => {
+                        immuneCells.forEach(cell => {
+                            cell.damage /= 2;
+                            cell.range /= 1.5;
+                        });
+                    }, 10000);
+                }
+            },
+            antibodyStorm: {
+                name: '抗体风暴',
+                cooldown: 45000,
+                effect: () => {
+                    // 对所有病毒造成伤害
+                    viruses.forEach(virus => {
+                        hitVirus(virus, 50);
+                        createParticleEffect(virus.x, virus.y, 0x00ff00);
+                    });
+                }
+            }
+        };
+        
+        // 成就系统
+        const achievements = {
+            firstVictory: { name: '初战告捷', description: '击败10个病毒', unlocked: false },
+            immuneMaster: { name: '免疫大师', description: '部署所有类型的免疫细胞', unlocked: false },
+            knowledgePower: { name: '知识就是力量', description: '正确回答5个医学问题', unlocked: false },
+            neverGiveUp: { name: '永不放弃', description: '触发回血特效', unlocked: false }
+        };
+        
+        // 音效系统（使用Web Audio API）
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(frequency, duration) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        // 部署音效
+        function playDeploySound() {
+            playSound(440, 0.1);
+            setTimeout(() => playSound(550, 0.1), 50);
+        }
+        
+        // 击中音效
+        function playHitSound() {
+            playSound(220, 0.05);
+        }
+        
+        console.log("🌡️ 为栗子而战 - 游戏已加载完成！");
+        console.log("使用数字键1-4快速选择免疫细胞，按Q触发医学问答");
+    </script>
+</body>
+</html>

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我曾在阿卡迪亚 - 崩坏星穹铁道剧情深度解析</title>
+    
+    <!-- 引入字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- 引入动画库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            line-height: 1.8;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+            margin-bottom: 50px;
+        }
+        
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ffd700, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInDown 1s;
+        }
+        
+        .subtitle {
+            font-size: 1.3em;
+            color: #b8b8b8;
+            animation: fadeInUp 1s;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .nav-tab {
+            padding: 12px 30px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 30px;
+            font-size: 1.1em;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .nav-tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        .section-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+        
+        .section-card:hover {
+            transform: translateX(5px);
+            box-shadow: -5px 0 20px rgba(102,126,234,0.3);
+        }
+        
+        h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #ffd700;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 80%;
+            background: linear-gradient(to bottom, #ffd700, #ff6b6b);
+        }
+        
+        h3 {
+            font-size: 1.5em;
+            margin: 25px 0 15px;
+            color: #87ceeb;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+            margin: 20px 0 10px;
+            color: #dda0dd;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+        
+        .highlight {
+            background: linear-gradient(to right, rgba(255,215,0,0.3), rgba(255,107,107,0.3));
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .quote {
+            border-left: 4px solid #ffd700;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            background: rgba(255,255,255,0.03);
+            padding: 20px;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .character-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255,255,255,0.08);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .character-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            margin: 30px 0;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #ffd700, #ff6b6b);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -35px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            background: #ffd700;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        
+        .concept-box {
+            background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+            border: 1px solid rgba(102,126,234,0.3);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+        }
+        
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        
+        .back-to-top.show {
+            opacity: 1;
+        }
+        
+        .back-to-top:hover {
+            transform: translateY(-5px);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            h2 { font-size: 1.5em; }
+            .container { padding: 10px; }
+            .section-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 class="animate__animated animate__fadeInDown">我曾在阿卡迪亚</h1>
+        <p class="subtitle animate__animated animate__fadeInUp">——崩铁·支线剧情深度解析——</p>
+    </header>
+    
+    <div class="container">
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showSection('intro')">剧情开篇引言</div>
+            <div class="nav-tab" onclick="showSection('mythology')">支线神话考据</div>
+            <div class="nav-tab" onclick="showSection('characters')">不同人物解析</div>
+            <div class="nav-tab" onclick="showSection('plot')">支线剧情解读</div>
+            <div class="nav-tab" onclick="showSection('concepts')">主要核心概念</div>
+            <div class="nav-tab" onclick="showSection('conclusion')">剧情最终启示</div>
+        </div>
+        
+        <!-- 引言 -->
+        <div id="intro" class="content-section active">
+            <div class="section-card">
+                <h2>引言：浪漫的缺席</h2>
+                <p>我曾在阿卡迪亚——这个支线表面上是浪漫的盲目导致了悲剧，但深入分析会发现恰恰相反。</p>
+                <div class="quote">
+                    这场悲剧的发生不是因为浪漫，而是因为真正的浪漫缺席了。
+                </div>
+                <p>这是一个关于<span class="highlight">虚假浪漫</span>与<span class="highlight">真实浪漫</span>的故事，一个关于背叛与觉醒的悲剧。当我们剥开层层表象，会发现帕里斯所追求的"阿卡迪亚"从一开始就是虚无缥缈的幻影，而猎手小姐在残缺现实中创造的美好，才是真正的理想乡。</p>
+            </div>
+        </div>
+        
+        <!-- 神话考据 -->
+        <div id="mythology" class="content-section">
+            <div class="section-card">
+                <h2>阿卡迪亚：西方的世外桃源</h2>
+                <p>阿卡迪亚（Arcadia）是西方文化中的经典意象，代指世外桃源。这个地方之所以成为西方人的理想化对象，要从古希腊的历史说起。</p>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>公元前10世纪</h4>
+                        <p>多利安人入侵等因素导致古希腊社会发生巨大转型，但阿卡迪亚地区未被入侵，因此过着与世隔绝的田园牧歌式生活。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>文学演变</h4>
+                        <p>经过一代代文人的塑造，阿卡迪亚逐渐被神话为寄托美好想象的世外桃源。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>翁法罗斯文化</h4>
+                        <p>阿卡迪亚是浪漫泰坦墨涅塔庇护的黄金之乡，是诗人、艺术家与追逐浪漫之人的天堂。</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-card">
+                <h2>开篇的预言：伊阿宋与赫拉克勒斯</h2>
+                <p>剧情开头的NPC伊阿宋和他的大地兽赫拉克勒斯，虽然戏份不多，但这两个名字其实已经暗示了故事的结局。</p>
+                
+                <div class="character-card">
+                    <div class="character-icon">伊</div>
+                    <div>
+                        <h4>伊阿宋</h4>
+                        <p>背叛了爱人美狄亚 → 对应帕里斯背叛猎手小姐</p>
+                    </div>
+                </div>
+                
+                <div class="character-card">
+                    <div class="character-icon">赫</div>
+                    <div>
+                        <h4>赫拉克勒斯</h4>
+                        <p>死于爱人之手 → 对应帕里斯被猎手小姐射死</p>
+                    </div>
+                </div>
+                
+                <div class="concept-box">
+                    <h4>赫拉克勒斯之死的隐喻</h4>
+                    <p>赫拉克勒斯的妻子德阿尼拉误信谎言，用被毒箭污染的血涂在丈夫衣服上，导致赫拉克勒斯中毒身亡。德阿尼拉无意中害死了爱人，就像剧情中猎手小姐在失控状态下射杀了帕里斯。</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 人物解析 -->
+        <div id="characters" class="content-section">
+            <div class="section-card">
+                <h2>帕里斯：集百家之短的渣男</h2>
+                <p>帕里斯这个角色融合了希腊神话中的帕里斯和伊阿宋——两个经典渣男的故事。</p>
+                
+                <h3>特洛伊的帕里斯</h3>
+                <ul>
+                    <li>原本的妻子是俄诺涅（游戏中元老俄诺涅亚的原型）</li>
+                    <li>在三女神选美中选择爱神阿芙洛狄忒，作为回报拐走了斯巴达王后海伦</li>
+                    <li>引发特洛伊战争却懦弱躲藏，最终死于神射手菲洛克特特斯的毒箭</li>
+                    <li>临死前恬不知耻去找俄诺涅求救，但被拒绝</li>
+                </ul>
+                
+                <h3>伊阿宋的背叛</h3>
+                <ul>
+                    <li>原为伊俄尔科斯王国的王子，王位被篡夺</li>
+                    <li>为夺回王位，前往科尔喀斯取金羊毛</li>
+                    <li>科尔喀斯公主美狄亚爱上他，用魔法帮他完成任务并私奔</li>
+                    <li>后来移情别恋，要娶科任托斯公主格劳刻</li>
+                    <li>美狄亚为报复毒死格劳刻，杀死自己和伊阿宋的孩子后逃走</li>
+                </ul>
+                
+                <div class="quote">
+                    游戏里的帕里斯融合了这两大"逆天"原型，可以说是集百家之短了。
+                </div>
+            </div>
+            
+            <div class="section-card">
+                <h2>猎手小姐：三位女性的融合</h2>
+                <p>猎手小姐主要融合了海伦、美狄亚和阿塔兰忒三个原型。</p>
+                
+                <h3>海伦与美狄亚：为爱远走他乡的异族女子</h3>
+                <ul>
+                    <li>海伦：斯巴达王后，被帕里斯拐走引发特洛伊战争</li>
+                    <li>美狄亚：科尔喀斯公主，为爱背叛家族帮助伊阿宋</li>
+                </ul>
+                
+                <h3>阿塔兰忒：失去自由的女战士</h3>
+                <div class="concept-box">
+                    <p>阿塔兰忒是国王伊阿索斯的女儿，出生在阿卡迪亚地区，一出生就被抛弃在荒野。被猎人救下并收养，成长为一名猎人。</p>
+                    <ul>
+                        <li>常见形象是手持弓箭的猎人（对应天谴猎手）</li>
+                        <li>向狩猎女神发誓永远做处女，但被金苹果诱惑输掉比赛被迫嫁人</li>
+                        <li>失去纯洁vs放下战争：相似的心境映射</li>
+                    </ul>
+                </div>
+                
+                <div class="quote">
+                    为了爱人和爱人的城邦，她不惜沾上同族鲜血。可遍体鳞伤的她，却被自己所保护的城邦拒绝，被自己所爱之人背叛，最终迎来孤独的落幕。
+                </div>
+            </div>
+        </div>
+        
+        <!-- 剧情解读 -->
+        <div id="plot" class="content-section">
+            <div class="section-card">
+                <h2>帕里斯：虚假浪漫的信徒</h2>
+                
+                <h3>爱的是偶像，不是真人</h3>
+                <p>猎手小姐在他心里的<span class="highlight">象征意义</span>远比<span class="highlight">真实个性</span>重要。他爱的不是那个坚毅又纯情的少女，而只是一尊大理石的偶像。</p>
+                
+                <h3>把手段当目的的拜物教</h3>
+                <p>他与其说是在追求和践行浪漫，不如说只是在通过和猎手小姐的恋情证明自己是浪漫的信徒。这完全是把手段和目的颠倒了，可以说是一种拜物教行为。</p>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>平静时期</h4>
+                        <p>觉得和元老俄诺涅的恋情太过世俗，天天叫着要寻找阿卡迪亚，寻找超脱俗世的浪漫。选择泰坦眷属这样"惊世骇俗"的存在。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>危机来临</h4>
+                        <p>戍卫长遇害后，立刻投向俄诺涅的怀抱，希望位高权重的元老能庇护他，为此不惜把猎手小姐留在城外等死。</p>
+                    </div>
+                </div>
+                
+                <div class="quote">
+                    让自己沉浸在幻想中，还将幻想附加在其他人的身上，自说自话上演一个人的悲剧。如此自私的浪漫，只是一场一个人的纷争。
+                </div>
+                
+                <h3>成就"忧郁的扼杀"的揭示</h3>
+                <div class="concept-box">
+                    <p><strong>他首先爱着水，其次是爱着他自己所缺少的那部分。</strong></p>
+                    <ul>
+                    <li>回到第一次见猎手小姐的地方会获得此成就</li>
+                        <li>水 = 人生存的必需品 = 自己的利益</li>
+                        <li>缺少的部分 = 所谓另一半 = 爱情工具</li>
+                    </ul>
+                    <p>这道破了帕里斯的本质：他就是个极度自私的人，他投射出来的所谓爱只是为了达成自己的目的。</p>
+                </div>
+                
+                <h3>真正的目的：逃避战争</h3>
+                <p>他身为保家卫国的士兵，却总在逃避自己的职责。为此他利用了俄诺涅，利用了猎手小姐，更利用了无数血洒疆场的战友。他的岁月静好说到底是来自一个个"菲洛克"的牺牲。</p>
+            </div>
+            
+            <div class="section-card">
+                <h2>猎手小姐：真正的浪漫践行者</h2>
+                
+                <h3>浪漫的三重境界</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>学会去爱</h4>
+                        <p>作为战争机器诞生的她却在学着爱一个人——这是她的浪漫。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>质疑命运</h4>
+                        <p>作为泰坦造物的她却开始质疑神明，质疑既定的命运——这是她的浪漫。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>超越本能</h4>
+                        <p>作为尼卡托利手下的她，去对抗血脉中的本能，为了保护爱人和城邦向同族下手——这也是她的浪漫。</p>
+                    </div>
+                </div>
+                
+                <div class="concept-box">
+                    <h4>浪漫的真谛</h4>
+                    <p>浪漫并不只是简单的情情爱爱，浪漫代表是更为广阔的可能性，是独属于人的存在性与本真，是一往无前开创自己想要的未来的勇气。</p>
+                </div>
+                
+                <p>当猎手小姐领悟到这一点并以此行动时，她就成了浪漫的真正信徒。猎手小姐残缺消失之处出现的那只蝴蝶是来自墨涅塔的使者，她前来迎接这位等待已久的追随者。只可惜它来得太晚了。</p>
+            </div>
+            
+            <div class="section-card">
+                <h2>悲剧的必然：浪漫的缺席</h2>
+                
+                <h3>关键时刻的选择</h3>
+                <ul>
+                    <li>猎手小姐想一起战斗</li>
+                    <li>帕里斯想一起逃跑</li>
+                    <li>但帕里斯最终两个都没选，他根本不想和猎手小姐共进退</li>
+                </ul>
+                
+                <p>从猎手小姐在城堡保卫战中表现出的战斗力来看，就算他们真的一起战斗，也可能都可以活下来。但正是帕里斯的背叛害死了猎手小姐，也害死了他自己。</p>
+                
+                <div class="quote">
+                    对于猎手小姐付出的浪漫，如果帕里斯回以同等的浪漫，悲剧本可以避免。导致这场悲剧的恰恰是因为真正的浪漫缺席了。
+                </div>
+                
+                <p>当然，帕里斯从一开始就不想付出浪漫，所以悲剧是必然的——这是经典的古希腊式命运悲剧。</p>
+            </div>
+        </div>
+        
+        <!-- 核心概念 -->
+        <div id="concepts" class="content-section">
+            <div class="section-card">
+                <h2>标题的深意："我曾在阿卡迪亚"</h2>
+                
+                <h3>表面的矛盾</h3>
+                <p>"曾在"这个词似乎意味着猎手小姐曾经确确实实度过了一段美好时光。但我们已经知道：</p>
+                <ul>
+                    <li>帕里斯口中的阿卡迪亚从一开始就是虚无缥缈的</li>
+                    <li>帕里斯给她的爱其实也是虚伪的，就像那捆假金丝</li>
+                </ul>
+                
+                <h3>虚构与真实的辩证</h3>
+                <div class="concept-box">
+                    <p><strong>类比：虚构故事中的真实感动</strong></p>
+                    <p>在看虚构的故事时，我们收获了感动。尽管故事是虚假的，但这份感受却是真实的。它并不因为故事是虚幻就丧失光芒。</p>
+                </div>
+                
+                <p>和这类似，帕里斯给的只是虚假金线、虚假阿卡迪亚、虚假浪漫。但最后来自墨涅塔的蝴蝶印证的是猎手小姐所有的真实。</p>
+                
+                <h3>真正的阿卡迪亚</h3>
+                <ul>
+                    <li>过往的幸福（即便基于谎言）</li>
+                    <li>从作为泰坦眷属既定命运下挣脱出来的自我</li>
+                    <li>她以行动在残缺现实中创造的美好</li>
+                </ul>
+                
+                <div class="quote">
+                    重要的不是金线本身，而是寄托于其上的情感。金线是假的，但属于自己的情感是真的，这份浪漫也是真的。
+                </div>
+            </div>
+            
+            <div class="section-card">
+                <h2>普桑的画作：Et in Arcadia ego</h2>
+                
+                <h3>画作描述</h3>
+                <p>这幅画描绘的是一幅美好田园牧歌景象，其间有三位牧羊人和一位黄衣女子，他们在端详一块墓碑上的铭文"Et in Arcadia ego"。</p>
+                
+                <h3>双重含义</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>"我也在阿卡迪亚"</h4>
+                        <p>这个"我"代指死亡或泛指各种不美好。即便在阿卡迪亚这样理想之地，也无法完全躲避死亡和其他的不美好。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>"我曾在阿卡迪亚"</h4>
+                        <p>墓中沉睡的是一个曾生活于此的人。即便生活不可能完美，他也愿意把这残缺的此岸生活称作阿卡迪亚。</p>
+                    </div>
+                </div>
+                
+                <div class="concept-box">
+                    <h4>更深层的含义</h4>
+                    <p>纵然有死亡的阴影笼罩，也无法否定阿卡迪亚的美好。即便人生终有一死，即便世上的种种不美好无法彻底根除，这里也已经是阿卡迪亚了。</p>
+                    <p><strong>真正的阿卡迪亚从来不在虚幻的彼岸，而是在注定残缺的此岸。</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 最终启示 -->
+        <div id="conclusion" class="content-section">
+            <div class="section-card">
+                <h2>故事的最终启示</h2>
+                
+                <h3>两种对待阿卡迪亚的态度</h3>
+                <div class="character-card">
+                    <div class="character-icon" style="background: linear-gradient(45deg, #666, #999);">帕</div>
+                    <div>
+                        <h4>帕里斯：逃避现实</h4>
+                        <p>一味逃避现实，将希望寄托在虚无缥缈的传说上，只会离阿卡迪亚越来越远。</p>
+                    </div>
+                </div>
+                
+                <div class="character-card">
+                    <div class="character-icon" style="background: linear-gradient(45deg, #ffd700, #ff6b6b);">猎</div>
+                    <div>
+                        <h4>猎手小姐：创造美好</h4>
+                        <p>付出切切实实的行动，去创造美好，去守护美好，才能把注定残缺的此岸变成自己生命尽头仍可肯定的阿卡迪亚。</p>
+                    </div>
+                </div>
+                
+                <div class="quote">
+                    帕里斯的阿卡迪亚是空虚的，而猎手小姐的阿卡迪亚是真实的。
+                </div>
+                
+                <h3>墓志铭</h3>
+                <div class="concept-box">
+                    <p>如果把"我曾在阿卡迪亚"作为猎手小姐的墓志铭，想必她是不会介意的吧。</p>
+                    <p>这不是对虚假浪漫的追悼，而是对真实生命的礼赞——即使此岸残缺，以行动与真诚创造的瞬间美好，便已是凡人所能抵达的"阿卡迪亚"。</p>
+                </div>
+                
+                <h3>最后的反思</h3>
+                <p>猎手小姐的悲剧落幕并非否定浪漫，而是揭露虚假浪漫的代价。这个故事告诉我们：</p>
+                <ul>
+                    <li>真正的浪漫不是自我感动的独角戏，而是勇敢付出的双向奔赴</li>
+                    <li>真正的理想乡不在遥远的彼岸，而在我们亲手创造的此时此刻</li>
+                    <li>即使面对背叛与幻灭，真诚的情感依然有其不可磨灭的价值</li>
+                </ul>
+                
+                <div class="quote">
+                    浪漫的缺席导致了悲剧，但真正的浪漫永不缺席于那些勇敢去爱、去战斗、去守护的灵魂。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="back-to-top" onclick="scrollToTop()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+        </svg>
+    </div>
+    
+    <script>
+        // 标签页切换
+        function showSection(sectionId) {
+            // 隐藏所有内容
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // 移除所有标签的激活状态
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // 显示选中的内容
+            document.getElementById(sectionId).classList.add('active');
+            
+            // 激活对应的标签
+            const activeTab = Array.from(tabs).find(tab => 
+                tab.onclick.toString().includes(sectionId)
+            );
+            if (activeTab) activeTab.classList.add('active');
+            
+            // 滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // 回到顶部按钮
+        const backToTop = document.querySelector('.back-to-top');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTop.classList.add('show');
+            } else {
+                backToTop.classList.remove('show');
+            }
+        });
+        
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // 添加进入动画
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.6s ease-out';
+                    entry.target.style.opacity = '1';
+                }
+            });
+        }, observerOptions);
+        
+        // 观察所有卡片
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.section-card, .character-card, .concept-box');
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                observer.observe(card);
+            });
+        });
+        
+        // 添加平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

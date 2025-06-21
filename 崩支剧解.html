@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我曾在阿卡迪亚 - 崩坏星穹铁道剧情深度解析</title>
+    <title>我曾在阿卡迪亚 - 崩铁支线剧情深度解析</title>
     
-    <!-- 引入字体 -->
+    <!-- 字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- 引入动画库 -->
+    <!-- 动画库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     
     <style>
@@ -34,9 +34,9 @@
         
         header {
             text-align: center;
-            padding: 60px 20px;
+            padding: 60px 20px 40px;
             background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
-            margin-bottom: 50px;
+            margin-bottom: 30px;
         }
         
         h1 {
@@ -51,6 +51,9 @@
         .subtitle {
             font-size: 1.3em;
             color: #b8b8b8;
+            margin-bottom: 0;
+            text-align: center;
+            padding-bottom: 20px;
             animation: fadeInUp 1s;
         }
         
@@ -289,6 +292,17 @@
             h2 { font-size: 1.5em; }
             .container { padding: 10px; }
             .section-card { padding: 20px; }
+                        
+            .subtitle {
+                font-size: 1.1em;  
+                text-align: center;
+                padding-bottom: 15px;  
+            }
+    
+            header {
+                padding: 40px 20px 30px;  
+                margin-bottom: 20px;  
+            }
         }
     </style>
 </head>
@@ -661,7 +675,7 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
-        // 添加进入动画
+        // 进入动画
         const observerOptions = {
             threshold: 0.1,
             rootMargin: '0px 0px -50px 0px'
@@ -685,7 +699,7 @@
             });
         });
         
-        // 添加平滑滚动
+        // 平滑滚动
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();

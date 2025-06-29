@@ -1437,6 +1437,56 @@ body.theme-transitioning * {
         transform: translateX(-50%) translateY(-20px) scale(0.9);
     }
 }
+        /* ========== 教学模式样式========== */
+        .tutorial-highlight {
+            position: relative;
+            z-index: 10001 !important;
+            box-shadow: 0 0 0 4px rgba(251, 192, 45, 0.7), 0 0 35px #fbc02d !important;
+            border-radius: 12px; 
+            animation: tutorialPulse 1.5s ease-in-out infinite;
+            transform: scale(1.1); 
+            pointer-events: auto !important; 
+        }
+
+        #game-board.tutorial-active .cell:not(.tutorial-highlight),
+        body.tutorial-active .btn:not(.tutorial-highlight) {
+            opacity: 0.4;
+            filter: grayscale(70%);
+            transition: opacity 0.4s ease, filter 0.4s ease;
+            pointer-events: none; 
+        }
+
+        #tutorial-message-box {
+            position: fixed;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ffeb3b, #fbc02d);
+            color: #333;
+            padding: 20px 30px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10002;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            border: 3px solid white;
+            max-width: 80vw;
+            text-align: center;
+            line-height: 1.5;
+            animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+        }
+
+        @keyframes tutorialPulse {
+            0%, 100% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 4px rgba(251, 192, 45, 0.7), 0 0 35px #fbc02d !important;
+            }
+            50% {
+                transform: scale(1.15);
+                box-shadow: 0 0 0 6px rgba(255, 235, 59, 1), 0 0 50px #ffeb3b !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1447,7 +1497,7 @@ body.theme-transitioning * {
         </div>
         <div class="game-controls">
             <button class="btn info" id="btn-help">❓ 帮助</button>
-            <!-- 模式选择下拉菜单 -->
+                        <!-- 模式选择下拉菜单 -->
             <div class="dropdown">
                 <button class="btn success" id="btn-mode-select">🎮 模式选择</button>
                 <div class="dropdown-content" id="mode-dropdown">
@@ -1455,7 +1505,8 @@ body.theme-transitioning * {
                     <div class="dropdown-item" data-mode="intermediate">中级 16×16 (40雷)</div>
                     <div class="dropdown-item" data-mode="expert">高级 16×30 (99雷)</div>
                     <div class="dropdown-item" data-mode="mega">巨型 30×50 (300雷)</div>
-                    <div class="dropdown-item" data-mode="custom">自定义游戏</div>       
+                    <div class="dropdown-item" data-mode="custom">自定义游戏</div>
+                    <div class="dropdown-item" data-mode="tutorial">🎓 教学模式</div>       
                 </div>
             </div>
             <!-- 个性化设置下拉菜单 -->
@@ -1899,14 +1950,25 @@ body.theme-transitioning * {
         // 等待DOM完全加载后再初始化
         document.addEventListener('DOMContentLoaded', function() {
             class MinesweeperUltimate {
-                constructor() {
+                                constructor() {
                     // 版本控制
                     this.VERSION = '1.4.0';
                     this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
-this.progressiveHints = {
-    hints: [],
-    currentIndex: -1,
-};
+
+                    this.progressiveHints = {
+                        hints: [],
+                        currentIndex: -1,
+                    };
+
+                    // 教学模式状态
+                    this.tutorialState = {
+                        active: false,
+                        step: 0,
+                        steps: [],
+                        boardLayout: [],
+                        minesLayout: [],
+                        justStarted: false,
+                    };
 
                     this.difficulties = {
                         beginner: { rows: 9, cols: 9, mines: 10 },
@@ -1918,12 +1980,12 @@ this.progressiveHints = {
                     // 操作设置
                     this.controlSettings = {
                         pc: {
-                            left: 'open',  // 'open' 或 'flag'
-                            right: 'flag'  // 'open' 或 'flag'
+                            left: 'open',
+                            right: 'flag'
                         },
                         mobile: {
-                            tap: 'flag',   // 'open' 或 'flag'
-                            long: 'open'   // 'open' 或 'flag'
+                            tap: 'flag',
+                            long: 'open'
                         }
                     };
 
@@ -1968,145 +2030,188 @@ this.progressiveHints = {
                             safeDetect: { count: 2, active: false, cells: [] },
                             autoFlag: { count: 3, active: false }
                         },
-                        // 初始化游戏数据对象，防止未定义错误
                         gameData: {}
                     };
-                    this.lastAutoSolvePosition = { row: 0, col: 0 }; // 记录上一次自动扫雷操作的位置
-    this.achievements = {
-    firstWin: { unlocked: false, unlockedAt: null },
-    speedDemon: { unlocked: false, unlockedAt: null }, // 单级，无明确进度条显示，直接解锁
-    perfect: { unlocked: false, unlockedAt: null },    // 单级，无明确进度条显示
-    lucky: { unlocked: false, unlockedAt: null },      // 单级，无明确进度条显示
-    comboMaster: { unlocked: false, currentValue: 0, unlockedAt: null }, // 单级，有进度
-    giantSlayer: { unlocked: false, unlockedAt: null }, // 单级
-    mineHunter: { unlockedLevel: -1, currentValue: 0, unlockedAt: null }, // 多级，有进度 (-1表示未解锁任何级别)
-    timeMaster: { unlocked: false, currentValue: 0, unlockedAt: null },   // 单级，有进度
-    flagExpert: { unlockedLevel: -1, currentValue: 0, unlockedAt: null }, // 多级，有进度
-    survivalKing: { unlocked: false, unlockedAt: null } // 单级
-};
+                    this.lastAutoSolvePosition = { row: 0, col: 0 };
+                    this.achievements = {
+                        firstWin: { unlocked: false, unlockedAt: null },
+                        speedDemon: { unlocked: false, unlockedAt: null },
+                        perfect: { unlocked: false, unlockedAt: null },
+                        lucky: { unlocked: false, unlockedAt: null },
+                        comboMaster: { unlocked: false, currentValue: 0, unlockedAt: null },
+                        giantSlayer: { unlocked: false, unlockedAt: null },
+                        mineHunter: { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
+                        timeMaster: { unlocked: false, currentValue: 0, unlockedAt: null },
+                        flagExpert: { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
+                        survivalKing: { unlocked: false, unlockedAt: null }
+                    };
 
-this.achievementDetails = {
-    'first-win': {
-        baseId: 'first-win',
-        name: '首次胜利',
-        icon: '🥇',
-        description: '完成你的第一局扫雷游戏',
-        condition: '在任意难度下获得胜利',
-        isMultiLevel: false,
-        tips: '点击空白格子开始游戏，避开所有地雷即可获胜！'
-    },
-    'speed-demon': {
-        baseId: 'speed-demon',
-        name: '极速通关',
-        icon: '⚡',
-        description: '在初级难度下30秒内完成游戏',
-        condition: '初级难度(9×9)，用时少于30秒',
-        isMultiLevel: false,
-        tips: '熟练掌握扫雷技巧，快速识别安全区域和地雷位置'
-    },
-    'perfect': {
-        baseId: 'perfect',
-        name: '完美游戏',
-        icon: '💯',
-        description: '完成一局游戏且没有错误标记',
-        condition: '获胜且未标记任何错误的地雷',
-        isMultiLevel: false,
-        tips: '谨慎标记，确保每个旗帜都标在正确的地雷上'
-    },
-    'lucky': {
-        baseId: 'lucky',
-        name: '幸运玩家',
-        icon: '🍀',
-        description: '仅用一次点击就获得胜利',
-        condition: '只点击一个格子就完成游戏',
-        isMultiLevel: false,
-        tips: '需要极大的运气！点击一个大的空白区域可能触发连锁反应'
-    },
-    'combo-master': {
-        baseId: 'combo-master',
-        name: '连击大师',
-        icon: '🔥',
-        description: '在一局游戏中达到指定连击数',
-        condition: '单局最大连击数达到20',
-        targetValue: 20,
-        isMultiLevel: false,
-        tips: '连续成功揭开格子可以增加连击数，踩雷会重置连击'
-    },
-    'giant-slayer': {
-        baseId: 'giant-slayer',
-        name: '巨型征服者',
-        icon: '🗿',
-        description: '完成巨型难度(30×50)的游戏',
-        condition: '在巨型难度下获得胜利',
-        isMultiLevel: false,
-        tips: '这是最高难度！需要极大的耐心和精湛的技巧'
-    },
-    'mine-hunter': {
-        baseId: 'mine-hunter',
-        baseName: '地雷猎手', // 用于HTML中ID的基础部分和未解锁时的默认显示
-        baseIcon: '🎯',
-        isMultiLevel: true,
-        levels: [
-            { level: 0, name: '初级地雷猎手', icon: '🎯', description: '累计正确标记50个地雷', condition: '累计正确标记地雷数达到50', targetValue: 50, tips: '多玩游戏，准确标记地雷，积累经验。' },
-            { level: 1, name: '中级地雷猎手', icon: '🎯✨', description: '累计正确标记200个地雷', condition: '累计正确标记地雷数达到200', targetValue: 200, tips: '标记地雷的准确性越来越高了！' },
-            { level: 2, name: '专家地雷猎手', icon: '🎯🏆', description: '累计正确标记500个地雷', condition: '累计正确标记地雷数达到500', targetValue: 500, tips: '你已成为一名真正的地雷追踪专家！' }
-        ]
-    },
-    'time-master': {
-        baseId: 'time-master',
-        name: '时间大师',
-        icon: '⏰',
-        description: '总游戏时间超过1小时',
-        condition: '累计游戏时间达到3600秒',
-        targetValue: 3600, // 3600 秒
-        isMultiLevel: false,
-        tips: '坚持游戏，时间会自然累积'
-    },
-    'flag-expert': {
-        baseId: 'flag-expert',
-        baseName: '标记专家',
-        baseIcon: '🚩',
-        isMultiLevel: true,
-        levels: [
-            { level: 0, name: '初级标记专家', icon: '🚩', description: '连续3局游戏无错误标记获胜', condition: '连续3局获胜且每局都没有错误标记', targetValue: 3, tips: '需要极高的准确性！每次标记前都要仔细思考。' },
-            { level: 1, name: '中级标记专家', icon: '🚩✨', description: '连续7局游戏无错误标记获胜', condition: '连续7局获胜且每局都没有错误标记', targetValue: 7, tips: '你的标记几乎从不出错！' },
-            { level: 2, name: '高级标记专家', icon: '🚩🏆', description: '连续10局游戏无错误标记获胜', condition: '连续10局获胜且每局都没有错误标记', targetValue: 10, tips: '标记的艺术已被你完美掌握！' }
-        ]
-    },
-    'survival-king': {
-        baseId: 'survival-king',
-        name: '生存之王',
-        icon: '👑',
-        description: '在生存模式下满血通关',
-        condition: '生存模式获胜且生命值未减少',
-        isMultiLevel: false,
-        tips: '在生存模式中，避免踩到任何地雷，保持满血状态通关'
-    }
-};
+                    this.achievementDetails = {
+                        'first-win': { baseId: 'first-win', name: '首次胜利', icon: '🥇', description: '完成你的第一局扫雷游戏', condition: '���任意难度下获得胜利', isMultiLevel: false, tips: '点击空白格子开始游戏，避开所有地雷即可获胜！' },
+                        'speed-demon': { baseId: 'speed-demon', name: '极速通关', icon: '⚡', description: '在初级难度下30秒内完成游戏', condition: '初级难度(9×9)，用时少于30秒', isMultiLevel: false, tips: '熟练掌握扫雷技巧，快速识别安全区域和地雷位置' },
+                        'perfect': { baseId: 'perfect', name: '完美游戏', icon: '💯', description: '完成一局游戏且没有错误标记', condition: '获胜且未标记任何错误的地雷', isMultiLevel: false, tips: '谨慎标记，确保每个旗帜都标在正确的地雷上' },
+                        'lucky': { baseId: 'lucky', name: '幸运玩家', icon: '🍀', description: '仅用一次点击就获得胜利', condition: '只点击一个格子就完成游戏', isMultiLevel: false, tips: '需要极大的运气！点击一个大的空白区域可能触发连锁反应' },
+                        'combo-master': { baseId: 'combo-master', name: '连击大师', icon: '🔥', description: '在一局游戏中达到指定连击数', condition: '单局最大连击数达到20', targetValue: 20, isMultiLevel: false, tips: '连续成功揭开格子可以增加连击数，踩雷会重置连击' },
+                        'giant-slayer': { baseId: 'giant-slayer', name: '巨型征服者', icon: '🗿', description: '完成巨型难度(30×50)的游戏', condition: '在巨型难度下获得胜利', isMultiLevel: false, tips: '这是最高难度！需要极大的耐心和精湛的技巧' },
+                        'mine-hunter': { baseId: 'mine-hunter', baseName: '地雷猎手', baseIcon: '🎯', isMultiLevel: true, levels: [ { level: 0, name: '初级地雷猎手', icon: '🎯', description: '累计正确标记50个地雷', condition: '累计正确标记地雷数达到50', targetValue: 50, tips: '多玩游戏，准确标记地雷，积累经验。' }, { level: 1, name: '中级地雷猎手', icon: '🎯✨', description: '累计正确标记200个地雷', condition: '累计正确标记地雷数达到200', targetValue: 200, tips: '标记地雷的准确性越来越高了！' }, { level: 2, name: '专家地雷猎手', icon: '🎯🏆', description: '累计正确标记500个地雷', condition: '累计正确标记地雷数达到500', targetValue: 500, tips: '你已成为一名真正的地雷追踪专家！' } ] },
+                        'time-master': { baseId: 'time-master', name: '时间大师', icon: '⏰', description: '总游戏时间超过1小时', condition: '累计游戏时间达到3600秒', targetValue: 3600, isMultiLevel: false, tips: '坚持游戏，时间会自然累积' },
+                        'flag-expert': { baseId: 'flag-expert', baseName: '标记专家', baseIcon: '🚩', isMultiLevel: true, levels: [ { level: 0, name: '初级标记专家', icon: '🚩', description: '连续3局游戏无错误标记获胜', condition: '连续3局获胜且每局都没有错误标记', targetValue: 3, tips: '需要极高的准确性！每次标记前都要仔细思考。' }, { level: 1, name: '中级标记专家', icon: '🚩✨', description: '连续7局游戏无错误标记获胜', condition: '连续7局获胜且每局都没有错误标记', targetValue: 7, tips: '你的标记几乎从不出错！' }, { level: 2, name: '高级标记专家', icon: '🚩🏆', description: '连续10局游戏无错误标记获胜', condition: '连续10局获胜且每局都没有错误标记', targetValue: 10, tips: '标记的艺术已被你完美掌握！' } ] },
+                        'survival-king': { baseId: 'survival-king', name: '生存之王', icon: '👑', description: '在生存模式下满血通关', condition: '生存模式获胜且生命值未减少', isMultiLevel: false, tips: '在生存模式中，避免踩到任何地雷，保持满血状态通关' }
+                    };
 
-// 成就通知队列
-this.achievementQueue = [];
-this.isShowingAchievement = false;
+                    this.achievementQueue = [];
+                    this.isShowingAchievement = false;
 
-    this.stats = {
-    gamesPlayed: 0,
-    gamesWon: 0,
-    totalTime: 0,
-    bestTimes: {
-        beginner: Infinity,
-        intermediate: Infinity,
-        expert: Infinity,
-        mega: Infinity
-    },
-    totalCorrectFlags: 0,       
-    consecutivePerfectGames: 0,  
-    maxConsecutivePerfectGames: 0 
-};
+                    this.stats = {
+                        gamesPlayed: 0,
+                        gamesWon: 0,
+                        totalTime: 0,
+                        bestTimes: { beginner: Infinity, intermediate: Infinity, expert: Infinity, mega: Infinity },
+                        totalCorrectFlags: 0,       
+                        consecutivePerfectGames: 0,  
+                        maxConsecutivePerfectGames: 0 
+                    };
                     this.audioContext = null;
                     this.sounds = {};
-                    this.savedGames = []; // 存档列表
+                    this.savedGames = [];
                     this.init();
                     this.tempSaves = [];
+                }
+                
+                                // --- 教学模式核心逻辑 ---
+                                startTutorial() {
+                    if (this.tutorialState.active) this.endTutorial();
+
+                    this.tutorialState.active = true;
+                    this.tutorialState.step = 0;
+                    this.tutorialState.justStarted = true;
+                    this.defineTutorialSteps();
+                    
+                    document.body.classList.add('tutorial-active');
+                    
+                    const { rows, cols, mines, Flag } = this.tutorialState;
+                    this.startGame(rows, cols, mines, 'tutorial');
+                    this.showTutorialStep(0);
+                    
+                    setTimeout(() => {
+                        if (this.tutorialState) {
+                           this.tutorialState.justStarted = false;
+                        }
+                    }, 100);
+                }
+
+                                defineTutorialSteps() {
+                    this.tutorialState.rows = 7;
+                    this.tutorialState.cols = 7;
+                    this.tutorialState.mines = 4;
+                    this.tutorialState.minesLayout = [[1, 1], [6, 1], [5, 1], [3, 5]];
+
+                    this.tutorialState.steps = [
+                        { text: "欢迎来到教学模式！我们来学习如何玩扫雷。\n之后没有特别提醒的都请点击任意位置继续。", action: 'click_anywhere' },
+                        { text: "首先，左键(手机端长按)随便一个安全的格子来揭开它。我们从这个高亮的'0'格开始吧！", target: '.cell[data-row="3"][data-col="0"]', action: 'open', actionTarget: [3, 0] },
+                        { text: "太棒了！你点开了一个'0'。这意味着它周围没有任何地雷，所以所有相邻的格子都会被自动揭开。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
+                        { text: "现在，让我们看看这个'1'。这表示在它周围的8个格子里，正好有1个地雷。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
+                        { text: "根据'1'的提示，我们可以确定高亮处是地雷。请右键(手机端单点)来插上旗帜进行标记。", target: '.cell[data-row="1"][data-col="1"]', action: 'flag', actionTarget: [1, 1] },
+                        { text: "做得好！现在这个'1'周围的雷已被标记。右键(手机端单点)这个'1'，就可以安全地揭开它周围所有未标记的格子。", target: '.cell[data-row="0"][data-col="2"]', action: 'double_click', actionTarget: [0, 2] },
+                        { text: "因为这里显示的1在周围已经有旗子标记了，所以可以点这里。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },                        
+                        { text: "这里也一样，所以继续点击。", target: '.cell[data-row="0"][data-col="1"]', action: 'double_click', actionTarget: [0, 1] },
+                        { 
+                            text: "我们来试试更复杂的。这个'2'告诉我们它周围有2个雷。\n我们已经帮你标记了其中一个，你能找到另一个吗？", 
+                            target: '.cell[data-row="6"][data-col="2"]', 
+                            action: 'click_anywhere',
+                            preAction: () => {
+                                const r = 6, c = 1; // 这是需要预先标记的地雷坐标
+                                if (!this.flags[r][c]) {
+                                    this.flags[r][c] = true;
+                                    this.gameState.minesLeft--;
+                                    const cell = this.getCell(r, c);
+                                    this.updateCell(cell, r, c);
+                                    this.updateMinimapCell(r, c);
+                                    this.updateDisplay();
+                                }
+                            }
+                        },
+                        { text: "没错，地雷就在高亮处！把它标记出来。", target: '.cell[data-row="5"][data-col="1"]', action: 'flag', actionTarget: [5, 1] },
+                        { text: "现在这个'2'周围的雷都标记好了，展开它吧！", target: '.cell[data-row="4"][data-col="0"]', action: 'double_click', actionTarget: [4, 0] },
+                        { text: "只剩最后一个雷了！根据这个'1'的提示，把它找出来并标记。", target: '.cell[data-row="3"][data-col="5"]', action: 'flag', actionTarget: [3, 5] },
+                        { text: "所有地雷都已标记！现在，揭开所有剩余的格子来赢得游戏~", target: '.cell[data-row="4"][data-col="6"]', action: 'double_click', actionTarget: [4, 6] },
+                        { text: "恭喜！你已完成教学。现在去挑战其他模式吧！", action: 'click_anywhere', postAction: () => this.endTutorial() }
+                    ];
+                }
+
+                showTutorialStep(stepIndex) {
+                    this.clearHighlights();
+                    if (stepIndex >= this.tutorialState.steps.length) {
+                        this.endTutorial();
+                        return;
+                    }
+
+                    const step = this.tutorialState.steps[stepIndex];
+
+                    const messageBox = document.createElement('div');
+                    messageBox.id = 'tutorial-message-box';
+                    messageBox.style.whiteSpace = 'pre-wrap';
+                    messageBox.textContent = step.text;
+                    document.body.appendChild(messageBox);
+                    
+                    if (step.target) {
+                        this.highlightElement(step.target);
+                    }
+                    
+                    const boardEl = document.getElementById('game-board');
+                    if(boardEl) boardEl.classList.add('tutorial-active');
+
+                    if (step.preAction) step.preAction();
+                }
+
+                checkTutorialAction(action, row, col) {
+                    if (!this.tutorialState.active) return;
+
+                    const step = this.tutorialState.steps[this.tutorialState.step];
+                    let correctAction = false;
+                    
+                    if (action === 'click_anywhere' && step.action === 'click_anywhere') {
+                        correctAction = true;
+                    } else if (action === step.action) {
+                        if (step.actionTarget) {
+                            if (row === step.actionTarget[0] && col === step.actionTarget[1]) {
+                                correctAction = true;
+                            }
+                        } else {
+                            correctAction = true;
+                        }
+                    }
+
+                    if (correctAction) {
+                        if (step.postAction) step.postAction();
+                        this.tutorialState.step++;
+                        this.showTutorialStep(this.tutorialState.step);
+                    }
+                }
+
+                endTutorial() {
+                    this.tutorialState.active = false;
+                    this.clearHighlights();
+                    const boardEl = document.getElementById('game-board');
+                    if(boardEl) boardEl.classList.remove('tutorial-active');
+                    document.body.classList.remove('tutorial-active');
+                    this.showFloatingMessage("🎓 教学结束！");
+                    setTimeout(() => this.newGame('beginner'), 2000);
+                }
+
+                highlightElement(selector) {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        element.classList.add('tutorial-highlight');
+                    }
+                }
+
+                clearHighlights() {
+                    const highlighted = document.querySelectorAll('.tutorial-highlight');
+                    highlighted.forEach(el => el.classList.remove('tutorial-highlight'));
+                    
+                    const messageBox = document.getElementById('tutorial-message-box');
+                    if (messageBox) messageBox.remove();
                 }
 
                 init() {
@@ -2131,7 +2236,7 @@ this.isShowingAchievement = false;
                 }
 
                 // 基本事件绑定（用于降级处理）
-                bindBasicEvents() {
+                                bindBasicEvents() {
                     const buttons = {
                         'btn-restart': () => this.restart(),
                         'btn-auto-solve': () => this.autoSolve(),
@@ -2172,6 +2277,8 @@ this.isShowingAchievement = false;
                                 e.preventDefault();
                                 e.stopPropagation();
                                 try {
+                                    // 教学模式下，只允许点击高亮的按钮
+                                    if (this.tutorialState.active && !element.classList.contains('tutorial-highlight')) return;
                                     buttons[id]();
                                 } catch (error) {
                                     console.error(`按钮 ${id} 点击错误:`, error);
@@ -2213,6 +2320,9 @@ this.isShowingAchievement = false;
                                 const mode = item.dataset.mode;
                                 if (mode === 'custom') {
                                     this.showCustomDialog();
+                                } else if (mode === 'tutorial') {
+                                    // 处理教学模式
+                                    this.startTutorial();
                                 } else {
                                     this.newGame(mode);
                                 }
@@ -2275,14 +2385,18 @@ this.isShowingAchievement = false;
                         });
                     }
 
-                    // 点击外部关闭下拉菜单
+                    // 点击外部关闭下拉菜单，并处理教学模式的任意点击
                     document.addEventListener('click', (e) => {
                         if (!e.target.closest('.dropdown')) {
                             this.closeAllDropdowns();
                         }
+                        // 处理教学模式的"任意点击"步骤
+                        if (this.tutorialState.active && !this.tutorialState.justStarted && this.tutorialState.steps[this.tutorialState.step].action === 'click_anywhere') {
+                            this.checkTutorialAction('click_anywhere', -1, -1);
+                        }
                     });
                 }
-
+                
                 // 操作设置相关方法
                 showControlsDialog() {
                     const modal = document.getElementById('controls-modal');
@@ -2700,7 +2814,7 @@ exportSaves() {
 
         const jsonString = JSON.stringify(exportData, null, 2);
         
-        // 生成包含存档名称和日期的文件名（修复点）
+        // 生成包含存档名称和日期的文件名
         const now = new Date();
         const dateStr = now.getFullYear() + '-' + 
                        String(now.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -3506,118 +3620,121 @@ decompressBoardData(compressed) {
                 }
 
                 // 游戏初始化
-newGame(difficulty) {
-    if (this.difficulties[difficulty]) {
-        const { rows, cols, mines } = this.difficulties[difficulty];
-        this.startGame(rows, cols, mines, difficulty);
-    }
-}
+                newGame(difficulty) {
+                    // 如果教学模式激活，先结束它
+                    if (this.tutorialState.active) this.endTutorial();
 
-startGame(rows, cols, mines, difficulty = 'custom') {
-    if (this.gameState.timerInterval) {
-        clearInterval(this.gameState.timerInterval);
-    }
+                    // 如果选择教学模式，则启动它
+                    if (difficulty === 'tutorial') {
+                        this.startTutorial();
+                        return;
+                    }
 
-    this.gameState.autoSolving = false;
-    const autoStatus = document.getElementById('auto-solve-status');
-    if (autoStatus) {
-        autoStatus.style.display = 'none';
-    }
+                    if (this.difficulties[difficulty]) {
+                        const { rows, cols, mines } = this.difficulties[difficulty];
+                        this.startGame(rows, cols, mines, difficulty);
+                    }
+                }
 
-    // 如果有自定义设置且为重新开始，使用保存的设置
-    if (this.gameState.customSettings && difficulty === 'custom') {
-        const settings = this.gameState.customSettings;
-        rows = settings.rows;
-        cols = settings.cols;
-        mines = settings.mines;
-        this.gameState.mode = settings.mode;
-        this.gameState.autoSpeed = settings.autoSpeed;
-        this.gameState.specialCellChance = settings.specialCellChance;
-        if (settings.mode === 'survival') {
-            this.gameState.maxLives = settings.maxLives;
-        }
-    }
+                startGame(rows, cols, mines, difficulty = 'custom') {
+                    if (this.gameState.timerInterval) {
+                        clearInterval(this.gameState.timerInterval);
+                    }
 
-    this.gameState = {
-        ...this.gameState,
-        rows,
-        cols,
-        totalMines: mines,
-        minesLeft: mines,
-        timer: 0,
-        startTime: null,
-        firstClick: true,
-        gameOver: false,
-        won: false,
-        paused: false,
-        moves: [],
-        difficulty,
-        powerUps: [],
-        autoSolving: false,
-        combo: 0,
-        maxCombo: 0,
-        zoom: 1,
-        lives: this.gameState.mode === 'survival' ? this.gameState.maxLives : 1,
-        batchRevealing: false,
-        resumeAfterClick: false, // 重要：重置这个标志
-        expandCount: 0, // 重置展开计数
-        zenItems: {
-            timeStop: { count: 3, active: false, duration: 30 },
-            xray: { count: 2, active: false, cells: [] },
-            safeDetect: { count: 2, active: false, cells: [] },
-            autoFlag: { count: 3, active: false }
-        },
-        // 每次开始新游戏时，重置一个更详细的游戏数据统计对象
-        gameData: {
-            totalClicks: 0,
-            leftClicks: 0,       // 对应揭开格子的操作
-            rightClicks: 0,      // 对应标记循环（旗/问号/空）的操作
-            numberExpansions: 0, // 对应双击数字展开的操作
-            effectiveMoves: 0,   // 有效操作（成功揭开、标记、展开）
-            ineffectiveMoves: 0, // 无效操作（点击已揭开的格子等）
-            flagsPlaced: 0,
-            flagsRemoved: 0,
-            questionsPlaced: 0,
-            moveTimestamps: [],
-            lastMoveTimestamp: null,
-            averageMoveTime: 0,
-            flaggingAccuracy: 0,
-            correctFlagsOnEnd: 0,
-            totalRevealedCells: 0 // 记录总揭开格子数
-        }
-    };
+                    this.gameState.autoSolving = false;
+                    const autoStatus = document.getElementById('auto-solve-status');
+                    if (autoStatus) {
+                        autoStatus.style.display = 'none';
+                    }
 
-    this.board = Array(rows).fill().map(() => Array(cols).fill(0));
-    this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
-    this.flags = Array(rows).fill().map(() => Array(cols).fill(false));
-    this.questions = Array(rows).fill().map(() => Array(cols).fill(false));
-    this.specialCells = Array(rows).fill().map(() => Array(cols).fill(false));
+                    // 如果有自定义设置且为重新开始，使用保存的设置
+                    if (this.gameState.customSettings && difficulty === 'custom') {
+                        const settings = this.gameState.customSettings;
+                        rows = settings.rows;
+                        cols = settings.cols;
+                        mines = settings.mines;
+                        this.gameState.mode = settings.mode;
+                        this.gameState.autoSpeed = settings.autoSpeed;
+                        this.gameState.specialCellChance = settings.specialCellChance;
+                        if (settings.mode === 'survival') {
+                            this.gameState.maxLives = settings.maxLives;
+                        }
+                    }
 
-    this.updateDisplay();
-    this.renderBoard();
-    this.updateModeIndicator();
-    this.updateZenItemsDisplay();
-    this.updateSurvivalHealthDisplay();
+                    // 在渲染棋盘前，强制应用正确的主题，防止黑屏
+                    if (localStorage.getItem('theme') === 'dark') {
+                        document.body.classList.add('dark');
+                    } else {
+                        document.body.classList.remove('dark');
+                    }
 
-    // 立即更新进度条为0%
-    this.updateProgress();
+                    this.gameState = {
+                        ...this.gameState,
+                        rows,
+                        cols,
+                        totalMines: mines,
+                        minesLeft: mines,
+                        timer: 0,
+                        startTime: null,
+                        firstClick: true,
+                        gameOver: false,
+                        won: false,
+                        paused: false,
+                        moves: [],
+                        difficulty,
+                        powerUps: [],
+                        autoSolving: false,
+                        combo: 0,
+                        maxCombo: 0,
+                        zoom: 1,
+                        lives: this.gameState.mode === 'survival' ? this.gameState.maxLives : 1,
+                        batchRevealing: false,
+                        resumeAfterClick: false, 
+                        expandCount: 0, // 重置展开计数
+                        zenItems: {
+                            timeStop: { count: 3, active: false, duration: 30 },
+                            xray: { count: 2, active: false, cells: [] },
+                            safeDetect: { count: 2, active: false, cells: [] },
+                            autoFlag: { count: 3, active: false }
+                        },
+                        gameData: {
+                            totalClicks: 0, leftClicks: 0, rightClicks: 0, numberExpansions: 0,
+                            effectiveMoves: 0, ineffectiveMoves: 0, flagsPlaced: 0, flagsRemoved: 0,
+                            questionsPlaced: 0, moveTimestamps: [], lastMoveTimestamp: null,
+                            averageMoveTime: 0, flaggingAccuracy: 0, correctFlagsOnEnd: 0,
+                            totalRevealedCells: 0
+                        }
+                    };
 
-    const bestTime = this.stats.bestTimes[difficulty];
-    const bestTimeElement = document.getElementById('best-time');
-    if (bestTimeElement) {
-        bestTimeElement.textContent = bestTime === Infinity ? '-' : this.formatTime(bestTime);
-    }
+                    this.board = Array(rows).fill().map(() => Array(cols).fill(0));
+                    this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
+                    this.flags = Array(rows).fill().map(() => Array(cols).fill(false));
+                    this.questions = Array(rows).fill().map(() => Array(cols).fill(false));
+                    this.specialCells = Array(rows).fill().map(() => Array(cols).fill(false));
 
-    this.playSound('click');
-    this.resetZoom();
+                    this.updateDisplay();
+                    this.renderBoard();
+                    this.updateModeIndicator();
+                    this.updateZenItemsDisplay();
+                    this.updateSurvivalHealthDisplay();
+                    this.updateProgress();
 
-    const container = document.getElementById('game-board-container');
-    if (container) {
-        container.addEventListener('scroll', () => {
-            this.updateMinimapViewport();
-        });
-    }
-}
+                    const bestTime = this.stats.bestTimes[difficulty];
+                    const bestTimeElement = document.getElementById('best-time');
+                    if (bestTimeElement) {
+                        bestTimeElement.textContent = bestTime === Infinity ? '-' : this.formatTime(bestTime);
+                    }
+
+                    this.playSound('click');
+                    this.resetZoom();
+
+                    const container = document.getElementById('game-board-container');
+                    if (container) {
+                        container.addEventListener('scroll', () => {
+                            this.updateMinimapViewport();
+                        });
+                    }
+                }
 
                 // 渲染游戏板
                 renderBoard() {
@@ -3696,7 +3813,6 @@ startGame(rows, cols, mines, difficulty = 'custom') {
                         if (clickCount === 1) {
                             clickTimer = setTimeout(() => {
                                 clickCount = 0;
-                                // 这里不处理单击，因为已经在click事件中处理了
                             }, 300);
                         } else if (clickCount === 2) {
                             clearTimeout(clickTimer);
@@ -3765,8 +3881,6 @@ startGame(rows, cols, mines, difficulty = 'custom') {
                         e.preventDefault();
                     });
                 }
-                
-                // [在 addCellEventListeners 函数后添加这些新函数]
 
 // 记录决策时间的函数
 recordMoveTiming() {
@@ -4194,14 +4308,14 @@ updateMinimapBatch(cells) {
                     const originalPaused = this.gameState.paused;
                     this.gameState.paused = true;
 
-                    this.showFloatingMessage('⏸️ 时间暂停30秒！');
+                    this.showFloatingMessage('⏸️ 停止吧，时间！（30s）');
 
                     setTimeout(() => {
                         this.gameState.zenItems.timeStop.active = false;
                         if (!originalPaused) {
                             this.gameState.paused = false;
                         }
-                        this.showFloatingMessage('⏰ 时间恢复流动');
+                        this.showFloatingMessage('⏰ 时间恢复流动...');
                     }, 30000);
                 }
 
@@ -4402,26 +4516,35 @@ updateMinimapBatch(cells) {
                 }
 
                 // 地雷放置和游戏逻辑
-                placeMines(excludeRow, excludeCol) {
-                    const positions = [];
-                    for (let r = 0; r < this.gameState.rows; r++) {
-                        for (let c = 0; c < this.gameState.cols; c++) {
-                            if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
-                                positions.push([r, c]);
+                                placeMines(excludeRow, excludeCol) {
+                    // 如果是教学模式，使用预设布局
+                    if (this.tutorialState.active && this.tutorialState.minesLayout.length > 0) {
+                        this.tutorialState.minesLayout.forEach(([r, c]) => {
+                            this.board[r][c] = -1;
+                        });
+                    } else {
+                        // 正常随机布雷
+                        const positions = [];
+                        for (let r = 0; r < this.gameState.rows; r++) {
+                            for (let c = 0; c < this.gameState.cols; c++) {
+                                if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
+                                    positions.push([r, c]);
+                                }
                             }
+                        }
+
+                        for (let i = positions.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [positions[i], positions[j]] = [positions[j], positions[i]];
+                        }
+
+                        for (let i = 0; i < this.gameState.totalMines && i < positions.length; i++) {
+                            const [r, c] = positions[i];
+                            this.board[r][c] = -1;
                         }
                     }
 
-                    for (let i = positions.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [positions[i], positions[j]] = [positions[j], positions[i]];
-                    }
-
-                    for (let i = 0; i < this.gameState.totalMines && i < positions.length; i++) {
-                        const [r, c] = positions[i];
-                        this.board[r][c] = -1;
-                    }
-
+                    // 计算数字
                     for (let r = 0; r < this.gameState.rows; r++) {
                         for (let c = 0; c < this.gameState.cols; c++) {
                             if (this.board[r][c] !== -1) {
@@ -4429,11 +4552,13 @@ updateMinimapBatch(cells) {
                             }
                         }
                     }
-
-                    this.addSpecialCells();
-
-                    if (this.gameState.mode === 'no-guess') {
-                        this.ensureNoGuessing();
+                    
+                    // 教学模式下不添加特殊元素
+                    if (!this.tutorialState.active) {
+                        this.addSpecialCells();
+                        if (this.gameState.mode === 'no-guess') {
+                            this.ensureNoGuessing();
+                        }
                     }
                 }
 
@@ -4472,81 +4597,74 @@ updateMinimapBatch(cells) {
                 }
 
 // 事件处理系统
-handleClick(row, col, event) {
-    if (event) event.preventDefault();
-    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+                                handleClick(row, col, event) {
+                    if (event) event.preventDefault();
+                    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+                    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
+                    if (this.gameState.paused) return;
 
-    // 根据设备类型和操作设置决定行为
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    let action = isMobile ? this.controlSettings.mobile.tap : this.controlSettings.pc.left;
-    
-    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
-    if (this.gameState.paused) return;
-    
-    if (action === 'open') {
-        this.performOpenAction(row, col);
-    } else {
-        this.performFlagAction(row, col);
-    }
-}
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    const action = isMobile ? this.controlSettings.mobile.tap : this.controlSettings.pc.left;
+                    
+                    if (action === 'open') {
+                        this.performOpenAction(row, col);
+                    } else {
+                        this.performFlagAction(row, col);
+                    }
+                }
 
-handleRightClick(row, col, event) {
-    if (event) event.preventDefault();
-    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+                handleRightClick(row, col, event) {
+                    if (event) event.preventDefault();
+                    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+                    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
+                    if (this.gameState.paused) return;
 
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    // 移动端无右键，此事件通常由PC触发
-    let action = isMobile ? this.controlSettings.mobile.long : this.controlSettings.pc.right;
-    
-    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
-    if (this.gameState.paused) return;
-    
-    if (action === 'open') {
-        this.performOpenAction(row, col);
-    } else {
-        this.performFlagAction(row, col);
-    }
-}
+                    const action = this.controlSettings.pc.right;
 
-handleDoubleClick(row, col, event) {
-    if (event) event.preventDefault();
-    // 双击已揭开的数字等同于点击展开
-    this.handleNumberCellClick(row, col);
-}
+                    if (action === 'open') {
+                        this.performOpenAction(row, col);
+                    } else {
+                        this.performFlagAction(row, col);
+                    }
+                }
 
-handleTouch(row, col, event) {
-    if (event) event.preventDefault();
-    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
-    if (this.gameState.paused) return;
-    
-    // 如果点击的是已揭开的数字，则为展开操作
-    if (this.revealed[row][col] && this.board[row][col] > 0) {
-        this.handleNumberCellClick(row, col);
-        return;
-    }
-    
-    // 否则根据设置执行点击操作
-    const action = this.controlSettings.mobile.tap;
-    if (action === 'open') {
-        this.performOpenAction(row, col);
-    } else {
-        this.performFlagAction(row, col);
-    }
-}
+                handleDoubleClick(row, col, event) {
+                    if (event) event.preventDefault();
+                    this.handleNumberCellClick(row, col);
+                }
 
-handleLongPress(row, col, event) {
-    if (event) event.preventDefault();
-    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
-    if (this.gameState.paused) return;
-    
-    // 根据设置执行长按操作
-    const action = this.controlSettings.mobile.long;
-    if (action === 'open') {
-        this.performOpenAction(row, col);
-    } else {
-        this.performFlagAction(row, col);
-    }
-}
+                handleTouch(row, col, event) {
+                    if (event) event.preventDefault();
+                    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+                    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
+                    if (this.gameState.paused) return;
+
+                    if (this.revealed[row][col] && this.board[row][col] > 0) {
+                        this.handleNumberCellClick(row, col);
+                        return;
+                    }
+                    
+                    const action = this.controlSettings.mobile.tap;
+                    if (action === 'open') {
+                        this.performOpenAction(row, col);
+                    } else {
+                        this.performFlagAction(row, col);
+                    }
+                }
+
+                handleLongPress(row, col, event) {
+                    if (event) event.preventDefault();
+                    if (this.gameState.gameOver || this.gameState.autoSolving) return;
+                    if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
+                    if (this.gameState.paused) return;
+
+                    const action = this.controlSettings.mobile.long;
+                    if (action === 'open') {
+                        this.performOpenAction(row, col);
+                    } else {
+                        this.performFlagAction(row, col);
+                    }
+                }
 
 resumeGameFromSave() {
     this.gameState.paused = false;
@@ -4572,111 +4690,125 @@ recordMoveTiming() {
     this.gameState.gameData.lastMoveTimestamp = Date.now();
 }
 
-// 处理点击已揭开的数字格子（移动端和PC双击共用）
-handleNumberCellClick(row, col) {
-    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
-    if (!this.revealed[row][col] || this.board[row][col] <= 0) {
-        this.gameState.gameData.ineffectiveMoves++; // 点击非数字或未揭开的格子进行展开是无效操作
-        return;
-    }
+                // 处理点击已揭开的数字格子（移动端和PC双击共用）
+                handleNumberCellClick(row, col) {
+                    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
+                    if (!this.revealed[row][col] || this.board[row][col] <= 0) {
+                        this.gameState.gameData.ineffectiveMoves++; // 点击非数字或未揭开的格子进行展开是无效操作
+                        return;
+                    }
 
-    let flagCount = 0;
-    this.forEachNeighbor(row, col, (nr, nc) => {
-        if (this.flags[nr][nc]) flagCount++;
-    });
+                    let flagCount = 0;
+                    this.forEachNeighbor(row, col, (nr, nc) => {
+                        if (this.flags[nr][nc]) flagCount++;
+                    });
 
-    if (flagCount === this.board[row][col]) {
-        // --- 记录为有效操作 ---
-        this.gameState.gameData.effectiveMoves++;
-        this.gameState.gameData.numberExpansions++;
-        this.gameState.gameData.totalClicks++;
-        this.recordMoveTiming();
-        // --- 记录结束 ---
+                    if (flagCount === this.board[row][col]) {
+                        // --- 记录为有效操作 ---
+                        this.gameState.gameData.effectiveMoves++;
+                        this.gameState.gameData.numberExpansions++;
+                        this.gameState.gameData.totalClicks++;
+                        this.recordMoveTiming();
+                        // --- 记录结束 ---
 
-        this.gameState.batchRevealing = true;
-        const cellsToReveal = [];
-        this.forEachNeighbor(row, col, (nr, nc) => {
-            if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
-                cellsToReveal.push([nr, nc]);
-            }
-        });
+                        this.gameState.batchRevealing = true;
+                        const cellsToReveal = [];
+                        this.forEachNeighbor(row, col, (nr, nc) => {
+                            if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
+                                cellsToReveal.push([nr, nc]);
+                            }
+                        });
 
-        cellsToReveal.forEach(([nr, nc], index) => {
-            setTimeout(() => {
-                this.revealCell(nr, nc);
-                if (index === cellsToReveal.length - 1) {
-                    this.gameState.batchRevealing = false;
+                        cellsToReveal.forEach(([nr, nc], index) => {
+                            setTimeout(() => {
+                                this.revealCell(nr, nc);
+                                if (index === cellsToReveal.length - 1) {
+                                    this.gameState.batchRevealing = false;
+                                }
+                            }, index * 30);
+                        });
+                    } else {
+                        this.gameState.gameData.ineffectiveMoves++; // 标记数不匹配，无效展开
+                    }
+
+                    // 在动作执行后检查教学步骤
+                    if (this.tutorialState.active) {
+                        this.checkTutorialAction('double_click', row, col);
+                    }
                 }
-            }, index * 30);
-        });
-    } else {
-        this.gameState.gameData.ineffectiveMoves++; // 标记数不匹配，无效展开
-    }
-}
 
-// 封装“揭开格子”的动作，用于统一处理数据记录
-performOpenAction(row, col) {
-    // --- 检查是否为无效操作 ---
-    if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
-        this.gameState.gameData.ineffectiveMoves++;
-        return;
-    }
+                // 封装“揭开格子”的动作，用于统一处理数据记录
+                performOpenAction(row, col) {
+                    // --- 检查是否为无效操作 ---
+                    if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
+                        this.gameState.gameData.ineffectiveMoves++;
+                        return;
+                    }
 
-    // --- 记录为有效操作 ---
-    this.gameState.gameData.effectiveMoves++;
-    this.gameState.gameData.leftClicks++; // 归类为“左键”点击
-    this.gameState.gameData.totalClicks++;
-    this.recordMoveTiming();
-    // --- 记录结束 ---
+                    // --- 记录为有效操作 ---
+                    this.gameState.gameData.effectiveMoves++;
+                    this.gameState.gameData.leftClicks++; // 归类为“左键”点击
+                    this.gameState.gameData.totalClicks++;
+                    this.recordMoveTiming();
+                    // --- 记录结束 ---
 
-    this.clearHints(true);
-    this.recordMove({ type: 'click', row, col });
-    if (this.gameState.firstClick) {
-        this.placeMines(row, col);
-        this.startTimer();
-        this.gameState.firstClick = false;
-    }
-    this.revealCell(row, col);
-}
+                    this.clearHints(true);
+                    this.recordMove({ type: 'click', row, col });
+                    if (this.gameState.firstClick) {
+                        this.placeMines(row, col);
+                        this.startTimer();
+                        this.gameState.firstClick = false;
+                    }
+                    this.revealCell(row, col);
 
-// 封装“标记”的动作，用于统一处理数据记录
-performFlagAction(row, col) {
-    // --- 检查是否为无效操作 ---
-    if (this.revealed[row][col]) {
-        this.gameState.gameData.ineffectiveMoves++;
-        return;
-    }
+                    // 在动作执行后检查教学步骤
+                    if (this.tutorialState.active) {
+                        this.checkTutorialAction('open', row, col);
+                    }
+                }
 
-    // --- 记录为有效操作 ---
-    this.gameState.gameData.effectiveMoves++;
-    this.gameState.gameData.rightClicks++; // 归类为“右键”点击
-    this.gameState.gameData.totalClicks++;
-    this.recordMoveTiming();
-    // --- 记录结束 ---
+                // 封装“标记”的动作，用于统一处理数据记录
+                performFlagAction(row, col) {
+                    // --- 检查是否为无效操作 ---
+                    if (this.revealed[row][col]) {
+                        this.gameState.gameData.ineffectiveMoves++;
+                        return;
+                    }
 
-    this.clearHints(true);
-    this.recordMove({ type: 'flag', row, col });
+                    // --- 记录为有效操作 ---
+                    this.gameState.gameData.effectiveMoves++;
+                    this.gameState.gameData.rightClicks++; // 归类为“右键”点击
+                    this.gameState.gameData.totalClicks++;
+                    this.recordMoveTiming();
+                    // --- 记录结束 ---
 
-    if (this.flags[row][col]) {
-        this.flags[row][col] = false;
-        this.questions[row][col] = true;
-        this.gameState.minesLeft++;
-        this.gameState.gameData.flagsRemoved++;
-        this.gameState.gameData.questionsPlaced++;
-    } else if (this.questions[row][col]) {
-        this.questions[row][col] = false;
-    } else {
-        this.flags[row][col] = true;
-        this.gameState.minesLeft--;
-        this.playSound('flag');
-        this.gameState.gameData.flagsPlaced++;
-    }
-    const cell = this.getCell(row, col);
-    this.updateCell(cell, row, col);
-    this.updateMinimapCell(row, col);
-    this.updateDisplay();
-}
+                    this.clearHints(true);
+                    this.recordMove({ type: 'flag', row, col });
 
+                    if (this.flags[row][col]) {
+                        this.flags[row][col] = false;
+                        this.questions[row][col] = true;
+                        this.gameState.minesLeft++;
+                        this.gameState.gameData.flagsRemoved++;
+                        this.gameState.gameData.questionsPlaced++;
+                    } else if (this.questions[row][col]) {
+                        this.questions[row][col] = false;
+                    } else {
+                        this.flags[row][col] = true;
+                        this.gameState.minesLeft--;
+                        this.playSound('flag');
+                        this.gameState.gameData.flagsPlaced++;
+                    }
+                    const cell = this.getCell(row, col);
+                    this.updateCell(cell, row, col);
+                    this.updateMinimapCell(row, col);
+                    this.updateDisplay();
+
+                    // 在动作执行后检查教学步骤
+                    if (this.tutorialState.active) {
+                        this.checkTutorialAction('flag', row, col);
+                    }
+                }
                 // 核心游戏逻辑
 revealCell(row, col) {
     if (!this.isValid(row, col) || this.revealed[row][col] ||

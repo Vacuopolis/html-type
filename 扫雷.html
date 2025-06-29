@@ -1457,25 +1457,28 @@ body.theme-transitioning * {
         }
 
         #tutorial-message-box {
-            position: fixed;
-            bottom: 10%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(45deg, #ffeb3b, #fbc02d);
-            color: #333;
-            padding: 20px 30px;
-            border-radius: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            z-index: 10002;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            border: 3px solid white;
-            max-width: 80vw;
-            text-align: center;
-            line-height: 1.5;
-            animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            text-shadow: 0 1px 1px rgba(255,255,255,0.5);
-        }
+    position: fixed;
+    bottom: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 30, 30, 0.9);
+    color: #ffeb3b;
+    padding: 14px 22px;
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    z-index: 10002;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    border: 2px solid #fbc02d;
+    width: fit-content;
+    max-width: min(90vw, 600px);
+    text-align: center;
+    line-height: 1.5;
+    animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+    white-space: pre-wrap; /* 保证换行符生效 */
+    pointer-events: none; /* 消息框本身不接收点击 */
+}
 
         @keyframes tutorialPulse {
             0%, 100% {
@@ -1665,7 +1668,7 @@ body.theme-transitioning * {
     </div>
 </div>
         <div class="version-info">
-            <small>by空城 版本 <span id="version-number">1.4.0</span></small>
+            <small>by空城 版本 <span id="version-number">1.4.2</span></small>
         </div>
     </div>
     
@@ -1952,7 +1955,7 @@ body.theme-transitioning * {
             class MinesweeperUltimate {
                                 constructor() {
                     // 版本控制
-                    this.VERSION = '1.4.0';
+                    this.VERSION = '1.4.2';
                     this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
 
                     this.progressiveHints = {
@@ -2109,14 +2112,14 @@ body.theme-transitioning * {
                     this.tutorialState.steps = [
                         { text: "欢迎来到教学模式！我们来学习如何玩扫雷。\n之后没有特别提醒的都请点击任意位置继续。", action: 'click_anywhere' },
                         { text: "首先，左键(手机端长按)随便一个安全的格子来揭开它。我们从这个高亮的'0'格开始吧！", target: '.cell[data-row="3"][data-col="0"]', action: 'open', actionTarget: [3, 0] },
-                        { text: "太棒了！你点开了一个'0'。这意味着它周围没有任何地雷，所以所有相邻的格子都会被自动揭开。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
-                        { text: "现在，让我们看看这个'1'。这表示在它周围的8个格子里，正好有1个地雷。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
+                        { text: "太棒了！你点开了一个'0'。\n这意味着它周围没有任何地雷，所以所有相邻的格子都会被自动揭开。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
+                        { text: "现在，让我们看看这个'1'。\n这表示在它周围的8个格子里，正好有1个地雷。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
                         { text: "根据'1'的提示，我们可以确定高亮处是地雷。请右键(手机端单点)来插上旗帜进行标记。", target: '.cell[data-row="1"][data-col="1"]', action: 'flag', actionTarget: [1, 1] },
-                        { text: "做得好！现在这个'1'周围的雷已被标记。右键(手机端单点)这个'1'，就可以安全地揭开它周围所有未标记的格子。", target: '.cell[data-row="0"][data-col="2"]', action: 'double_click', actionTarget: [0, 2] },
+                        { text: "做得好！现在这个'1'周围的雷已被标记。\n右键(手机端单点)旗子周边的，例如这个'1'都可以安全地揭开它周围所有未标记的格子。", target: '.cell[data-row="0"][data-col="2"]', action: 'double_click', actionTarget: [0, 2] },
                         { text: "因为这里显示的1在周围已经有旗子标记了，所以可以点这里。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },                        
-                        { text: "这里也一样，所以继续点击。", target: '.cell[data-row="0"][data-col="1"]', action: 'double_click', actionTarget: [0, 1] },
+                        { text: "这里也一样，所以请继续点击以揭开。", target: '.cell[data-row="0"][data-col="1"]', action: 'double_click', actionTarget: [0, 1] },
                         { 
-                            text: "我们来试试更复杂的。这个'2'告诉我们它周围有2个雷。\n我们已经帮你标记了其中一个，你能找到另一个吗？", 
+                            text: "我们来试试更复杂的。这个'2'告诉我们它周围有2个雷。\n现在已经帮你标记好了其中一个，你能找到另一个吗？", 
                             target: '.cell[data-row="6"][data-col="2"]', 
                             action: 'click_anywhere',
                             preAction: () => {
@@ -2133,9 +2136,9 @@ body.theme-transitioning * {
                         },
                         { text: "没错，地雷就在高亮处！把它标记出来。", target: '.cell[data-row="5"][data-col="1"]', action: 'flag', actionTarget: [5, 1] },
                         { text: "现在这个'2'周围的雷都标记好了，展开它吧！", target: '.cell[data-row="4"][data-col="0"]', action: 'double_click', actionTarget: [4, 0] },
-                        { text: "只剩最后一个雷了！根据这个'1'的提示，把它找出来并标记。", target: '.cell[data-row="3"][data-col="5"]', action: 'flag', actionTarget: [3, 5] },
-                        { text: "所有地雷都已标记！现在，揭开所有剩余的格子来赢得游戏~", target: '.cell[data-row="4"][data-col="6"]', action: 'double_click', actionTarget: [4, 6] },
-                        { text: "恭喜！你已完成教学。现在去挑战其他模式吧！", action: 'click_anywhere', postAction: () => this.endTutorial() }
+                        { text: "只剩最后一个雷了！根据这周边'1'的提示，把它找出来并标记。", target: '.cell[data-row="3"][data-col="5"]', action: 'flag', actionTarget: [3, 5] },
+                        { text: "所有地雷都已标记！\n现在，揭开所有剩余的格子来赢得游戏~", target: '.cell[data-row="4"][data-col="6"]', action: 'double_click', actionTarget: [4, 6] },
+                        { text: "恭喜！你已完成教学。\n现在去挑战其他模式吧！", action: 'click_anywhere', postAction: () => this.endTutorial() }
                     ];
                 }
 
@@ -4690,8 +4693,18 @@ recordMoveTiming() {
     this.gameState.gameData.lastMoveTimestamp = Date.now();
 }
 
-                // 处理点击已揭开的数字格子（移动端和PC双击共用）
+                                // 处理点击已揭开的数字格子（移动端和PC双击共用）
                 handleNumberCellClick(row, col) {
+                    // --- 教学模式守卫 ---
+                    if (this.tutorialState.active) {
+                        const step = this.tutorialState.steps[this.tutorialState.step];
+                        // 如果当前步骤期望的不是“双击展开”，则阻止该操作
+                        if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'double_click') {
+                            return;
+                        }
+                    }
+                    // --- 守卫结束 ---
+
                     if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
                     if (!this.revealed[row][col] || this.board[row][col] <= 0) {
                         this.gameState.gameData.ineffectiveMoves++; // 点击非数字或未揭开的格子进行展开是无效操作
@@ -4739,6 +4752,16 @@ recordMoveTiming() {
 
                 // 封装“揭开格子”的动作，用于统一处理数据记录
                 performOpenAction(row, col) {
+                    // --- 教学模式守卫 ---
+                    if (this.tutorialState.active) {
+                        const step = this.tutorialState.steps[this.tutorialState.step];
+                        // 如果在教学目标格子上尝试了错误的操作类型，则阻止
+                        if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'open') {
+                            return; 
+                        }
+                    }
+                    // --- 守卫结束 ---
+
                     // --- 检查是否为无效操作 ---
                     if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
                         this.gameState.gameData.ineffectiveMoves++;
@@ -4761,7 +4784,7 @@ recordMoveTiming() {
                     }
                     this.revealCell(row, col);
 
-                    // 在动作执行后检查教学步骤
+                    // 在动作执行后检查并推进教学步骤
                     if (this.tutorialState.active) {
                         this.checkTutorialAction('open', row, col);
                     }
@@ -4769,6 +4792,16 @@ recordMoveTiming() {
 
                 // 封装“标记”的动作，用于统一处理数据记录
                 performFlagAction(row, col) {
+                    // --- 教学模式守卫 ---
+                    if (this.tutorialState.active) {
+                        const step = this.tutorialState.steps[this.tutorialState.step];
+                        // 如果在教学目标格子上尝试了错误的操作类型，则阻止
+                        if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'flag') {
+                            return;
+                        }
+                    }
+                    // --- 守卫结束 ---
+
                     // --- 检查是否为无效操作 ---
                     if (this.revealed[row][col]) {
                         this.gameState.gameData.ineffectiveMoves++;
@@ -4804,12 +4837,12 @@ recordMoveTiming() {
                     this.updateMinimapCell(row, col);
                     this.updateDisplay();
 
-                    // 在动作执行后检查教学步骤
+                    // 在动作执行后检查并推进教学步骤
                     if (this.tutorialState.active) {
                         this.checkTutorialAction('flag', row, col);
                     }
                 }
-                // 核心游戏逻辑
+// 核心游戏逻辑
 revealCell(row, col) {
     if (!this.isValid(row, col) || this.revealed[row][col] ||
         this.flags[row][col] || this.questions[row][col]) {
@@ -4848,16 +4881,20 @@ revealCell(row, col) {
     if (!this.gameState.batchRevealing) {
         this.playSound('reveal');
     }
+    
+    // 教学模式下不触发连击
+    if (!this.tutorialState.active) {
+        this.gameState.combo++;
+        this.gameState.maxCombo = Math.max(this.gameState.maxCombo, this.gameState.combo);
 
-    this.gameState.combo++;
-    this.gameState.maxCombo = Math.max(this.gameState.maxCombo, this.gameState.combo);
-
-    if (this.gameState.combo >= 5 && this.gameState.combo % 5 === 0) {
-        this.showComboIndicator(this.gameState.combo);
-        if (!this.gameState.batchRevealing) {
-            this.playSound('combo');
+        if (this.gameState.combo >= 5 && this.gameState.combo % 5 === 0) {
+            this.showComboIndicator(this.gameState.combo);
+            if (!this.gameState.batchRevealing) {
+                this.playSound('combo');
+            }
         }
     }
+
 
     if (this.board[row][col] === 0) {
         this.forEachNeighbor(row, col, (nr, nc) => {
@@ -4868,8 +4905,8 @@ revealCell(row, col) {
     // 计数展开操作（只计算成功的揭开操作）
     if (this.revealed[row][col] && !this.gameState.firstClick && !this.gameState.gameOver) {
         this.gameState.expandCount++;
-        // 检查是否需要自动保存临时存档
-        if (this.gameState.expandCount > 0 && this.gameState.expandCount % this.gameState.autoSaveInterval === 0) {
+        // 教学模式下不触发自动临时存档
+        if (!this.tutorialState.active && this.gameState.expandCount > 0 && this.gameState.expandCount % this.gameState.autoSaveInterval === 0) {
             this.createTempSave();
         }
     }

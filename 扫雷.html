@@ -2050,7 +2050,7 @@ body.theme-transitioning * {
                     };
 
                     this.achievementDetails = {
-                        'first-win': { baseId: 'first-win', name: '首次胜利', icon: '🥇', description: '完成你的第一局扫雷游戏', condition: '���任意难度下获得胜利', isMultiLevel: false, tips: '点击空白格子开始游戏，避开所有地雷即可获胜！' },
+                        'first-win': { baseId: 'first-win', name: '首次胜利', icon: '🥇', description: '完成你的第一局扫雷游戏', condition: '在任意难度下获得胜利', isMultiLevel: false, tips: '点击空白格子开始游戏，避开所有地雷即可获胜！' },
                         'speed-demon': { baseId: 'speed-demon', name: '极速通关', icon: '⚡', description: '在初级难度下30秒内完成游戏', condition: '初级难度(9×9)，用时少于30秒', isMultiLevel: false, tips: '熟练掌握扫雷技巧，快速识别安全区域和地雷位置' },
                         'perfect': { baseId: 'perfect', name: '完美游戏', icon: '💯', description: '完成一局游戏且没有错误标记', condition: '获胜且未标记任何错误的地雷', isMultiLevel: false, tips: '谨慎标记，确保每个旗帜都标在正确的地雷上' },
                         'lucky': { baseId: 'lucky', name: '幸运玩家', icon: '🍀', description: '仅用一次点击就获得胜利', condition: '只点击一个格子就完成游戏', isMultiLevel: false, tips: '需要极大的运气！点击一个大的空白区域可能触发连锁反应' },
@@ -4518,52 +4518,76 @@ updateMinimapBatch(cells) {
                     }
                 }
 
-                // 地雷放置和游戏逻辑
-                                placeMines(excludeRow, excludeCol) {
-                    // 如果是教学模式，使用预设布局
-                    if (this.tutorialState.active && this.tutorialState.minesLayout.length > 0) {
-                        this.tutorialState.minesLayout.forEach(([r, c]) => {
-                            this.board[r][c] = -1;
-                        });
-                    } else {
-                        // 正常随机布雷
-                        const positions = [];
-                        for (let r = 0; r < this.gameState.rows; r++) {
-                            for (let c = 0; c < this.gameState.cols; c++) {
-                                if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
-                                    positions.push([r, c]);
-                                }
-                            }
-                        }
-
-                        for (let i = positions.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [positions[i], positions[j]] = [positions[j], positions[i]];
-                        }
-
-                        for (let i = 0; i < this.gameState.totalMines && i < positions.length; i++) {
-                            const [r, c] = positions[i];
-                            this.board[r][c] = -1;
-                        }
-                    }
-
-                    // 计算数字
-                    for (let r = 0; r < this.gameState.rows; r++) {
-                        for (let c = 0; c < this.gameState.cols; c++) {
-                            if (this.board[r][c] !== -1) {
-                                this.board[r][c] = this.countAdjacentMines(r, c);
-                            }
-                        }
-                    }
-                    
-                    // 教学模式下不添加特殊元素
-                    if (!this.tutorialState.active) {
-                        this.addSpecialCells();
-                        if (this.gameState.mode === 'no-guess') {
-                            this.ensureNoGuessing();
-                        }
-                    }
+                // 地雷放置和游戏逻辑                             
+placeMines(excludeRow, excludeCol) {
+    // 教学模式使用预设布局，不进行可解性验证
+    if (this.tutorialState.active && this.tutorialState.minesLayout.length > 0) {
+        this.tutorialState.minesLayout.forEach(([r, c]) => {
+            this.board[r][c] = -1;
+        });
+        // 计算数字并返回
+        for (let r = 0; r < this.gameState.rows; r++) {
+            for (let c = 0; c < this.gameState.cols; c++) {
+                if (this.board[r][c] !== -1) {
+                    this.board[r][c] = this.countAdjacentMines(r, c);
                 }
+            }
+        }
+        return;
+    }
+
+    let attempts = 0;
+    const maxAttempts = 30; // 设定最大尝试次数，以防死循环
+
+    // 循环生成棋盘，直到生成可解的布局
+    while (attempts < maxAttempts) {
+        // 1. 重置棋盘并随机放置地雷
+        this.board = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(0));
+        const positions = [];
+        for (let r = 0; r < this.gameState.rows; r++) {
+            for (let c = 0; c < this.gameState.cols; c++) {
+                // 确保首次点击的3x3区域内没有地雷
+                if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
+                    positions.push([r, c]);
+                }
+            }
+        }
+
+        // 使用Fisher-Yates算法打乱位置
+        for (let i = positions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [positions[i], positions[j]] = [positions[j], positions[i]];
+        }
+
+        // 放置地雷
+        for (let i = 0; i < this.gameState.totalMines && i < positions.length; i++) {
+            const [r, c] = positions[i];
+            this.board[r][c] = -1;
+        }
+
+        // 2. 计算所有格子的数字
+        for (let r = 0; r < this.gameState.rows; r++) {
+            for (let c = 0; c < this.gameState.cols; c++) {
+                if (this.board[r][c] !== -1) {
+                    this.board[r][c] = this.countAdjacentMines(r, c);
+                }
+            }
+        }
+        
+        // 3. 验证当前生成的棋盘是否逻辑可解
+        if (this.canSolveLogically(excludeRow, excludeCol)) {
+            console.log(`成功生成可解棋盘 (尝试次数: ${attempts + 1})`);
+            this.addSpecialCells(); // 为最终的棋盘添加特殊格子
+            return; // 生成成功，退出函数
+        }
+        
+        attempts++;
+    }
+
+    // 如果达到最大尝试次数仍未成功，则使用最后一次生成的棋盘
+    console.warn(`无法在 ${maxAttempts} 次尝试内生成可解棋盘，将使用最后生成的随机棋盘。`);
+    this.addSpecialCells();
+}
 
                 addSpecialCells() {
     // 只在禅意模式下添加特殊格子
@@ -6147,85 +6171,92 @@ performAutoSolveStep() {
                 }
 
                 // 完整的逻辑可解性检查
-                canSolveLogically() {
-                    // 创建游戏状态的副本进行模拟
-                    const originalBoard = JSON.parse(JSON.stringify(this.board));
-                    const simRevealed = JSON.parse(JSON.stringify(this.revealed));
-                    const simFlags = JSON.parse(JSON.stringify(this.flags));
+canSolveLogically(startRow, startCol) {
+    // 创建游戏状态的副本进行模拟
+    const originalBoard = JSON.parse(JSON.stringify(this.board));
+    const simRevealed = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(false));
+    const simFlags = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(false));
 
-                    let changed = true;
-                    let iterations = 0;
-                    const maxIterations = this.gameState.rows * this.gameState.cols;
-
-                    while (changed && iterations < maxIterations) {
-                        changed = false;
-                        iterations++;
-
-                        // 基础逻辑推理
-                        for (let r = 0; r < this.gameState.rows; r++) {
-                            for (let c = 0; c < this.gameState.cols; c++) {
-                                if (simRevealed[r][c] && originalBoard[r][c] > 0) {
-                                    const neighbors = [];
-                                    let flaggedCount = 0;
-                                    let unrevealedCount = 0;
-
-                                    this.forEachNeighbor(r, c, (nr, nc) => {
-                                        neighbors.push([nr, nc]);
-                                        if (simFlags[nr][nc]) flaggedCount++;
-                                        if (!simRevealed[nr][nc] && !simFlags[nr][nc]) unrevealedCount++;
-                                    });
-
-                                    // 如果已标记地雷数等于数字，剩余都是安全的
-                                    if (flaggedCount === originalBoard[r][c]) {
-                                        for (const [nr, nc] of neighbors) {
-                                            if (!simRevealed[nr][nc] && !simFlags[nr][nc]) {
-                                                if (originalBoard[nr][nc] === -1) {
-                                                    // 逻辑推理出错，说明无法纯逻辑解决
-                                                    return false;
-                                                }
-                                                simRevealed[nr][nc] = true;
-                                                changed = true;
-                                            }
-                                        }
-                                    }
-
-                                    // 如果未揭开格子数等于剩余地雷数，都是地雷
-                                    if (unrevealedCount === originalBoard[r][c] - flaggedCount && unrevealedCount > 0) {
-                                        for (const [nr, nc] of neighbors) {
-                                            if (!simRevealed[nr][nc] && !simFlags[nr][nc]) {
-                                                if (originalBoard[nr][nc] !== -1) {
-                                                    // 逻辑推理出错
-                                                    return false;
-                                                }
-                                                simFlags[nr][nc] = true;
-                                                changed = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // 子集推理
-                        if (!changed) {
-                            changed = this.performSubsetReasoning(simRevealed, simFlags, originalBoard);
-                        }
-                    }
-
-                    // 检查是否完全解决
-                    for (let r = 0; r < this.gameState.rows; r++) {
-                        for (let c = 0; c < this.gameState.cols; c++) {
-                            if (originalBoard[r][c] !== -1 && !simRevealed[r][c]) {
-                                return false; // 还有安全格子未揭开
-                            }
-                            if (originalBoard[r][c] === -1 && !simFlags[r][c]) {
-                                return false; // 还有地雷未标记
-                            }
-                        }
-                    }
-
-                    return true;
+    // 模拟首次点击，这是解题的起点
+    // 使用队列处理“0”格子的连锁反应
+    const revealQueue = [];
+    if (this.isValid(startRow, startCol) && !simRevealed[startRow][startCol]) {
+        revealQueue.push([startRow, startCol]);
+        simRevealed[startRow][startCol] = true;
+    }
+    
+    let head = 0;
+    while(head < revealQueue.length) {
+        const [r, c] = revealQueue[head++];
+        if (originalBoard[r][c] === 0) {
+            this.forEachNeighbor(r, c, (nr, nc) => {
+                if (!simRevealed[nr][nc]) {
+                    simRevealed[nr][nc] = true;
+                    revealQueue.push([nr, nc]);
                 }
+            });
+        }
+    }
+
+    let changed = true;
+    let iterations = 0;
+    const maxIterations = this.gameState.rows * this.gameState.cols;
+
+    // 循环应用逻辑规则，直到没有新的格子可以被安全地揭开或标记
+    while (changed && iterations < maxIterations) {
+        changed = false;
+        iterations++;
+
+        // 基础逻辑推理
+        for (let r = 0; r < this.gameState.rows; r++) {
+            for (let c = 0; c < this.gameState.cols; c++) {
+                if (simRevealed[r][c] && originalBoard[r][c] > 0) {
+                    const neighbors = this.getNeighbors(r, c);
+                    const flaggedCount = neighbors.filter(([nr, nc]) => simFlags[nr][nc]).length;
+                    const unrevealed = neighbors.filter(([nr, nc]) => !simRevealed[nr][nc] && !simFlags[nr][nc]);
+
+                    // 规则 1: 如果已标记地雷数等于数字，剩余未开格子都是安全的
+                    if (flaggedCount === originalBoard[r][c] && unrevealed.length > 0) {
+                        for (const [nr, nc] of unrevealed) {
+                            if (originalBoard[nr][nc] === -1) return false; // 逻辑矛盾：安全区有雷
+                            if (!simRevealed[nr][nc]) {
+                                simRevealed[nr][nc] = true;
+                                changed = true;
+                            }
+                        }
+                    }
+
+                    // 规则 2: 如果未揭开格子数等于剩余地雷数，剩余未开格子都是地雷
+                    if (unrevealed.length > 0 && unrevealed.length === originalBoard[r][c] - flaggedCount) {
+                        for (const [nr, nc] of unrevealed) {
+                            if (originalBoard[nr][nc] !== -1) return false; // 逻辑矛盾：雷区是安全的
+                            if (!simFlags[nr][nc]) {
+                                simFlags[nr][nc] = true;
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 子集推理 (如果基础逻辑没有进展)
+        if (!changed) {
+            changed = this.performSubsetReasoning(simRevealed, simFlags, originalBoard);
+        }
+    }
+
+    // 最终检查：是否所有非地雷格子都已通过逻辑推理被揭开
+    for (let r = 0; r < this.gameState.rows; r++) {
+        for (let c = 0; c < this.gameState.cols; c++) {
+            if (originalBoard[r][c] !== -1 && !simRevealed[r][c]) {
+                return false; // 存在无法通过逻辑揭开的安全格，判定为不可解
+            }
+        }
+    }
+
+    return true; // 所有安全格子均可通过逻辑揭开，棋盘可解
+}
 
                 performSubsetReasoning(simRevealed, simFlags, originalBoard) {
                     let changed = false;
@@ -6639,54 +6670,6 @@ showGameOverDialog() {
                     const mins = Math.floor(seconds / 60);
                     const secs = seconds % 60;
                     return `${mins}:${secs.toString().padStart(2, '0')}`;
-                }
-
-                ensureNoGuessing() {
-                    // 验证当前布局是否有逻辑解
-                    let attempts = 0;
-                    const maxAttempts = 10;
-
-                    while (attempts < maxAttempts) {
-                        if (this.canSolveLogically()) {
-                            console.log('无猜模式验证通过 - 确保游戏有逻辑解');
-                            return;
-                        }
-
-                        // 重新生成布局
-                        this.board = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(0));
-                        const positions = [];
-
-                        for (let r = 0; r < this.gameState.rows; r++) {
-                            for (let c = 0; c < this.gameState.cols; c++) {
-                                positions.push([r, c]);
-                            }
-                        }
-
-                        // 随机打乱位置
-                        for (let i = positions.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [positions[i], positions[j]] = [positions[j], positions[i]];
-                        }
-
-                        // 放置地雷
-                        for (let i = 0; i < this.gameState.totalMines && i < positions.length; i++) {
-                            const [r, c] = positions[i];
-                            this.board[r][c] = -1;
-                        }
-
-                        // 计算数字
-                        for (let r = 0; r < this.gameState.rows; r++) {
-                            for (let c = 0; c < this.gameState.cols; c++) {
-                                if (this.board[r][c] !== -1) {
-                                    this.board[r][c] = this.countAdjacentMines(r, c);
-                                }
-                            }
-                        }
-
-                        attempts++;
-                    }
-
-                    console.log('无猜模式生成失败，使用常规模式');
                 }
 
                 // 数据持久化（版本化）

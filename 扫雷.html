@@ -1490,6 +1490,60 @@ body.theme-transitioning * {
                 box-shadow: 0 0 0 6px rgba(255, 235, 59, 1), 0 0 50px #ffeb3b !important;
             }
         }
+/* ========== 统计图表样式 ========== */
+.stats-charts {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chart-container {
+    margin: 15px 0;
+    height: 200px;
+    position: relative;
+}
+
+.chart-title {
+    text-align: center;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+/* 教学模式错误反馈样式 */
+.tutorial-error-feedback {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(244, 67, 54, 0.95);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 10003;
+    box-shadow: 0 10px 40px rgba(244, 67, 54, 0.4);
+    border: 3px solid #ff5252;
+    animation: errorShake 0.5s ease-in-out;
+    max-width: 400px;
+    text-align: center;
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) rotate(-2deg); }
+    20%, 40%, 60%, 80% { transform: translate(-50%, -50%) rotate(2deg); }
+}
+
+.tutorial-error-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    display: block;
+}
     </style>
 </head>
 <body>
@@ -2110,16 +2164,16 @@ body.theme-transitioning * {
                     this.tutorialState.minesLayout = [[1, 1], [6, 1], [5, 1], [3, 5]];
 
                     this.tutorialState.steps = [
-                        { text: "欢迎来到教学模式！我们来学习如何玩扫雷。\n之后没有特别提醒的都请点击任意位置继续。", action: 'click_anywhere' },
-                        { text: "首先，左键(手机端长按)随便一个安全的格子来揭开它。我们从这个高亮的'0'格开始吧！", target: '.cell[data-row="3"][data-col="0"]', action: 'open', actionTarget: [3, 0] },
+                        { text: "欢迎来到教学模式！我们来学习如何玩扫雷。\n之后没有特别提醒的都请点击棋盘外的位置继续。", action: 'click_anywhere' },
+                        { text: "首先，左键(手机端长按)随意找一个安全的格子来正式开始游戏。我们从这个高亮的'0'格开始吧！", target: '.cell[data-row="3"][data-col="0"]', action: 'open', actionTarget: [3, 0] },
                         { text: "太棒了！你点开了一个'0'。\n这意味着它周围没有任何地雷，所以所有相邻的格子都会被自动揭开。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
                         { text: "现在，让我们看看这个'1'。\n这表示在它周围的8个格子里，正好有1个地雷。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
                         { text: "根据'1'的提示，我们可以确定高亮处是地雷。请右键(手机端单点)来插上旗帜进行标记。", target: '.cell[data-row="1"][data-col="1"]', action: 'flag', actionTarget: [1, 1] },
                         { text: "做得好！现在这个'1'周围的雷已被标记。\n右键(手机端单点)旗子周边的，例如这个'1'都可以安全地揭开它周围所有未标记的格子。", target: '.cell[data-row="0"][data-col="2"]', action: 'double_click', actionTarget: [0, 2] },
-                        { text: "因为这里显示的1在周围已经有旗子标记了，所以可以点这里。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },                        
-                        { text: "这里也一样，所以请继续点击以揭开。", target: '.cell[data-row="0"][data-col="1"]', action: 'double_click', actionTarget: [0, 1] },
+                        { text: "因为这里显示的1在周围已经有旗子标记了，所以也可以点这里。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },                        
+                        { text: "这里也一样，请你继续点击以揭开此周围全部格子。", target: '.cell[data-row="0"][data-col="1"]', action: 'double_click', actionTarget: [0, 1] },
                         { 
-                            text: "我们来试试更复杂的。这个'2'告诉我们它周围有2个雷。\n现在已经帮你标记好了其中一个，你能找到另一个吗？", 
+                            text: "我们来试试更复杂的。这个'2'告诉我们它周围有2个雷。\n现在已经帮你标记好了其中一个，你能找到另一个吗？（点击棋盘外位置继续）", 
                             target: '.cell[data-row="6"][data-col="2"]', 
                             action: 'click_anywhere',
                             preAction: () => {
@@ -2135,8 +2189,8 @@ body.theme-transitioning * {
                             }
                         },
                         { text: "没错，地雷就在高亮处！把它标记出来。", target: '.cell[data-row="5"][data-col="1"]', action: 'flag', actionTarget: [5, 1] },
-                        { text: "现在这个'2'周围的雷都标记好了，展开它吧！", target: '.cell[data-row="4"][data-col="0"]', action: 'double_click', actionTarget: [4, 0] },
-                        { text: "只剩最后一个雷了！根据这周边'1'的提示，把它找出来并标记。", target: '.cell[data-row="3"][data-col="5"]', action: 'flag', actionTarget: [3, 5] },
+                        { text: "现在这个'2'周围的雷都标记好了，根据观察也可以发现这个'1'周围的雷也已经被标记好了，请展开它吧！", target: '.cell[data-row="4"][data-col="0"]', action: 'double_click', actionTarget: [4, 0] },
+                        { text: "只剩最后一个雷了！根据这周边'1'的提示请看此高亮处以标记。", target: '.cell[data-row="3"][data-col="5"]', action: 'flag', actionTarget: [3, 5] },
                         { text: "所有地雷都已标记！\n现在，揭开所有剩余的格子来赢得游戏~", target: '.cell[data-row="4"][data-col="6"]', action: 'double_click', actionTarget: [4, 6] },
                         { text: "恭喜！你已完成教学。\n现在去挑战其他模式吧！", action: 'click_anywhere', postAction: () => this.endTutorial() }
                     ];
@@ -2471,20 +2525,26 @@ saveCurrentGame() {
     // 使用压缩的棋盘数据
     const compressedBoard = this.compressBoardData();
     
-    const saveData = {
-        id: Date.now(),
-        name: saveName,
-        timestamp: timestamp.toISOString(),
-        gameState: gameStateToSave,
-        boardData: compressedBoard, // 使用压缩数据
-        achievements: JSON.parse(JSON.stringify(this.achievements)),
-        stats: JSON.parse(JSON.stringify(this.stats))
-    };
-    
+const saveData = {
+    id: Date.now(),
+    name: saveName,
+    timestamp: timestamp.toISOString(),
+    gameState: gameStateToSave,
+    achievements: JSON.parse(JSON.stringify(this.achievements)),
+    stats: JSON.parse(JSON.stringify(this.stats))
+};
+
+// 异步压缩
+this.compressBoardData().then(compressed => {
+    saveData.boardData = compressed;
     this.savedGames.push(saveData);
     this.saveSavedGames();
     this.playSound('powerup');
     this.showFloatingMessage('💾 游戏已保存！（自动扫雷已暂停）');
+}).catch(error => {
+    console.error('压缩失败:', error);
+    this.showFloatingMessage('❌ 保存失败！');
+});
 }
 
 loadSavedGame(saveId) {
@@ -2513,10 +2573,10 @@ loadSavedGame(saveId) {
         // 恢复游戏数据
         this.gameState = JSON.parse(JSON.stringify(saveData.gameState));
 
-// 检查是否使用压缩格式
-if (saveData.boardData) {
-    // 使用压缩数据
-    this.decompressBoardData(saveData.boardData);
+        // 检查是否使用压缩格式
+        if (saveData.boardData) {
+    // 使用异步解压
+     this.decompressBoardData(saveData.boardData);
 } else {
     // 兼容性处理
     this.board = JSON.parse(JSON.stringify(saveData.board));
@@ -2534,17 +2594,19 @@ if (saveData.boardData) {
         
         // 重要：正确设置游戏状态
         if (!this.gameState.gameOver) {
-            // 检查是否有任何格子被揭开，如果有则游戏已开始
+            // 检查是否有任何格子被揭开（优化：使用some()早停）
             let hasRevealedCells = false;
-            for (let r = 0; r < this.gameState.rows && !hasRevealedCells; r++) {
+            outer: for (let r = 0; r < this.gameState.rows && !hasRevealedCells; r++) {
                 for (let c = 0; c < this.gameState.cols && !hasRevealedCells; c++) {
                     if (this.revealed[r][c]) {
                         hasRevealedCells = true;
+                        break outer; // 找到一个就停止
                     }
                 }
             }
             
-            if (hasRevealedCells) {
+       
+            if (hasRevealedCells || !this.gameState.firstClick) {
                 // 游戏已开始，暂停等待用户操作
                 this.gameState.firstClick = false;
                 this.gameState.paused = true; // 暂停游戏
@@ -3279,51 +3341,113 @@ loadSaveSettings() {
 
 //  压缩棋盘数据
 compressBoardData() {
-    const compressed = {
-        board: [],
-        revealed: [],
-        flags: [],
-        questions: [],
-        specialCells: []
-    };
-    
-    // 将二维数组转换为一维数组
-    for (let r = 0; r < this.gameState.rows; r++) {
-        for (let c = 0; c < this.gameState.cols; c++) {
-            compressed.board.push(this.board[r][c]);
-            // 将布尔值转换为数字（0或1）以节省空间
-            compressed.revealed.push(this.revealed[r][c] ? 1 : 0);
-            compressed.flags.push(this.flags[r][c] ? 1 : 0);
-            compressed.questions.push(this.questions[r][c] ? 1 : 0);
-            compressed.specialCells.push(this.specialCells[r][c] ? 1 : 0);
+    return new Promise((resolve, reject) => {
+        const worker = this.createCompressionWorker();
+        if (!worker) {
+            // 回退到同步压缩
+            const compressed = {
+                board: [],
+                revealed: [],
+                flags: [],
+                questions: [],
+                specialCells: []
+            };
+            
+            for (let r = 0; r < this.gameState.rows; r++) {
+                for (let c = 0; c < this.gameState.cols; c++) {
+                    compressed.board.push(this.board[r][c]);
+                    compressed.revealed.push(this.revealed[r][c] ? 1 : 0);
+                    compressed.flags.push(this.flags[r][c] ? 1 : 0);
+                    compressed.questions.push(this.questions[r][c] ? 1 : 0);
+                    compressed.specialCells.push(this.specialCells[r][c] ? 1 : 0);
+                }
+            }
+            resolve(compressed);
+            return;
         }
-    }
-    
-    return compressed;
+        
+        worker.onmessage = (event) => {
+            if (event.data.action === 'compressed') {
+                resolve(event.data.data);
+            }
+            worker.terminate();
+        };
+        
+        worker.onerror = (error) => {
+            reject(error);
+            worker.terminate();
+        };
+        
+        worker.postMessage({
+            action: 'compress',
+            data: {
+                board: this.board,
+                revealed: this.revealed,
+                flags: this.flags,
+                questions: this.questions,
+                specialCells: this.specialCells
+            },
+            rows: this.gameState.rows,
+            cols: this.gameState.cols
+        });
+    });
 }
 
 // 解压棋盘数据
 decompressBoardData(compressed) {
-    const rows = this.gameState.rows;
-    const cols = this.gameState.cols;
-    
-    this.board = Array(rows).fill().map(() => Array(cols).fill(0));
-    this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
-    this.flags = Array(rows).fill().map(() => Array(cols).fill(false));
-    this.questions = Array(rows).fill().map(() => Array(cols).fill(false));
-    this.specialCells = Array(rows).fill().map(() => Array(cols).fill(false));
-    
-    let index = 0;
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            this.board[r][c] = compressed.board[index];
-            this.revealed[r][c] = compressed.revealed[index] === 1;
-            this.flags[r][c] = compressed.flags[index] === 1;
-            this.questions[r][c] = compressed.questions[index] === 1;
-            this.specialCells[r][c] = compressed.specialCells[index] === 1;
-            index++;
+    return new Promise((resolve, reject) => {
+        const worker = this.createCompressionWorker();
+        if (!worker) {
+            // 回退到同步解压
+            const rows = this.gameState.rows;
+            const cols = this.gameState.cols;
+            
+            this.board = Array(rows).fill().map(() => Array(cols).fill(0));
+            this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
+            this.flags = Array(rows).fill().map(() => Array(cols).fill(false));
+            this.questions = Array(rows).fill().map(() => Array(cols).fill(false));
+            this.specialCells = Array(rows).fill().map(() => Array(cols).fill(false));
+            
+            let index = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    this.board[r][c] = compressed.board[index];
+                    this.revealed[r][c] = compressed.revealed[index] === 1;
+                    this.flags[r][c] = compressed.flags[index] === 1;
+                    this.questions[r][c] = compressed.questions[index] === 1;
+                    this.specialCells[r][c] = compressed.specialCells[index] === 1;
+                    index++;
+                }
+            }
+            resolve();
+            return;
         }
-    }
+        
+        worker.onmessage = (event) => {
+            if (event.data.action === 'decompressed') {
+                const decompressed = event.data.data;
+                this.board = decompressed.board;
+                this.revealed = decompressed.revealed;
+                this.flags = decompressed.flags;
+                this.questions = decompressed.questions;
+                this.specialCells = decompressed.specialCells;
+                resolve();
+            }
+            worker.terminate();
+        };
+        
+        worker.onerror = (error) => {
+            reject(error);
+            worker.terminate();
+        };
+        
+        worker.postMessage({
+            action: 'decompress',
+            data: compressed,
+            rows: this.gameState.rows,
+            cols: this.gameState.cols
+        });
+    });
 }
 
                 // 版本控制函数
@@ -4721,12 +4845,13 @@ recordMoveTiming() {
                 handleNumberCellClick(row, col) {
                     // --- 教学模式守卫 ---
                     if (this.tutorialState.active) {
-                        const step = this.tutorialState.steps[this.tutorialState.step];
-                        // 如果当前步骤期望的不是“双击展开”，则阻止该操作
-                        if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'double_click') {
-                            return;
-                        }
-                    }
+    const step = this.tutorialState.steps[this.tutorialState.step];
+    // 如果当前步骤期望的不是"双击展开"，则阻止该操作并显示错误反馈
+    if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'double_click') {
+        this.showTutorialErrorFeedback(step.action, 'double_click');
+        return;
+    }
+}
                     // --- 守卫结束 ---
 
                     if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
@@ -4777,14 +4902,15 @@ recordMoveTiming() {
                 // 封装“揭开格子”的动作，用于统一处理数据记录
                 performOpenAction(row, col) {
                     // --- 教学模式守卫 ---
-                    if (this.tutorialState.active) {
-                        const step = this.tutorialState.steps[this.tutorialState.step];
-                        // 如果在教学目标格子上尝试了错误的操作类型，则阻止
-                        if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'open') {
-                            return; 
-                        }
-                    }
-                    // --- 守卫结束 ---
+if (this.tutorialState.active) {
+    const step = this.tutorialState.steps[this.tutorialState.step];
+    // 如果在教学目标格子上尝试了错误的操作类型，则阻止并显示错误反馈
+    if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'open') {
+        this.showTutorialErrorFeedback(step.action, 'open');
+        return; 
+    }
+}
+// --- 守卫结束 ---
 
                     // --- 检查是否为无效操作 ---
                     if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
@@ -4817,13 +4943,14 @@ recordMoveTiming() {
                 // 封装“标记”的动作，用于统一处理数据记录
                 performFlagAction(row, col) {
                     // --- 教学模式守卫 ---
-                    if (this.tutorialState.active) {
-                        const step = this.tutorialState.steps[this.tutorialState.step];
-                        // 如果在教学目标格子上尝试了错误的操作类型，则阻止
-                        if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'flag') {
-                            return;
-                        }
-                    }
+if (this.tutorialState.active) {
+    const step = this.tutorialState.steps[this.tutorialState.step];
+    // 如果在教学目标格子上尝试了错误的操作类型，则阻止并显示错误反馈
+    if (step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'flag') {
+        this.showTutorialErrorFeedback(step.action, 'flag');
+        return;
+    }
+}
                     // --- 守卫结束 ---
 
                     // --- 检查是否为无效操作 ---
@@ -4866,6 +4993,54 @@ recordMoveTiming() {
                         this.checkTutorialAction('flag', row, col);
                     }
                 }
+                
+                // 添加到 MinesweeperUltimate 类中
+showTutorialErrorFeedback(expectedAction, actualAction) {
+    // 清除现有的错误反馈
+    const existingFeedback = document.querySelector('.tutorial-error-feedback');
+    if (existingFeedback) {
+        existingFeedback.remove();
+    }
+    
+    const feedback = document.createElement('div');
+    feedback.className = 'tutorial-error-feedback';
+    
+    let errorMessage = '';
+    let suggestion = '';
+    
+    // 根据期望和实际操作生成错误信息
+    if (expectedAction === 'open' && actualAction === 'flag') {
+        errorMessage = '需要揭开格子，而不是标记！';
+        suggestion = '请使用左键点击（手机端长按）来揭开格子。';
+    } else if (expectedAction === 'flag' && actualAction === 'open') {
+        errorMessage = '需要标记地雷，而不是揭开！';
+        suggestion = '请使用右键点击（手机端单击）来标记地雷。';
+    } else if (expectedAction === 'double_click') {
+        errorMessage = '需要双击数字来展开周围格子！';
+        suggestion = '当数字周围的旗帜数量正确时，双击数字可以快速揭开剩余格子。';
+    } else {
+        errorMessage = '操作不正确！';
+        suggestion = '请仔细阅读提示，按照指引进行操作。';
+    }
+    
+    feedback.innerHTML = `
+        <span class="tutorial-error-icon">❌</span>
+        <div style="margin-bottom: 10px;">${errorMessage}</div>
+        <div style="font-size: 14px; opacity: 0.9;">${suggestion}</div>
+    `;
+    
+    document.body.appendChild(feedback);
+    
+    // 播放错误音效
+    this.playSound('explosion');
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+        if (feedback.parentNode) {
+            feedback.remove();
+        }
+    }, 3000);
+}
 // 核心游戏逻辑
 revealCell(row, col) {
     if (!this.isValid(row, col) || this.revealed[row][col] ||
@@ -6434,6 +6609,68 @@ undo() {
     this.playSound('powerup');
 }
 
+                // 在class MinesweeperUltimate中添加或替换这个函数
+createCompressionWorker() {
+    if (!window.Worker) return null; // 如果浏览器不支持Worker，返回null（回退同步）
+    
+    // Worker脚本内容（作为字符串）
+    const workerCode = `
+        self.addEventListener('message', (event) => {
+            const { action, data, rows, cols } = event.data;
+            
+            if (action === 'compress') {
+                const compressed = {
+                    board: [],
+                    revealed: [],
+                    flags: [],
+                    questions: [],
+                    specialCells: []
+                };
+                
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        compressed.board.push(data.board[r][c]);
+                        compressed.revealed.push(data.revealed[r][c] ? 1 : 0);
+                        compressed.flags.push(data.flags[r][c] ? 1 : 0);
+                        compressed.questions.push(data.questions[r][c] ? 1 : 0);
+                        compressed.specialCells.push(data.specialCells[r][c] ? 1 : 0);
+                    }
+                }
+                
+                self.postMessage({ action: 'compressed', data: compressed });
+            } else if (action === 'decompress') {
+                const decompressed = {
+                    board: Array(rows).fill().map(() => Array(cols).fill(0)),
+                    revealed: Array(rows).fill().map(() => Array(cols).fill(false)),
+                    flags: Array(rows).fill().map(() => Array(cols).fill(false)),
+                    questions: Array(rows).fill().map(() => Array(cols).fill(false)),
+                    specialCells: Array(rows).fill().map(() => Array(cols).fill(false))
+                };
+                
+                let index = 0;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        decompressed.board[r][c] = data.board[index];
+                        decompressed.revealed[r][c] = data.revealed[index] === 1;
+                        decompressed.flags[r][c] = data.flags[index] === 1;
+                        decompressed.questions[r][c] = data.questions[index] === 1;
+                        decompressed.specialCells[r][c] = data.specialCells[index] === 1;
+                        index++;
+                    }
+                }
+                
+                self.postMessage({ action: 'decompressed', data: decompressed });
+            }
+        });
+    `;
+    
+    // 创建Blob对象（模拟一个JS文件）
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    
+    // 创建Worker
+    return new Worker(URL.createObjectURL(blob));
+}
+
                 toggleSound() {
                     this.gameState.soundEnabled = !this.gameState.soundEnabled;
                     const btn = document.getElementById('dropdown-sound');
@@ -6537,10 +6774,149 @@ showGameOverDialog() {
                 <li style="display: flex; justify-content: space-between;"><strong>点击效率 (揭开/点击):</strong> <span>${clickEfficiency.toFixed(1)}%</span></li>
             </ul>
         </div>
+        <div class="stats-charts">
+            <div class="chart-container">
+                <div class="chart-title">操作类型分布</div>
+                <canvas id="operationChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">决策时间分布</div>
+                <canvas id="timeChart"></canvas>
+            </div>
+        </div>
     `;
     
     statsSummary.innerHTML = dataHtml;
     modal.style.display = 'flex';
+    
+    // 延迟渲染图表，确保DOM已更新
+    setTimeout(() => {
+        this.renderGameOverCharts();
+    }, 100);
+}
+
+renderGameOverCharts() {
+    const { gameData } = this.gameState;
+    
+    // 操作类型分布图
+    const operationCanvas = document.getElementById('operationChart');
+    if (operationCanvas && window.Chart) {
+        const operationCtx = operationCanvas.getContext('2d');
+        
+        // 销毁已存在的图表
+        if (this.operationChart) {
+            this.operationChart.destroy();
+        }
+        
+        this.operationChart = new Chart(operationCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['揭开格子', '标记/取消标记', '数字展开', '无效操作'],
+                datasets: [{
+                    data: [
+                        gameData.leftClicks,
+                        gameData.rightClicks,
+                        gameData.numberExpansions,
+                        gameData.ineffectiveMoves
+                    ],
+                    backgroundColor: [
+                        'rgba(33, 150, 243, 0.8)',
+                        'rgba(255, 152, 0, 0.8)',
+                        'rgba(76, 175, 80, 0.8)',
+                        'rgba(244, 67, 54, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(33, 150, 243, 1)',
+                        'rgba(255, 152, 0, 1)',
+                        'rgba(76, 175, 80, 1)',
+                        'rgba(244, 67, 54, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: getComputedStyle(document.body).getPropertyValue('--text-color'),
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 决策时间分布图
+    const timeCanvas = document.getElementById('timeChart');
+    if (timeCanvas && window.Chart) {
+        const timeCtx = timeCanvas.getContext('2d');
+        
+        // 销毁已存在的图表
+        if (this.timeChart) {
+            this.timeChart.destroy();
+        }
+        
+        // 处理时间数据
+        const timeData = gameData.moveTimestamps.map(t => t / 1000); // 转换为秒
+        const maxTime = Math.max(...timeData);
+        const buckets = 10;
+        const bucketSize = maxTime / buckets;
+        const histogram = new Array(buckets).fill(0);
+        
+        timeData.forEach(time => {
+            const bucketIndex = Math.min(Math.floor(time / bucketSize), buckets - 1);
+            histogram[bucketIndex]++;
+        });
+        
+        const labels = [];
+        for (let i = 0; i < buckets; i++) {
+            const start = (i * bucketSize).toFixed(1);
+            const end = ((i + 1) * bucketSize).toFixed(1);
+            labels.push(`${start}-${end}s`);
+        }
+        
+        this.timeChart = new Chart(timeCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '操作次数',
+                    data: histogram,
+                    backgroundColor: 'rgba(156, 39, 176, 0.8)',
+                    borderColor: 'rgba(156, 39, 176, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: getComputedStyle(document.body).getPropertyValue('--text-color')
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: getComputedStyle(document.body).getPropertyValue('--text-color'),
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
 }
 
                 shareResult() {
@@ -6745,5 +7121,6 @@ showGameOverDialog() {
             window.game = new MinesweeperUltimate();
         });
     </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>

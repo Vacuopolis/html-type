@@ -1,0 +1,5223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智能HTML编辑器 - 移动版</title>
+    
+    <!-- CodeMirror CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/theme/material-darker.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/addon/hint/show-hint.min.css">
+
+<!-- JSZip -->
+<script src="https://fastly.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #FF4081;
+            --background-color: #121212;
+            --surface-color: #1E1E1E;
+            --text-color: #E0E0E0;
+            --border-color: #333;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --warning-color: #FF9800;
+            --header-height: 56px;
+            --bottom-nav-height: 56px;
+        }
+        
+        body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--background-color);
+    color: var(--text-color);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: text;
+    user-select: text;
+}
+        
+        /* 头部栏 */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--surface-color);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+        
+        .menu-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+        
+        .menu-btn:active {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .menu-btn span {
+            width: 24px;
+            height: 2px;
+            background: var(--text-color);
+            transition: all 0.3s;
+        }
+        
+        .menu-btn.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        
+        .menu-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .menu-btn.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+        
+        .app-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 500;
+            margin-left: 16px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: none;
+            color: var(--text-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: background 0.3s;
+        }
+        
+        .icon-btn:active {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: var(--surface-color);
+            transition: left 0.3s ease;
+            z-index: 200;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu {
+            padding: 8px 0;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: background 0.3s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+        }
+        
+        .menu-item:active {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .menu-item i {
+            margin-right: 16px;
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .menu-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 8px 0;
+        }
+        
+        /* 遮罩层 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 150;
+        }
+        
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            right: 0;
+            bottom: var(--bottom-nav-height);
+            overflow: hidden;
+        }
+        
+        /* 标签页容器 */
+        .tab-container {
+            height: 100%;
+            position: relative;
+        }
+        
+        .tab-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .tab-panel.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 编辑器样式 */
+.CodeMirror {
+    height: 100%;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-touch-callout: text;
+    -webkit-user-select: text;
+    user-select: text;
+    /* 确保编辑器始终可见 */
+    min-height: 100%;
+    transition: font-size 0.1s ease;
+}
+
+.CodeMirror-scroll {
+    /* 支持触摸滚动和缩放 */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
+    /* 防止选择时的闪烁 */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 编辑器缩放控制 */
+.editor-zoom-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    background: rgba(0,0,0,0.6);
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.zoom-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-radius: 4px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoom-btn:active {
+    background: rgba(255,255,255,0.3);
+    transform: scale(0.95);
+}
+
+.zoom-level {
+    color: white;
+    font-size: 12px;
+    min-width: 40px;
+    text-align: center;
+    line-height: 32px;
+    font-weight: bold;
+}
+        
+        /* 预览容器 */
+        .preview-container {
+            height: 100%;
+            background: white;
+            position: relative;
+        }
+        
+        .preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* 控制台容器 */
+        .console-container {
+            height: 100%;
+            background: var(--surface-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .console-header {
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .console-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+        }
+        
+        .console-entry {
+            margin: 4px 0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .console-entry.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #FF5252;
+        }
+        
+        .console-entry.warn {
+            background: rgba(255, 152, 0, 0.1);
+            color: #FFB74D;
+        }
+        
+        .console-entry.info {
+            background: rgba(33, 150, 243, 0.1);
+            color: #64B5F6;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--bottom-nav-height);
+            background: var(--surface-color);
+            display: flex;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            background: none;
+            color: #666;
+        }
+        
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+        
+        .nav-item i {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item span {
+            font-size: 12px;
+        }
+        
+        /* 浮动操作按钮 */
+        .fab {
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height) + 16px);
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 90;
+        }
+        
+        .fab:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        /* 对话框基础样式 */
+        .dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: var(--surface-color);
+            border-radius: 8px;
+            padding: 0;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 300;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        
+        .dialog.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .dialog-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dialog-title {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        
+        .dialog-content {
+            padding: 20px;
+            max-height: calc(80vh - 140px);
+            overflow-y: auto;
+        }
+        
+        .dialog-actions {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:active {
+            background: #1976D2;
+        }
+        
+        .btn-text {
+            background: transparent;
+            color: var(--primary-color);
+        }
+        
+        .btn-text:active {
+            background: rgba(33, 150, 243, 0.1);
+        }
+        
+        /* 历史记录样式 */
+.history-item {
+    padding: 16px;
+    margin: 8px 0;
+    background: var(--background-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid var(--border-color);
+}
+
+.history-item:hover {
+    background: rgba(33, 150, 243, 0.1);
+    border-color: var(--primary-color);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history-method {
+    font-family: 'Monaco', 'Consolas', monospace;
+    color: #4FC3F7;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.history-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.history-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.history-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.history-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #666;
+}
+
+.history-count {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.history-details h4 {
+    color: var(--primary-color);
+    margin: 16px 0 8px 0;
+    font-size: 14px;
+}
+
+.history-details h4:first-child {
+    margin-top: 0;
+}
+
+.history-details p {
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+/* 方法替换对话框 */
+.method-input {
+    width: 100%;
+    min-height: 200px;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 16px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+    border-radius: 8px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.method-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.detected-method {
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--background-color);
+    border-radius: 8px;
+    border: 1px solid var(--success-color);
+}
+
+.method-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.method-name {
+    font-family: 'Monaco', 'Consolas', monospace;
+    color: #4FC3F7;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.method-status {
+    color: var(--success-color);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+        /* 设置项样式 */
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-label {
+            font-size: 16px;
+        }
+        
+        /* 开关样式 */
+        .switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #666;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+        
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .switch-slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .switch-slider:before {
+            transform: translateX(24px);
+        }
+        
+        /* 历史记录样式 */
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+                
+        .history-item:active {
+            background: rgba(33, 150, 243, 0.1);
+        }
+        
+        .history-time {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height) + 80px);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 400;
+            max-width: 80%;
+            text-align: center;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .toast.error {
+            background: var(--error-color);
+        }
+        
+        .toast.success {
+            background: var(--success-color);
+        }
+        
+        /* 加载动画 */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 响应式调整 */
+        @media (min-width: 768px) {
+            .main-content {
+                display: flex;
+            }
+            
+            .tab-container {
+                display: flex;
+            }
+            
+            .tab-panel {
+                position: relative;
+                flex: 1;
+                opacity: 1;
+                visibility: visible;
+            }
+            
+            .bottom-nav {
+                display: none;
+            }
+            
+            .fab {
+                bottom: 16px;
+            }
+            
+            /* 桌面端显示分割线 */
+            .tab-panel:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 1px;
+                background: var(--border-color);
+            }
+        }
+        
+
+/* 工具提示样式 */
+.icon-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .header-actions {
+        gap: 4px;
+    }
+    
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+}
+
+/* 搜索替换浮窗样式 */
+.search-replace-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface-color);
+    border-radius: 8px;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 300;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.search-replace-panel.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.search-replace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.search-replace-title {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.search-input-group {
+    margin-bottom: 16px;
+}
+
+.search-input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.search-options {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.search-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+.search-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.search-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.search-btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.search-btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.search-btn-text {
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.search-results {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--background-color);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+/* 选择高亮样式 */
+.CodeMirror-selected {
+    background: rgba(33, 150, 243, 0.3) !important;
+}
+
+.CodeMirror-focused .CodeMirror-selected {
+    background: rgba(33, 150, 243, 0.4) !important;
+}
+
+/* 光标样式 */
+.CodeMirror-cursor {
+    border-left: 2px solid #2196F3;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* 触摸选择优化 */
+.CodeMirror-scroll {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+
+/* 选择手柄样式（移动端） */
+.CodeMirror-selection-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #2196F3;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+/* 帮助内容样式 */
+.help-content {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.help-content h4 {
+    color: var(--primary-color);
+    margin: 20px 0 12px 0;
+    font-size: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.help-content h4:first-child {
+    margin-top: 0;
+}
+
+.help-content ul {
+    margin: 0 0 16px 0;
+    padding-left: 20px;
+}
+
+.help-content li {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.help-content strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+/* 导入相关样式 */
+.import-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface-color);
+    border-radius: 8px;
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 300;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.import-dialog.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.import-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.import-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--background-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.import-option:hover {
+    background: rgba(33, 150, 243, 0.1);
+    border-color: var(--primary-color);
+}
+
+.import-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+}
+
+.import-option-info {
+    flex: 1;
+}
+
+.import-option-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.import-option-desc {
+    font-size: 12px;
+    color: #666;
+}
+
+.file-info {
+    background: var(--background-color);
+    padding: 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    border-left: 4px solid var(--primary-color);
+}
+
+.file-info h4 {
+    margin: 0 0 8px 0;
+    color: var(--primary-color);
+}
+
+.file-info p {
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+/* 文件管理器样式 */
+.file-manager-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: var(--surface-color);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    z-index: 300;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+}
+
+.file-manager-panel.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.file-manager-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-manager-header h3 {
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.file-manager-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.file-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 8px 20px;
+    background: var(--background-color);
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+}
+
+.file-tab {
+    padding: 8px 16px;
+    background: var(--surface-color);
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    font-size: 14px;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+}
+
+.file-tab:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.file-tab.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.tab-close {
+    width: 16px;
+    height: 16px;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 12px;
+    transition: background 0.3s;
+}
+
+.tab-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.file-category {
+    margin-bottom: 24px;
+}
+
+.file-category h4 {
+    font-size: 14px;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.file-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-item {
+    padding: 12px;
+    background: var(--background-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid transparent;
+}
+
+.file-item:hover {
+    background: rgba(33, 150, 243, 0.1);
+    border-color: var(--primary-color);
+}
+
+.file-item.active {
+    background: rgba(33, 150, 243, 0.2);
+    border-color: var(--primary-color);
+}
+
+.file-name {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+}
+
+.file-size {
+    font-size: 12px;
+    color: #666;
+}
+
+.file-delete {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: rgba(244, 67, 54, 0.1);
+    color: var(--error-color);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.file-delete:hover {
+    background: var(--error-color);
+    color: white;
+}
+
+/* 导出选项样式 */
+.export-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.export-option-btn {
+    padding: 20px;
+    background: var(--background-color);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.export-option-btn:hover {
+    background: rgba(33, 150, 243, 0.1);
+    border-color: var(--primary-color);
+}
+
+.export-option-btn i {
+    font-size: 24px;
+}
+
+.export-option-btn span {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.export-option-btn small {
+    font-size: 12px;
+    color: #666;
+}
+
+/* 替换确认对话框样式 */
+.replacement-confirm-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.replacement-confirm-item {
+    background: var(--background-color);
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    border-left: 3px solid var(--warning-color);
+    font-size: 14px;
+}
+
+.replacement-confirm-item strong {
+    color: var(--primary-color);
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.replaced-text-highlight {
+    background-color: rgba(76, 175, 80, 0.4);
+    transition: background-color 0.5s ease-out;
+    border-radius: 3px;
+}
+
+/* 控制台过滤按钮样式 */
+.console-filters {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-color);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: var(--primary-color);
+}
+
+.filter-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* 控制台日志计数徽章 */
+.console-entry-count {
+    display: inline-block;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    margin-left: 8px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 10px;
+    font-size: 12px;
+    text-align: center;
+    line-height: 20px;
+    font-weight: bold;
+}
+
+/* 用于隐藏不匹配的日志条目 */
+.console-entry.hidden {
+    display: none;
+}
+
+        
+        /* 图标（使用文字代替图标库） */
+        .icon-menu::before { content: '☰'; }
+        .icon-save::before { content: '💾'; }
+        .icon-code::before { content: '</>' }
+        .icon-preview::before { content: '👁'; }
+        .icon-console::before { content: '📋'; }
+        .icon-run::before { content: '▶'; }
+        .icon-format::before { content: '⊞'; }
+        .icon-replace::before { content: '⚡'; }
+        .icon-settings::before { content: '⚙'; }
+        .icon-history::before { content: '🕐'; }
+        .icon-export::before { content: '📤'; }
+        .icon-clear::before { content: '🗑'; }
+        .icon-close::before { content: '✕'; }
+        .icon-search::before { content: '🔍'; }
+        .icon-help::before { content: '❓'; }
+        .icon-import::before { content: '📁'; }
+        .icon-select-all::before { content: '📋'; }
+        .icon-copy::before { content: '📄'; }
+        .icon-cut::before { content: '✂️'; }
+        .icon-paste::before { content: '📋'; }
+        .icon-delete::before { content: '🗑️'; }
+        .icon-files::before { content: '📂'; }
+    </style>
+</head>
+<body>
+    <!-- 头部栏 -->
+    <header class="header">
+        <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="app-title">HTML编辑器</div>
+        <div class="header-actions">
+    <button class="icon-btn icon-help" onclick="showHelp()" title="使用说明"></button>
+    <button class="icon-btn icon-save" onclick="saveCode()" title="保存代码"></button>
+</div>
+    </header>
+    
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>功能菜单</h2>
+        </div>
+                <nav class="sidebar-menu">
+            <button class="menu-item" onclick="runCode(); closeSidebar();">
+                <i class="icon-run"></i>
+                运行代码
+            </button>
+            <button class="menu-item" onclick="formatCode()">
+                <i class="icon-format"></i>
+                格式化代码
+            </button>
+            <button class="menu-item" onclick="showSearchReplace()">
+                <i class="icon-search"></i>
+                搜索与替换
+            </button>
+            <button class="menu-item" onclick="showMethodReplace()">
+                <i class="icon-replace"></i>
+                智能方法替换
+            </button>
+            <button class="menu-item" onclick="showSettings()">
+                <i class="icon-settings"></i>
+                编辑器设置
+            </button>
+            <button class="menu-item" onclick="showHistory()">
+                <i class="icon-history"></i>
+                替换历史
+            </button>
+            <div class="menu-divider"></div>
+            <button class="menu-item" onclick="selectAllText(); closeSidebar();">
+                <i class="icon-select-all"></i>
+                全选文本
+            </button>
+            <button class="menu-item" onclick="copySelectedText(); closeSidebar();">
+                <i class="icon-copy"></i>
+                复制选中
+            </button>
+            <button class="menu-item" onclick="cutSelectedText(); closeSidebar();">
+                <i class="icon-cut"></i>
+                剪切选中
+            </button>
+            <button class="menu-item" onclick="pasteText(); closeSidebar();">
+                <i class="icon-paste"></i>
+                粘贴内容
+            </button>
+            <button class="menu-item" onclick="deleteSelectedText(); closeSidebar();">
+                <i class="icon-delete"></i>
+                删除选中
+            </button>
+            <button class="menu-item" onclick="showFileManager()">
+                <i class="icon-files"></i>
+                文件管理器
+            </button>
+            <button class="menu-item" onclick="importFile()">
+                <i class="icon-import"></i>
+                导入文档
+            </button>
+            <button class="menu-item" onclick="exportCode()">
+                <i class="icon-export"></i>
+                导出为htm
+            </button>
+            <button class="menu-item" onclick="clearEditor()">
+                <i class="icon-clear"></i>
+                清空编辑器
+            </button>
+        </nav>
+    </aside>
+    
+    <!-- 文件输入 -->
+<input type="file" id="fileInput" accept=".html,.htm,.js,.css,.txt,.json,.xml,.md,text/javascript,application/javascript,text/html,text/css,text/plain" multiple style="display: none;" onchange="handleFileImport(event)">
+    
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay"></div>
+    
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <div class="tab-container">
+            <!-- 编辑器标签页 -->
+<div class="tab-panel active" id="editorTab">
+    <div class="editor-zoom-controls">
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+        <span class="zoom-level" id="zoomLevel">100%</span>
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+    </div>
+    <textarea id="codeEditor"></textarea>
+</div>
+</div>
+            </div>
+            
+            <!-- 预览标签页 -->
+            <div class="tab-panel" id="previewTab">
+                <div class="preview-container">
+                    <iframe class="preview-frame" id="previewFrame" sandbox="allow-same-origin"></iframe>
+                </div>
+            </div>
+            
+            <!-- 控制台标签页 -->
+            <div class="tab-panel" id="consoleTab">
+                <div class="console-container">
+                <div class="console-header">
+                        <div class="console-filters">
+                            <button class="filter-btn active" onclick="filterConsole('all')">全部</button>
+                            <button class="filter-btn" onclick="filterConsole('error')">错误</button>
+                            <button class="filter-btn" onclick="filterConsole('warn')">警告</button>
+                            <button class="filter-btn" onclick="filterConsole('info')">信息</button>
+                        </div>
+                        <button class="icon-btn icon-clear" onclick="clearConsole()" title="清空控制台"></button>
+                    </div>
+                    <div class="console-content" id="consoleContent"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 底部导航 -->
+<nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('editor', this)">
+        <i class="icon-code"></i>
+        <span>编辑</span>
+    </button>
+    <button class="nav-item" onclick="handlePreviewClick(this)">
+        <i class="icon-preview"></i>
+        <span>预览</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('console', this)">
+        <i class="icon-console"></i>
+        <span>控制台</span>
+    </button>
+</nav>
+
+<!-- 搜索替换浮窗 -->
+<div class="search-replace-panel" id="searchReplacePanel">
+    <div class="search-replace-header">
+        <h3 class="search-replace-title">搜索与替换</h3>
+        <button class="icon-btn icon-close" onclick="closeSearchReplace()"></button>
+    </div>
+    
+    <div class="search-input-group">
+        <label for="searchInput">查找内容：</label>
+        <input type="text" id="searchInput" class="search-input" placeholder="输入要查找的内容">
+    </div>
+    
+    <div class="search-input-group">
+        <label for="replaceInput">替换为：</label>
+        <input type="text" id="replaceInput" class="search-input" placeholder="输入替换内容">
+    </div>
+    
+    <div class="search-options">
+        <div class="search-option">
+            <input type="checkbox" id="caseSensitive">
+            <label for="caseSensitive">区分大小写</label>
+        </div>
+        <div class="search-option">
+            <input type="checkbox" id="wholeWord">
+            <label for="wholeWord">全词匹配</label>
+        </div>
+        <div class="search-option">
+            <input type="checkbox" id="useRegex">
+            <label for="useRegex">正则表达式</label>
+        </div>
+    </div>
+    
+    <div class="search-actions">
+        <button class="search-btn search-btn-primary" onclick="findNext()">查找下一个</button>
+        <button class="search-btn search-btn-primary" onclick="findPrevious()">查找上一个</button>
+        <button class="search-btn search-btn-secondary" onclick="replaceNext()">替换</button>
+        <button class="search-btn search-btn-secondary" onclick="replaceAll()">全部替换</button>
+        <button class="search-btn search-btn-text" onclick="closeSearchReplace()">关闭</button>
+    </div>
+    
+    <div class="search-results" id="searchResults" style="display: none;"></div>
+</div>
+    
+    <!-- 浮动操作按钮 -->
+<button class="fab icon-run" onclick="runCode()" title="运行代码"></button>
+    
+        <!-- 方法替换对话框 -->
+    <div class="dialog" id="methodReplaceDialog">
+        <div class="dialog-header">
+            <h3 class="dialog-title">智能替换</h3>
+            <button class="icon-btn icon-close" onclick="closeDialog('methodReplaceDialog')"></button>
+        </div>
+        <div class="dialog-content">
+            <div>
+                <label style="display: block; margin-bottom: 8px;">粘贴一个或多个待更新的 JS函数 / CSS规则 / HTML块：</label>
+                <textarea class="method-input" id="methodInput" placeholder=".my-class {&#10;    color: blue;&#10;}&#10;&#10;function myFunction() {&#10;    // 新的实现&#10;}"></textarea>
+            </div>
+            <div id="detectedMethod" class="detected-method" style="display: none; border: none; padding: 0;">
+                <!-- 检测到的代码块将动态添加到这里 -->
+            </div>
+        </div>
+        <div class="dialog-actions">
+            <button class="btn btn-text" onclick="closeDialog('methodReplaceDialog')">取消</button>
+            <button class="btn btn-primary" onclick="analyzeMethod()">分析</button>
+            <button class="btn btn-primary" id="replaceBtn" onclick="executeReplace()" style="display: none;">替换</button>
+        </div>
+    </div>
+    
+    <!-- 设置对话框 -->
+    <div class="dialog" id="settingsDialog">
+        <div class="dialog-header">
+            <h3 class="dialog-title">编辑器设置</h3>
+            <button class="icon-btn icon-close" onclick="closeDialog('settingsDialog')"></button>
+        </div>
+        <div class="dialog-content">
+            <div class="setting-item">
+                <span class="setting-label">自动换行</span>
+                <label class="switch">
+                    <input type="checkbox" id="wordWrapToggle" onchange="toggleWordWrap()">
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">显示行号</span>
+                <label class="switch">
+                    <input type="checkbox" id="lineNumbersToggle" checked onchange="toggleLineNumbers()">
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">自动完成</span>
+                <label class="switch">
+                    <input type="checkbox" id="autocompleteToggle" checked onchange="toggleAutocomplete()">
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">主题</span>
+                <select id="themeSelect" onchange="changeTheme()" style="background: var(--background-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
+                    <option value="material-darker">Material Dark</option>
+                    <option value="monokai">Monokai</option>
+                    <option value="dracula">Dracula</option>
+                    <option value="eclipse">Eclipse Light</option>
+                </select>
+            </div>
+        </div>
+        <div class="dialog-actions">
+            <button class="btn btn-primary" onclick="closeDialog('settingsDialog')">确定</button>
+        </div>
+    </div>
+    
+    <!-- 历史记录对话框 -->
+    <div class="dialog" id="historyDialog">
+        <div class="dialog-header">
+            <h3 class="dialog-title">替换历史</h3>
+            <button class="icon-btn icon-close" onclick="closeDialog('historyDialog')"></button>
+        </div>
+        <div class="dialog-content">
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+    
+    <!-- 使用说明对话框 -->
+<div class="dialog" id="helpDialog">
+    <div class="dialog-header">
+        <h3 class="dialog-title">使用说明</h3>
+        <button class="icon-btn icon-close" onclick="closeDialog('helpDialog')"></button>
+    </div>
+    <div class="dialog-content">
+        <div class="help-content">
+            <h4>🎯 主要功能</h4>
+            <ul>
+                <li><strong>代码编辑：</strong>支持HTML、CSS、JavaScript语法高亮和自动完成</li>
+                <li><strong>实时预览：</strong>在预览标签页查看代码效果</li>
+                <li><strong>新窗口预览：</strong>长按预览按钮或左滑编辑器可在新窗口打开</li>
+                <li><strong>控制台输出：</strong>查看JavaScript运行结果和错误信息</li>
+                <li><strong>代码格式化：</strong>自动整理HTML、CSS、JavaScript代码格式</li>
+            </ul>
+            
+            <h4>🔧 编辑功能</h4>
+            <ul>
+                <li><strong>文本选择：</strong>长按文本进入选择模式，支持复制、剪切、粘贴</li>
+                <li><strong>缩放控制：</strong>使用右上角+/-按钮或双指缩放调整字体大小</li>
+                <li><strong>搜索替换：</strong>支持正则表达式、区分大小写、全词匹配</li>
+                <li><strong>智能方法替换：</strong>支持快速替换JavaScript函数、CSS和html元素的定义</li>
+                <li><strong>自动保存：</strong>编辑内容自动保存到本地存储</li>
+            </ul>
+            
+            <h4>⚙️ 高级功能</h4>
+            <ul>
+                <li><strong>主题切换：</strong>支持多种编辑器主题（Material Dark、Monokai等）</li>
+                <li><strong>编辑器设置：</strong>自动换行、行号显示、自动完成开关</li>
+                <li><strong>替换历史：</strong>查看和恢复之前的方法替换操作</li>
+                <li><strong>代码导出：</strong>将编辑的HTML文件导出到本地</li>
+                <li><strong>全选/清空：</strong>快速选择全部内容或清空编辑器</li>
+            </ul>
+            
+            <h4>📱 触摸手势</h4>
+            <ul>
+                <li><strong>双指缩放：</strong>在编辑器中双指缩放调整字体大小</li>
+                <li><strong>左滑：</strong>在编辑器中左滑可快速新窗口预览</li>
+                <li><strong>长按预览：</strong>长按底部预览按钮将会在新窗口运行打开代码</li>
+                <li><strong>长按文本：</strong>长按并滑动编辑器文本进入选择模式</li>
+            </ul>
+            
+            <h4>⌨️ 键盘快捷键</h4>
+            <ul>
+                <li><strong>Ctrl/Cmd + Enter：</strong>运行代码</li>
+                <li><strong>Ctrl/Cmd + S：</strong>保存代码</li>
+                <li><strong>Ctrl/Cmd + Shift + P：</strong>新窗口预览</li>
+                <li><strong>Ctrl/Cmd + A：</strong>全选文本</li>
+            </ul>
+            
+            <h4>💡 使用技巧</h4>
+            <ul>            
+                <li>使用“预览”快速调整样式，使用“运行”测试完整功能。</li>
+                <li>编辑器支持自动括号匹配和标签闭合</li>
+                <li>控制台会显示JavaScript运行时的输出和错误</li>
+                <li>搜索框支持Enter查找下一个，Shift+Enter查找上一个</li>
+                <li>方法替换功能可以快速更新JavaScript函数实现</li>
+                <li>所有设置和代码都会自动保存到浏览器本地存储</li>
+            </ul>
+        </div>
+    </div>
+    <div class="dialog-actions">
+        <button class="btn btn-primary" onclick="closeDialog('helpDialog')">知道了</button>
+    </div>
+</div>
+    
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- CodeMirror JS -->
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/css/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/addon/edit/closetag.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/addon/hint/show-hint.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.13/addon/hint/html-hint.min.js"></script>
+    
+    <script>
+        // 全局变量
+        let editor;
+let projectFiles = new Map(); // 存储项目文件 key: filename, value: {content, type, lastModified}
+let currentFileName = 'index.html'; // 当前编辑的文件名
+let projectStructure = {
+    html: [],
+    css: [],
+    js: [],
+    other: []
+}; // 项目结构
+        let currentTab = 'editor';
+        let detectedMethod = null;
+        let replaceHistory = [];
+        let touchStartX = 0;
+        let touchStartY = 0;
+let currentZoom = 1.0;
+const ZOOM_STEP = 0.1;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.0;      
+        // 搜索替换相关变量
+let searchState = {
+    query: '',
+    replaceText: '',
+    caseSensitive: false,
+    wholeWord: false,
+    useRegex: false,
+    currentMatch: -1,
+    matches: []
+};
+let _pendingReplacements = [];
+let messageCounts = {};
+        
+        // 默认HTML模板
+        const DEFAULT_TEMPLATE = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>示例页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 10px;
+        }
+        .button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #1976D2;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-family: monospace;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>欢迎使用移动版HTML编辑器</h1>
+        <p>这是一个专为移动设备优化的HTML代码编辑工具。</p>
+        
+        <button class="button" onclick="showMessage()">点击测试</button>
+        
+        <div class="output" id="output">
+            输出将显示在这里...
+        </div>
+    </div>
+    
+    <script>
+        function showMessage() {
+            const messages = [
+                '你好，世界！',
+                '移动编程，随时随地',
+                '享受编码的乐趣'
+            ];
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            const output = document.getElementById('output');
+            output.innerHTML = \`
+                <strong>消息：</strong>\${randomMsg}<br>
+                <small>时间：\${new Date().toLocaleString()}</small>
+            \`;
+            
+            console.log('按钮被点击了！', randomMsg);
+        }
+        
+        // 示例方法：可以被替换
+        function dataProcessor() {
+            console.log('处理数据中...');
+            return {
+                status: 'success',
+                timestamp: Date.now()
+            };
+        }
+        
+        // 初始化
+        window.addEventListener('load', function() {
+            console.log('页面加载完成！');
+            console.info('移动版编辑器 v2.0');
+        });
+    </${'script'}>
+</body>
+</html>`;
+        
+        // 初始化编辑器
+function initEditor() {
+    editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        mode: 'htmlmixed',
+        theme: 'material-darker',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        autoCloseTags: true,
+        matchBrackets: true,
+        indentUnit: 2,
+        tabSize: 2,
+        lineWrapping: true,
+        scrollbarStyle: 'native',
+        // 移动端优化配置
+        inputStyle: 'contenteditable',
+        // 启用文本选择和编辑
+        readOnly: false,
+        // 支持触摸选择
+        dragDrop: true,
+        // 配置鼠标/触摸行为
+        configureMouse: function(cm, repeat, event) {
+            return {
+                unit: 'char',
+                extend: event.shiftKey,
+                addNew: event.ctrlKey || event.metaKey,
+                moveOnDrag: true
+            };
+        },
+        extraKeys: {
+            "Ctrl-Space": "autocomplete",
+            "Cmd-S": saveCode,
+            "Ctrl-S": saveCode,
+            "Ctrl-A": "selectAll",
+            "Cmd-A": "selectAll",
+            "Delete": function(cm) {
+                if (cm.somethingSelected()) {
+                    cm.replaceSelection("");
+                } else {
+                    cm.execCommand("delCharAfter");
+                }
+            },
+            "Backspace": function(cm) {
+                if (cm.somethingSelected()) {
+                    cm.replaceSelection("");
+                } else {
+                    cm.execCommand("delCharBefore");
+                }
+            }
+        }
+    });
+    
+    loadProject();
+    
+    // 启用文本选择样式
+    const editorElement = editor.getWrapperElement();
+    editorElement.style.webkitUserSelect = 'text';
+    editorElement.style.userSelect = 'text';
+    editorElement.style.webkitTouchCallout = 'default';
+    
+    // 监听编辑器容器大小变化
+    const resizeObserver = new ResizeObserver(() => {
+        if (editor) {
+            editor.refresh();
+        }
+    });
+    
+    const editorContainer = document.getElementById('editorTab');
+    if (editorContainer) {
+        resizeObserver.observe(editorContainer);
+    }
+    
+    // 页面可见性变化时刷新编辑器
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && currentTab === 'editor') {
+            setTimeout(() => {
+                if (editor) {
+                    editor.refresh();
+                }
+            }, 100);
+        }
+    });
+    
+    editor.on('change', debounce(() => {
+        // 保存当前文件到项目
+        if (currentFileName) {
+            projectFiles.set(currentFileName, {
+                content: editor.getValue(),
+                type: getFileType(currentFileName),
+                lastModified: Date.now()
+            });
+            
+            // 保存整个项目
+            const projectData = {
+                files: Array.from(projectFiles.entries()),
+                currentFile: currentFileName
+            };
+            localStorage.setItem('htmlEditorProject', JSON.stringify(projectData));
+        }
+    }, 1000));
+    
+    // 初始化其他组件
+    loadSettings();
+    loadHistory();
+    initTouchGestures();
+    
+    // 初始化触摸支持
+    initEnhancedEditorTouch();
+}
+        
+        // 初始化编辑器触摸支持
+function initEnhancedEditorTouch() {
+    const editorElement = editor.getWrapperElement();
+    const scrollElement = editor.getScrollerElement();
+    
+    let touchStartTime = 0;
+    let touchStartPos = { x: 0, y: 0 };
+    let longPressTimer = null;
+    let isLongPress = false;
+    let isSelecting = false;
+    let selectionStart = null;
+    
+    // 确保编辑器支持文本选择
+    editorElement.style.webkitUserSelect = 'text';
+    editorElement.style.userSelect = 'text';
+    editorElement.style.webkitTouchCallout = 'default';
+    
+    // 处理触摸开始
+    editorElement.addEventListener('touchstart', (e) => {
+        touchStartTime = Date.now();
+        touchStartPos = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        };
+        
+        isLongPress = false;
+        isSelecting = false;
+        
+        // 获取触摸位置对应的编辑器坐标
+        const pos = editor.coordsChar({
+            left: touchStartPos.x,
+            top: touchStartPos.y
+        });
+        
+        // 设置长按定时器
+        longPressTimer = setTimeout(() => {
+            isLongPress = true;
+            isSelecting = true;
+            selectionStart = pos;
+            
+            // 开始选择模式 - 选择当前单词或字符
+            const line = editor.getLine(pos.line);
+            if (line) {
+                // 尝试选择单词
+                const wordStart = findWordBoundary(line, pos.ch, -1);
+                const wordEnd = findWordBoundary(line, pos.ch, 1);
+                
+                if (wordStart !== wordEnd) {
+                    editor.setSelection(
+                        { line: pos.line, ch: wordStart },
+                        { line: pos.line, ch: wordEnd }
+                    );
+                } else {
+                    // 如果没有单词，选择单个字符
+                    editor.setSelection(pos, { line: pos.line, ch: pos.ch + 1 });
+                }
+            }
+            
+            // 触觉反馈
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }, 500);
+        
+    }, { passive: true });
+    
+    // 处理触摸移动
+    editorElement.addEventListener('touchmove', (e) => {
+        const currentPos = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        };
+        
+        const moveDistance = Math.abs(currentPos.x - touchStartPos.x) + 
+                           Math.abs(currentPos.y - touchStartPos.y);
+        
+        // 如果移动距离过大，取消长按
+        if (moveDistance > 15 && !isSelecting) {
+            clearTimeout(longPressTimer);
+            isLongPress = false;
+        }
+        
+        // 如果正在选择，扩展选择范围
+        if (isSelecting && selectionStart) {
+            const currentEditorPos = editor.coordsChar({
+                left: currentPos.x,
+                top: currentPos.y
+            });
+            
+            editor.setSelection(selectionStart, currentEditorPos);
+        }
+        
+    }, { passive: true });
+    
+    // 处理触摸结束
+    editorElement.addEventListener('touchend', (e) => {
+        clearTimeout(longPressTimer);
+        
+        const touchDuration = Date.now() - touchStartTime;
+        
+        // 如果不是长按且不是选择模式，执行正常点击
+        if (!isLongPress && !isSelecting && touchDuration < 500) {
+            const pos = editor.coordsChar({
+                left: touchStartPos.x,
+                top: touchStartPos.y
+            });
+            editor.setCursor(pos);
+            editor.focus();
+        }
+        
+        // 重置状态
+        isLongPress = false;
+        isSelecting = false;
+        selectionStart = null;
+        
+    }, { passive: true });
+    
+    // 处理键盘输入 - 删除选中内容
+    editor.on('keydown', (cm, event) => {
+        if (cm.somethingSelected()) {
+            // 如果有选中内容，按任意字符键都会替换选中内容
+            if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
+                cm.replaceSelection(event.key);
+                event.preventDefault();
+            }
+            // Delete 或 Backspace 删除选中内容
+            else if (event.key === 'Delete' || event.key === 'Backspace') {
+                cm.replaceSelection('');
+                event.preventDefault();
+            }
+        }
+    });
+    
+    // 上下文菜单支持
+    editorElement.addEventListener('contextmenu', (e) => {
+        // 如果有选中内容，显示系统上下文菜单
+        if (editor.somethingSelected()) {
+            // 允许系统上下文菜单显示
+            return true;
+        }
+        e.preventDefault();
+    });
+}
+
+// 查找单词边界
+function findWordBoundary(line, pos, direction) {
+    const wordRegex = /\w/;
+    let i = pos;
+    
+    if (direction > 0) {
+        // 向右查找单词结束
+        while (i < line.length && wordRegex.test(line[i])) {
+            i++;
+        }
+    } else {
+        // 向左查找单词开始
+        while (i > 0 && wordRegex.test(line[i - 1])) {
+            i--;
+        }
+    }
+    
+    return i;
+}
+
+// 选择全部文本
+function selectAllText() {
+    editor.setSelection(
+        { line: 0, ch: 0 },
+        { line: editor.lastLine(), ch: editor.getLine(editor.lastLine()).length }
+    );
+    editor.focus();
+}
+
+// 复制选中内容
+function copySelectedText() {
+    if (editor.somethingSelected()) {
+        const selectedText = editor.getSelection();
+        
+        // 尝试使用现代剪贴板API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(selectedText).then(() => {
+                showToast('已复制到剪贴板', 'success');
+            }).catch(() => {
+                // 降级到传统方法
+                copyToClipboardFallback(selectedText);
+            });
+        } else {
+            copyToClipboardFallback(selectedText);
+        }
+    } else {
+        showToast('请先选择要复制的内容', 'warning');
+    }
+}
+
+// 剪切选中内容
+function cutSelectedText() {
+    if (editor.somethingSelected()) {
+        const selectedText = editor.getSelection();
+        
+        // 复制到剪贴板
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(selectedText).then(() => {
+                editor.replaceSelection('');
+                showToast('已剪切到剪贴板', 'success');
+            }).catch(() => {
+                copyToClipboardFallback(selectedText);
+                editor.replaceSelection('');
+            });
+        } else {
+            copyToClipboardFallback(selectedText);
+            editor.replaceSelection('');
+        }
+    } else {
+        showToast('请先选择要剪切的内容', 'warning');
+    }
+}
+
+// 粘贴内容
+function pasteText() {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(text => {
+            if (editor.somethingSelected()) {
+                editor.replaceSelection(text);
+            } else {
+                editor.replaceRange(text, editor.getCursor());
+            }
+            showToast('已粘贴内容', 'success');
+        }).catch(() => {
+            showToast('无法访问剪贴板', 'error');
+        });
+    } else {
+        showToast('浏览器不支持剪贴板操作', 'error');
+    }
+}
+
+// 降级剪贴板操作
+function copyToClipboardFallback(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showToast('已复制到剪贴板', 'success');
+    } catch (err) {
+        showToast('复制失败', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// 删除选中内容
+function deleteSelectedText() {
+    if (editor.somethingSelected()) {
+        editor.replaceSelection('');
+        showToast('已删除选中内容');
+    }
+}
+
+// 缩放功能
+function zoomIn() {
+    if (currentZoom < MAX_ZOOM) {
+        currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
+        applyZoom();
+        
+        // 触觉反馈（如果支持）
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+    }
+}
+
+function zoomOut() {
+    if (currentZoom > MIN_ZOOM) {
+        currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
+        applyZoom();
+        
+        // 触觉反馈（如果支持）
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+    }
+}
+
+function applyZoom() {
+    const editorElement = editor.getWrapperElement();
+    const fontSize = Math.round(14 * currentZoom);
+    editorElement.style.fontSize = fontSize + 'px';
+    
+    // 更新显示
+    document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+    
+    // 延迟刷新编辑器，确保样式应用完成
+    setTimeout(() => {
+        editor.refresh();
+    }, 10);
+    
+    // 保存缩放级别
+    localStorage.setItem('editorZoom', currentZoom);
+}
+
+// 恢复缩放级别
+function restoreZoom() {
+    const savedZoom = localStorage.getItem('editorZoom');
+    if (savedZoom) {
+        currentZoom = parseFloat(savedZoom);
+        applyZoom();
+    }
+}
+        
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+            // 初始化触摸手势
+    function initTouchGestures() {
+        const mainContent = document.querySelector('.main-content');
+        const previewNavItem = document.querySelector('.nav-item:nth-child(2)');
+        let initialDistance = 0;
+        let isZooming = false;
+        let lastZoomTime = 0;
+        const ZOOM_THROTTLE = 50;
+        const SWIPE_THRESHOLD = 50;
+        
+        // 编辑器区域的触摸事件，用于缩放和滑动
+        mainContent.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                isZooming = true;
+                initialDistance = getDistance(e.touches[0], e.touches[1]);
+                e.preventDefault();
+            } else {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: false });
+        
+        mainContent.addEventListener('touchmove', (e) => {
+            if (isZooming && e.touches.length === 2) {
+                e.preventDefault();
+                
+                const now = Date.now();
+                if (now - lastZoomTime < ZOOM_THROTTLE) return;
+                lastZoomTime = now;
+                
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                const scale = currentDistance / initialDistance;
+                
+                if (scale > 1.05) { // 放大
+                    zoomIn();
+                    initialDistance = currentDistance;
+                } else if (scale < 0.95) { // 缩小
+                    zoomOut();
+                    initialDistance = currentDistance;
+                }
+            }
+        }, { passive: false });
+        
+        mainContent.addEventListener('touchend', (e) => {
+            if (isZooming) {
+                isZooming = false;
+                return;
+            }
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            // 水平滑动检测
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > SWIPE_THRESHOLD) {
+                if (diffX < 0 && currentTab === 'editor') {
+                    // 左滑：编辑器 -> 运行代码
+                    runCode();
+                } else if (diffX > 0 && currentTab === 'preview') {
+                    // 右滑：运行代码 -> 编辑器
+                    switchTab('editor');
+                }
+            }
+        }, { passive: true });
+        
+    }
+
+    // 计算两点间距离
+    function getDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // 处理预览按钮点击
+    function handlePreviewClick(clickedElement) {
+        // 切换到预览标签页
+        switchTab('preview', clickedElement);
+    }
+    
+    
+        // 切换侧边栏
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const menuBtn = document.getElementById('menuBtn');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            menuBtn.classList.toggle('active');
+        }
+        
+        // 关闭侧边栏
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const menuBtn = document.getElementById('menuBtn');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            menuBtn.classList.remove('active');
+        }
+        
+        // 切换标签页
+function switchTab(tab, clickedElement) {
+    currentTab = tab;
+    
+    // 更新标签页显示
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.getElementById(tab + 'Tab').classList.add('active');
+    
+    // 更新底部导航
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // active 类
+    if (clickedElement) {
+        const navItem = clickedElement.closest('.nav-item');
+        if (navItem) {
+            navItem.classList.add('active');
+        }
+    } else {
+        // 如果没有传入元素，根据 tab 参数找到对应的导航项
+        const navItems = document.querySelectorAll('.nav-item');
+        let targetIndex = 0;
+        if (tab === 'preview') targetIndex = 1;
+        if (tab === 'console') targetIndex = 2;
+        
+        if (navItems[targetIndex]) {
+            navItems[targetIndex].classList.add('active');
+        }
+    }
+    
+    if (tab === 'editor') {
+        // 延迟刷新编辑器，确保DOM完全渲染
+        setTimeout(() => {
+            if (editor) {
+                editor.refresh();
+                editor.focus();
+            }
+        }, 100);
+    }
+    
+    // 如果切换到预览，更新预览内容
+    if (tab === 'preview') {
+        updatePreview();
+    }
+}
+        
+        // 运行代码 (在新窗口中完整执行)
+        function runCode() {
+            showToast('正在新窗口中运行项目...');
+            
+            // 保存当前文件以确保运行的是最新代码
+            if (currentFileName && editor) {
+                projectFiles.set(currentFileName, {
+                    content: editor.getValue(),
+                    type: getFileType(currentFileName),
+                    lastModified: Date.now()
+                });
+            }
+            
+            // 构建包含所有CSS和JS的完整HTML
+            const fullHTML = buildProjectHTML();
+            
+            // 创建新窗口来运行代码
+            const newWindow = window.open('', '_blank', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+            if (newWindow) {
+                newWindow.document.write(fullHTML);
+                newWindow.document.close();
+                newWindow.document.title = '运行 - ' + (currentFileName || '新项目');
+                
+                // 注入脚本以捕获新窗口的控制台输出
+                const script = newWindow.document.createElement('script');
+                script.textContent = `
+                    const originalConsole = { log: console.log, error: console.error, warn: console.warn, info: console.info };
+                    ['log', 'error', 'warn', 'info'].forEach(method => {
+                        console[method] = function(...args) {
+                            if (window.opener && !window.opener.closed) {
+                                window.opener.postMessage({ type: 'console', method: method, args: args.map(arg => String(arg)) }, '*');
+                            }
+                            originalConsole[method].apply(console, args);
+                        };
+                    });
+                    window.addEventListener('error', (e) => {
+                        if (window.opener && !window.opener.closed) {
+                            window.opener.postMessage({ type: 'console', method: 'error', args: [e.message + ' (Line ' + e.lineno + ')'] }, '*');
+                        }
+                    });
+                `;
+                // 确保head存在后再添加
+                if(newWindow.document.head) {
+                   newWindow.document.head.appendChild(script);
+                }
+                
+                showToast('项目已在新窗口中运行', 'success');
+            } else {
+                showToast('无法打开新窗口，请检查浏览器设置', 'error');
+            }
+        }
+
+        // 更新预览 (在应用内进行静态预览，不执行脚本)
+        function updatePreview() {
+            // 保存当前文件
+            if (currentFileName && editor) {
+                projectFiles.set(currentFileName, {
+                    content: editor.getValue(),
+                    type: getFileType(currentFileName),
+                    lastModified: Date.now()
+                });
+            }
+        
+            // 构建包含所有CSS和JS的完整HTML
+            const fullHTML = buildProjectHTML();
+            const frame = document.getElementById('previewFrame');
+        
+            // 使用 srcdoc 将代码加载到 sandboxed iframe 中。
+            frame.srcdoc = fullHTML;
+            
+            showToast('静态预览已更新', 'info');
+        }
+
+        // 在新窗口中预览（运行）
+        function previewInNewWindow() {
+ 
+            runCode();
+        }
+
+// 构建项目HTML
+function buildProjectHTML() {
+    // 查找主HTML文件
+    let mainHTML = '';
+    let mainHTMLFile = null;
+    
+    // 优先查找index.html
+    if (projectFiles.has('index.html')) {
+        mainHTMLFile = 'index.html';
+        mainHTML = projectFiles.get('index.html').content;
+    } else {
+        // 否则使用第一个HTML文件
+        for (const [filename, fileData] of projectFiles) {
+            if (getFileType(filename) === 'html') {
+                mainHTMLFile = filename;
+                mainHTML = fileData.content;
+                break;
+            }
+        }
+    }
+    
+    // 如果没有HTML文件，使用当前编辑器内容
+    if (!mainHTML) {
+        mainHTML = editor.getValue();
+    }
+    
+    // 收集所有CSS和JS文件
+    const cssFiles = [];
+    const jsFiles = [];
+    
+    projectFiles.forEach((fileData, filename) => {
+        if (filename === mainHTMLFile) return; // 跳过主HTML文件
+        
+        const type = getFileType(filename);
+        if (type === 'css') {
+            cssFiles.push({ name: filename, content: fileData.content });
+        } else if (type === 'javascript') {
+            jsFiles.push({ name: filename, content: fileData.content });
+        }
+    });
+    
+    // 注入CSS和JS到HTML
+    return injectResourcesIntoHTML(mainHTML, cssFiles, jsFiles);
+}
+
+// 注入资源到HTML
+function injectResourcesIntoHTML(html, cssFiles, jsFiles) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    // 注入CSS
+    cssFiles.forEach(file => {
+        // 检查是否已经有对应的link标签
+        const existingLink = doc.querySelector(`link[href="${file.name}"]`);
+        if (!existingLink) {
+            const style = doc.createElement('style');
+            style.setAttribute('data-filename', file.name);
+            style.textContent = `\n/* ${file.name} */\n${file.content}\n`;
+            
+            // 插入到head末尾
+            const head = doc.head || doc.querySelector('head');
+            if (head) {
+                head.appendChild(style);
+            }
+        }
+    });
+    
+    // 注入JS
+    jsFiles.forEach(file => {
+        // 检查是否已经有对应的script标签
+        const existingScript = doc.querySelector(`script[src="${file.name}"]`);
+        if (!existingScript) {
+            const script = doc.createElement('script');
+            script.setAttribute('data-filename', file.name);
+            script.textContent = `\n// ${file.name}\n${file.content}\n`;
+            
+            // 插入到body末尾
+            const body = doc.body || doc.querySelector('body');
+            if (body) {
+                body.appendChild(script);
+            }
+        }
+    });
+    
+    // 序列化回HTML字符串
+    return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+}
+        
+        // 监听控制台消息
+        window.addEventListener('message', (e) => {
+            // 确保消息是我们期望的格式
+            if (e.data && e.data.type === 'console') {
+                // 将所有参数连接成一个字符串，每个参数保留自己的格式
+                addConsoleEntry(e.data.method, e.data.args.join('\n'));
+            }
+        });
+        
+                // 控制台条目
+        function addConsoleEntry(method, message) {
+            const content = document.getElementById('consoleContent');
+            const messageKey = `${method}::${message}`;
+        
+            // 检查消息是否已存在（用于聚合）
+            if (messageCounts[messageKey]) {
+                messageCounts[messageKey].count++;
+                messageCounts[messageKey].element.querySelector('.console-entry-count').textContent = messageCounts[messageKey].count;
+            } else {
+                // 创建新的日志条目
+                const entry = document.createElement('div');
+                entry.className = `console-entry ${method}`;
+                
+                // 使用 pre 标签来保留格式化的JSON换行
+                entry.innerHTML = `
+                    <pre style="margin:0; white-space: pre-wrap; word-break: break-all;">${message}</pre>
+                    <span class="console-entry-count">1</span>
+                `;
+        
+                // 存储引用以备将来更新
+                messageCounts[messageKey] = {
+                    count: 1,
+                    element: entry
+                };
+        
+                content.appendChild(entry);
+            }
+        
+            content.scrollTop = content.scrollHeight;
+        }
+        
+        // 清空控制台
+        function clearConsole() {
+            document.getElementById('consoleContent').innerHTML = '';
+            // 重置消息计数器
+            messageCounts = {};
+            showToast('控制台已清空');
+        }
+        
+        // 格式化代码
+        function formatCode() {
+    closeSidebar();
+    
+    try {
+        const code = editor.getValue();
+        const formatted = formatHTML(code);
+        
+        if (formatted !== code) {
+            editor.setValue(formatted);
+            showToast('代码已格式化', 'success');
+        } else {
+            showToast('代码格式已经很规范了', 'info');
+        }
+    } catch (e) {
+        console.error('格式化错误:', e);
+        showToast('格式化失败: ' + e.message, 'error');
+    }
+}
+
+// 过滤控制台内容
+function filterConsole(type) {
+    const content = document.getElementById('consoleContent');
+    const entries = content.querySelectorAll('.console-entry');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    // 更新按钮的激活状态
+    filterButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === type);
+    });
+
+    // 根据类型显示或隐藏条目
+    entries.forEach(entry => {
+        if (type === 'all') {
+            entry.classList.remove('hidden');
+        } else {
+            entry.classList.toggle('hidden', !entry.classList.contains(type));
+        }
+    });
+}
+
+// HTML格式化核心函数
+function formatHTML(html) {
+    // 移除多余的空白字符，但保留内容中的空格
+    let formatted = html.replace(/>\s+</g, '><').trim();
+    
+    // 分割成标签和内容
+    const tokens = tokenizeHTML(formatted);
+    
+    let result = '';
+    let indentLevel = 0;
+    const indentStr = '    '; // 四个空格作为缩进
+    
+    // 自闭合标签列表
+    const selfClosingTags = ['br', 'hr', 'img', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'];
+    
+    // 内联元素列表
+    const inlineTags = ['a', 'span', 'strong', 'em', 'b', 'i', 'u', 'small', 'code', 'kbd', 'var', 'samp', 'sub', 'sup', 'mark', 'del', 'ins'];
+    
+    // 需要紧凑格式的标签
+    const compactTags = ['title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td', 'th', 'option'];
+    
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        
+        if (token.type === 'tag') {
+            const tagName = extractTagName(token.content);
+            const isClosing = token.content.startsWith('</');
+            const isSelfClosing = selfClosingTags.includes(tagName.toLowerCase()) || token.content.endsWith('/>');
+            const isInline = inlineTags.includes(tagName.toLowerCase());
+            const isCompact = compactTags.includes(tagName.toLowerCase());
+            
+            if (isClosing) {
+                // 结束标签，减少缩进
+                indentLevel = Math.max(0, indentLevel - 1);
+                
+                // 检查前一个token是否是文本内容
+                const prevToken = i > 0 ? tokens[i - 1] : null;
+                const isAfterText = prevToken && prevToken.type === 'text' && prevToken.content.trim();
+                
+                if (!isInline && !isAfterText) {
+                    result += '\n' + indentStr.repeat(indentLevel);
+                }
+                result += token.content;
+                
+                // 结束标签后的换行逻辑
+                if (!isInline && !isCompact && i < tokens.length - 1) {
+                    const nextToken = tokens[i + 1];
+                    if (nextToken.type === 'tag' && !nextToken.content.startsWith('</')) {
+                        result += '\n';
+                    }
+                }
+            } else {
+                // 开始标签或自闭合标签
+                if (!isInline && result && !result.endsWith('\n') && !result.endsWith('>')) {
+                    result += '\n';
+                }
+                
+                if (!isInline && (!result.endsWith('\n') || result.trim())) {
+                    if (result && !result.endsWith('\n')) {
+                        result += '\n';
+                    }
+                    result += indentStr.repeat(indentLevel);
+                }
+                
+                result += token.content;
+                
+                // 特殊处理script和style标签
+                if (tagName.toLowerCase() === 'script' || tagName.toLowerCase() === 'style') {
+                    if (!isSelfClosing) {
+                        indentLevel++;
+                        
+                        // 查找对应的结束标签，格式化其中的内容
+                        let j = i + 1;
+                        let content = '';
+                        let contentTokens = [];
+                        
+                        while (j < tokens.length) {
+                            if (tokens[j].type === 'tag' && tokens[j].content === `</${tagName}>`) {
+                                break;
+                            }
+                            contentTokens.push(tokens[j]);
+                            content += tokens[j].content;
+                            j++;
+                        }
+                        
+                        if (content.trim()) {
+                            result += '\n';
+                            const formattedContent = formatScriptOrStyle(content, tagName.toLowerCase(), indentLevel);
+                            result += formattedContent;
+                            if (!formattedContent.endsWith('\n')) {
+                                result += '\n';
+                            }
+                            result += indentStr.repeat(indentLevel - 1);
+                        }
+                        
+                        i = j - 1; // 跳过已处理的内容
+                    }
+                } else if (!isSelfClosing) {
+                    indentLevel++;
+                    
+                    // 检查下一个token
+                    if (i < tokens.length - 1) {
+                        const nextToken = tokens[i + 1];
+                        if (nextToken.type === 'text' && nextToken.content.trim()) {
+                            // 如果是紧凑标签或短文本，不添加换行
+                            if (isCompact || (nextToken.content.length < 80 && !nextToken.content.includes('\n'))) {
+                                // 保持在同一行
+                            } else {
+                                result += '\n';
+                            }
+                        } else if (nextToken.type === 'tag' && !isInline) {
+                            result += '\n';
+                        }
+                    }
+                }
+            }
+        } else if (token.type === 'text') {
+            const trimmedContent = token.content.trim();
+            if (trimmedContent) {
+                // 对于长文本或包含换行的文本，进行适当格式化
+                if (trimmedContent.length > 100 || trimmedContent.includes('\n')) {
+                    const lines = trimmedContent.split('\n');
+                    for (let k = 0; k < lines.length; k++) {
+                        const line = lines[k].trim();
+                        if (line) {
+                            if (k > 0) {
+                                result += '\n' + indentStr.repeat(indentLevel);
+                            }
+                            result += line;
+                        }
+                    }
+                } else {
+                    result += trimmedContent;
+                }
+            }
+        } else if (token.type === 'comment') {
+            if (result && !result.endsWith('\n')) {
+                result += '\n';
+            }
+            result += indentStr.repeat(indentLevel) + token.content;
+            if (i < tokens.length - 1) {
+                result += '\n';
+            }
+        } else if (token.type === 'doctype') {
+            result += token.content;
+            if (i < tokens.length - 1) {
+                result += '\n';
+            }
+        }
+    }
+    
+    // 清理多余的空行
+    return result.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+}
+
+// HTML标记化函数
+function tokenizeHTML(html) {
+    const tokens = [];
+    let i = 0;
+    
+    while (i < html.length) {
+        if (html[i] === '<') {
+            // 检查是否是注释
+            if (html.substring(i, i + 4) === '<!--') {
+                // 查找注释结束
+                let j = html.indexOf('-->', i + 4);
+                if (j !== -1) {
+                    const commentContent = html.substring(i, j + 3);
+                    tokens.push({ type: 'comment', content: commentContent });
+                    i = j + 3;
+                    continue;
+                } else {
+                    // 没有找到注释结束，作为文本处理
+                    tokens.push({ type: 'text', content: html[i] });
+                    i++;
+                    continue;
+                }
+            }
+            
+            // 查找标签结束
+            let j = i + 1;
+            let inQuote = false;
+            let quoteChar = '';
+            
+            while (j < html.length) {
+                if (!inQuote && (html[j] === '"' || html[j] === "'")) {
+                    inQuote = true;
+                    quoteChar = html[j];
+                } else if (inQuote && html[j] === quoteChar && html[j-1] !== '\\') {
+                    inQuote = false;
+                    quoteChar = '';
+                } else if (!inQuote && html[j] === '>') {
+                    break;
+                }
+                j++;
+            }
+            
+            if (j < html.length) {
+                const tagContent = html.substring(i, j + 1);
+                
+                // 判断标签类型
+                if (tagContent.toLowerCase().startsWith('<!doctype')) {
+                    tokens.push({ type: 'doctype', content: tagContent });
+                } else {
+                    tokens.push({ type: 'tag', content: tagContent });
+                }
+                
+                i = j + 1;
+            } else {
+                // 没有找到结束的>，作为文本处理
+                tokens.push({ type: 'text', content: html[i] });
+                i++;
+            }
+        } else {
+            // 文本内容
+            let textStart = i;
+            while (i < html.length && html[i] !== '<') {
+                i++;
+            }
+            
+            const textContent = html.substring(textStart, i);
+            if (textContent) {
+                tokens.push({ type: 'text', content: textContent });
+            }
+        }
+    }
+    
+    return tokens;
+}
+
+// 提取标签名函数
+function extractTagName(tagContent) {
+    const match = tagContent.match(/<\/?([a-zA-Z][a-zA-Z0-9]*)/);
+    return match ? match[1] : '';
+}
+
+// 格式化脚本和样式内容
+function formatScriptOrStyle(content, tagType, baseIndent) {
+    const indentStr = '    ';
+    const lines = content.split('\n');
+    let result = '';
+    let currentIndent = 0;
+    let inMultiLineComment = false;
+    let previousLineWasClosingBrace = false;
+    let previousLineWasAtRule = false;
+    let inAtRuleBlock = false;
+    let atRuleDepth = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) {
+            // 完全跳过空行
+            continue;
+        }
+        
+        if (tagType === 'script') {
+            // JavaScript格式化
+            
+            // 处理多行注释
+            if (line.includes('/*') && !line.includes('*/')) {
+                inMultiLineComment = true;
+            } else if (line.includes('*/')) {
+                inMultiLineComment = false;
+            }
+            
+            // 如果是注释行，保持原样
+            if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*') || inMultiLineComment) {
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+                continue;
+            }
+            
+            // 处理大括号
+            if (line.includes('}') && !line.includes('{')) {
+                currentIndent = Math.max(0, currentIndent - 1);
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+            } else if (line.includes('{') && !line.includes('}')) {
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+                currentIndent++;
+            } else if (line.includes('{') && line.includes('}')) {
+                // 单行函数或对象
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+            } else {
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+            }
+            
+            // 在函数之间添加空行
+            if (line.includes('}') && !line.includes('{') && currentIndent === 0) {
+                if (i < lines.length - 1 && lines[i + 1].trim()) {
+                    result += '\n';
+                }
+            }
+            
+        } else if (tagType === 'style') {
+            // CSS格式化 - 缩进位置
+            
+            // 如果是注释行，保持原样
+            if (line.startsWith('/*') || line.startsWith('*') || line.endsWith('*/')) {
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+                previousLineWasClosingBrace = false;
+                previousLineWasAtRule = false;
+                continue;
+            }
+            
+            // 检查当前行是否是@规则或普通选择器
+            const isAtRule = line.startsWith('@');
+            const isSelector = !isAtRule && (line.includes('{') || (!line.includes(':') && !line.includes('}')));
+            
+            // 处理大括号
+            if (line.includes('{')) {
+                // 如果是@规则或普通选择器开始
+                if (isAtRule || isSelector) {
+                    // 如果上一行是结束大括号，添加空行，并确保从基础缩进开始
+                    if (previousLineWasClosingBrace) {
+                        result += '\n';
+                        // 重置缩进到基础级别
+                        currentIndent = 0;
+                    }
+                    
+                    result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+                    currentIndent++;
+                    
+                    // 如果是@规则，标记进入@规则块
+                    if (isAtRule) {
+                        inAtRuleBlock = true;
+                        atRuleDepth = currentIndent;
+                    }
+                } else {
+                    // 其他情况（如@规则内部的百分比规则）
+                    result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+                    currentIndent++;
+                }
+                
+                previousLineWasClosingBrace = false;
+                previousLineWasAtRule = false;
+            } else if (line.includes('}')) {
+                // 处理结束大括号
+                currentIndent = Math.max(0, currentIndent - 1);
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+                
+                // 如果退出了@规则块
+                if (inAtRuleBlock && currentIndent < atRuleDepth) {
+                    inAtRuleBlock = false;
+                    atRuleDepth = 0;
+                    // 确保下一个规则从基础缩进开始
+                    currentIndent = 0;
+                }
+                
+                previousLineWasClosingBrace = true;
+                previousLineWasAtRule = false;
+            } else {
+                // CSS属性或@规则声明
+                result += indentStr.repeat(baseIndent + currentIndent) + line + '\n';
+                previousLineWasClosingBrace = false;
+                previousLineWasAtRule = isAtRule && !inAtRuleBlock;
+            }
+        }
+    }
+    
+    return result.trimEnd();
+}
+        
+        // 保存代码
+function saveCode() {
+    // 保存当前文件到项目
+    if (currentFileName && editor) {
+        projectFiles.set(currentFileName, {
+            content: editor.getValue(),
+            type: getFileType(currentFileName),
+            lastModified: Date.now()
+        });
+    }
+    
+    // 保存整个项目到本地存储
+    const projectData = {
+        files: Array.from(projectFiles.entries()),
+        currentFile: currentFileName,
+        version: '2.0', // 版本标识
+        savedAt: Date.now() // 保存时间戳
+    };
+    
+    try {
+        localStorage.setItem('htmlEditorProject', JSON.stringify(projectData));
+        showToast(`项目已保存 (${projectFiles.size} 个文件)`, 'success');
+    } catch (error) {
+        if (error.name === 'QuotaExceededError') {
+            showToast('存储空间不足，请删除一些文件', 'error');
+            showFileManager(); // 打开文件管理器让用户删除文件
+        } else {
+            showToast('保存失败: ' + error.message, 'error');
+        }
+    }
+}
+        
+        // 导出代码
+function exportCode() {
+    closeSidebar();
+    
+    try {
+        const code = editor.getValue();
+        
+        // 检查代码是否为空
+        if (!code.trim()) {
+            showToast('编辑器内容为空，无法导出', 'warning');
+            return;
+        }
+        
+        // 创建Blob对象
+        const blob = new Blob([code], { 
+            type: 'text/html;charset=utf-8' 
+        });
+        
+        // 生成文件名
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `html-export-${timestamp}.html`;
+        
+        // 检查浏览器支持
+        if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+            // IE/Edge 支持
+            window.navigator.msSaveOrOpenBlob(blob, filename);
+        } else {
+            // 现代浏览器
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            // 设置下载属性
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            
+            // 添加到DOM并触发点击
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+        
+        showToast('文件导出成功！', 'success');
+        
+    } catch (error) {
+        console.error('导出失败:', error);
+        showToast('导出失败: ' + error.message, 'error');
+    }
+}
+        
+        // 清空编辑器
+        function clearEditor() {
+            closeSidebar();
+            
+            if (confirm('确定要清空所有代码吗？')) {
+                editor.setValue('');
+                clearConsole();
+                showToast('编辑器已清空');
+            }
+        }
+        
+        // 显示方法替换对话框
+        function showMethodReplace() {
+            closeSidebar();
+            showDialog('methodReplaceDialog');
+        }
+        
+        // 分析方法
+        function analyzeMethod() {
+            const input = document.getElementById('methodInput').value.trim();
+            if (!input) {
+                showToast('请输入要分析的代码', 'error');
+                return;
+            }
+
+            detectedMethod = parseInputIntoBlocks(input);
+
+            const listContainer = document.getElementById('detectedMethod');
+            listContainer.innerHTML = '';
+
+            if (detectedMethod.length > 0) {
+                detectedMethod.forEach(block => {
+                    const blockDiv = document.createElement('div');
+                    blockDiv.className = 'method-info';
+                    blockDiv.style.cssText = 'border: 1px solid #333; padding: 8px; margin-bottom: 8px; border-radius: 4px;';
+                    blockDiv.innerHTML = `
+                        <span class="method-name" style="color: #64B5F6;">[${block.type.toUpperCase()}] ${block.name}</span>
+                        <span class="method-status">✓ 已识别</span>
+                    `;
+                    listContainer.appendChild(blockDiv);
+                });
+
+                listContainer.style.display = 'block';
+                const replaceBtn = document.getElementById('replaceBtn');
+                replaceBtn.style.display = 'inline-block';
+                replaceBtn.textContent = `替换 ${detectedMethod.length} 项`;
+                showToast(`成功识别 ${detectedMethod.length} 个代码块`, 'success');
+            } else {
+                listContainer.style.display = 'none';
+                document.getElementById('replaceBtn').style.display = 'none';
+                showToast('未能识别任何有效的 JS/CSS/HTML 代码块', 'error');
+            }
+        }
+
+// 验证方法代码完整性
+function validateMethodCode(code) {
+    // 检查大括号匹配
+    let braceCount = 0;
+    let inString = false;
+    let stringChar = '';
+    
+    for (let i = 0; i < code.length; i++) {
+        const char = code[i];
+        const prevChar = i > 0 ? code[i - 1] : '';
+        
+        if (!inString && (char === '"' || char === "'" || char === '`')) {
+            inString = true;
+            stringChar = char;
+        } else if (inString && char === stringChar && prevChar !== '\\') {
+            inString = false;
+            stringChar = '';
+        } else if (!inString) {
+            if (char === '{') braceCount++;
+            else if (char === '}') braceCount--;
+        }
+    }
+    
+    return braceCount === 0;
+}
+
+// 获取方法类型文本
+function getMethodTypeText(type) {
+    const typeMap = {
+        'function': '函数',
+        'object-method': '对象方法',
+        'arrow-function': '箭头函数',
+        'class-method': '类方法',
+        'async-function': '异步函数',
+        'generator-function': '生成器函数'
+    };
+    return typeMap[type] || '方法';
+}
+        
+// 执行替换
+        function executeReplace() {
+            if (!detectedMethod || detectedMethod.length === 0) {
+                showToast('没有可替换的项', 'error');
+                return;
+            }
+
+            let currentCode = editor.getValue();
+            let originalCode = currentCode;
+            let replacementsMade = 0;
+            let operations = [];
+
+            for (const block of detectedMethod) {
+                const positions = findTargetPositions(currentCode, block);
+                if (positions.length > 0) {
+                    positions.forEach(pos => {
+                        operations.push({
+                            start: pos.start,
+                            end: pos.end,
+                            newCode: block.code,
+                            name: block.name
+                        });
+                    });
+                } else {
+                    showToast(`在编辑器中未找到 ${block.type} "${block.name}"`, 'warning');
+                }
+            }
+
+            if (operations.length === 0) {
+                showToast('未找到任何可替换的代码', 'info');
+                return;
+            }
+
+            operations.sort((a, b) => b.start - a.start);
+
+            operations.forEach(op => {
+                currentCode = currentCode.substring(0, op.start) + op.newCode + currentCode.substring(op.end);
+                replacementsMade++;
+            });
+
+            if (replacementsMade > 0) {
+                editor.setValue(currentCode);
+                closeDialog('methodReplaceDialog');
+                showToast(`成功替换了 ${replacementsMade} 处`, 'success');
+
+                const names = detectedMethod.map(b => b.name).join(', ');
+                addHistory({
+                    name: `批量替换: ${names.substring(0, 50)}...`,
+                    type: 'batch',
+                    time: new Date(),
+                    oldCode: originalCode,
+                    newCode: currentCode,
+                    replacedCount: replacementsMade
+                });
+            } else {
+                showToast('没有进行任何替换', 'info');
+            }
+        }
+        
+                function findBlockEnd(code, start, openChar, closeChar) {
+            let depth = 1;
+            let pos = start + 1;
+
+            while (depth > 0 && pos < code.length) {
+                const char = code[pos];
+                const prevChar = code[pos - 1] || '';
+                const nextChar = code[pos + 1] || '';
+
+                if (char === '/' && nextChar === '*') {
+                    const commentEnd = code.indexOf('*/', pos + 2);
+                    pos = (commentEnd === -1) ? code.length : commentEnd + 1;
+                } else if (char === '/' && nextChar === '/') {
+                    const commentEnd = code.indexOf('\n', pos + 2);
+                    pos = (commentEnd === -1) ? code.length : commentEnd;
+                } else if (char === "'" || char === '"' || char === '`') {
+                    let strEnd = pos + 1;
+                    while (strEnd < code.length) {
+                        if (code[strEnd] === '\\') {
+                            strEnd++;
+                        } else if (code[strEnd] === char) {
+                            break;
+                        }
+                        strEnd++;
+                    }
+                    pos = strEnd;
+                } else if (openChar === '<' && char === '<' && !/\s/.test(nextChar) && nextChar !== '/') {
+                     depth++;
+                } else if (openChar === '<' && char ==='/' && prevChar === '<') {
+                     depth--;
+                } else if (char === openChar) {
+                    depth++;
+                } else if (char === closeChar) {
+                    depth--;
+                }
+                pos++;
+            }
+            return depth === 0 ? pos : -1;
+        }
+
+        function parseInputIntoBlocks(text) {
+    const allMatches = [];
+    // JS关键字，用于排除if(){}, for(){}等控制流语句
+    const jsKeywords = new Set(['if', 'for', 'while', 'switch', 'catch', 'do', 'else']);
+
+    const patterns = [
+        // 1. 标准函数: function funcName(...) {
+        {
+            regex: /function\s*\*?\s*([\w$]+)\s*\([^)]*\)\s*\{/g,
+            type: 'javascript-function',
+            nameIndex: 1
+        },
+        // 2. 箭头函数: const funcName = (...) => {
+        {
+            regex: /(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{/g,
+            type: 'javascript-arrow',
+            nameIndex: 1
+        },
+        // 3. 对象/类方法简写: funcName(...) {  (关键字排除)
+        {
+            regex: /\b([\w$]+)\s*\([^)]*\)\s*\{/g,
+            type: 'javascript-shorthand',
+            nameIndex: 1
+        },
+        // 4. CSS规则
+        {
+            regex: /((?:[^{}]|\/(?!\*))+?)\s*\{/g,
+            type: 'css',
+            nameIndex: 1
+        },
+        // 5. HTML 块
+        {
+            regex: /<([a-zA-Z0-9]+)(?:[^>"]|"[^"]*")*>/g,
+            type: 'html',
+            nameIndex: 1
+        }
+    ];
+
+    for (const pattern of patterns) {
+        for (const match of text.matchAll(pattern.regex)) {
+            // 如果是方法简写，进行关键字过滤
+            if (pattern.type === 'javascript-shorthand') {
+                if (jsKeywords.has(match[pattern.nameIndex])) {
+                    continue; // 跳过 if, for 等关键字
+                }
+            }
+            
+            // 对CSS进行二次校验，排除JS函数等
+            if (pattern.type === 'css') {
+                const selector = match[pattern.nameIndex].trim();
+                 if (selector.includes('=>') || selector.includes('function') || selector.endsWith(':')) {
+                    continue; // 如果包含函数特征，则跳过
+                }
+            }
+
+            const openChar = pattern.type === 'html' ? '<' : '{';
+            const closeChar = pattern.type === 'html' ? '>' : '}';
+            const blockStartIndex = pattern.type === 'html' ? match.index : match.index + match[0].length - 1;
+
+            const end = findBlockEnd(text, blockStartIndex, openChar, closeChar);
+            if (end !== -1) {
+                const blockCode = text.substring(match.index, end);
+                allMatches.push({
+                    type: pattern.type,
+                    code: blockCode,
+                    name: match[pattern.nameIndex].trim(),
+                    index: match.index,
+                    length: blockCode.length
+                });
+            }
+        }
+    }
+
+    allMatches.sort((a, b) => a.index - b.index);
+    const topLevelBlocks = [];
+    let lastEndIndex = -1;
+
+    for (const match of allMatches) {
+        if (match.index >= lastEndIndex) {
+            // 对于HTML，进行特殊命名处理
+            if (match.type === 'html') {
+                const idMatch = match.code.match(/id\s*=\s*["']([^"']+)["']/);
+                const classMatch = match.code.match(/class\s*=\s*["']([^"']+)["']/);
+                if (idMatch) {
+                    match.name = `#${idMatch[1]}`;
+                } else if (classMatch) {
+                    const tagName = match.code.match(/<([a-zA-Z0-9]+)/)[1];
+                    match.name = `&lt;${tagName}.${classMatch[1].split(' ')[0]}&gt;`;
+                } else {
+                     match.name = `&lt;${match.name}&gt;`;
+                }
+            }
+            topLevelBlocks.push(match);
+            lastEndIndex = match.index + match.length;
+        }
+    }
+    return topLevelBlocks;
+}
+        
+        function findTargetPositions(code, block) {
+    const positions = [];
+    let searchIndex = 0;
+    const escapedName = block.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let identifierRegex;
+
+    // 根据不同的块类型，使用不同的、更精确的正则表达式来定位
+    switch (block.type) {
+        case 'javascript-function':
+            identifierRegex = new RegExp(`function\\s+\\*?\\s*${escapedName}\\b`);
+            break;
+        case 'javascript-arrow':
+            identifierRegex = new RegExp(`(const|let|var)\\s+${escapedName}\\b`);
+            break;
+        case 'javascript-shorthand':
+            // 确保匹配的是一个独立的单词（方法名），前面不能是function等关键字
+            identifierRegex = new RegExp(`\\b${escapedName}\\s*\\([^)]*\\)\\s*\\{`);
+            break;
+        case 'css':
+            identifierRegex = new RegExp(`(^|\\s|\\}|;|,)${escapedName}\\s*\\{`);
+            break;
+        case 'html':
+            const idMatch = block.name.match(/#(\S+)/);
+            if (idMatch) {
+                const tagNameMatch = block.code.match(/<([a-zA-Z0-9]+)/);
+                const tagName = tagNameMatch ? tagNameMatch[1] : '\\w+';
+                identifierRegex = new RegExp(`<${tagName}[^>]*id\\s*=\\s*["']${idMatch[1]}["'][^>]*>`);
+            } else {
+                return []; // 为安全起见，非ID的HTML替换需要更复杂的逻辑，暂不处理
+            }
+            break;
+        default:
+            return [];
+    }
+
+    while (searchIndex < code.length) {
+        const match = code.substring(searchIndex).match(identifierRegex);
+        if (!match) break;
+
+        let blockStart;
+        let openChar;
+        let closeChar;
+
+        if (block.type === 'html') {
+            blockStart = searchIndex + match.index;
+            openChar = '<';
+            closeChar = '>';
+        } else {
+            blockStart = searchIndex + match.index + (block.type === 'css' ? match[1].length : 0);
+            openChar = '{';
+            closeChar = '}';
+        }
+
+        const braceOrTagStart = (block.type === 'html') ? blockStart : code.indexOf('{', blockStart);
+        if (braceOrTagStart === -1) break;
+
+        const blockEnd = findBlockEnd(code, braceOrTagStart, openChar, closeChar);
+
+        if (blockEnd !== -1) {
+            // 特别针对JS方法简写进行过滤，排除if/for等情况
+            if (block.type === 'javascript-shorthand') {
+                const jsKeywords = new Set(['if', 'for', 'while', 'switch', 'catch', 'do', 'else']);
+                const potentialKeywordMatch = code.substring(0, blockStart).match(/(\w+)$/);
+                if (potentialKeywordMatch && jsKeywords.has(potentialKeywordMatch[1])) {
+                    searchIndex = blockEnd;
+                    continue;
+                }
+            }
+            
+            positions.push({ start: blockStart, end: blockEnd });
+            searchIndex = blockEnd;
+        } else {
+            searchIndex = braceOrTagStart + 1;
+        }
+    }
+    return positions;
+}
+
+function executeReplace() {
+    if (!detectedMethod || detectedMethod.length === 0) {
+        showToast('没有可替换的项', 'error');
+        return;
+    }
+
+    let currentCode = editor.getValue();
+    let operations = [];
+
+    for (const block of detectedMethod) {
+        const positions = findTargetPositions(currentCode, block);
+        if (positions.length > 0) {
+            positions.forEach(pos => {
+                // 获取行号
+                const startPos = editor.posFromIndex(pos.start);
+                operations.push({
+                    start: pos.start,
+                    end: pos.end,
+                    newCode: block.code,
+                    name: block.name,
+                    type: block.type,
+                    line: startPos.line + 1 // line是0-based, 转为1-based
+                });
+            });
+        } else {
+            showToast(`在编辑器中未找到 ${block.type} "${block.name}"`, 'warning');
+        }
+    }
+
+    if (operations.length === 0) {
+        showToast('未找到任何可替换的代码', 'info');
+        return;
+    }
+
+    // 暂存操作并显示确认对话框
+    _pendingReplacements = operations;
+    showReplacementConfirmation(_pendingReplacements);
+}
+
+        function showReplacementConfirmation(operations) {
+        // 先移除可能存在的旧对话框，但不调用会清除数据的 closeReplacementConfirmation()
+        const existingDialog = document.getElementById('replacementConfirmDialog');
+        if (existingDialog) {
+            existingDialog.remove();
+        }
+
+        const dialog = document.createElement('div');
+        dialog.className = 'dialog active';
+        dialog.id = 'replacementConfirmDialog';
+
+        const listItems = operations.map(op => `
+            <li class="replacement-confirm-item">
+                将替换第 <strong>${op.line}</strong> 行的 <strong>[${op.type.toUpperCase().replace('JAVASCRIPT-', '')}]</strong>: <code>${op.name}</code>
+            </li>
+        `).join('');
+
+        dialog.innerHTML = `
+            <div class="dialog-header">
+                <h3 class="dialog-title">确认替换操作</h3>
+                <button class="icon-btn icon-close" onclick="closeReplacementConfirmation()"></button>
+            </div>
+            <div class="dialog-content">
+                <p>将执行以下 ${operations.length} 项替换，请确认：</p>
+                <ul class="replacement-confirm-list">${listItems}</ul>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn btn-text" onclick="closeReplacementConfirmation()">取消</button>
+                <button class="btn btn-primary" onclick="performActualReplacement()">确认替换</button>
+            </div>
+        `;
+
+        document.body.appendChild(dialog);
+        document.getElementById('overlay').classList.add('active');
+    }
+
+    function closeReplacementConfirmation() {
+        const dialog = document.getElementById('replacementConfirmDialog');
+        if (dialog) {
+            dialog.remove();
+        }
+        // 只有在没有其他对话框时才隐藏遮罩层
+        if (document.querySelectorAll('.dialog.active').length === 0) {
+            document.getElementById('overlay').classList.remove('active');
+        }
+        _pendingReplacements = []; // 清理暂存的操作
+    }
+
+                function performActualReplacement() {
+            const operations = _pendingReplacements;
+            if (!operations || operations.length === 0) {
+                showToast('没有待处理的替换操作', 'error');
+                return;
+            }
+        
+            let currentCode = editor.getValue();
+            const originalCode = currentCode;
+            let replacementsMade = 0;
+        
+            // 根据起始位置从后往前排序，防止替换时位置错乱
+            operations.sort((a, b) => b.start - a.start);
+        
+            operations.forEach(op => {
+                currentCode = currentCode.substring(0, op.start) + op.newCode + currentCode.substring(op.end);
+                replacementsMade++;
+            });
+        
+            // 仅在代码确实发生改变时才执行更新和记录
+            if (currentCode !== originalCode) {
+                editor.setValue(currentCode);
+        
+                // ================== 条件跳转逻辑 ==================
+                if (replacementsMade === 1) {
+                    // 【情况一：只替换了一个】跳转并高亮
+                    const op = operations[0]; // 获取这唯一的操作
+                    const pos = editor.posFromIndex(op.start); // 计算替换后的起始位置
+        
+                    // 确保编辑器是激活状态
+                    switchTab('editor');
+        
+                    // 延迟执行，确保编辑器渲染完成
+                    setTimeout(() => {
+                        editor.focus();
+                        editor.setCursor(pos); // 设置光标
+                        editor.scrollIntoView({ line: pos.line, ch: 0 }, 200); // 将该行滚动到视图中央
+        
+                        // 一个短暂的高亮效果
+                        const endPos = editor.posFromIndex(op.start + op.newCode.length);
+                        const mark = editor.markText(pos, endPos, {
+                            className: 'replaced-text-highlight'
+                        });
+        
+                        // 2.5秒后移除高亮
+                        setTimeout(() => mark.clear(), 2500);
+        
+                        showToast('成功替换1处并已跳转', 'success');
+                    }, 100);
+        
+                } else {
+                    // 【情况二：替换了多个】只做提示，不跳转
+                    showToast(`成功替换了 ${replacementsMade} 处`, 'success');
+                }
+                // ========================================================
+        
+                const replacedNames = [...new Set(operations.map(op => op.name))].join(', ');
+                addHistory({
+                    name: `批量替换: ${replacedNames.substring(0, 50)}...`,
+                    type: 'batch',
+                    time: new Date(),
+                    oldCode: originalCode,
+                    newCode: currentCode,
+                    replacedCount: replacementsMade
+                });
+            } else {
+                 showToast('代码无变化，未执行替换', 'info');
+            }
+        
+            closeReplacementConfirmation();
+            closeDialog('methodReplaceDialog'); // 关闭原始的替换对话框
+        }
+
+// 获取行列位置
+function getLineColumn(text, index) {
+    const lines = text.substring(0, index).split('\n');
+    return {
+        line: lines.length - 1,
+        column: lines[lines.length - 1].length
+    };
+}
+        
+        // 添加到历史记录
+        function addHistory(record) {
+    // 元数据
+    const historyRecord = {
+        ...record,
+        id: Date.now(),
+        codeHash: generateCodeHash(record.oldCode),
+        preview: generateMethodPreview(record.name, record.type)
+    };
+    
+    replaceHistory.unshift(historyRecord);
+    
+    // 历史记录数量限制
+    if (replaceHistory.length > 100) {
+        replaceHistory = replaceHistory.slice(0, 100);
+    }
+    
+    localStorage.setItem('replaceHistory', JSON.stringify(replaceHistory));
+}
+
+// 生成代码哈希
+function generateCodeHash(code) {
+    let hash = 0;
+    for (let i = 0; i < code.length; i++) {
+        const char = code.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // 转换为32位整数
+    }
+    return hash.toString(36);
+}
+
+// 生成方法预览
+function generateMethodPreview(methodName, methodType) {
+    const typeIcon = {
+        'function': '🔧',
+        'object-method': '📦',
+        'arrow-function': '➡️',
+        'class-method': '🏗️',
+        'async-function': '⚡',
+        'generator-function': '🔄'
+    };
+    
+    return `${typeIcon[methodType] || '🔧'} ${methodName}`;
+}
+        
+        // 加载历史记录
+        function loadHistory() {
+            const saved = localStorage.getItem('replaceHistory');
+            if (saved) {
+                replaceHistory = JSON.parse(saved);
+            }
+        }
+        
+        // 显示历史记录
+        function showHistory() {
+    closeSidebar();
+    
+    const list = document.getElementById('historyList');
+    if (replaceHistory.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">暂无替换历史</p>';
+    } else {
+        list.innerHTML = replaceHistory.map((item, index) => `
+            <div class="history-item" onclick="showHistoryDetails(${index})">
+                <div class="history-header">
+                    <div class="history-method">${item.preview}</div>
+                    <div class="history-actions">
+                        <button class="history-btn" onclick="event.stopPropagation(); restoreHistory(${index})" title="恢复">↶</button>
+                        <button class="history-btn" onclick="event.stopPropagation(); deleteHistory(${index})" title="删除">🗑</button>
+                    </div>
+                </div>
+                <div class="history-meta">
+                    <span class="history-time">${new Date(item.time).toLocaleString()}</span>
+                    <span class="history-count">替换了 ${item.replacedCount || 1} 处</span>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    showDialog('historyDialog');
+}
+
+// 显示历史详情
+function showHistoryDetails(index) {
+    const item = replaceHistory[index];
+    const detailsHtml = `
+        <div class="history-details">
+            <h4>方法信息</h4>
+            <p><strong>名称:</strong> ${item.name}</p>
+            <p><strong>类型:</strong> ${getMethodTypeText(item.type)}</p>
+            <p><strong>替换时间:</strong> ${new Date(item.time).toLocaleString()}</p>
+            <p><strong>替换数量:</strong> ${item.replacedCount || 1} 处</p>
+            
+            <h4>操作</h4>
+            <button class="btn btn-primary" onclick="restoreHistory(${index}); closeHistoryDetails();">恢复到替换前</button>
+            <button class="btn btn-text" onclick="closeHistoryDetails();">关闭</button>
+        </div>
+    `;
+    
+    // 创建详情对话框
+    const detailsDialog = document.createElement('div');
+    detailsDialog.className = 'dialog active';
+    detailsDialog.id = 'historyDetailsDialog';
+    detailsDialog.innerHTML = `
+        <div class="dialog-header">
+            <h3 class="dialog-title">历史详情</h3>
+            <button class="icon-btn icon-close" onclick="closeHistoryDetails()"></button>
+        </div>
+        <div class="dialog-content">${detailsHtml}</div>
+    `;
+    
+    document.body.appendChild(detailsDialog);
+}
+
+// 关闭历史详情
+function closeHistoryDetails() {
+    const dialog = document.getElementById('historyDetailsDialog');
+    if (dialog) {
+        dialog.remove();
+    }
+}
+
+// 删除历史记录
+function deleteHistory(index) {
+    if (confirm('确定要删除这条历史记录吗？')) {
+        replaceHistory.splice(index, 1);
+        localStorage.setItem('replaceHistory', JSON.stringify(replaceHistory));
+        showHistory(); // 刷新显示
+        showToast('历史记录已删除');
+    }
+}
+        
+        // 恢复历史
+        function restoreHistory(index) {
+            const item = replaceHistory[index];
+            if (confirm(`确定要恢复到替换前的代码吗？`)) {
+                editor.setValue(item.oldCode);
+                closeDialog('historyDialog');
+                showToast('已恢复代码', 'success');
+            }
+        }
+        
+        // 显示设置
+        function showSettings() {
+            closeSidebar();
+            showDialog('settingsDialog');
+        }
+        
+        // 切换设置
+        function toggleWordWrap() {
+            const enabled = document.getElementById('wordWrapToggle').checked;
+            editor.setOption('lineWrapping', enabled);
+            saveSettings();
+        }
+        
+        function toggleLineNumbers() {
+            const enabled = document.getElementById('lineNumbersToggle').checked;
+            editor.setOption('lineNumbers', enabled);
+            saveSettings();
+        }
+        
+        function toggleAutocomplete() {
+            // 自动完成设置
+            saveSettings();
+        }
+        
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            editor.setOption('theme', theme);
+            saveSettings();
+        }
+        
+        // 保存设置
+        function saveSettings() {
+            const settings = {
+                wordWrap: document.getElementById('wordWrapToggle').checked,
+                lineNumbers: document.getElementById('lineNumbersToggle').checked,
+                autocomplete: document.getElementById('autocompleteToggle').checked,
+                theme: document.getElementById('themeSelect').value
+            };
+            localStorage.setItem('editorSettings', JSON.stringify(settings));
+        }
+        
+        // 加载设置
+        function loadSettings() {
+            const saved = localStorage.getItem('editorSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                document.getElementById('wordWrapToggle').checked = settings.wordWrap !== false;
+                document.getElementById('lineNumbersToggle').checked = settings.lineNumbers !== false;
+                document.getElementById('autocompleteToggle').checked = settings.autocomplete !== false;
+                document.getElementById('themeSelect').value = settings.theme || 'material-darker';
+                
+                // 应用设置
+                editor.setOption('lineWrapping', settings.wordWrap !== false);
+                editor.setOption('lineNumbers', settings.lineNumbers !== false);
+                editor.setOption('theme', settings.theme || 'material-darker');
+            }
+        }
+        
+        // 对话框控制
+        function showDialog(id) {
+            const dialog = document.getElementById(id);
+            const overlay = document.getElementById('overlay');
+            dialog.classList.add('active');
+            overlay.classList.add('active');
+        }
+        
+        function closeDialog(id) {
+            const dialog = document.getElementById(id);
+            const overlay = document.getElementById('overlay');
+            dialog.classList.remove('active');
+            overlay.classList.remove('active');
+            
+            // 清理表单
+            if (id === 'methodReplaceDialog') {
+                document.getElementById('methodInput').value = '';
+                document.getElementById('detectedMethod').style.display = 'none';
+                document.getElementById('replaceBtn').style.display = 'none';
+                detectedMethod = null;
+            }
+        }
+        
+        // Toast 提示
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+  
+
+// 显示搜索替换面板
+function showSearchReplace() {
+    closeSidebar();
+    const panel = document.getElementById('searchReplacePanel');
+    const overlay = document.getElementById('overlay');
+    
+    panel.classList.add('active');
+    overlay.classList.add('active');
+    
+    // 聚焦搜索输入框
+    setTimeout(() => {
+        document.getElementById('searchInput').focus();
+    }, 100);
+}
+
+// 关闭搜索替换面板
+function closeSearchReplace() {
+    const panel = document.getElementById('searchReplacePanel');
+    const overlay = document.getElementById('overlay');
+    
+    panel.classList.remove('active');
+    overlay.classList.remove('active');
+    
+    // 清除高亮
+    clearSearchHighlight();
+}
+
+// 执行搜索
+function performSearch() {
+    const query = document.getElementById('searchInput').value;
+    const caseSensitive = document.getElementById('caseSensitive').checked;
+    const wholeWord = document.getElementById('wholeWord').checked;
+    const useRegex = document.getElementById('useRegex').checked;
+    
+    if (!query) {
+        showSearchResults('请输入搜索内容');
+        return;
+    }
+    
+    searchState.query = query;
+    searchState.caseSensitive = caseSensitive;
+    searchState.wholeWord = wholeWord;
+    searchState.useRegex = useRegex;
+    searchState.matches = [];
+    searchState.currentMatch = -1;
+    
+    try {
+        let searchRegex;
+        
+        if (useRegex) {
+            searchRegex = new RegExp(query, caseSensitive ? 'g' : 'gi');
+        } else {
+            let escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            if (wholeWord) {
+                escapedQuery = '\\b' + escapedQuery + '\\b';
+            }
+            searchRegex = new RegExp(escapedQuery, caseSensitive ? 'g' : 'gi');
+        }
+        
+        const content = editor.getValue();
+        const lines = content.split('\n');
+        let match;
+        
+        lines.forEach((line, lineIndex) => {
+            searchRegex.lastIndex = 0;
+            while ((match = searchRegex.exec(line)) !== null) {
+                searchState.matches.push({
+                    line: lineIndex,
+                    ch: match.index,
+                    text: match[0]
+                });
+            }
+        });
+        
+        if (searchState.matches.length > 0) {
+            showSearchResults(`找到 ${searchState.matches.length} 个匹配项`);
+            highlightAllMatches();
+        } else {
+            showSearchResults('未找到匹配项');
+        }
+        
+    } catch (error) {
+        showSearchResults('搜索表达式错误: ' + error.message);
+    }
+}
+
+// 查找下一个
+function findNext() {
+    if (searchState.matches.length === 0) {
+        performSearch();
+        return;
+    }
+    
+    searchState.currentMatch = (searchState.currentMatch + 1) % searchState.matches.length;
+    const match = searchState.matches[searchState.currentMatch];
+    
+    editor.setSelection(
+        { line: match.line, ch: match.ch },
+        { line: match.line, ch: match.ch + match.text.length }
+    );
+    editor.scrollIntoView({ line: match.line, ch: match.ch });
+    
+    showSearchResults(`第 ${searchState.currentMatch + 1} 个，共 ${searchState.matches.length} 个匹配项`);
+}
+
+// 查找上一个
+function findPrevious() {
+    if (searchState.matches.length === 0) {
+        performSearch();
+        return;
+    }
+    
+    searchState.currentMatch = searchState.currentMatch <= 0 ? 
+        searchState.matches.length - 1 : searchState.currentMatch - 1;
+    
+    const match = searchState.matches[searchState.currentMatch];
+    
+    editor.setSelection(
+        { line: match.line, ch: match.ch },
+        { line: match.line, ch: match.ch + match.text.length }
+    );
+    editor.scrollIntoView({ line: match.line, ch: match.ch });
+    
+    showSearchResults(`第 ${searchState.currentMatch + 1} 个，共 ${searchState.matches.length} 个匹配项`);
+}
+
+// 替换下一个
+function replaceNext() {
+    const replaceText = document.getElementById('replaceInput').value;
+    
+    if (searchState.matches.length === 0) {
+        performSearch();
+        return;
+    }
+    
+    if (searchState.currentMatch === -1) {
+        findNext();
+        return;
+    }
+    
+    const match = searchState.matches[searchState.currentMatch];
+    
+    editor.replaceRange(
+        replaceText,
+        { line: match.line, ch: match.ch },
+        { line: match.line, ch: match.ch + match.text.length }
+    );
+    
+    // 重新搜索以更新匹配项
+    performSearch();
+    
+    showToast('已替换 1 个匹配项', 'success');
+}
+
+// 全部替换
+function replaceAll() {
+    const replaceText = document.getElementById('replaceInput').value;
+    
+    if (searchState.matches.length === 0) {
+        performSearch();
+        return;
+    }
+    
+    const totalMatches = searchState.matches.length;
+    
+    // 从后往前替换，避免位置偏移
+    for (let i = searchState.matches.length - 1; i >= 0; i--) {
+        const match = searchState.matches[i];
+        editor.replaceRange(
+            replaceText,
+            { line: match.line, ch: match.ch },
+            { line: match.line, ch: match.ch + match.text.length }
+        );
+    }
+    
+    // 清空搜索状态
+    searchState.matches = [];
+    searchState.currentMatch = -1;
+    clearSearchHighlight();
+    
+    showSearchResults(`已替换 ${totalMatches} 个匹配项`);
+    showToast(`已替换 ${totalMatches} 个匹配项`, 'success');
+}
+
+// 高亮所有匹配项
+function highlightAllMatches() {
+    clearSearchHighlight();
+    
+    searchState.matches.forEach(match => {
+        editor.markText(
+            { line: match.line, ch: match.ch },
+            { line: match.line, ch: match.ch + match.text.length },
+            {
+                className: 'search-highlight',
+                css: 'background-color: rgba(255, 255, 0, 0.3); border-radius: 2px;'
+            }
+        );
+    });
+}
+
+// 清除搜索高亮
+function clearSearchHighlight() {
+    const marks = editor.getAllMarks();
+    marks.forEach(mark => {
+        if (mark.className === 'search-highlight') {
+            mark.clear();
+        }
+    });
+}
+
+// 显示搜索结果
+function showSearchResults(message) {
+    const results = document.getElementById('searchResults');
+    results.textContent = message;
+    results.style.display = 'block';
+}
+
+// 显示使用说明
+function showHelp() {
+    showDialog('helpDialog');
+}
+
+// 导入文件功能
+function importFile() {
+    closeSidebar();
+    
+    // 创建导入选项对话框
+    showImportDialog();
+}
+
+// 显示导入对话框
+function showImportDialog() {
+    const dialog = document.createElement('div');
+    dialog.className = 'import-dialog active';
+    dialog.id = 'importDialog';
+    
+    // 优化：移除了未实现的“追加”和“插入”选项，避免用户混淆
+    dialog.innerHTML = `
+        <div class="dialog-header">
+            <h3 class="dialog-title">导入文档</h3>
+            <button class="icon-btn icon-close" onclick="closeImportDialog()"></button>
+        </div>
+        <div class="dialog-content">
+            <p>选择的文件将替换当前项目的所有内容。</p>
+            <div class="file-info" style="margin-top: 20px;">
+                <h4>支持的文件类型</h4>
+                <p><strong>网页文件：</strong> .html, .htm</p>
+                <p><strong>样式文件：</strong> .css</p>
+                <p><strong>脚本文件：</strong> .js, .mjs, .jsx</p>
+                <p><strong>数据文件：</strong> .json, .xml</p>
+                <p><strong>文档文件：</strong> .txt, .md</p>
+            </div>
+        </div>
+        <div class="dialog-actions">
+            <button class="btn btn-text" onclick="closeImportDialog()">取消</button>
+            <button class="btn btn-primary" onclick="triggerFileSelect()">选择文件</button>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    // 遮罩层
+    const overlay = document.getElementById('overlay');
+    overlay.classList.add('active');
+}
+
+// 关闭导入对话框
+function closeImportDialog() {
+    const dialog = document.getElementById('importDialog');
+    const overlay = document.getElementById('overlay');
+    
+    if (dialog) {
+        dialog.remove();
+    }
+    overlay.classList.remove('active');
+}
+
+// 触发文件选择
+function triggerFileSelect() {
+    const fileInput = document.getElementById('fileInput');
+    
+    // 重置文件输入，确保可以重复选择同一文件
+    fileInput.value = '';
+    
+    // 动态设置accept属性以确保兼容性
+    fileInput.setAttribute('accept', '.html,.htm,.js,.mjs,.jsx,.css,.txt,.json,.xml,.md,text/javascript,application/javascript,text/html,text/css,text/plain');
+    
+    fileInput.click();
+}
+
+// 验证JavaScript文件
+function isJavaScriptFile(file) {
+    const jsExtensions = ['.js', '.mjs', '.jsx'];
+    const jsMimeTypes = ['text/javascript', 'application/javascript', 'application/x-javascript'];
+    
+    const extension = '.' + file.name.split('.').pop().toLowerCase();
+    return jsExtensions.includes(extension) || jsMimeTypes.includes(file.type);
+}
+
+// 处理文件导入
+function handleFileImport(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // 获取导入模式
+    const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'replace';
+
+    // 如果是替换模式，清空现有项目
+    if (importMode === 'replace') {
+        projectFiles.clear();
+    }
+
+    let importedCount = 0;
+    const importPromises = [];
+    const importedFileNames = [];
+
+    // 处理每个文件
+    Array.from(files).forEach(file => {
+        const promise = new Promise((resolve) => {
+            // 检查文件类型
+            const allowedTypes = ['.html', '.htm', '.js', '.css', '.txt', '.json', '.xml', '.md'];
+            const allowedMimeTypes = ['text/javascript', 'application/javascript', 'text/html', 'text/css', 'text/plain', 'application/json'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+            // 检查文件扩展名或MIME类型
+            const isValidExtension = allowedTypes.includes(fileExtension);
+            const isValidMimeType = allowedMimeTypes.includes(file.type);
+
+            if (!isValidExtension && !isValidMimeType) {
+                showToast(`不支持的文件类型: ${file.name}`, 'error');
+                resolve();
+                return;
+            }
+
+            // 检查文件大小（限制为10MB）
+            if (file.size > 10 * 1024 * 1024) {
+                showToast(`文件大小超过10MB限制: ${file.name}`, 'error');
+                resolve();
+                return;
+            }
+
+            // 读取文件内容
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+
+                    // 修复点：处理index.html文件
+                    // 如果是index.html文件，确保它成为主文件
+                    if (file.name.toLowerCase() === 'index.html') {
+                        projectFiles.set('index.html', {
+                            content: content,
+                            type: 'html',
+                            lastModified: Date.now()
+                        });
+                        importedFileNames.push('index.html');
+                    } 
+                    // 非index.html文件正常处理
+                    else {
+                        projectFiles.set(file.name, {
+                            content: content,
+                            type: getFileType(file.name),
+                            lastModified: Date.now()
+                        });
+                        importedFileNames.push(file.name);
+                    }
+                    
+                    importedCount++;
+                    resolve();
+                } catch (error) {
+                    console.error(`导入失败 ${file.name}:`, error);
+                    showToast(`文件导入失败: ${file.name}`, 'error');
+                    resolve();
+                }
+            };
+
+            reader.onerror = function() {
+                showToast(`文件读取失败: ${file.name}`, 'error');
+                resolve();
+            };
+
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        importPromises.push(promise);
+    });
+
+    // 等待所有文件导入完成
+    Promise.all(importPromises).then(() => {
+        closeImportDialog();
+
+        if (importedCount > 0) {
+            showToast(`成功导入 ${importedCount} 个文件`, 'success');
+
+            // 决定切换到哪个文件
+            let fileToSwitchTo = null;
+            
+            // 修复点：优先选择index.html作为主文件
+            if (projectFiles.has('index.html')) {
+                fileToSwitchTo = 'index.html';
+            } else if (importedFileNames.length === 1) {
+                // 如果只替换并导入了一个文件，就切换到这个文件
+                fileToSwitchTo = importedFileNames[0];
+            } else if (importedFileNames.length > 1) {
+                // 如果导入了多个文件，优先找第一个html文件，最后找第一个文件
+                fileToSwitchTo = importedFileNames.find(name => getFileType(name) === 'html') || 
+                                 importedFileNames[0];
+            }
+
+            if (fileToSwitchTo) {
+                switchToFile(fileToSwitchTo);
+            } else {
+                // 对于追加或插入，只需刷新UI
+                updateFileList();
+            }
+
+            switchTab('editor'); // 确保编辑器是激活状态
+        }
+    });
+
+    // 清空文件输入，以便下次可以导入同名文件
+    event.target.value = '';
+}
+
+// 应用导入的内容
+function applyImportedContent(content, mode, fileName) {
+    const importComment = '\n\n<!-- 导入的文件: ' + fileName + ' -->\n';
+
+    switch (mode) {
+        case 'append':
+            const currentContent = editor.getValue();
+            editor.setValue(currentContent + importComment + content);
+            break;
+            
+        case 'insert':
+            const cursor = editor.getCursor();
+            editor.replaceRange(importComment + content + '\n', cursor);
+            break;
+    }
+    
+    // 立即保存到项目和本地存储
+    saveCode();
+}
+
+// 简单的Markdown转HTML函数
+function markdownToHtml(markdown) {
+    return markdown
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+        .replace(/\*(.*)\*/gim, '<em>$1</em>')
+        .replace(/`(.*)`/gim, '<code>$1</code>')
+        .replace(/\n\n/gim, '</p><p>')
+        .replace(/\n/gim, '<br>')
+        .replace(/^(.*)$/gim, '<p>$1</p>');
+}
+
+function getFileType(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const typeMap = {
+        'html': 'html',
+        'htm': 'html',
+        'css': 'css',
+        'js': 'javascript',
+        'mjs': 'javascript',
+        'jsx': 'javascript',
+        'json': 'json',
+        'xml': 'xml',
+        'md': 'markdown',
+        'txt': 'text'
+    };
+    return typeMap[ext] || 'text';
+}
+
+function getCodeMirrorMode(fileType) {
+    const modeMap = {
+        'html': 'htmlmixed',
+        'css': 'css',
+        'javascript': 'javascript',
+        'json': 'application/json',
+        'xml': 'xml',
+        'markdown': 'markdown',
+        'text': 'text/plain'
+    };
+    return modeMap[fileType] || 'text/plain';
+}
+
+//  创建文件列表UI
+function createFileListUI() {
+    const storageInfo = getStorageUsage();
+    const storageInfoHTML = storageInfo ? `
+        <div class="storage-info" style="padding: 12px; background: var(--background-color); margin: 8px 0; border-radius: 4px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span>存储使用情况</span>
+                <span>${storageInfo.percentage}%</span>
+            </div>
+            <div style="background: var(--border-color); height: 4px; border-radius: 2px; overflow: hidden;">
+                <div style="background: var(--primary-color); height: 100%; width: ${storageInfo.percentage}%; transition: width 0.3s;"></div>
+            </div>
+            <div style="margin-top: 4px; color: #666;">
+                项目: ${formatFileSize(storageInfo.project)} | 
+                历史: ${formatFileSize(storageInfo.history)}
+            </div>
+        </div>
+    ` : '';
+    
+    const fileListHTML = `
+    <div class="file-manager-panel" id="fileManagerPanel">
+        <div class="file-manager-header">
+            <h3>项目文件 (${projectFiles.size})</h3>
+            <div class="file-manager-actions">
+                <button class="icon-btn" onclick="createNewFile()" title="新建文件">+</button>
+                <button class="icon-btn" onclick="cleanupStorage()" title="清理存储">🧹</button>
+                <button class="icon-btn icon-close" onclick="closeFileManager()"></button>
+            </div>
+        </div>
+        ${storageInfoHTML}
+        <div class="file-tabs" id="fileTabs">
+            <!-- 文件标签将在这里动态添加 -->
+        </div>
+        <div class="file-list" id="fileList">
+            <div class="file-category">
+                <h4>HTML文件</h4>
+                <div id="htmlFiles" class="file-items"></div>
+            </div>
+            <div class="file-category">
+                <h4>CSS文件</h4>
+                <div id="cssFiles" class="file-items"></div>
+            </div>
+            <div class="file-category">
+                <h4>JavaScript文件</h4>
+                <div id="jsFiles" class="file-items"></div>
+            </div>
+            <div class="file-category">
+                <h4>其他文件</h4>
+                <div id="otherFiles" class="file-items"></div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    // 如果面板不存在，创建它
+    if (!document.getElementById('fileManagerPanel')) {
+        const panel = document.createElement('div');
+        panel.innerHTML = fileListHTML;
+        document.body.appendChild(panel.firstElementChild);
+    }
+}
+
+// 更新文件列表显示
+function updateFileList() {
+    createFileListUI();
+    
+    // 清空现有列表
+    projectStructure = {
+        html: [],
+        css: [],
+        js: [],
+        other: []
+    };
+    
+    // 分类文件
+    projectFiles.forEach((fileData, filename) => {
+        const type = getFileType(filename);
+        const fileInfo = {
+            name: filename,
+            type: type,
+            size: new Blob([fileData.content]).size
+        };
+        
+        if (type === 'html') {
+            projectStructure.html.push(fileInfo);
+        } else if (type === 'css') {
+            projectStructure.css.push(fileInfo);
+        } else if (type === 'javascript') {
+            projectStructure.js.push(fileInfo);
+        } else {
+            projectStructure.other.push(fileInfo);
+        }
+    });
+    
+    // 更新UI
+    updateFileListUI('htmlFiles', projectStructure.html);
+    updateFileListUI('cssFiles', projectStructure.css);
+    updateFileListUI('jsFiles', projectStructure.js);
+    updateFileListUI('otherFiles', projectStructure.other);
+    
+    // 更新标签栏
+    updateFileTabs();
+}
+
+function updateFileListUI(containerId, files) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = files.map(file => `
+        <div class="file-item ${file.name === currentFileName ? 'active' : ''}" onclick="switchToFile('${file.name}')">
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatFileSize(file.size)}</span>
+            <button class="file-delete" onclick="event.stopPropagation(); deleteFile('${file.name}')">×</button>
+        </div>
+    `).join('');
+}
+
+// 更新文件标签
+function updateFileTabs() {
+    const tabsContainer = document.getElementById('fileTabs');
+    if (!tabsContainer) return;
+    
+    const tabs = Array.from(projectFiles.keys()).map(filename => `
+        <div class="file-tab ${filename === currentFileName ? 'active' : ''}" onclick="switchToFile('${filename}')">
+            <span>${filename}</span>
+            <button class="tab-close" onclick="event.stopPropagation(); closeFileTab('${filename}')">×</button>
+        </div>
+    `).join('');
+    
+    tabsContainer.innerHTML = tabs;
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// 切换文件
+function switchToFile(filename) {
+    // 保存当前文件
+    if (currentFileName && editor && projectFiles.has(currentFileName)) {
+        projectFiles.set(currentFileName, {
+            content: editor.getValue(),
+            type: getFileType(currentFileName),
+            lastModified: Date.now()
+        });
+    }
+    
+    // 切换到新文件
+    currentFileName = filename;
+    const fileData = projectFiles.get(filename);
+    
+    if (fileData) {
+        editor.setValue(fileData.content);
+        
+        // 根据文件类型设置编辑器模式
+        const mode = getCodeMirrorMode(fileData.type);
+        editor.setOption('mode', mode);
+        
+        // 更新标题
+        document.querySelector('.app-title').textContent = `HTML编辑器 - ${filename}`;
+    }
+    
+    // 更新文件列表UI
+    updateFileList();
+}
+
+// 创建新文件
+function createNewFile() {
+    const filename = prompt('请输入文件名（包含扩展名）：', 'new-file.html');
+    if (!filename) return;
+    
+    // 检查文件是否已存在
+    if (projectFiles.has(filename)) {
+        showToast('文件已存在', 'error');
+        return;
+    }
+    
+    // 根据文件类型创建默认内容
+    const type = getFileType(filename);
+    let defaultContent = '';
+    
+    switch(type) {
+        case 'html':
+            defaultContent = '<!DOCTYPE html>\n<html>\n<head>\n    <title>New Page</title>\n</head>\n<body>\n    \n</body>\n</html>';
+            break;
+        case 'css':
+            defaultContent = '/* CSS styles */\n';
+            break;
+        case 'javascript':
+            defaultContent = '// JavaScript code\n';
+            break;
+    }
+    
+    // 添加文件
+    projectFiles.set(filename, {
+        content: defaultContent,
+        type: type,
+        lastModified: Date.now()
+    });
+    
+    // 切换到新文件
+    switchToFile(filename);
+    
+    showToast(`文件 ${filename} 已创建`, 'success');
+}
+
+// 删除文件
+function deleteFile(filename) {
+    if (!confirm(`确定要删除文件 ${filename} 吗？`)) return;
+    
+    projectFiles.delete(filename);
+    
+    // 如果删除的是当前文件，切换到另一个文件
+    if (filename === currentFileName) {
+        const files = Array.from(projectFiles.keys());
+        if (files.length > 0) {
+            switchToFile(files[0]);
+        } else {
+            // 如果没有文件了，创建一个默认的index.html
+            projectFiles.set('index.html', {
+                content: DEFAULT_TEMPLATE,
+                type: 'html',
+                lastModified: Date.now()
+            });
+            switchToFile('index.html');
+        }
+    }
+    
+    updateFileList();
+    showToast(`文件 ${filename} 已删除`, 'success');
+}
+
+// 显示文件管理器
+function showFileManager() {
+    closeSidebar();
+    createFileListUI();
+    updateFileList();
+    
+    const panel = document.getElementById('fileManagerPanel');
+    const overlay = document.getElementById('overlay');
+    
+    panel.classList.add('active');
+    overlay.classList.add('active');
+}
+
+// 关闭文件管理器
+function closeFileManager() {
+    const panel = document.getElementById('fileManagerPanel');
+    const overlay = document.getElementById('overlay');
+    
+    if (panel) {
+        panel.classList.remove('active');
+    }
+    overlay.classList.remove('active');
+}
+
+// 导出整个项目
+function exportProject() {
+    closeSidebar();
+    
+    // 保存当前文件
+    if (currentFileName && editor) {
+        projectFiles.set(currentFileName, {
+            content: editor.getValue(),
+            type: getFileType(currentFileName),
+            lastModified: Date.now()
+        });
+    }
+    
+    // 如果只有一个文件，使用原来的导出功能
+    if (projectFiles.size <= 1) {
+        exportCode();
+        return;
+    }
+    
+    // 创建ZIP文件（需要引入JSZip库）
+    if (typeof JSZip === 'undefined') {
+        // 如果没有JSZip，提供替代方案
+        showExportOptions();
+        return;
+    }
+    
+    try {
+        const zip = new JSZip();
+        
+        // 添加所有文件到ZIP
+        projectFiles.forEach((fileData, filename) => {
+            zip.file(filename, fileData.content);
+        });
+        
+        // 生成ZIP文件
+        zip.generateAsync({ type: 'blob' }).then(content => {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            const filename = `project-export-${timestamp}.zip`;
+            
+            // 下载ZIP文件
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            showToast('项目导出成功！', 'success');
+        });
+        
+    } catch (error) {
+        console.error('导出失败:', error);
+        showToast('导出失败: ' + error.message, 'error');
+    }
+}
+
+// 显示导出选项
+function showExportOptions() {
+    const dialog = document.createElement('div');
+    dialog.className = 'dialog active';
+    dialog.id = 'exportOptionsDialog';
+    
+    dialog.innerHTML = `
+        <div class="dialog-header">
+            <h3 class="dialog-title">导出项目</h3>
+            <button class="icon-btn icon-close" onclick="closeExportOptionsDialog()"></button>
+        </div>
+        <div class="dialog-content">
+            <p>项目包含 ${projectFiles.size} 个文件。请选择导出方式：</p>
+            <div class="export-options">
+                <button class="export-option-btn" onclick="exportAsCombinedHTML()">
+                    <i>📄</i>
+                    <span>导出为单个HTML文件</span>
+                    <small>将所有CSS和JS文件合并到HTML中</small>
+                </button>
+                <button class="export-option-btn" onclick="exportFilesSeparately()">
+                    <i>📁</i>
+                    <span>分别下载每个文件</span>
+                    <small>每个文件单独下载</small>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    const overlay = document.getElementById('overlay');
+    overlay.classList.add('active');
+}
+
+function closeExportOptionsDialog() {
+    const dialog = document.getElementById('exportOptionsDialog');
+    if (dialog) {
+        dialog.remove();
+    }
+    document.getElementById('overlay').classList.remove('active');
+}
+
+// 导出为合并的HTML
+function exportAsCombinedHTML() {
+    closeExportOptionsDialog();
+    
+    try {
+        const fullHTML = buildProjectHTML();
+        
+        const blob = new Blob([fullHTML], { 
+            type: 'text/html;charset=utf-8' 
+        });
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `combined-export-${timestamp}.html`;
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        showToast('项目已导出为单个HTML文件！', 'success');
+        
+    } catch (error) {
+        console.error('导出失败:', error);
+        showToast('导出失败: ' + error.message, 'error');
+    }
+}
+
+// 分别导出文件
+function exportFilesSeparately() {
+    closeExportOptionsDialog();
+    
+    let exportedCount = 0;
+    
+    projectFiles.forEach((fileData, filename) => {
+        try {
+            const blob = new Blob([fileData.content], { 
+                type: 'text/plain;charset=utf-8' 
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            
+            // 延迟每个文件的下载，避免浏览器阻止
+            setTimeout(() => {
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                exportedCount++;
+                
+                if (exportedCount === projectFiles.size) {
+                    showToast(`已导出 ${exportedCount} 个文件！`, 'success');
+                }
+            }, exportedCount * 200);
+            
+        } catch (error) {
+            console.error(`导出文件 ${filename} 失败:`, error);
+        }
+    });
+}
+
+function loadProject() {
+    const savedProject = localStorage.getItem('htmlEditorProject');
+    
+    if (savedProject) {
+        try {
+            const projectData = JSON.parse(savedProject);
+            
+            // 检查版本兼容性
+            if (projectData.version && projectData.version !== '2.0') {
+                console.warn('项目版本不匹配，尝试兼容加载');
+            }
+            
+            // 恢复文件
+            projectFiles.clear();
+            if (projectData.files && Array.isArray(projectData.files)) {
+                projectData.files.forEach(([filename, fileData]) => {
+                    // 验证文件数据完整性
+                    if (filename && fileData && fileData.content !== undefined) {
+                        projectFiles.set(filename, {
+                            content: fileData.content,
+                            type: fileData.type || getFileType(filename),
+                            lastModified: fileData.lastModified || Date.now()
+                        });
+                    }
+                });
+            }
+            
+            // 恢复当前文件
+            if (projectData.currentFile && projectFiles.has(projectData.currentFile)) {
+                currentFileName = projectData.currentFile;
+                const fileData = projectFiles.get(currentFileName);
+                editor.setValue(fileData.content);
+                editor.setOption('mode', getCodeMirrorMode(fileData.type));
+                document.querySelector('.app-title').textContent = `HTML编辑器 - ${currentFileName}`;
+            } else if (projectFiles.size > 0) {
+                // 修复点：优先选择index.html作为主文件
+                const indexFile = Array.from(projectFiles.keys()).find(name => name.toLowerCase() === 'index.html');
+                
+                if (indexFile) {
+                    switchToFile(indexFile);
+                } else {
+                    // 如果当前文件不存在，选择第一个文件
+                    const firstFile = Array.from(projectFiles.keys())[0];
+                    switchToFile(firstFile);
+                }
+            }
+            
+            console.log(`已加载项目，包含 ${projectFiles.size} 个文件`);
+            
+        } catch (e) {
+            console.error('加载项目失败:', e);
+            showToast('项目加载失败，使用默认模板', 'warning');
+            
+            // 创建默认文件
+            projectFiles.clear();
+            projectFiles.set('index.html', {
+                content: DEFAULT_TEMPLATE,
+                type: 'html',
+                lastModified: Date.now()
+            });
+            currentFileName = 'index.html';
+            editor.setValue(DEFAULT_TEMPLATE);
+        }
+    } else {
+        // 兼容旧版本或创建新项目
+        const savedCode = localStorage.getItem('htmlEditorCode');
+        if (savedCode) {
+            projectFiles.set('index.html', {
+                content: savedCode,
+                type: 'html',
+                lastModified: Date.now()
+            });
+            currentFileName = 'index.html';
+            editor.setValue(savedCode);
+            
+            // 清理旧存储
+            localStorage.removeItem('htmlEditorCode');
+            saveCode(); // 保存到新格式
+        } else {
+            // 创建默认文件
+            projectFiles.set('index.html', {
+                content: DEFAULT_TEMPLATE,
+                type: 'html',
+                lastModified: Date.now()
+            });
+            currentFileName = 'index.html';
+            editor.setValue(DEFAULT_TEMPLATE);
+        }
+    }
+}
+
+// 获取存储使用情况
+function getStorageUsage() {
+    try {
+        const projectData = localStorage.getItem('htmlEditorProject');
+        const historyData = localStorage.getItem('replaceHistory');
+        const settingsData = localStorage.getItem('editorSettings');
+        
+        const projectSize = projectData ? new Blob([projectData]).size : 0;
+        const historySize = historyData ? new Blob([historyData]).size : 0;
+        const settingsSize = settingsData ? new Blob([settingsData]).size : 0;
+        
+        const totalSize = projectSize + historySize + settingsSize;
+        const maxSize = 5 * 1024 * 1024; // 假设5MB限制
+        
+        return {
+            project: projectSize,
+            history: historySize,
+            settings: settingsSize,
+            total: totalSize,
+            max: maxSize,
+            percentage: (totalSize / maxSize * 100).toFixed(1)
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
+// 清理存储空间
+function cleanupStorage() {
+    try {
+        // 清理过期的历史记录（超过30天）
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        replaceHistory = replaceHistory.filter(item => 
+            new Date(item.time).getTime() > thirtyDaysAgo
+        );
+        
+        // 限制历史记录数量
+        if (replaceHistory.length > 50) {
+            replaceHistory = replaceHistory.slice(0, 50);
+        }
+        
+        localStorage.setItem('replaceHistory', JSON.stringify(replaceHistory));
+        showToast('存储空间已清理', 'success');
+        
+    } catch (error) {
+        showToast('清理失败: ' + error.message, 'error');
+    }
+}
+
+// 批量删除文件
+function showBatchDeleteDialog() {
+    const dialog = document.createElement('div');
+    dialog.className = 'dialog active';
+    dialog.id = 'batchDeleteDialog';
+    
+    const fileList = Array.from(projectFiles.keys()).map(filename => `
+        <label style="display: flex; align-items: center; padding: 8px; margin: 4px 0;">
+            <input type="checkbox" value="${filename}" style="margin-right: 8px;">
+            <span>${filename}</span>
+            <small style="margin-left: auto; color: #666;">${formatFileSize(new Blob([projectFiles.get(filename).content]).size)}</small>
+        </label>
+    `).join('');
+    
+    dialog.innerHTML = `
+        <div class="dialog-header">
+            <h3 class="dialog-title">批量删除文件</h3>
+            <button class="icon-btn icon-close" onclick="closeBatchDeleteDialog()"></button>
+        </div>
+        <div class="dialog-content">
+            <p>选择要删除的文件：</p>
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; padding: 8px;">
+                ${fileList}
+            </div>
+        </div>
+        <div class="dialog-actions">
+            <button class="btn btn-text" onclick="closeBatchDeleteDialog()">取消</button>
+            <button class="btn btn-primary" onclick="executeBatchDelete()">删除选中</button>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    document.getElementById('overlay').classList.add('active');
+}
+
+function closeBatchDeleteDialog() {
+    const dialog = document.getElementById('batchDeleteDialog');
+    if (dialog) {
+        dialog.remove();
+    }
+    document.getElementById('overlay').classList.remove('active');
+}
+
+function executeBatchDelete() {
+    const checkboxes = document.querySelectorAll('#batchDeleteDialog input[type="checkbox"]:checked');
+    const filesToDelete = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (filesToDelete.length === 0) {
+        showToast('请选择要删除的文件', 'warning');
+        return;
+    }
+    
+    if (!confirm(`确定要删除 ${filesToDelete.length} 个文件吗？`)) {
+        return;
+    }
+    
+    filesToDelete.forEach(filename => {
+        projectFiles.delete(filename);
+    });
+    
+    // 如果删除了当前文件，切换到其他文件
+    if (filesToDelete.includes(currentFileName)) {
+        const remainingFiles = Array.from(projectFiles.keys());
+        if (remainingFiles.length > 0) {
+            switchToFile(remainingFiles[0]);
+        } else {
+            // 创建默认文件
+            projectFiles.set('index.html', {
+                content: DEFAULT_TEMPLATE,
+                type: 'html',
+                lastModified: Date.now()
+            });
+            switchToFile('index.html');
+        }
+    }
+    
+    closeBatchDeleteDialog();
+    updateFileList();
+    saveCode();
+    showToast(`已删除 ${filesToDelete.length} 个文件`, 'success');
+}
+
+// 检查文件名是否是index.html（不区分大小写）
+function isIndexFile(filename) {
+    return filename.toLowerCase() === 'index.html';
+}
+
+// 监听搜索输入框变化
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(performSearch, 300));
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    findPrevious();
+                } else {
+                    findNext();
+                }
+            }
+        });
+    }
+});
+
+// overlay点击事件处理
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('overlay');
+    
+    overlay.onclick = function() {
+        // 关闭侧边栏
+        closeSidebar();
+        
+        // 关闭所有对话框
+        const dialogs = document.querySelectorAll('.dialog.active');
+        dialogs.forEach(dialog => {
+            dialog.classList.remove('active');
+        });
+        
+        // 关闭导入对话框
+        const importDialog = document.getElementById('importDialog');
+        if (importDialog) {
+            importDialog.remove();
+        }
+        
+        // 关闭搜索替换面板
+        const searchPanel = document.getElementById('searchReplacePanel');
+        if (searchPanel && searchPanel.classList.contains('active')) {
+            searchPanel.classList.remove('active');
+        }
+        
+// 关闭文件管理器
+const fileManagerPanel = document.getElementById('fileManagerPanel');
+if (fileManagerPanel && fileManagerPanel.classList.contains('active')) {
+    fileManagerPanel.classList.remove('active');
+}
+
+// 关闭导出选项对话框
+const exportOptionsDialog = document.getElementById('exportOptionsDialog');
+if (exportOptionsDialog) {
+    exportOptionsDialog.remove();
+}
+        
+        // 隐藏overlay
+        this.classList.remove('active');
+    };
+});
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initEditor();
+            
+            
+            // 恢复缩放级别
+            restoreZoom();
+    
+            // 监听返回键
+            window.addEventListener('popstate', (e) => {
+                if (document.querySelector('.sidebar.active')) {
+                    closeSidebar();
+                    e.preventDefault();
+                }
+            });
+            
+        });
+        
+        // 监听键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter 运行
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                runCode();
+            }
+            
+            // Ctrl/Cmd + S 保存
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveCode();
+            }
+            
+// Ctrl/Cmd + Shift + P 新窗口预览
+if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'P') {
+    e.preventDefault();
+    previewInNewWindow();
+}
+
+        });
+    </script>
+</body>
+</html>

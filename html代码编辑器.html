@@ -1076,6 +1076,7 @@
 
 .import-option-info {
     flex: 1;
+    cursor: pointer;
 }
 
 .import-option-title {
@@ -2573,89 +2574,109 @@ function switchTab(tab, clickedElement) {
 
 // 构建项目HTML
 function buildProjectHTML() {
-    // 查找主HTML文件
-    let mainHTML = '';
-    let mainHTMLFile = null;
-    
-    // 优先查找index.html
-    if (projectFiles.has('index.html')) {
-        mainHTMLFile = 'index.html';
-        mainHTML = projectFiles.get('index.html').content;
+    let mainHTMLContent = '';
+    let mainHTMLFileName = '';
+    const files = Array.from(projectFiles.entries());
+
+    // 1. 优先查找 index.html (不区分大小写) 作为主HTML文件
+    const indexFile = files.find(([name]) => name.toLowerCase() === 'index.html');
+
+    if (indexFile) {
+        mainHTMLFileName = indexFile[0];
+        mainHTMLContent = indexFile[1].content;
     } else {
-        // 否则使用第一个HTML文件
-        for (const [filename, fileData] of projectFiles) {
-            if (getFileType(filename) === 'html') {
-                mainHTMLFile = filename;
-                mainHTML = fileData.content;
-                break;
-            }
+        // 2. 如果没有 index.html, 查找项目中的任意一个其他HTML文件
+        const anyHTMLFile = files.find(([name, data]) => data.type === 'html');
+        if (anyHTMLFile) {
+            mainHTMLFileName = anyHTMLFile[0];
+            mainHTMLContent = anyHTMLFile[1].content;
+        } else {
+            // 3. 如果项目中完全没有HTML文件，则使用当前编辑器中的内容作为基础
+            mainHTMLContent = editor.getValue();
+            mainHTMLFileName = currentFileName || 'current_editor.html';
         }
     }
     
-    // 如果没有HTML文件，使用当前编辑器内容
-    if (!mainHTML) {
-        mainHTML = editor.getValue();
-    }
-    
-    // 收集所有CSS和JS文件
-    const cssFiles = [];
-    const jsFiles = [];
+    // 4. 收集所有CSS和JS文件
+    const cssFiles = new Map();
+    const jsFiles = new Map();
     
     projectFiles.forEach((fileData, filename) => {
-        if (filename === mainHTMLFile) return; // 跳过主HTML文件
-        
-        const type = getFileType(filename);
-        if (type === 'css') {
-            cssFiles.push({ name: filename, content: fileData.content });
-        } else if (type === 'javascript') {
-            jsFiles.push({ name: filename, content: fileData.content });
+        if (fileData.type === 'css') {
+            cssFiles.set(filename, fileData.content);
+        } else if (fileData.type === 'javascript') {
+            jsFiles.set(filename, fileData.content);
         }
     });
-    
-    // 注入CSS和JS到HTML
-    return injectResourcesIntoHTML(mainHTML, cssFiles, jsFiles);
+
+    // 5. 注入资源并返回最终的HTML
+    return injectResourcesIntoHTML(mainHTMLContent, cssFiles, jsFiles);
 }
 
 // 注入资源到HTML
-function injectResourcesIntoHTML(html, cssFiles, jsFiles) {
+function injectResourcesIntoHTML(htmlContent, cssFiles, jsFiles) {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const head = doc.head || doc.createElement('head');
+    const body = doc.body || doc.createElement('body');
     
-    // 注入CSS
-    cssFiles.forEach(file => {
-        // 检查是否已经有对应的link标签
-        const existingLink = doc.querySelector(`link[href="${file.name}"]`);
-        if (!existingLink) {
+    // 如果文档没有head或body，确保它们存在
+    if (!doc.head) doc.documentElement.prepend(head);
+    if (!doc.body) doc.documentElement.append(body);
+
+    const processedFiles = new Set();
+
+    // 1. 替换HTML中已引用的 <link> 和 <script> 标签
+    // 处理CSS <link> 标签
+    doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && cssFiles.has(href)) {
             const style = doc.createElement('style');
-            style.setAttribute('data-filename', file.name);
-            style.textContent = `\n/* ${file.name} */\n${file.content}\n`;
-            
-            // 插入到head末尾
-            const head = doc.head || doc.querySelector('head');
-            if (head) {
-                head.appendChild(style);
-            }
+            style.setAttribute('data-injected-from', href);
+            style.textContent = cssFiles.get(href);
+            link.replaceWith(style);
+            processedFiles.add(href); // 标记为已处理
         }
     });
-    
-    // 注入JS
-    jsFiles.forEach(file => {
-        // 检查是否已经有对应的script标签
-        const existingScript = doc.querySelector(`script[src="${file.name}"]`);
-        if (!existingScript) {
+
+    // 处理JS <script> 标签
+    doc.querySelectorAll('script[src]').forEach(scriptTag => {
+        const src = scriptTag.getAttribute('src');
+        if (src && jsFiles.has(src)) {
+            const newScript = doc.createElement('script');
+            newScript.setAttribute('data-injected-from', src);
+            newScript.textContent = jsFiles.get(src);
+            // 复制 type="module" 等属性
+            if (scriptTag.type) {
+                newScript.type = scriptTag.type;
+            }
+            scriptTag.replaceWith(newScript);
+            processedFiles.add(src); // 标记为已处理
+        }
+    });
+
+    // 2. 注入项目中存在但HTML未引用的文件
+    // 注入剩余的CSS文件
+    cssFiles.forEach((content, filename) => {
+        if (!processedFiles.has(filename)) {
+            const style = doc.createElement('style');
+            style.setAttribute('data-injected-from', filename);
+            style.textContent = content;
+            head.appendChild(style);
+        }
+    });
+
+    // 注入剩余的JS文件
+    jsFiles.forEach((content, filename) => {
+        if (!processedFiles.has(filename)) {
             const script = doc.createElement('script');
-            script.setAttribute('data-filename', file.name);
-            script.textContent = `\n// ${file.name}\n${file.content}\n`;
-            
-            // 插入到body末尾
-            const body = doc.body || doc.querySelector('body');
-            if (body) {
-                body.appendChild(script);
-            }
+            script.setAttribute('data-injected-from', filename);
+            script.textContent = content;
+            body.appendChild(script);
         }
     });
     
-    // 序列化回HTML字符串
+    // 3. 返回处理后的完整HTML字符串
     return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 }
         
@@ -4201,25 +4222,45 @@ function importFile() {
 
 // 显示导入对话框
 function showImportDialog() {
+    closeSidebar(); // 确保侧边栏已关闭
+    // 如果已存在对话框，先移除
+    const existingDialog = document.getElementById('importDialog');
+    if (existingDialog) {
+        existingDialog.remove();
+    }
+
     const dialog = document.createElement('div');
-    dialog.className = 'import-dialog active';
+    dialog.className = 'dialog import-dialog active';
     dialog.id = 'importDialog';
-    
-    // 优化：移除了未实现的“追加”和“插入”选项，避免用户混淆
+
+    // --- HTML结构 ---
     dialog.innerHTML = `
         <div class="dialog-header">
-            <h3 class="dialog-title">导入文档</h3>
+            <h3 class="dialog-title">导入文件</h3>
             <button class="icon-btn icon-close" onclick="closeImportDialog()"></button>
         </div>
         <div class="dialog-content">
-            <p>选择的文件将替换当前项目的所有内容。</p>
-            <div class="file-info" style="margin-top: 20px;">
-                <h4>支持的文件类型</h4>
-                <p><strong>网页文件：</strong> .html, .htm</p>
-                <p><strong>样式文件：</strong> .css</p>
-                <p><strong>脚本文件：</strong> .js, .mjs, .jsx</p>
-                <p><strong>数据文件：</strong> .json, .xml</p>
-                <p><strong>文档文件：</strong> .txt, .md</p>
+            <p>请选择导入模式。您可以将文件添加到当前项目，或用新文件替换整个项目。</p>
+            <div class="import-options">
+                 <div class="import-option" onclick="document.getElementById('importModeAdd').checked = true;">
+                    <input type="radio" name="importMode" value="add" id="importModeAdd" checked>
+                    <label class="import-option-info" for="importModeAdd">
+                        <div class="import-option-title">添加到项目</div>
+                        <div class="import-option-desc">保留现有文件，将新文件添加进来。</div>
+                    </label>
+                </div>
+                
+                <div class="import-option" onclick="document.getElementById('importModeReplace').checked = true;">
+                    <input type="radio" name="importMode" value="replace" id="importModeReplace">
+                    <label class="import-option-info" for="importModeReplace">
+                        <div class="import-option-title">替换整个项目</div>
+                        <div class="import-option-desc">警告：将删除所有现有文件。</div>
+                    </label>
+                </div>
+            </div>
+             <div class="file-info" style="margin-top: 10px;">
+                <h4>支持的类型</h4>
+                <p>.html, .htm, .css, .js, .json, .xml, .md, .txt</p>
             </div>
         </div>
         <div class="dialog-actions">
@@ -4227,12 +4268,9 @@ function showImportDialog() {
             <button class="btn btn-primary" onclick="triggerFileSelect()">选择文件</button>
         </div>
     `;
-    
+
     document.body.appendChild(dialog);
-    
-    // 遮罩层
-    const overlay = document.getElementById('overlay');
-    overlay.classList.add('active');
+    document.getElementById('overlay').classList.add('active');
 }
 
 // 关闭导入对话框
@@ -4249,13 +4287,7 @@ function closeImportDialog() {
 // 触发文件选择
 function triggerFileSelect() {
     const fileInput = document.getElementById('fileInput');
-    
-    // 重置文件输入，确保可以重复选择同一文件
-    fileInput.value = '';
-    
-    // 动态设置accept属性以确保兼容性
-    fileInput.setAttribute('accept', '.html,.htm,.js,.mjs,.jsx,.css,.txt,.json,.xml,.md,text/javascript,application/javascript,text/html,text/css,text/plain');
-    
+    fileInput.value = ''; // 重置以便能再次选择相同文件
     fileInput.click();
 }
 
@@ -4271,13 +4303,23 @@ function isJavaScriptFile(file) {
 // 处理文件导入
 function handleFileImport(event) {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    
+    // 如果用户在文件选择器中点击了“取消”
+    if (!files || files.length === 0) {
+        closeImportDialog();
+        event.target.value = ''; 
+        return;
+    }
 
-    // 获取导入模式
-    const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'replace';
+    const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'add';
 
-    // 如果是替换模式，清空现有项目
     if (importMode === 'replace') {
+        if (!confirm('确定要替换整个项目吗？此操作将删除所有现有文件，且无法撤销！')) {
+            closeImportDialog();
+            // 清空输入框，即使用户取消了确认
+            event.target.value = '';
+            return;
+        }
         projectFiles.clear();
     }
 
@@ -4285,112 +4327,70 @@ function handleFileImport(event) {
     const importPromises = [];
     const importedFileNames = [];
 
-    // 处理每个文件
     Array.from(files).forEach(file => {
         const promise = new Promise((resolve) => {
-            // 检查文件类型
-            const allowedTypes = ['.html', '.htm', '.js', '.css', '.txt', '.json', '.xml', '.md'];
-            const allowedMimeTypes = ['text/javascript', 'application/javascript', 'text/html', 'text/css', 'text/plain', 'application/json'];
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-
-            // 检查文件扩展名或MIME类型
-            const isValidExtension = allowedTypes.includes(fileExtension);
-            const isValidMimeType = allowedMimeTypes.includes(file.type);
-
-            if (!isValidExtension && !isValidMimeType) {
-                showToast(`不支持的文件类型: ${file.name}`, 'error');
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                showToast(`文件太大: ${file.name}`, 'error');
                 resolve();
                 return;
             }
 
-            // 检查文件大小（限制为10MB）
-            if (file.size > 10 * 1024 * 1024) {
-                showToast(`文件大小超过10MB限制: ${file.name}`, 'error');
-                resolve();
-                return;
-            }
-
-            // 读取文件内容
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    const content = e.target.result;
+                const content = e.target.result;
+                const fileName = file.name;
 
-                    // 修复点：处理index.html文件
-                    // 如果是index.html文件，确保它成为主文件
-                    if (file.name.toLowerCase() === 'index.html') {
-                        projectFiles.set('index.html', {
-                            content: content,
-                            type: 'html',
-                            lastModified: Date.now()
-                        });
-                        importedFileNames.push('index.html');
-                    } 
-                    // 非index.html文件正常处理
-                    else {
-                        projectFiles.set(file.name, {
-                            content: content,
-                            type: getFileType(file.name),
-                            lastModified: Date.now()
-                        });
-                        importedFileNames.push(file.name);
-                    }
-                    
-                    importedCount++;
-                    resolve();
-                } catch (error) {
-                    console.error(`导入失败 ${file.name}:`, error);
-                    showToast(`文件导入失败: ${file.name}`, 'error');
-                    resolve();
+                if (importMode === 'add' && projectFiles.has(fileName)) {
+                     showToast(`文件 ${fileName} 已存在，已跳过`, 'warning');
+                     resolve();
+                     return;
                 }
-            };
-
-            reader.onerror = function() {
-                showToast(`文件读取失败: ${file.name}`, 'error');
+                
+                projectFiles.set(fileName, {
+                    content: content,
+                    type: getFileType(fileName),
+                    lastModified: Date.now()
+                });
+                
+                importedFileNames.push(fileName);
+                importedCount++;
                 resolve();
             };
-
+            reader.onerror = function() {
+                showToast(`读取文件失败: ${file.name}`, 'error');
+                resolve();
+            };
             reader.readAsText(file, 'UTF-8');
         });
-
         importPromises.push(promise);
     });
 
-    // 等待所有文件导入完成
     Promise.all(importPromises).then(() => {
         closeImportDialog();
 
         if (importedCount > 0) {
             showToast(`成功导入 ${importedCount} 个文件`, 'success');
 
-            // 决定切换到哪个文件
             let fileToSwitchTo = null;
-            
-            // 修复点：优先选择index.html作为主文件
-            if (projectFiles.has('index.html')) {
-                fileToSwitchTo = 'index.html';
-            } else if (importedFileNames.length === 1) {
-                // 如果只替换并导入了一个文件，就切换到这个文件
+            fileToSwitchTo = importedFileNames.find(name => name.toLowerCase() === 'index.html');
+            if (!fileToSwitchTo) {
+                fileToSwitchTo = importedFileNames.find(name => getFileType(name) === 'html');
+            }
+            if (!fileToSwitchTo && importedFileNames.length > 0) {
                 fileToSwitchTo = importedFileNames[0];
-            } else if (importedFileNames.length > 1) {
-                // 如果导入了多个文件，优先找第一个html文件，最后找第一个文件
-                fileToSwitchTo = importedFileNames.find(name => getFileType(name) === 'html') || 
-                                 importedFileNames[0];
             }
 
             if (fileToSwitchTo) {
                 switchToFile(fileToSwitchTo);
-            } else {
-                // 对于追加或插入，只需刷新UI
-                updateFileList();
             }
 
-            switchTab('editor'); // 确保编辑器是激活状态
+            updateFileList();
+            saveCode();
+            switchTab('editor');
         }
+        
+        event.target.value = ''; 
     });
-
-    // 清空文件输入，以便下次可以导入同名文件
-    event.target.value = '';
 }
 
 // 应用导入的内容
@@ -4926,7 +4926,7 @@ function loadProject() {
                 editor.setOption('mode', getCodeMirrorMode(fileData.type));
                 document.querySelector('.app-title').textContent = `HTML编辑器 - ${currentFileName}`;
             } else if (projectFiles.size > 0) {
-                // 修复点：优先选择index.html作为主文件
+                // 优先选择index.html作为主文件
                 const indexFile = Array.from(projectFiles.keys()).find(name => name.toLowerCase() === 'index.html');
                 
                 if (indexFile) {

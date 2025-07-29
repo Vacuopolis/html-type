@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>扫雷大师 - 终极版</title>
+    <title>扫雷大师</title>
     <style>
         * {
             margin: 0;
@@ -1923,7 +1923,7 @@ body.theme-transitioning * {
                 <div class="help-section">
                     <h3>🎯 游戏玩法</h3>
                     <ul>
-                        <li>首次点击（手机端默认长按）格子将会揭开，此时游戏正式开始，请避免踩到地雷</li>
+                        <li>首次鼠标左键（手机端默认长按）格子将会揭开，此时游戏正式开始，请避免踩到地雷</li>
                         <li>显示的数字表示以数字为中心周围8个格子的地雷数量</li>
                         <li>揭开所有非地雷格子即可获胜</li>
                         <li>当标记的地雷数和数字匹配时，点击数字可直接翻开周围的安全区域</li>
@@ -2164,37 +2164,50 @@ body.theme-transitioning * {
                     this.tutorialState.minesLayout = [[1, 1], [6, 1], [5, 1], [3, 5]];
 
                     this.tutorialState.steps = [
-                        { text: "欢迎来到教学模式！我们来学习如何玩扫雷。\n之后没有特别提醒的都请点击棋盘外的位置继续。", action: 'click_anywhere' },
-                        { text: "首先，左键(手机端长按)随意找一个安全的格子来正式开始游戏。我们从这个高亮的'0'格开始吧！", target: '.cell[data-row="3"][data-col="0"]', action: 'open', actionTarget: [3, 0] },
-                        { text: "太棒了！你点开了一个'0'。\n这意味着它周围没有任何地雷，所以所有相邻的格子都会被自动揭开。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
-                        { text: "现在，让我们看看这个'1'。\n这表示在它周围的8个格子里，正好有1个地雷。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
-                        { text: "根据'1'的提示，我们可以确定高亮处是地雷。请右键(手机端单点)来插上旗帜进行标记。", target: '.cell[data-row="1"][data-col="1"]', action: 'flag', actionTarget: [1, 1] },
-                        { text: "做得好！现在这个'1'周围的雷已被标记。\n右键(手机端单点)旗子周边的，例如这个'1'都可以安全地揭开它周围所有未标记的格子。", target: '.cell[data-row="0"][data-col="2"]', action: 'double_click', actionTarget: [0, 2] },
-                        { text: "因为这里显示的1在周围已经有旗子标记了，所以也可以点这里。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },                        
-                        { text: "这里也一样，请你继续点击以揭开此周围全部格子。", target: '.cell[data-row="0"][data-col="1"]', action: 'double_click', actionTarget: [0, 1] },
-                        { 
-                            text: "我们来试试更复杂的。这个'2'告诉我们它周围有2个雷。\n现在已经帮你标记好了其中一个，你能找到另一个吗？（点击棋盘外位置继续）", 
-                            target: '.cell[data-row="6"][data-col="2"]', 
-                            action: 'click_anywhere',
-                            preAction: () => {
-                                const r = 6, c = 1; // 这是需要预先标记的地雷坐标
-                                if (!this.flags[r][c]) {
-                                    this.flags[r][c] = true;
-                                    this.gameState.minesLeft--;
-                                    const cell = this.getCell(r, c);
-                                    this.updateCell(cell, r, c);
-                                    this.updateMinimapCell(r, c);
-                                    this.updateDisplay();
-                                }
-                            }
-                        },
-                        { text: "没错，地雷就在高亮处！把它标记出来。", target: '.cell[data-row="5"][data-col="1"]', action: 'flag', actionTarget: [5, 1] },
-                        { text: "现在这个'2'周围的雷都标记好了，根据观察也可以发现这个'1'周围的雷也已经被标记好了，请展开它吧！", target: '.cell[data-row="4"][data-col="0"]', action: 'double_click', actionTarget: [4, 0] },
-                        { text: "只剩最后一个雷了！根据这周边'1'的提示请看此高亮处以标记。", target: '.cell[data-row="3"][data-col="5"]', action: 'flag', actionTarget: [3, 5] },
-                        { text: "所有地雷都已标记！\n现在，揭开所有剩余的格子来赢得游戏~", target: '.cell[data-row="4"][data-col="6"]', action: 'double_click', actionTarget: [4, 6] },
-                        { text: "恭喜！你已完成教学。\n现在去挑战其他模式吧！", action: 'click_anywhere', postAction: () => this.endTutorial() }
-                    ];
-                }
+    { text: "注意：如接下来的文字教程并没有特殊说明，就请都点击棋盘外区域继续。\n接下来请先查看棋盘。", action: 'click_anywhere' },
+    { text: "欢迎来到扫雷教学模式！接下来，我们将逐步学习游戏规则。", action: 'click_anywhere' },
+    { text: "扫雷游戏的目标是：标记所有地雷位置，并翻开所有安全格子。", action: 'click_anywhere' },
+    { text: "首先，请尝试点击一个安全格子（手机端长按）开始游戏。我们从这个高亮格子开始！", target: '.cell[data-row="3"][data-col="0"]', action: 'open', actionTarget: [3, 0] },
+    { text: "很棒！你翻开了一个'0'。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
+    { text: "这种类型表示周围并没有地雷。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
+    { text: "因此相邻格子会持续翻开到周围可能存在雷的情况。", target: '.cell[data-row="3"][data-col="0"]', action: 'click_anywhere' },
+    { text: "现在我们来观察这个'1'。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
+    { text: "此数字代表周围8格中的地雷数量。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
+    { text: "根据'1'的提示，可以确定高亮格是地雷。\n（不要提前标记哦）", target: '.cell[data-row="1"][data-col="1"]', action: 'click_anywhere' },
+    { text: "现在请用鼠标右键（手机端单击）以插旗标记。", target: '.cell[data-row="1"][data-col="1"]', action: 'flag', actionTarget: [1, 1] },
+    { text: "标记正确！现在'1'周围的地雷已标记。", action: 'click_anywhere' },
+    { text: "因此就可以单击这个高亮格子以翻开周围安全区域。", target: '.cell[data-row="0"][data-col="2"]', action: 'double_click', actionTarget: [0, 2] },
+    { text: "同理，这个'1'周围已有标记，请进行单击翻开格子。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },                        
+    { text: "此处也一样，单击这个高亮位置，翻开周边所有剩余的格子。", target: '.cell[data-row="0"][data-col="1"]', action: 'double_click', actionTarget: [0, 1] },
+    { text: "干得漂亮！", action: 'click_anywhere' },
+    { text: "接下来挑战稍复杂的情况...", action: 'click_anywhere' },
+    { 
+        text: "这个'2'表示周围有2个地雷。\n已为你标记其中1个，可以尝试先观察再继续（点击棋盘外区域继续）", 
+        target: '.cell[data-row="6"][data-col="2"]', 
+        action: 'click_anywhere',
+        preAction: () => {
+            const r = 6, c = 1; // 需要预先标记的地雷坐标
+            if (!this.flags[r][c]) {
+                this.flags[r][c] = true;
+                this.gameState.minesLeft--;
+                const cell = this.getCell(r, c);
+                this.updateCell(cell, r, c);
+                this.updateMinimapCell(r, c);
+                this.updateDisplay();
+            }
+        }
+    },
+    { text: "没错！地雷就在高亮位置。请标记它。", target: '.cell[data-row="5"][data-col="1"]', action: 'flag', actionTarget: [5, 1] },
+    { text: "'2'周围的地雷已全部标记。", action: 'click_anywhere' },
+    { text: "同时这个'1'周围也已标全，请单击翻开区域。", target: '.cell[data-row="4"][data-col="0"]', action: 'double_click', actionTarget: [4, 0] },
+    { text: "仅剩最后一颗雷！", action: 'click_anywhere' },
+    { text: "根据这个位置'1'的提示可以得知...", target: '.cell[data-row="2"][data-col="4"]', action: 'click_anywhere' },
+    { text: "此高亮位置就存在着最后一颗雷，请标记它。", target: '.cell[data-row="3"][data-col="5"]', action: 'flag', actionTarget: [3, 5] },
+    { text: "所有地雷已标记完成！", action: 'click_anywhere' },
+    { text: "请单击这个格子翻开剩余区域，赢得胜利~", target: '.cell[data-row="4"][data-col="6"]', action: 'double_click', actionTarget: [4, 6] },
+    { text: "恭喜完成教学！\n现在去挑战其他模式吧！", action: 'click_anywhere', postAction: () => this.endTutorial() }
+];
+}
 
                 showTutorialStep(stepIndex) {
                     this.clearHighlights();
@@ -5011,13 +5024,13 @@ showTutorialErrorFeedback(expectedAction, actualAction) {
     // 根据期望和实际操作生成错误信息
     if (expectedAction === 'open' && actualAction === 'flag') {
         errorMessage = '需要揭开格子，而不是标记！';
-        suggestion = '请使用左键点击（手机端长按）来揭开格子。';
+        suggestion = '请使用鼠标左键点击（手机端长按）来揭开格子。';
     } else if (expectedAction === 'flag' && actualAction === 'open') {
         errorMessage = '需要标记地雷，而不是揭开！';
-        suggestion = '请使用右键点击（手机端单击）来标记地雷。';
+        suggestion = '请使用鼠标右键点击（手机端单击）来标记地雷。';
     } else if (expectedAction === 'double_click') {
-        errorMessage = '需要双击数字来展开周围格子！';
-        suggestion = '当数字周围的旗帜数量正确时，双击数字可以快速揭开剩余格子。';
+        errorMessage = '需要单击数字来展开周围格子！';
+        suggestion = '当数字周围的旗帜数量正确时，单击数字可以快速揭开剩余格子。';
     } else {
         errorMessage = '操作不正确！';
         suggestion = '请仔细阅读提示，按照指引进行操作。';

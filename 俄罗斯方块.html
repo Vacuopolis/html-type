@@ -66,7 +66,7 @@
     .overlay{
       position:absolute; inset:0; display:none; align-items:center; justify-content:center;
       background:rgba(10,12,24,.65); backdrop-filter: blur(4px);
-      z-index:1000; /* 高于移动控制，确保设置弹层在上面 */
+      z-index:1000;
     }
     .overlay.visible{display:flex}
     .modal{
@@ -266,7 +266,6 @@
 
     <div class="panel center">
       <div class="playfield-wrap">
-        <!-- 左侧竖排控制（横屏专用，不遮挡棋盘） -->
         <div class="mobile-side mobile-left" id="mobileLeft">
           <div class="btn" data-act="left">左 ←</div>
           <div class="btn" data-act="rotate">旋转</div>
@@ -276,7 +275,6 @@
         <canvas id="playfield" class="playfield" width="300" height="600"></canvas>
         <div class="combo-notification" id="comboNotif"></div>
 
-        <!-- 设置弹层：层级最高，不被控制键遮挡 -->
         <div class="overlay" id="overlay">
           <div class="modal">
             <h3>游戏设置</h3>
@@ -328,13 +326,6 @@
                 </select>
               </div>
               <div class="row">
-                <label>出块模式</label>
-                <select id="cfgGenMode">
-                  <option value="standard" selected>标准随机（7-bag）</option>
-                  <option value="smart">智能辅助（倾向可消行）</option>
-                </select>
-              </div>
-              <div class="row">
                 <label>启用等级上限</label>
                 <select id="cfgCapEnabled">
                   <option value="off" selected>关闭</option>
@@ -347,9 +338,8 @@
               </div>
             </div>
             <div class="legend" style="margin-top:6px">
-              说明：7-bag 随机、触底锁延迟（可设置）、Ghost 落点预览；预览/暂存居中绘制。
-              “智能辅助”可优先更利于消行的出块。软降每格+1，硬降每格+2。
-              等级每累计 10 行+1，可启用上限。
+              说明：出块采用更智能的 7-bag 随机：每袋含 I/O/T/L/J/S/Z 七种方块，抽完一袋再补满新袋，这样在最多 14 块内一定能拿到任意形状（比如关键的 I 长条），有效避免因运气不佳导致的死局。
+              另含：触底锁延迟（可设置）、Ghost 落点预览；预览/暂存居中绘制。软降每格+1，硬降每格+2。等级每累计 10 行+1，可启用上限。
               消行碎裂动画不阻塞：行会立刻消失并得分，动画仅作为特效。硬降带火花与冲击粒子。支持连击提示。
             </div>
             <div class="actions">
@@ -457,7 +447,6 @@
   const cfgSwipeUp = document.getElementById('cfgSwipeUp');
   const cfgSkin = document.getElementById('cfgSkin');
   const cfgScoreDisplay = document.getElementById('cfgScoreDisplay');
-  const cfgGenMode = document.getElementById('cfgGenMode');
   const cfgCapEnabled = document.getElementById('cfgCapEnabled');
   const cfgMaxLevel = document.getElementById('cfgMaxLevel');
 
@@ -501,12 +490,10 @@
   let running = false, paused = false, gameOver = false;
   let skin = SKINS.classic;
 
-  // 预览与随机 7-bag / 智能模式
+  // 预览与随机 7-bag
   let previewCount = 5;
   let bag = [];
   let queue = [];
-  let genMode = 'standard';
-  let smartModeCounter = 0;
 
   let holdType = null;
   let holdLocked = false;
@@ -658,48 +645,10 @@
     bag = arr;
   }
 
-  function chooseFromBagSmart(){
-    if(!bag.length) refillBag();
-
-    smartModeCounter++;
-    if(smartModeCounter % 5 === 0 || smartModeCounter % 5 === 3) {
-      const idx = Math.floor(Math.random() * bag.length);
-      return bag.splice(idx, 1)[0];
-    }
-
-    let bestType = null;
-    let bestScore = -Infinity;
-
-    const mBefore = boardMetrics(board);
-
-    for(const type of bag){
-      const nextCandidates = bag.filter(t=>t!==type);
-      const candidates = nextCandidates.length ? nextCandidates : TYPES;
-
-      const s = evaluateBestPlacementScore(type, candidates, mBefore);
-      if(s > bestScore){
-        bestScore = s;
-        bestType = type;
-      }
-    }
-
-    if(bestType == null){
-      return bag.pop();
-    }
-
-    const idx = bag.indexOf(bestType);
-    if(idx>=0) bag.splice(idx,1);
-    return bestType;
-  }
-
   function takeFromQueue(){
     while(queue.length < previewCount + 1){
       if(!bag.length) refillBag();
-      if(genMode === 'smart'){
-        queue.push(chooseFromBagSmart());
-      }else{
-        queue.push(bag.pop());
-      }
+      queue.push(bag.pop());
     }
     return queue.shift();
   }
@@ -739,20 +688,6 @@
 
   // 碰撞
   function collide(b,p){
-    for(let y=0;y<p.m.length;y++){
-      for(let x=0;x<p.m[y].length;x++){
-        if(!p.m[y][x]) continue;
-        const nx = p.x + x;
-        const ny = p.y + y;
-        if(ny < 0) continue;
-        if(nx < 0 || nx >= COLS || ny >= ROWS) return true;
-        if(b[ny][nx]) return true;
-      }
-    }
-    return false;
-  }
-
-  function collideWith(b,p){
     for(let y=0;y<p.m.length;y++){
       for(let x=0;x<p.m[y].length;x++){
         if(!p.m[y][x]) continue;
@@ -1261,7 +1196,6 @@
     gravity = levelSpeed(level);
     queue = [];
     bag = [];
-    smartModeCounter = 0;
     particles = [];
     hardDropping = false;
     clearingLines = false;
@@ -1269,11 +1203,7 @@
     refillBag();
     for(let i=0;i<previewCount;i++){
       if(!bag.length) refillBag();
-      if(genMode === 'smart'){
-        queue.push(chooseFromBagSmart());
-      }else{
-        queue.push(bag.pop());
-      }
+      queue.push(bag.pop());
     }
     holdType = null;
     holdLocked = false;
@@ -1458,7 +1388,6 @@
     swipeUpMode = cfgSwipeUp.value;
     applySkin(cfgSkin.value);
     scoreDisplay = (cfgScoreDisplay.value === 'on');
-    genMode = cfgGenMode.value;
 
     levelCapEnabled = (cfgCapEnabled.value === 'on');
     maxLevelCap = clampInt(cfgMaxLevel.value,1,20);
@@ -1500,251 +1429,6 @@
       lastTS = 0;
       requestAnimationFrame(loop);
     }
-  }
-
-  // ========== 智能辅助出块评估 ==========
-  function boardMetrics(b){
-    const heights = new Array(COLS).fill(0);
-    const holesPerCol = new Array(COLS).fill(0);
-    const holeDepthPerCol = new Array(COLS).fill(0);
-
-    for(let x=0;x<COLS;x++){
-      let seenBlock = false;
-      let blocksAbove = 0;
-      for(let y=0;y<ROWS;y++){
-        if(b[y][x]){
-          if(!seenBlock){
-            heights[x] = ROWS - y;
-            seenBlock = true;
-          }
-          blocksAbove++;
-        }else{
-          if(seenBlock){
-            holesPerCol[x]++;
-            holeDepthPerCol[x] += blocksAbove;
-          }
-        }
-      }
-    }
-
-    let rowTransitions = 0;
-    for(let y=0;y<ROWS;y++){
-      let last = 1;
-      for(let x=0;x<COLS;x++){
-        const cur = b[y][x] ? 1 : 0;
-        if(cur !== last) rowTransitions++;
-        last = cur;
-      }
-      if(last !== 1) rowTransitions++;
-    }
-
-    let colTransitions = 0;
-    for(let x=0;x<COLS;x++){
-      let last = 1;
-      for(let y=0;y<ROWS;y++){
-        const cur = b[y][x] ? 1 : 0;
-        if(cur !== last) colTransitions++;
-        last = cur;
-      }
-      if(last !== 1) colTransitions++;
-    }
-
-    const aggregateHeight = heights.reduce((a,c)=>a+c,0);
-    const maxHeight = Math.max(...heights);
-
-    let bumpiness = 0;
-    for(let x=0;x<COLS-1;x++){
-      bumpiness += Math.abs(heights[x] - heights[x+1]);
-    }
-
-    let wells = 0;
-    for(let x=0;x<COLS;x++){
-      const left = x===0 ? ROWS : heights[x-1];
-      const right = x===COLS-1 ? ROWS : heights[x+1];
-      const d = Math.min(left, right) - heights[x];
-      if(d > 0) wells += d;
-    }
-
-    const holes = holesPerCol.reduce((a,c)=>a+c,0);
-    const holeDepth = holeDepthPerCol.reduce((a,c)=>a+c,0);
-
-    return { heights, holes, holeDepth, rowTransitions, colTransitions, aggregateHeight, maxHeight, bumpiness, wells };
-  }
-
-  function simulateClearLines(b){
-    let cleared = 0;
-    outer: for(let y=ROWS-1;y>=0;y--){
-      for(let x=0;x<COLS;x++){
-        if(!b[y][x]) continue outer;
-      }
-      b.splice(y,1);
-      b.unshift(new Array(COLS).fill(0));
-      cleared++;
-      y++;
-    }
-    return { cleared, bAfter: b };
-  }
-
-  function uniqueRotations(base){
-    const arr = [];
-    let m = cloneMatrix(base);
-    for(let i=0;i<4;i++){
-      const key = JSON.stringify(m);
-      if(!arr.some(k => JSON.stringify(k)===key)){
-        arr.push(cloneMatrix(m));
-      }
-      m = rotateMatrixToTight(m, +1);
-    }
-    return arr;
-  }
-
-  function bestBaseScoreOnBoard(b, type, metricsBefore){
-    const rots = uniqueRotations(SHAPES[type]);
-    let best = -Infinity;
-
-    const W = {
-      cleared:       1200,
-      tetrisBonus:    400,
-      holes:         -120,
-      holesDelta:    -160,
-      holeDepth:      -18,
-      rowTransitions: -28,
-      colTransitions: -28,
-      wells:          -18,
-      bumpiness:       -7,
-      aggregateHeight: -5,
-      maxHeight:      -12,
-      landingHeight:   -8
-    };
-
-    for(const rot of rots){
-      const w = rot[0].length;
-      const h = rot.length;
-      for(let x=0; x<=COLS - w; x++){
-        const testPiece = { type, m: rot, x, y: (type==='I' ? -1 : 0) };
-        let y = testPiece.y;
-        while(true){
-          y++;
-          const t = { ...testPiece, y };
-          if(collideWith(b, t)){
-            y = y - 1;
-            break;
-          }
-        }
-        if(y < -(h-1)){
-          continue;
-        }
-        const tFinal = { ...testPiece, y };
-        const b2 = cloneMatrix(b);
-        merge(b2, tFinal);
-        const { cleared, bAfter } = simulateClearLines(b2);
-
-        const after = boardMetrics(bAfter);
-        const before = metricsBefore || boardMetrics(b);
-
-        const holesDelta = after.holes - before.holes;
-        const landingHeight = Math.max(0, ROWS - (y + h));
-
-        let score =
-          W.cleared * cleared
-          + (cleared === 4 ? W.tetrisBonus : 0)
-          + W.holes * after.holes
-          + W.holesDelta * Math.max(0, holesDelta)
-          + W.holeDepth * after.holeDepth
-          + W.rowTransitions * after.rowTransitions
-          + W.colTransitions * after.colTransitions
-          + W.wells * after.wells
-          + W.bumpiness * after.bumpiness
-          + W.aggregateHeight * after.aggregateHeight
-          + W.maxHeight * after.maxHeight
-          + W.landingHeight * landingHeight;
-
-        if(score > best){
-          best = score;
-        }
-      }
-    }
-    return best;
-  }
-
-  function evaluateBestPlacementScore(type, nextCandidates, metricsBefore){
-    const rots = uniqueRotations(SHAPES[type]);
-    let best = -Infinity;
-    let found = false;
-
-    const W = {
-      cleared:       1200,
-      tetrisBonus:    400,
-      holes:         -120,
-      holesDelta:    -160,
-      holeDepth:      -18,
-      rowTransitions: -28,
-      colTransitions: -28,
-      wells:          -18,
-      bumpiness:       -7,
-      aggregateHeight: -5,
-      maxHeight:      -12,
-      landingHeight:   -8
-    };
-    const LOOKAHEAD = 0.35;
-
-    const before = metricsBefore || boardMetrics(board);
-
-    for(const rot of rots){
-      const w = rot[0].length;
-      const h = rot.length;
-      for(let x=0; x<=COLS - w; x++){
-        const testPiece = { type, m: rot, x, y: (type==='I' ? -1 : 0) };
-        let y = testPiece.y;
-        while(true){
-          y++;
-          const t = { ...testPiece, y };
-          if(collideWith(board, t)){
-            y = y - 1;
-            break;
-          }
-        }
-        if(y < -(h-1)){
-          continue;
-        }
-        const tFinal = { ...testPiece, y };
-
-        const b2 = cloneMatrix(board);
-        merge(b2, tFinal);
-        const { cleared, bAfter } = simulateClearLines(b2);
-
-        const after = boardMetrics(bAfter);
-        const holesDelta = after.holes - before.holes;
-        const landingHeight = Math.max(0, ROWS - (y + h));
-
-        let base =
-          W.cleared * cleared
-          + (cleared === 4 ? W.tetrisBonus : 0)
-          + W.holes * after.holes
-          + W.holesDelta * Math.max(0, holesDelta)
-          + W.holeDepth * after.holeDepth
-          + W.rowTransitions * after.rowTransitions
-          + W.colTransitions * after.colTransitions
-          + W.wells * after.wells
-          + W.bumpiness * after.bumpiness
-          + W.aggregateHeight * after.aggregateHeight
-          + W.maxHeight * after.maxHeight
-          + W.landingHeight * landingHeight;
-
-        let futureBest = -Infinity;
-        for(const t2 of nextCandidates){
-          const s2 = bestBaseScoreOnBoard(bAfter, t2, after);
-          if(s2 > futureBest) futureBest = s2;
-        }
-        const total = base + LOOKAHEAD * futureBest;
-
-        if(total > best){
-          best = total;
-          found = true;
-        }
-      }
-    }
-    return found ? best : -Infinity;
   }
 
   // 初始化

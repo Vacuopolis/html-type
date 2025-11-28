@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+当前代码，挖掘模式的垃圾行计数似乎有问题，已经完全清除了垃圾行却还是显示垃圾行有n行（没有清除完）导致没法最后做出结算，请你修复，修改的内容请分区块写出需要替换/删除/添加的代码(不要写在注释里):<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
@@ -1497,35 +1497,42 @@ let bgParticles = null;
 const SKINS = {
   classic: {
     I:'#00f0f0', O:'#f0f000', T:'#a000f0', S:'#00f000', Z:'#f00000', J:'#0000f0', L:'#f0a000',
+    G:'#606060',
     ghost:'rgba(122,162,255,0.45)',
     texture: 'flat'
   },
   pastel: {
     I:'#9be7ff', O:'#fff59b', T:'#d1b3ff', S:'#b2f7b2', Z:'#ffb3b3', J:'#b3c6ff', L:'#ffd1a6',
+    G:'#a0a0a0',
     ghost:'rgba(147,197,253,0.45)',
     texture: 'flat'
   },
   neon: {
     I:'#22d3ee', O:'#facc15', T:'#a78bfa', S:'#34d399', Z:'#fb7185', J:'#60a5fa', L:'#f59e0b',
+    G:'#505050',
     ghost:'rgba(56,189,248,0.5)',
     texture: 'glow'
   },
   glossy: {
     I:'#00d4e8', O:'#ffd700', T:'#b24bf3', S:'#00e676', Z:'#ff1744', J:'#2979ff', L:'#ff6d00',
+    G:'#707070',
     ghost:'rgba(122,162,255,0.45)',
     texture: 'glossy'
   },
   retro: {
     I:'#00ffff', O:'#ffff00', T:'#ff00ff', S:'#00ff00', Z:'#ff0000', J:'#0000ff', L:'#ff7f00',
+    G:'#808080',
     ghost:'rgba(255,255,255,0.3)',
     texture: 'pixel'
   },
   minimal: {
     I:'#e0e0e0', O:'#e0e0e0', T:'#e0e0e0', S:'#e0e0e0', Z:'#e0e0e0', J:'#e0e0e0', L:'#e0e0e0',
+    G:'#909090',
     ghost:'rgba(200,200,200,0.4)',
     texture: 'outline'
   }
 };
+
   
 const SRS_STATES = {
     I: {
@@ -1585,15 +1592,15 @@ const SHAPES = {
   const TYPES = ['I','O','T','L','J','S','Z'];
 
   const SRS_KICKS_JLSTZ = {
-    '0->1': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
-    '1->0': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
-    '1->2': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
-    '2->1': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
-    '2->3': [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
-    '3->2': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
-    '3->0': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
-    '0->3': [[0,0],[1,0],[1,1],[0,-2],[1,-2]]
-  };
+  '0->1': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '1->0': [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  '1->2': [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  '2->1': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '2->3': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  '3->2': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '3->0': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '0->3': [[0,0],[1,0],[1,-1],[0,2],[1,2]]
+};
 
   const SRS_KICKS_I = {
     '0->1': [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
@@ -1688,6 +1695,8 @@ const SHAPES = {
 
   let lastActionWasRotate = false;
   let tSpinType = null;
+
+  let lastKickIndex = 0;
 
   let particles = [];
 
@@ -1924,38 +1933,63 @@ const SHAPES = {
     }
   }
 
-  function checkTSpin(p) {
-    if(p.type !== 'T') return null;
-    if(!lastActionWasRotate) return null;
+  function checkTSpin(p, kickIndex) {
+  if(p.type !== 'T') return null;
+  if(!lastActionWasRotate) return null;
 
-    const corners = [
-      {dx: -1, dy: -1},
-      {dx: 1, dy: -1},
-      {dx: -1, dy: 1},
-      {dx: 1, dy: 1}
-    ];
+  // T方块中心始终在3x3矩阵的(1,1)位置
+  const centerX = p.x + 1;
+  const centerY = p.y + 1;
 
-    const centerX = p.x + Math.floor(p.m[0].length / 2);
-    const centerY = p.y + Math.floor(p.m.length / 2);
+  // 根据旋转状态确定"前方"两个角落
+  // 状态0: 上方两个是前方 (左上、右上)
+  // 状态1: 右方两个是前方 (右上、右下)
+  // 状态2: 下方两个是前方 (左下、右下)
+  // 状态3: 左方两个是前方 (左上、左下)
+  const frontCorners = {
+    0: [{dx: -1, dy: -1}, {dx: 1, dy: -1}],
+    1: [{dx: 1, dy: -1}, {dx: 1, dy: 1}],
+    2: [{dx: -1, dy: 1}, {dx: 1, dy: 1}],
+    3: [{dx: -1, dy: -1}, {dx: -1, dy: 1}]
+  };
 
-    let filledCorners = 0;
-    for(const corner of corners) {
-      const cx = centerX + corner.dx;
-      const cy = centerY + corner.dy;
-      
-      if(cy < 0 || cy >= ROWS || cx < 0 || cx >= COLS) {
-        filledCorners++;
-      } else if(board[cy][cx]) {
-        filledCorners++;
-      }
+  const allCorners = [
+    {dx: -1, dy: -1},
+    {dx: 1, dy: -1},
+    {dx: -1, dy: 1},
+    {dx: 1, dy: 1}
+  ];
+
+  function isCornerFilled(corner) {
+    const cx = centerX + corner.dx;
+    const cy = centerY + corner.dy;
+    if(cy < 0 || cy >= ROWS || cx < 0 || cx >= COLS) {
+      return true;
     }
-
-    if(filledCorners >= 3) {
-      return 'normal';
-    }
-
-    return null;
+    return !!board[cy][cx];
   }
+
+  let filledCorners = 0;
+  for(const corner of allCorners) {
+    if(isCornerFilled(corner)) filledCorners++;
+  }
+
+  if(filledCorners < 3) return null;
+
+  // 检查前方两个角落是否都被填充
+  const front = frontCorners[p.rotation] || frontCorners[0];
+  const frontFilled = front.filter(c => isCornerFilled(c)).length;
+
+  // T-Spin Mini条件：
+  // 1. 使用了第4或第5个踢墙测试（索引3或4）
+  // 2. 或者前方两个角落只有一个被填充
+  if(kickIndex >= 3 || frontFilled < 2) {
+    // 特例：如果消除3行，即使是mini条件也算作normal T-Spin
+    return 'mini';
+  }
+
+  return 'normal';
+}
 
   function clearLines(){
     const fullRows = [];
@@ -2015,13 +2049,19 @@ if(cleared > 0) {
 
       let baseScore = 0;
       if(isTSpin) {
-        const tSpinScores = {
-          'mini': [100, 200, 400],
-          'normal': [400, 800, 1200, 1600]
-        };
-        const scoreTable = tSpinScores[tSpinType] || tSpinScores['normal'];
-        baseScore = scoreTable[Math.min(cleared - 1, scoreTable.length - 1)] || 0;
-      } else {
+  // T-Spin Triple 即使满足mini条件也算作normal
+  let effectiveTSpinType = tSpinType;
+  if(tSpinType === 'mini' && cleared >= 3) {
+    effectiveTSpinType = 'normal';
+  }
+  
+  const tSpinScores = {
+    'mini': [100, 200, 400],
+    'normal': [400, 800, 1200, 1600]
+  };
+  const scoreTable = tSpinScores[effectiveTSpinType] || tSpinScores['normal'];
+  baseScore = scoreTable[Math.min(cleared - 1, scoreTable.length - 1)] || 0;
+} else {
         const normalScores = {1:100, 2:300, 3:500, 4:800};
         baseScore = normalScores[cleared] || 0;
       }
@@ -2125,10 +2165,16 @@ function createAllClearEffect() {
     let cssClass = 'combo-notification';
 
     if(isTSpin) {
-      const variant = tSpinVariant === 'mini' ? 'Mini' : '';
-      message = `T-Spin ${variant}${count > 1 ? ' x'+count : ''}!`;
-      cssClass += ' combo-tspin';
-    } else if(count === 4) {
+  const lineNames = ['', 'Single', 'Double', 'Triple'];
+  const lineName = lineNames[count] || count + '行';
+  
+  if(tSpinVariant === 'mini') {
+    message = `T-Spin Mini ${lineName}!`;
+  } else {
+    message = `T-Spin ${lineName}!`;
+  }
+  cssClass += ' combo-tspin';
+} else if(count === 4) {
       message = 'TETRIS!';
       cssClass += ' combo-4';
     } else if(count === 3) {
@@ -2162,7 +2208,6 @@ function createAllClearEffect() {
 function rotate(dir = +1) {
     if(!piece || hardDropping) return false;
     
-    // O方块不需要旋转
     if(piece.type === 'O') {
         return false;
     }
@@ -2170,17 +2215,14 @@ function rotate(dir = +1) {
     const oldRotation = piece.rotation;
     const newRotation = (oldRotation + (dir > 0 ? 1 : 3)) % 4;
     
-    // 直接从 SRS_STATES 获取目标旋转状态
     const rotated = SRS_STATES[piece.type][newRotation];
     if(!rotated) {
         console.warn(`未找到方块 ${piece.type} 的旋转状态 ${newRotation}`);
         return false;
     }
     
-    // 深拷贝旋转后的矩阵
     const rotatedMatrix = rotated.map(row => [...row]);
     
-    // 获取对应的踢墙测试表
     const kickKey = `${oldRotation}->${newRotation}`;
     let kicks = [];
     
@@ -2190,8 +2232,8 @@ function rotate(dir = +1) {
         kicks = SRS_KICKS_JLSTZ[kickKey] || [[0,0]];
     }
     
-    // 尝试所有踢墙位置
-    for(const [dx, dy] of kicks) {
+    for(let kickIdx = 0; kickIdx < kicks.length; kickIdx++) {
+        const [dx, dy] = kicks[kickIdx];
         const test = {
             ...piece,
             x: piece.x + dx,
@@ -2200,34 +2242,26 @@ function rotate(dir = +1) {
             rotation: newRotation
         };
         
-        // 检查这个位置是否合法
         if(!collide(board, test)) {
-            // 成功旋转
             piece.x = test.x;
             piece.y = test.y;
             piece.m = rotatedMatrix;
             piece.rotation = newRotation;
             lastActionWasRotate = true;
+            lastKickIndex = kickIdx;
             
-            // 播放音效
             audioSystem.playSound('rotate');
-            
-            // 重置锁定计时器
             maybeResetLockTimer();
             
-            // T-spin 检测
             if(piece.type === 'T') {
-                tSpinType = checkTSpin(piece);
+                tSpinType = checkTSpin(piece, kickIdx);
             }
             
-            // 震动反馈
             vibrate(5);
-            
             return true;
         }
     }
     
-    // 所有踢墙尝试都失败
     lastActionWasRotate = false;
     return false;
 }
@@ -2241,6 +2275,7 @@ function spawn() {
     groundTime = 0;
     lastActionWasRotate = false;
     tSpinType = null;
+    lastKickIndex = 0;
     
     // 增强的生成碰撞检测
     if(piece) {
@@ -2345,10 +2380,12 @@ function newPiece(type) {
     return false;
   }
   lastActionWasRotate = false;
+  tSpinType = null;
   maybeResetLockTimer();  
   audioSystem.playSound('move');
   return true;
 }
+
 
   function softDropStep(){
   if(!piece || hardDropping) return false;
@@ -2358,6 +2395,7 @@ function newPiece(type) {
     return false;
   }else{
     lastActionWasRotate = false;
+    tSpinType = null;
     score += 1;
     updateStats();
     
@@ -2366,6 +2404,7 @@ function newPiece(type) {
     return true;
   }
 }
+
 
   function hardDrop(){
   if(!piece || hardDropping) return;
@@ -2444,10 +2483,6 @@ function newPiece(type) {
   }
 
   function lockPiece(){
-  if(gameMode === 'practice') {
-    saveHistory();
-  }
-  
   audioSystem.playSound('lock'); 
   
   merge(board, piece);
@@ -2457,7 +2492,12 @@ function newPiece(type) {
   touchingGround = false;
   lockResets = 0;
   groundTime = 0;
+  
+  if(gameMode === 'practice') {
+    saveHistory();
+  }
 }
+
 
   function maybeResetLockTimer(){
     if(!isGrounded(piece)) return;
@@ -2892,7 +2932,14 @@ function drawCell(x, y, color, alpha = 1) {
     updateModeDisplay();
     spawn();
     redrawSidePanels();
+    
+    // 在练习模式下保存初始状态
+    if(gameMode === 'practice') {
+        saveHistory();
+    }
+    
     draw();
+
     dropTimer = 0;
     lastTS = 0;
     lockTimer = 0;
@@ -3377,8 +3424,7 @@ function endGame(message) {
       const holePos = Math.floor(Math.random() * COLS);
       for(let x = 0; x < COLS; x++) {
         if(x !== holePos) {
-          const randomType = TYPES[Math.floor(Math.random() * TYPES.length)];
-          board[y][x] = randomType;
+          board[y][x] = 'G';
         }
       }
     }
@@ -3388,7 +3434,7 @@ function endGame(message) {
   function countCheeseLines() {
     let count = 0;
     for(let y = 0; y < ROWS; y++) {
-      if(board[y].some(cell => cell !== 0)) {
+      if(board[y].some(cell => cell === 'G')) {
         count++;
       }
     }
@@ -3421,23 +3467,38 @@ function endGame(message) {
       level,
       combo,
       b2bCount,
-      lastClearWasSpecial
+      lastClearWasSpecial,
+      holdType,
+      holdLocked,
+      queue: [...queue],
+      bag: [...bag],
+      piece: piece ? {
+        type: piece.type,
+        x: piece.x,
+        y: piece.y,
+        m: piece.m.map(row => [...row]),
+        rotation: piece.rotation,
+        color: piece.color,
+        animX: piece.animX,
+        animY: piece.animY
+      } : null
     };
 
     // 移除当前位置之后的历史
     historyStates = historyStates.slice(0, historyIndex + 1);
     
     historyStates.push(state);
+    historyIndex = historyStates.length - 1;
     
     // 限制历史记录数量
-    if(historyStates.length > MAX_HISTORY) {
+    while(historyStates.length > MAX_HISTORY) {
       historyStates.shift();
-    } else {
-      historyIndex++;
+      historyIndex--;
     }
 
     updateStats();
-  }
+}
+
 
   function undo() {
     if(gameMode !== 'practice' || historyIndex <= 0) return;
@@ -3464,10 +3525,31 @@ function endGame(message) {
     combo = state.combo;
     b2bCount = state.b2bCount;
     lastClearWasSpecial = state.lastClearWasSpecial;
+    holdType = state.holdType;
+    holdLocked = state.holdLocked;
+    queue = [...state.queue];
+    bag = [...state.bag];
+    
+    if(state.piece) {
+      piece = {
+        type: state.piece.type,
+        x: state.piece.x,
+        y: state.piece.y,
+        m: state.piece.m.map(row => [...row]),
+        rotation: state.piece.rotation,
+        color: state.piece.color,
+        animX: state.piece.animX,
+        animY: state.piece.animY
+      };
+    } else {
+      piece = null;
+    }
 
     updateStats();
+    redrawSidePanels();
     draw();
-  }
+}
+
 
   // ========== 键位自定义 ==========
   function buildKeybindUI() {

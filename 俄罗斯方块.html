@@ -3651,6 +3651,10 @@ function createAllClearEffect() {
 function spawn() {
   piece = newPiece(takeFromQueue());
   holdLocked = false;
+  const holdBox = document.querySelector('.hold-box');
+  if (holdBox) {
+    holdBox.classList.remove('locked');
+  }
   lockTimer = 0;
   touchingGround = false;
   lastActionWasRotate = false;
@@ -3658,38 +3662,34 @@ function spawn() {
   lastKickIndex = 0;
   lockMoveResets = 0;
   lowestY = -999;
-      
-  if(piece) {
-    if(piece.type === 'I') {
+  if (piece) {
+    if (piece.type === 'I') {
       let hasCollision = false;
-      for(let y = 0; y < piece.m.length; y++) {
-        for(let x = 0; x < piece.m[y].length; x++) {
-          if(!piece.m[y][x]) continue;
+      for (let y = 0; y < piece.m.length; y++) {
+        for (let x = 0; x < piece.m[y].length; x++) {
+          if (!piece.m[y][x]) continue;
           const ny = piece.y + y;
           const nx = piece.x + x;
-          if(ny >= 0 && ny < ROWS && board[ny][nx]) {
+          if (ny >= 0 && ny < ROWS && board[ny][nx]) {
             hasCollision = true;
             break;
           }
         }
-        if(hasCollision) break;
+        if (hasCollision) break;
       }
-              
-      if(hasCollision) {
+      if (hasCollision) {
         endGame();
       }
     } else {
-      if(collide(board, piece)) {
+      if (collide(board, piece)) {
         piece.y--;
-        if(collide(board, piece)) {
+        if (collide(board, piece)) {
           endGame();
         }
       }
     }
-    
     lowestY = piece.y;
   }
-      
   redrawSidePanels();
 }        
           

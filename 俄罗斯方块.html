@@ -4548,20 +4548,20 @@ function drawCell(x, y, color, alpha = 1) {
 let pendingInputs = [];
 const MAX_PENDING_INPUTS = 5;
         
-  function inputAction(act) {
-    if(!running || paused || gameOver) return;
+  function inputAction(act) {  
+  if (act !== 'pause' && (!running || paused || gameOver)) return;  
             
-    highlightKey(act);
-    
-    if(clearingLines && act !== 'pause') {
-      if(pendingInputs.length < MAX_PENDING_INPUTS) {
-        pendingInputs.push({action: act, time: Date.now()});
-      }
-      return;
-    }
+  highlightKey(act);  
+      
+  if (clearingLines && act !== 'pause') {  
+    if (pendingInputs.length < MAX_PENDING_INPUTS) {  
+      pendingInputs.push({action: act, time: Date.now()});  
+    }  
+    return;  
+  }  
 
-    executeAction(act);
-    draw();
+  executeAction(act);  
+  draw();  
 }
 
 function executeAction(act) {
@@ -4705,60 +4705,91 @@ function processPendingInputs() {
     }        
   }, {passive:false});        
         
-  function attachMobileHandlers(el) {        
-    if(!el) return;        
-            
-    el.addEventListener('click', (e) => {        
-        const t = e.target.closest('.btn');        
-        if(!t || !t.dataset.act) return;        
-        const action = t.dataset.act;        
-                
-        // 更新动作映射        
-        const actionMap = {        
-            left: 'moveLeft',        
-            right: 'moveRight',        
-            rotateLeft: 'rotateLeft',        
-            rotateRight: 'rotateRight',        
-            soft: 'softDrop',        
-            hard: 'hardDrop',        
-            hold: 'hold',        
-            pause: 'pause'        
-        };        
-                
-        inputAction(actionMap[action] || action);        
-    });        
-            
-    el.addEventListener('touchstart', (e) => {        
-        const t = e.target.closest('.btn');        
-        if(!t || !t.dataset.act) return;        
-        e.preventDefault();        
-        t.classList.add('pressed');        
-        const action = t.dataset.act;        
-                
-        const actionMap = {        
-            left: 'moveLeft',        
-            right: 'moveRight',        
-            rotateLeft: 'rotateLeft',        
-            rotateRight: 'rotateRight',        
-            soft: 'softDrop',        
-            hard: 'hardDrop',        
-            hold: 'hold',        
-            pause: 'pause'        
-        };        
-                
-        inputAction(actionMap[action] || action);        
-    }, {passive: false});        
-            
-    el.addEventListener('touchend', (e) => {        
-        const t = e.target.closest('.btn');        
-        if(t) t.classList.remove('pressed');        
-    }, {passive: true});        
-            
-    el.addEventListener('touchcancel', (e) => {        
-        const t = e.target.closest('.btn');        
-        if(t) t.classList.remove('pressed');        
-    }, {passive: true});        
-}        
+  function attachMobileHandlers(el) {          
+  if(!el) return;          
+
+  const actionMap = {          
+    left: 'moveLeft',          
+    right: 'moveRight',          
+    rotateLeft: 'rotateLeft',          
+    rotateRight: 'rotateRight',          
+    soft: 'softDrop',          
+    hard: 'hardDrop',          
+    hold: 'hold',          
+    pause: 'pause'          
+  };          
+              
+  el.addEventListener('click', (e) => {          
+    const t = e.target.closest('.btn');          
+    if(!t || !t.dataset.act) return;          
+    const action = t.dataset.act;          
+    const mapped = actionMap[action] || action;          
+    inputAction(mapped);          
+  });          
+              
+  el.addEventListener('touchstart', (e) => {          
+    const t = e.target.closest('.btn');          
+    if(!t || !t.dataset.act) return;          
+    e.preventDefault();          
+    t.classList.add('pressed');          
+    const action = t.dataset.act;          
+    const mapped = actionMap[action] || action;          
+
+    if (mapped === 'moveLeft' || mapped === 'moveRight') {  
+      if (!keyState[mapped]) {  
+        keyState[mapped] = true;  
+        dasTimer[mapped] = 0;  
+        arrTimer[mapped] = 0;  
+        highlightKey(mapped);  
+        if (mapped === 'moveLeft') move(-1);  
+        else move(1);  
+      }  
+    } else if (mapped === 'softDrop') {  
+      if (!keyState[mapped]) {  
+        keyState[mapped] = true;  
+        startSoftDrop();  
+      }  
+    } else {  
+      inputAction(mapped);  
+    }          
+  }, {passive: false});          
+              
+  el.addEventListener('touchend', (e) => {          
+    const t = e.target.closest('.btn');          
+    if(t && t.dataset.act) {          
+      t.classList.remove('pressed');          
+      const action = t.dataset.act;          
+      const mapped = actionMap[action] || action;          
+
+      if (mapped === 'moveLeft' || mapped === 'moveRight') {  
+        keyState[mapped] = false;  
+        dasTimer[mapped] = 0;  
+        arrTimer[mapped] = 0;  
+      } else if (mapped === 'softDrop') {  
+        keyState[mapped] = false;  
+        stopSoftDrop();  
+      }  
+    }          
+  }, {passive: true});          
+              
+  el.addEventListener('touchcancel', (e) => {          
+    const t = e.target.closest('.btn');          
+    if(t && t.dataset.act) {          
+      t.classList.remove('pressed');          
+      const action = t.dataset.act;          
+      const mapped = actionMap[action] || action;          
+
+      if (mapped === 'moveLeft' || mapped === 'moveRight') {  
+        keyState[mapped] = false;  
+        dasTimer[mapped] = 0;  
+        arrTimer[mapped] = 0;  
+      } else if (mapped === 'softDrop') {  
+        keyState[mapped] = false;  
+        stopSoftDrop();  
+      }  
+    }          
+  }, {passive: true});          
+} 
           
   attachMobileHandlers(mobileControlsEl);        
   attachMobileHandlers(mobileLeftEl);        
@@ -5088,31 +5119,39 @@ function startNewGame() {
     requestAnimationFrame(loop);        
   });        
 }        
+
+function updateMobilePauseButtons(label) {  
+  const btns = document.querySelectorAll('.btn[data-act="pause"]');  
+  btns.forEach(b => {  
+    b.textContent = label;  
+  });  
+}
         
-function pauseGame() {        
-  paused = true;        
-  timerRunning = false;        
-  btnPlayPause.textContent = '▶ 继续';        
-  showPauseMenu();        
-          
-  if(audioSystem) {        
-    audioSystem.stopBGM();        
-  }        
-}        
+function pauseGame() {          
+  paused = true;          
+  timerRunning = false;          
+  btnPlayPause.textContent = '▶ 继续';  
+  updateMobilePauseButtons('▶ 继续');          
+  showPauseMenu();          
+            
+  if(audioSystem) {          
+    audioSystem.stopBGM();          
+  }          
+}
         
-function resumeGame() {        
-  paused = false;        
-  timerRunning = true;        
-  btnPlayPause.textContent = '⏸ 暂停';        
-          
-  if(audioSystem) {        
-    audioSystem.startBGM(level);        
-  }        
-          
-  lastTS = 0;        
-  requestAnimationFrame(loop);        
-}        
-        
+function resumeGame() {          
+  paused = false;          
+  timerRunning = true;          
+  btnPlayPause.textContent = '⏸ 暂停';  
+  updateMobilePauseButtons('⏸ 暂停');          
+            
+  if(audioSystem) {          
+    audioSystem.startBGM(level);          
+  }          
+            
+  lastTS = 0;          
+  requestAnimationFrame(loop);          
+}
         
   function startOrResume(){        
   if(gameOver){        

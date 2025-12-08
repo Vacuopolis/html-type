@@ -87,35 +87,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
 .badges{display:flex; gap:6px; flex-wrap:wrap; font-size:11px; margin-top:6px}        
 .badge{background:#1a1f3d; border:1px solid #2b3156; color:var(--muted); padding:2px 6px; border-radius:999px}        
         
-/* ========== 移动端控制 ========== */        
-.mobile-controls{        
-  display:none; gap:10px; flex-wrap:wrap; justify-content:center; padding:12px;        
-}        
-.mobile-controls .btn{        
-  min-width:70px; padding:14px 16px; border-radius:12px;        
-  background:#1b2140; border:2px solid #2b345d;        
-  user-select:none; touch-action:manipulation; color:var(--text);        
-  box-shadow:0 3px 0 rgba(0,0,0,.4);        
-  transition:transform .06s ease, background .12s ease, box-shadow .12s ease;        
-  font-size:15px; font-weight:500;        
-}        
-        
-.mobile-controls .btn[data-act="rotateLeft"],        
-.mobile-controls .btn[data-act="rotateRight"] {        
-  background: linear-gradient(135deg, #2d3a6e, #1f2847);        
-  border-color: #4f8cff;        
-  color: #4f8cff;        
-  font-weight: bold;        
-  box-shadow:0 3px 0 rgba(79,140,255,.3);        
-}        
-        
-.mobile-controls .btn:active,        
-.mobile-controls .btn.pressed{        
-  transform:translateY(2px);        
-  box-shadow:0 1px 0 rgba(0,0,0,.5);        
-}        
-        
-/* 侧边控制 */        
+/* ========== 移动端控制 ========== */               
 .mobile-side{        
   position:absolute;        
   display:none;        
@@ -134,38 +106,33 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   transform: translateY(-50%);        
 }        
         
-.mobile-side .btn{        
-  display:block;        
-  width:calc(var(--side-ctrl-w) - 16px);        
-  padding:12px 8px;        
-  margin:8px 8px;        
-  text-align:center;        
-  border-radius:10px;        
-  background:#1b2140;        
-  border:2px solid #2b345d;        
-  color:var(--text);        
-  box-shadow:0 3px 0 rgba(0,0,0,.4);        
-  user-select:none;        
-  touch-action:manipulation;        
-  transition:transform .06s ease, background .12s ease, box-shadow .12s ease;        
-  font-size:13px;        
-  font-weight:500;        
-}        
-        
-.mobile-side .btn[data-act="rotateLeft"],        
-.mobile-side .btn[data-act="rotateRight"] {        
-  background: linear-gradient(135deg, #2d3a6e, #1f2847);        
-  border-color: #4f8cff;        
-  color: #4f8cff;        
-  font-weight: bold;        
-  box-shadow:0 3px 0 rgba(79,140,255,.3);        
-}        
-        
-.mobile-side .btn:active,        
-.mobile-side .btn.pressed{        
-  transform:translateY(2px);        
-  box-shadow:0 1px 0 rgba(0,0,0,.5);        
-}        
+.mobile-controls .btn,
+.mobile-side .btn{
+  background:#1b2140; border:2px solid #2b345d; color:var(--text);
+  box-shadow:0 3px 0 rgba(0,0,0,.4);
+  user-select:none; touch-action:manipulation;
+  transition:transform .06s ease, background .12s ease, box-shadow .12s ease;
+  font-weight:500; border-radius:10px;
+}
+.mobile-controls .btn{
+  min-width:70px; padding:14px 16px; font-size:15px;
+}
+.mobile-side .btn{
+  display:block; width:calc(var(--side-ctrl-w) - 16px);
+  padding:12px 8px; margin:8px; text-align:center; font-size:13px;
+}
+.mobile-controls .btn[data-act^="rotate"],
+.mobile-side .btn[data-act^="rotate"]{
+  background:linear-gradient(135deg,#2d3a6e,#1f2847);
+  border-color:#4f8cff; color:#4f8cff; font-weight:bold;
+  box-shadow:0 3px 0 rgba(79,140,255,.3);
+}
+.mobile-controls .btn:active,
+.mobile-controls .btn.pressed,
+.mobile-side .btn:active,
+.mobile-side .btn.pressed{
+  transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.5);
+}      
         
 .header-toggle{        
   position:fixed;        
@@ -2844,15 +2811,9 @@ const SRS_STATES = {
     }        
 };        
         
-const SHAPES = {        
-    I: SRS_STATES.I[0],        
-    O: SRS_STATES.O[0],        
-    T: SRS_STATES.T[0],        
-    S: SRS_STATES.S[0],        
-    Z: SRS_STATES.Z[0],        
-    J: SRS_STATES.J[0],        
-    L: SRS_STATES.L[0]        
-};        
+const SHAPES = Object.fromEntries(
+  Object.entries(SRS_STATES).map(([k, v]) => [k, v[0]])
+);
           
   const TYPES = ['I','O','T','L','J','S','Z'];        
         
@@ -2932,37 +2893,6 @@ const gameoverTitle = document.getElementById('gameoverTitle');
 const gameoverSubtitle = document.getElementById('gameoverSubtitle');        
 const gameoverRank = document.getElementById('gameoverRank');        
 const gameoverRankNum = document.getElementById('gameoverRankNum');
-
-// 游戏结束统计数据
-const GAME_CONSTANTS = {
-  ANIMATION: {
-    HOLD_SWAP_DURATION: 400,
-    HOLD_ANIMATE_IN_DURATION: 500,
-    SHAKE_DURATION: 300,
-    CLEAR_ANIMATION_DURATION: 500,
-    HARD_DROP_SPEED: 0.5
-  },
-  GAMEPLAY: {
-    MAX_LOCK_RESETS: 15,
-    MAX_PENDING_INPUTS: 5,
-    INPUT_BUFFER_TIME: 200,
-    SOFT_DROP_SPEED: 50,
-    DEFAULT_DAS: 133,
-    DEFAULT_ARR: 10,
-    DEFAULT_LOCK_DELAY: 500
-  },
-  SCORING: {
-    SOFT_DROP_POINTS: 1,
-    HARD_DROP_POINTS_PER_ROW: 2,
-    PERFECT_CLEAR_BONUS: 3000
-  },
-  VISUAL: {
-    PARTICLE_POOL_SIZE: 500,
-    MAX_PARTICLES: 200,
-    LOCK_WARNING_THRESHOLD: 100
-  }
-};
-
 const goScore = document.getElementById('goScore');        
 const goLines = document.getElementById('goLines');        
 const goLevel = document.getElementById('goLevel');        
@@ -3259,20 +3189,7 @@ const cfgMusicVolume = document.getElementById('cfgMusicVolume');
     }        
     return false;        
 }        
-        
-  function checkBoundaries(piece) {        
-    // 确保方块不会超出边界        
-    if(piece.x < 0) piece.x = 0;        
-    if(piece.x + piece.m[0].length > COLS) {        
-        piece.x = COLS - piece.m[0].length;        
-    }        
-            
-    // I方块特殊处理        
-    if(piece.type === 'I' && piece.y < -2) {        
-        piece.y = -2;        
-    }        
-}        
-        
+       
   function isGrounded(p){        
     if(!p) return false;        
     const test = { ...p, y: p.y + 1 };        
@@ -3764,31 +3681,6 @@ function tryMove(dx, dy) {
   };
   
   return !collide(board, testPiece);
-}
-
-function getPieceBounds(p) {
-  let minX = p.m[0].length, maxX = -1;
-  let minY = p.m.length, maxY = -1;
-  
-  for(let y = 0; y < p.m.length; y++) {
-    for(let x = 0; x < p.m[y].length; x++) {
-      if(p.m[y][x]) {
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x);
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y);
-      }
-    }
-  }
-  
-  return {
-    left: p.x + minX,
-    right: p.x + maxX,
-    top: p.y + minY,
-    bottom: p.y + maxY,
-    width: maxX - minX + 1,
-    height: maxY - minY + 1
-  };
 }
         
   function move(dx){
@@ -5095,30 +4987,6 @@ function startGameOverAnimation(callback) {
   
   animateRow();
 }
-        
-function startNewGame() {        
-  running = true;        
-  paused = true; // 先暂停，等倒计时结束        
-          
-  showCountdown(() => {        
-    paused = false;        
-    timerRunning = true;        
-    btnPlayPause.textContent = '⏸ 暂停';        
-            
-    if (sessionStats.startTime === 0) {        
-      sessionStats.startTime = Date.now();        
-    }        
-            
-    startProgressAutoSave();        
-            
-    if(audioSystem) {        
-      audioSystem.startBGM(level);        
-    }        
-            
-    lastTS = 0;        
-    requestAnimationFrame(loop);        
-  });        
-}        
 
 function updateMobilePauseButtons(label) {  
   const btns = document.querySelectorAll('.btn[data-act="pause"]');  
@@ -5152,21 +5020,7 @@ function resumeGame() {
   lastTS = 0;          
   requestAnimationFrame(loop);          
 }
-        
-  function startOrResume(){        
-  if(gameOver){        
-    showSettingsOverlay(true, '重新开始');        
-    return;        
-  }        
-          
-  if (!running) {        
-    startNewGame();        
-  } else if (paused) {        
-    hidePauseMenu();        
-    resumeGame();        
-  }        
-}        
-        
+ 
   function togglePause(){        
   if(!running || isCountingDown) return;        
           
@@ -5235,17 +5089,15 @@ function endGame(message) {
     }        
   }        
         
-  function formatTime(ms) {        
-    const totalSeconds = Math.floor(ms / 1000);        
-    const minutes = Math.floor(totalSeconds / 60);        
-    const seconds = totalSeconds % 60;        
-    const centiseconds = Math.floor((ms % 1000) / 10);        
-    return `${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;        
-  }        
-        
-  function pad(n) {        
-    return n.toString().padStart(2, '0');        
-  }        
+const pad = n => String(n).padStart(2, '0');
+
+function formatTime(ms) {        
+  const totalSeconds = Math.floor(ms / 1000);        
+  const minutes = Math.floor(totalSeconds / 60);        
+  const seconds = totalSeconds % 60;        
+  const centiseconds = Math.floor((ms % 1000) / 10);        
+  return `${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;        
+}        
         
   function updateModeDisplay() {        
     modeDisplayEl.textContent = MODE_NAMES[gameMode] || gameMode;        
@@ -5969,19 +5821,13 @@ function loadSavedKeybindings() {
   const existingPrompt = document.querySelector('.resume-prompt');        
   if (existingPrompt) existingPrompt.remove();        
           
-  const modeNames = {        
-    marathon: '马拉松',        
-    sprint: '40行竞速',        
-    ultra: '限时打分',        
-    cheese: '挖掘模式',        
-    master: '大师模式'        
-  };        
-          
   const prompt = document.createElement('div');        
   prompt.className = 'resume-prompt';        
+  const modeName = MODE_NAMES[progress.gameMode] || progress.gameMode;        
+          
   prompt.innerHTML = `        
     <h4>🎮 发现未完成的游戏</h4>        
-    <p>模式: ${modeNames[progress.gameMode] || progress.gameMode} | 分数: ${progress.score.toLocaleString()} | 行数: ${progress.lines}</p>        
+    <p>模式: ${modeName} | 分数: ${progress.score.toLocaleString()} | 行数: ${progress.lines}</p>        
     <div class="actions">        
       <button id="btnResumeGame" class="primary">继续游戏</button>        
       <button id="btnNewGame">开始新游戏</button>        
@@ -5992,37 +5838,35 @@ function loadSavedKeybindings() {
   showSettingsOverlay(true, '欢迎回来');        
           
   document.getElementById('btnResumeGame').addEventListener('click', () => {        
-  prompt.remove();        
-  if (restoreGameProgress(progress)) {        
-    showSettingsOverlay(false);        
-            
-    // 恢复游戏也使用倒计时        
-    running = true;        
-    paused = true;        
-            
-    showCountdown(() => {        
-      paused = false;        
-      timerRunning = true;        
-      btnPlayPause.textContent = '⏸ 暂停';        
+    prompt.remove();        
+    if (restoreGameProgress(progress)) {        
+      showSettingsOverlay(false);        
               
-      startProgressAutoSave();        
+      running = true;        
+      paused = true;        
               
-      if(audioSystem) {        
-        audioSystem.startBGM(level);        
-      }        
-              
-      lastTS = 0;        
-      requestAnimationFrame(loop);        
-    });        
-  }        
-});        
+      showCountdown(() => {        
+        paused = false;        
+        timerRunning = true;        
+        btnPlayPause.textContent = '⏸ 暂停';        
+                
+        startProgressAutoSave();        
+                
+        if(audioSystem) {        
+          audioSystem.startBGM(level);        
+        }        
+                
+        lastTS = 0;        
+        requestAnimationFrame(loop);        
+      });        
+    }        
+  });        
           
   document.getElementById('btnNewGame').addEventListener('click', () => {        
     prompt.remove();        
     storageManager.clearGameProgress();        
   });        
 }        
-        
         
   // ========== 初始化 ==========        
 (function init(){        

@@ -2885,6 +2885,46 @@ let lockMoveResets = 0;
 const MAX_LOCK_RESETS = 15;
 let lowestY = 0;
 
+let inputBuffer = [];
+const INPUT_BUFFER_MAX = 24;
+const INPUT_BUFFER_TTL_MS = 260;
+
+let heldKeys = {
+  rotateLeft: false,
+  rotateRight: false,
+  hold: false
+};
+
+let spawnJustHappened = false;
+let spawnConsumeDeadline = 0;
+
+let mobileSwipeSensitivity = 26;
+let mobileSwipeAccumX = 0;
+let mobileSwipeLastX = 0;
+let mobileSwipeActive = false;
+
+let mobileTwoFinger = {
+  active: false,
+  startTime: 0,
+  startAvgX: 0,
+  startAvgY: 0,
+  moved: false
+};
+
+const EXTRA_KICKS = {
+  JLSTZ: [
+    [0,0],[ -1,0],[ 1,0],[ -2,0],[ 2,0],
+    [0,-1],[ -1,-1],[ 1,-1],
+    [0,-2],[ -1,-2],[ 1,-2]
+  ],
+  I: [
+    [0,0],[ -1,0],[ 1,0],[ -2,0],[ 2,0],
+    [0,-1],[ -1,-1],[ 1,-1],
+    [0,-2],[ -1,-2],[ 1,-2],
+    [0,1]
+  ]
+};
+
 class Particle {
     constructor(x, y, color, type = 'normal') {
         this.x = x;
@@ -3054,59 +3094,44 @@ function checkTSpin(p, kickIndex) {
     return 'normal';
 }
 
-function clearLines(){
+function clearLines() {
   if (gameOverAnimating) {
     tSpinType = null;
     return;
   }
-
   const fullRows = [];
-  for(let y=0; y<ROWS; y++){
-    const isFull = board[y].every(v => v !== 0);
-    if(isFull) fullRows.push(y);
+  for (let y = 0; y < ROWS; y++) {
+    if (board[y].every(v => v !== 0)) fullRows.push(y);
   }
   const cleared = fullRows.length;
-
-  if(cleared > 0){
-    vibrate([10, 20, 30][Math.min(cleared-1, 2)] || 30);
-
-    for(const y of fullRows){
-      for(let x=0; x<COLS; x++){
+  if (cleared > 0) {
+    vibrate([10, 20, 30][Math.min(cleared - 1, 2)] || 30);
+    for (const y of fullRows) {
+      for (let x = 0; x < COLS; x++) {
         const type = board[y][x];
-        if(!type) continue;
+        if (!type) continue;
         const color = skin[type];
         const px = x * BLOCK + BLOCK / 2;
         const py = y * BLOCK + BLOCK / 2;
         const count = 15 + Math.floor(Math.random() * 6);
-        for(let i=0; i<count; i++){
+        for (let i = 0; i < count; i++) {
           particles.push(new Particle(px, py, color, 'normal'));
         }
       }
     }
-
     const isTetris = (cleared === 4);
     const isTSpin = (tSpinType !== null && cleared > 0);
     if (isTetris) sessionStats.tetrises++;
     if (isTSpin) sessionStats.tSpins++;
     sessionStats.maxCombo = Math.max(sessionStats.maxCombo, combo + 1);
-
     const isSpecial = isTetris || isTSpin;
-
-    if(cleared > 0) {
-      audioSystem.playLineClear(cleared);
-      if(combo > 1) {
-        audioSystem.playComboSound(combo);
-      }
-      if(cleared === 4 || isTSpin) {
-        screenShaker.bigShake();
-      } else {
-        screenShaker.smallShake();
-      }
-    }
-
+    audioSystem.playLineClear(cleared);
+    if (combo > 1) audioSystem.playComboSound(combo);
+    if (cleared === 4 || isTSpin) screenShaker.bigShake();
+    else screenShaker.smallShake();
     let b2bMultiplier = 1.0;
-    if(isSpecial) {
-      if(lastClearWasSpecial) {
+    if (isSpecial) {
+      if (lastClearWasSpecial) {
         b2bCount++;
         b2bMultiplier = 1.5;
       } else {
@@ -3117,13 +3142,10 @@ function clearLines(){
       lastClearWasSpecial = false;
       b2bCount = 0;
     }
-
     let baseScore = 0;
-    if(isTSpin) {
+    if (isTSpin) {
       let effectiveTSpinType = tSpinType;
-      if(tSpinType === 'mini' && cleared >= 3) {
-        effectiveTSpinType = 'normal';
-      }
+      if (tSpinType === 'mini' && cleared >= 3) effectiveTSpinType = 'normal';
       const tSpinScores = {
         'mini': [100, 200, 400],
         'normal': [400, 800, 1200, 1600]
@@ -3131,52 +3153,35 @@ function clearLines(){
       const scoreTable = tSpinScores[effectiveTSpinType] || tSpinScores['normal'];
       baseScore = scoreTable[Math.min(cleared - 1, scoreTable.length - 1)] || 0;
     } else {
-      const normalScores = {1:100, 2:300, 3:500, 4:800};
+      const normalScores = { 1: 100, 2: 300, 3: 500, 4: 800 };
       baseScore = normalScores[cleared] || 0;
     }
-
     combo++;
     const comboBonus = combo > 1 ? 50 * (combo - 1) : 0;
     const totalScore = Math.floor((baseScore + comboBonus) * level * b2bMultiplier);
     score += totalScore;
     lines += cleared;
-
-    if(gameMode === 'cheese') {
-      updateCheeseProgress();
-    }
-
+    if (gameMode === 'cheese') updateCheeseProgress();
     updateLevelByLines();
     updateStats();
     showClearNotification(cleared, isTSpin, tSpinType, b2bMultiplier > 1);
-
     const fullSet = new Set(fullRows);
     const kept = [];
-    for(let y=0; y<ROWS; y++){
-      if(!fullSet.has(y)) kept.push(board[y]);
-    }
-    const empties = new Array(cleared).fill(0).map(()=> new Array(COLS).fill(0));
+    for (let y = 0; y < ROWS; y++) if (!fullSet.has(y)) kept.push(board[y]);
+    const empties = new Array(cleared).fill(0).map(() => new Array(COLS).fill(0));
     board = [...empties, ...kept];
-
-    const allClear = board.every(row => row.every(cell => cell === 0));
-    if(allClear) {
-      triggerAllClear();
-    }
-
+    if (board.every(row => row.every(cell => cell === 0))) triggerAllClear();
+    
     clearingLines = true;
     clearAnimationTimer = 0;
-    const endAt = Date.now() + CLEAR_ANIMATION_DURATION;
-    if (pendingInputs && pendingInputs.length) {
-      for (const it of pendingInputs) {
-        if (it && typeof it === 'object') it.validUntil = endAt + 120;
-      }
-    }
-    setTimeout(()=>{
-      clearingLines = false;
-      processPendingInputs();
-    }, CLEAR_ANIMATION_DURATION);
-
-    checkModeCompletion();
+    
     spawn();
+    
+    setTimeout(() => {
+      clearingLines = false;
+    }, CLEAR_ANIMATION_DURATION);
+    
+    checkModeCompletion();
   } else {
     combo = 0;
     updateStats();
@@ -3270,38 +3275,137 @@ function showClearNotification(count, isTSpin, tSpinVariant, isB2B) {
         comboNotif.classList.remove('show');
     }, 1200);
 }
+function onCanvasTouchStart(e) {
+  if (!e || !e.touches) return;
+  ensureAudioUnlocked();
 
+  if (e.touches.length >= 2) {
+    mobileTwoFinger.active = true;
+    mobileTwoFinger.startTime = Date.now();
+    mobileTwoFinger.moved = false;
+    const t0 = e.touches[0], t1 = e.touches[1];
+    mobileTwoFinger.startAvgX = (t0.clientX + t1.clientX) / 2;
+    mobileTwoFinger.startAvgY = (t0.clientY + t1.clientY) / 2;
+    return;
+  }
+
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+  touchStartTime = Date.now();
+
+  mobileSwipeActive = true;
+  mobileSwipeAccumX = 0;
+  mobileSwipeLastX = t.clientX;
+}
+
+function onCanvasTouchMove(e) {
+  if (!e || !e.touches) return;
+  e.preventDefault();
+
+  if (mobileTwoFinger.active && e.touches.length >= 2) {
+    const t0 = e.touches[0], t1 = e.touches[1];
+    const avgX = (t0.clientX + t1.clientX) / 2;
+    const avgY = (t0.clientY + t1.clientY) / 2;
+    const dy = avgY - mobileTwoFinger.startAvgY;
+    if (Math.abs(dy) > 18) mobileTwoFinger.moved = true;
+    return;
+  }
+
+  if (!mobileSwipeActive) return;
+  const t = e.touches[0];
+  const dx = t.clientX - mobileSwipeLastX;
+  mobileSwipeLastX = t.clientX;
+  mobileSwipeAccumX += dx;
+
+  const step = Math.max(14, mobileSwipeSensitivity);
+  while (mobileSwipeAccumX >= step) {
+    mobileSwipeAccumX -= step;
+    inputAction('moveRight');
+  }
+  while (mobileSwipeAccumX <= -step) {
+    mobileSwipeAccumX += step;
+    inputAction('moveLeft');
+  }
+
+  const dyTotal = t.clientY - touchStartY;
+  if (dyTotal > 26) {
+    if (!keyState['softDrop']) {
+      keyState['softDrop'] = true;
+      startSoftDrop();
+    }
+  } else {
+    if (keyState['softDrop']) {
+      keyState['softDrop'] = false;
+      stopSoftDrop();
+    }
+  }
+}
+
+function onCanvasTouchEnd(e) {
+  if (mobileTwoFinger.active) {
+    const dt = Date.now() - mobileTwoFinger.startTime;
+    const endTouches = e.changedTouches ? e.changedTouches.length : 0;
+
+    if (dt < 260 && !mobileTwoFinger.moved) {
+      inputAction('pause');
+    } else if (mobileTwoFinger.moved) {
+      inputAction('hardDrop');
+    }
+
+    mobileTwoFinger.active = false;
+    return;
+  }
+
+  if (keyState['softDrop']) {
+    keyState['softDrop'] = false;
+    stopSoftDrop();
+  }
+
+  mobileSwipeActive = false;
+
+  const t = e.changedTouches && e.changedTouches[0];
+  if (!t) return;
+
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  const dt = Date.now() - touchStartTime;
+
+  const TAP_TH = 14;
+  if (adx < TAP_TH && ady < TAP_TH && dt < 220) {
+    const rect = cvs.getBoundingClientRect();
+    const relY = t.clientY - rect.top;
+    if (relY < rect.height * 0.5) inputAction('rotateRight');
+    else inputAction('softDrop');
+  }
+}
 function rotate(dir = +1) {
   if (!piece || hardDropping || gameOverAnimating) return false;
-
   if (piece.type === 'O') {
     lastActionWasRotate = true;
     lastKickIndex = 0;
     tSpinType = null;
     audioSystem.playSound('rotate');
     vibrate(4);
-    if (isGrounded(piece)) maybeResetLockTimer();
+    if (isGrounded(piece)) maybeResetLockTimer('rotate');
     return true;
   }
-
   if (!SRS_STATES[piece.type]) return false;
-
   const oldRotation = piece.rotation;
   const newRotation = (oldRotation + (dir > 0 ? 1 : 3)) % 4;
   const rotated = SRS_STATES[piece.type][newRotation];
   if (!rotated) return false;
-
   const rotatedMatrix = rotated.map(row => row.slice());
   const kickKey = `${oldRotation}->${newRotation}`;
-
-  const kicks = (piece.type === 'I')
+  const baseKicks = (piece.type === 'I')
     ? (SRS_KICKS_I[kickKey] || [[0, 0]])
     : (SRS_KICKS_JLSTZ[kickKey] || [[0, 0]]);
-
+  const extra = (piece.type === 'I') ? EXTRA_KICKS.I : EXTRA_KICKS.JLSTZ;
+  const kicks = baseKicks.concat(extra);
   for (let kickIdx = 0; kickIdx < kicks.length; kickIdx++) {
     const kick = kicks[kickIdx];
     if (!kick || kick.length < 2) continue;
-
     const [dx, dy] = kick;
     const test = {
       ...piece,
@@ -3310,75 +3414,75 @@ function rotate(dir = +1) {
       m: rotatedMatrix,
       rotation: newRotation
     };
-
     if (!collide(board, test)) {
       piece.x = test.x;
       piece.y = test.y;
       piece.m = rotatedMatrix;
       piece.rotation = newRotation;
-
       lastActionWasRotate = true;
       lastKickIndex = kickIdx;
-
       audioSystem.playSound('rotate');
       vibrate(5);
-
-      if (isGrounded(piece)) maybeResetLockTimer();
+      if (isGrounded(piece)) maybeResetLockTimer('rotate');
       tSpinType = (piece.type === 'T') ? checkTSpin(piece, kickIdx) : null;
       return true;
     }
   }
-
   lastActionWasRotate = false;
   return false;
 }
 
 function flushPendingInputsOnSpawn() {
-    if (!pendingInputs || pendingInputs.length === 0) return;
-    if (!running || paused || gameOver) {
-        pendingInputs = [];
-        return;
-    }
-    if (shouldBlockGameplayInput()) {
-        pendingInputs = [];
-        return;
-    }
-    processPendingInputs();
+  if (!running || paused || gameOver) {
+    pendingInputs = [];
+    inputBuffer = [];
+    return;
+  }
+  if (shouldBlockGameplayInput()) return;
+
+  processPendingInputs();
+  consumeBufferedInputs('spawnFlush');
 }
 
 function spawn() {
-    piece = newPiece(takeFromQueue());
-    holdLocked = false;
+  piece = newPiece(takeFromQueue());
+  holdLocked = false;
+  const holdBox = document.querySelector('.hold-box');
+  if (holdBox) holdBox.classList.remove('locked');
 
-    const holdBox = document.querySelector('.hold-box');
-    if (holdBox) holdBox.classList.remove('locked');
+  lockTimer = 0;
+  lockWarningTimer = 0;
+  showLockWarning = false;
+  touchingGround = false;
+  lastActionWasRotate = false;
+  tSpinType = null;
+  lastKickIndex = 0;
+  lockMoveResets = 0;
+  lowestY = piece ? piece.y : -999;
 
-    lockTimer = 0;
-    lockWarningTimer = 0;
-    showLockWarning = false;
-    touchingGround = false;
-    lastActionWasRotate = false;
-    tSpinType = null;
-    lastKickIndex = 0;
-    lockMoveResets = 0;
-
-    lowestY = piece ? piece.y : -999;
-
-    if (piece) {
-        if (collide(board, piece)) {
-            piece.y -= 1;
-            if (collide(board, piece)) {
-                endGame();
-                return;
-            }
-        }
-        lowestY = piece.y;
-        piece.animX = piece.x;
-        piece.animY = piece.y;
+  if (piece) {
+    if (collide(board, piece)) {
+      piece.y -= 1;
+      if (collide(board, piece)) {
+        endGame();
+        return;
+      }
     }
+    lowestY = piece.y;
+    piece.animX = piece.x;
+    piece.animY = piece.y;
+  }
 
-    redrawSidePanels();
-    flushPendingInputsOnSpawn();
+  redrawSidePanels();
+
+  spawnJustHappened = true;
+  spawnConsumeDeadline = Date.now() + 220;
+
+  applyIRS_IHS_OnSpawn();
+  flushPendingInputsOnSpawn();
+  consumeBufferedInputs('spawnConsume');
+
+  spawnJustHappened = false;
 }
 
 function newPiece(type) {
@@ -3448,40 +3552,39 @@ function tryMove(dx, dy) {
     return !collide(board, testPiece);
 }
 
-function move(dx){
-    if(!piece || hardDropping || gameOverAnimating) return false;
-    piece.x += dx;
-    if(collide(board, piece)){
-        piece.x -= dx;
-        return false;
-    }
-    lastActionWasRotate = false;
-    tSpinType = null;
-    maybeResetLockTimer();
-    audioSystem.playSound('move');
-    return true;
+function move(dx) {
+  if (!piece || hardDropping || gameOverAnimating) return false;
+  piece.x += dx;
+  if (collide(board, piece)) {
+    piece.x -= dx;
+    return false;
+  }
+  lastActionWasRotate = false;
+  tSpinType = null;
+  maybeResetLockTimer('move');
+  audioSystem.playSound('move');
+  return true;
 }
 
 let softDropActive = false;
 let softDropTimer = 0;
 const SOFT_DROP_SPEED = 50;
 
-function softDropStep(){
-    if(!piece || hardDropping) return false;
-    piece.y += 1;
-    if(collide(board, piece)){
-        piece.y -= 1;
-        return false;
-    }else{
-        lastActionWasRotate = false;
-        tSpinType = null;
-        score += 1;
-        updateStats();
-
-        audioSystem.playSound('softDrop');
-
-        return true;
-    }
+function softDropStep() {
+  if (!piece || hardDropping) return false;
+  piece.y += 1;
+  if (collide(board, piece)) {
+    piece.y -= 1;
+    return false;
+  } else {
+    lastActionWasRotate = false;
+    tSpinType = null;
+    score += 1;
+    updateStats();
+    audioSystem.playSound('softDrop');
+    maybeResetLockTimer('soft');
+    return true;
+  }
 }
 
 function startSoftDrop() {
@@ -3506,30 +3609,24 @@ function updateSoftDrop(dt) {
     }
 }
 
-function hardDrop(){
-    if(!piece || hardDropping || gameOverAnimating) return;
-
-    const gy = ghostY();
-    const dist = Math.max(0, gy - piece.y);
-
-    if(dist === 0) {
-        lockPiece();
-        return;
-    }
-
-    hardDropping = true;
-    hardDropStartY = piece.y;
-    hardDropTargetY = gy;
-    hardDropCurrentY = piece.y;
-
-    score += dist * 2;
-    updateStats();
-    lastActionWasRotate = false;
-
-    audioSystem.playSound('hardDrop');
-    screenShaker.mediumShake();
-
-    vibrate(15);
+function hardDrop() {
+  if (!piece || hardDropping || gameOverAnimating) return;
+  const gy = ghostY();
+  const dist = Math.max(0, gy - piece.y);
+  if (dist === 0) {
+    lockPiece();
+    return;
+  }
+  hardDropping = true;
+  hardDropStartY = piece.y;
+  hardDropTargetY = gy;
+  hardDropCurrentY = piece.y;
+  score += dist * 2;
+  updateStats();
+  lastActionWasRotate = false;
+  audioSystem.playSound('hardDrop');
+  screenShaker.mediumShake();
+  vibrate(15);
 }
 
 function updateHardDrop() {
@@ -3596,20 +3693,24 @@ function lockPiece(){
     }
 }
 
-function maybeResetLockTimer(){
-    if(!isGrounded(piece)) return;
+function maybeResetLockTimer(reason = '') {
+  if (!piece) return;
+  if (!isGrounded(piece)) return;
 
-    if(piece.y > lowestY) {
-        lowestY = piece.y;
-        lockMoveResets = 0;
-    }
+  if (piece.y > lowestY) {
+    lowestY = piece.y;
+    lockMoveResets = 0;
+  }
 
-    if(lockMoveResets < MAX_LOCK_RESETS) {
-        lockTimer = 0;
-        lockWarningTimer = 0;
-        showLockWarning = false;
-        lockMoveResets++;
-    }
+  const allowReason = (reason === 'move' || reason === 'rotate' || reason === 'soft');
+  if (!allowReason && reason) return;
+
+  if (lockMoveResets < MAX_LOCK_RESETS) {
+    lockTimer = 0;
+    lockWarningTimer = 0;
+    showLockWarning = false;
+    lockMoveResets++;
+  }
 }
 
 function ghostY(){
@@ -4101,11 +4202,10 @@ function drawMini(c, type){
   lockTimer = 0;
   touchingGround = false;
 }
-  function hold(){
+function hold() {
   const holdBox = document.querySelector('.hold-box');
   if (!piece) return;
   if (gameOverAnimating) return;
-
   if (holdLocked || hardDropping) {
     if (holdLocked && holdBox) {
       holdBox.classList.add('shake');
@@ -4114,12 +4214,9 @@ function drawMini(c, type){
     }
     return;
   }
-
   ensureAudioUnlocked();
   audioSystem.playSound('hold');
-
   const currentType = piece.type;
-
   const applySpawnSafety = () => {
     if (!piece) return;
     lockTimer = 0;
@@ -4131,13 +4228,11 @@ function drawMini(c, type){
     lastKickIndex = 0;
     lockMoveResets = 0;
     lowestY = piece.y;
-
     if (piece.type === 'I') {
       piece.y = -2;
     } else {
       piece.y = 0;
     }
-
     if (collide(board, piece)) {
       piece.y -= 1;
       if (collide(board, piece)) {
@@ -4145,18 +4240,15 @@ function drawMini(c, type){
         return;
       }
     }
-
     lowestY = piece.y;
     piece.animX = piece.x;
     piece.animY = piece.y;
   };
-
   const centerPiece = () => {
     piece.x = Math.floor(COLS / 2) - Math.ceil(piece.m[0].length / 2);
     if (piece.x < 0) piece.x = 0;
     if (piece.x + piece.m[0].length > COLS) piece.x = COLS - piece.m[0].length;
   };
-
   if (!holdType) {
     holdType = currentType;
     if (holdBox) {
@@ -4176,7 +4268,6 @@ function drawMini(c, type){
     piece = newPiece(nextType);
     centerPiece();
     applySpawnSafety();
-
     setTimeout(() => {
       if (holdBox) {
         holdBox.classList.remove('animate-out');
@@ -4187,48 +4278,85 @@ function drawMini(c, type){
       draw();
     }, 0);
   }
-
   holdLocked = true;
   if (holdBox) {
     holdBox.classList.add('locked');
   }
-
   redrawSidePanels();
   draw();
   vibrate(8);
 }
 let pendingInputs = [];
 const MAX_PENDING_INPUTS = 5;
-  function inputAction(act) {
-    ensureAudioUnlocked();
-    const blockedByUI = shouldBlockGameplayInput();
+  function bufferInput(action, ttlMs = INPUT_BUFFER_TTL_MS) {
+  if (!action) return;
+  const now = Date.now();
+  inputBuffer.push({ action, time: now, validUntil: now + ttlMs });
+  if (inputBuffer.length > INPUT_BUFFER_MAX) inputBuffer.shift();
+}
 
-    if (gameOver || gameOverAnimating) return;
+function consumeBufferedInputs(phase = '') {
+  if (!running || paused || gameOver) {
+    inputBuffer = [];
+    return;
+  }
+  if (shouldBlockGameplayInput()) return;
 
-    if (act !== 'pause') {
-        if (!running || paused) return;
-        if (blockedByUI) return;
-    } else {
-        if (!running || isCountingDown) return;
-        if (blockedByUI && !paused) return;
-    }
+  const now = Date.now();
+  const valid = [];
+  for (const it of inputBuffer) {
+    if (!it) continue;
+    if (now <= (it.validUntil || 0)) valid.push(it);
+  }
+  inputBuffer = [];
 
-    highlightKey(act);
+  for (const it of valid) {
+    executeAction(it.action);
+  }
+}
 
-    if (clearingLines && act !== 'pause') {
-        if (pendingInputs.length < MAX_PENDING_INPUTS) {
-            const now = Date.now();
-            pendingInputs.push({
-                action: act,
-                time: now,
-                validUntil: now + CLEAR_ANIMATION_DURATION + 200
-            });
-        }
-        return;
-    }
+function updateHeldKeyStateFromAction(act, isDown) {
+  if (act === 'rotateLeft') heldKeys.rotateLeft = !!isDown;
+  if (act === 'rotateRight') heldKeys.rotateRight = !!isDown;
+  if (act === 'hold') heldKeys.hold = !!isDown;
+}
 
-    executeAction(act);
-    draw();
+function applyIRS_IHS_OnSpawn() {
+  if (!piece) return;
+
+  const now = Date.now();
+  if (now > spawnConsumeDeadline) return;
+
+  if (heldKeys.hold) {
+    hold();
+  }
+
+  if (!piece) return;
+
+  if (heldKeys.rotateRight) rotate(+1);
+  else if (heldKeys.rotateLeft) rotate(-1);
+}
+function inputAction(act) {
+  ensureAudioUnlocked();
+  const blockedByUI = shouldBlockGameplayInput();
+  if (gameOver || gameOverAnimating) return;
+  if (act !== 'pause') {
+    if (!running || paused) return;
+    if (blockedByUI) return;
+  } else {
+    if (!running || isCountingDown) return;
+    if (blockedByUI && !paused) return;
+  }
+  
+  highlightKey(act);
+  
+  if (clearingLines && !piece && act !== 'pause') {
+    bufferInput(act, CLEAR_ANIMATION_DURATION + 260);
+    return;
+  }
+  
+  executeAction(act);
+  draw();
 }
 function executeAction(act) {
     switch(act) {
@@ -4263,61 +4391,24 @@ function executeAction(act) {
     }
 }
 function processPendingInputs() {
-    if (!pendingInputs || pendingInputs.length === 0) return;
-    if (!running || paused || gameOver) {
-        pendingInputs = [];
-        return;
-    }
-    if (shouldBlockGameplayInput()) {
-        pendingInputs = [];
-        return;
-    }
-
-    const now = Date.now();
-    const validInputs = pendingInputs.filter(input => {
-        if (!input) return false;
-        const t = input.time || 0;
-        const until = input.validUntil || (t + 200);
-        return now <= until;
-    });
-
-    for (const input of validInputs) {
-        executeAction(input.action);
-    }
-
-    pendingInputs = [];
+  if (!pendingInputs || pendingInputs.length === 0) return;
+  const now = Date.now();
+  for (const input of pendingInputs) {
+    if (!input) continue;
+    const until = input.validUntil || (input.time || now) + 200;
+    if (now <= until) bufferInput(input.action, Math.max(0, until - now));
+  }
+  pendingInputs = [];
+  consumeBufferedInputs('afterClear');
 }
 
   window.addEventListener('keydown', onKeyDown, { passive: false });
   window.addEventListener('keyup', onKeyUp);
-  cvs.addEventListener('touchstart', (e)=>{
-    const t = e.changedTouches[0];
-    touchStartX = t.clientX; touchStartY = t.clientY; touchStartTime = Date.now();
-  }, {passive:true});
-  cvs.addEventListener('touchmove', (e)=>{ e.preventDefault(); }, {passive:false});
-  cvs.addEventListener('touchend', (e)=>{
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStartX;
-    const dy = t.clientY - touchStartY;
-    const adx = Math.abs(dx), ady = Math.abs(dy);
-    const dt = Date.now() - touchStartTime;
-    const TH = 24;
-    if(adx<TH && ady<TH && dt<220){
-      const rect = cvs.getBoundingClientRect();
-      const relY = t.clientY - rect.top;
-      if(relY < rect.height*0.5) inputAction('rotateRight');
-      else inputAction('soft');
-      return;
-    }
-    if(adx > ady){
-      if(dx > TH) inputAction('right');
-      else if(dx < -TH) inputAction('left');
-    }else{
-      if(dy > TH) inputAction('soft');
-      else if(dy < -TH) inputAction('hard');
-    }
-  }, {passive:false});
-  function attachMobileHandlers(el) {
+  cvs.addEventListener('touchstart', onCanvasTouchStart, { passive: true });
+  cvs.addEventListener('touchmove', onCanvasTouchMove, { passive: false });
+  cvs.addEventListener('touchend', onCanvasTouchEnd, { passive: false });
+  cvs.addEventListener('touchcancel', onCanvasTouchEnd, { passive: false });
+function attachMobileHandlers(el) {
   if (!el) return;
 
   const actionMap = {
@@ -4371,9 +4462,16 @@ function processPendingInputs() {
     }
   };
 
+  const updateHeldForMobile = (mapped, isDown) => {
+    if (mapped === 'rotateLeft' || mapped === 'rotateRight' || mapped === 'hold') {
+      updateHeldKeyStateFromAction(mapped, isDown);
+    }
+  };
+
   const releaseActiveTouch = () => {
     if (!activeTouchAction) return;
     stopContinuous(activeTouchAction);
+    updateHeldForMobile(activeTouchAction, false);
     if (activeTouchBtn) activeTouchBtn.classList.remove('pressed');
     activeTouchAction = null;
     activeTouchBtn = null;
@@ -4405,7 +4503,10 @@ function processPendingInputs() {
     activeTouchBtn = t;
     t.classList.add('pressed');
 
+    updateHeldForMobile(mapped, true);
+
     if (!startContinuous(mapped)) {
+      if (clearingLines && mapped !== 'pause') bufferInput(mapped, CLEAR_ANIMATION_DURATION + 260);
       inputAction(mapped);
     }
   }, { passive: false });
@@ -4438,7 +4539,6 @@ function processPendingInputs() {
     if (!activeTouchAction || !activeTouchBtn) return;
     const touch = (e.touches && Array.from(e.touches).find(tt => tt.identifier === activeTouchId)) || null;
     if (!touch) return;
-
     const rect = activeTouchBtn.getBoundingClientRect();
     const inside = touch.clientX >= rect.left && touch.clientX <= rect.right &&
                    touch.clientY >= rect.top && touch.clientY <= rect.bottom;
@@ -4456,7 +4556,7 @@ function processPendingInputs() {
   attachMobileHandlers(mobileLeftEl);
   attachMobileHandlers(mobileRightEl);
 
-  function releaseAllContinuousInputs() {
+function releaseAllContinuousInputs() {
   const cont = ['moveLeft', 'moveRight', 'softDrop'];
   cont.forEach(a => {
     keyState[a] = false;
@@ -4464,6 +4564,10 @@ function processPendingInputs() {
     arrTimer[a] = 0;
   });
   stopSoftDrop();
+
+  heldKeys.rotateLeft = false;
+  heldKeys.rotateRight = false;
+  heldKeys.hold = false;
 }
 
   function resize(){
@@ -5222,7 +5326,6 @@ function onKeyDown(e) {
 
   for (const action in keyBindings) {
     if (!matchBinding(action, e)) continue;
-
     e.preventDefault();
 
     if (action === 'pause') {
@@ -5233,6 +5336,11 @@ function onKeyDown(e) {
     }
 
     ensureAudioUnlocked();
+
+    if (action === 'rotateLeft' || action === 'rotateRight' || action === 'hold') {
+      updateHeldKeyStateFromAction(action, true);
+      if (clearingLines) bufferInput(action, CLEAR_ANIMATION_DURATION + 260);
+    }
 
     if (action === 'moveLeft' || action === 'moveRight') {
       if (!keyState[action]) {
@@ -5263,13 +5371,16 @@ function onKeyUp(e) {
   for (const action in keyBindings) {
     if (!matchBinding(action, e)) continue;
 
+    if (action === 'rotateLeft' || action === 'rotateRight' || action === 'hold') {
+      updateHeldKeyStateFromAction(action, false);
+    }
+
     if (action === 'moveLeft' || action === 'moveRight') {
       keyState[action] = false;
       dasTimer[action] = 0;
       arrTimer[action] = 0;
       return;
     }
-
     if (action === 'softDrop') {
       keyState[action] = false;
       stopSoftDrop();

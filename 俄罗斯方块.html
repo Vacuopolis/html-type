@@ -5624,46 +5624,39 @@ function loadSavedKeybindings() {
   buildKeybindUI();
 }
 
-window.addEventListener('gamepadconnected', (e) => {
-  connectedGamepad = e.gamepad;
-  gamepadIndicator.classList.add('connected');
-  gamepadName.textContent = e.gamepad.id.substring(0, 20) + '...';
-  console.log('手柄已连接:', e.gamepad.id);
-});
+function pollGamepad() {
+  if (!connectedGamepad) return;
+  if (isCountingDown) return;
 
-window.addEventListener('gamepaddisconnected', (e) => {
-  connectedGamepad = null;
-  gamepadIndicator.classList.remove('connected');
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const idx = connectedGamepad.index;
+  const gp = gamepads && Number.isFinite(idx) ? gamepads[idx] : null;
 
-  for(const action in gamepadState) {
-    if(gamepadState[action]) {
-      if(action === 'moveLeft' || action === 'moveRight') {
-        keyState[action] = false;
-        dasTimer[action] = 0;
-        arrTimer[action] = 0;
+  if (!gp) {
+    connectedGamepad = null;
+    if (gamepadIndicator) gamepadIndicator.classList.remove('connected');
+    for (const action in gamepadState) {
+      if (gamepadState[action]) {
+        if (action === 'moveLeft' || action === 'moveRight') {
+          keyState[action] = false;
+          dasTimer[action] = 0;
+          arrTimer[action] = 0;
+        }
       }
     }
+    gamepadState = {};
+    lastGamepadState = {};
+    return;
   }
-  gamepadState = {};
-  lastGamepadState = {};
 
-  console.log('手柄已断开');
-});
+  connectedGamepad = gp;
 
-function pollGamepad() {
-  if(!connectedGamepad) return;
-  if(isCountingDown) return;
-
-  const gamepads = navigator.getGamepads();
-  const gp = gamepads[connectedGamepad.index];
-  if(!gp) return;
-
-  for(const action in GAMEPAD_BINDINGS) {
+  for (const action in GAMEPAD_BINDINGS) {
     const buttons = GAMEPAD_BINDINGS[action];
     let pressed = false;
 
-    for(const btnIdx of buttons) {
-      if(gp.buttons[btnIdx] && gp.buttons[btnIdx].pressed) {
+    for (const btnIdx of buttons) {
+      if (gp.buttons[btnIdx] && gp.buttons[btnIdx].pressed) {
         pressed = true;
         break;
       }
@@ -5671,18 +5664,18 @@ function pollGamepad() {
 
     const wasPressed = gamepadState[action] || false;
 
-    if(pressed && !wasPressed) {
-      if(action === 'moveLeft' || action === 'moveRight') {
+    if (pressed && !wasPressed) {
+      if (action === 'moveLeft' || action === 'moveRight') {
         keyState[action] = true;
         dasTimer[action] = 0;
         arrTimer[action] = 0;
-        if(action === 'moveLeft') move(-1);
+        if (action === 'moveLeft') move(-1);
         else move(1);
       } else {
         inputAction(action);
       }
-    } else if(!pressed && wasPressed) {
-      if(action === 'moveLeft' || action === 'moveRight') {
+    } else if (!pressed && wasPressed) {
+      if (action === 'moveLeft' || action === 'moveRight') {
         keyState[action] = false;
         dasTimer[action] = 0;
         arrTimer[action] = 0;
@@ -5695,8 +5688,8 @@ function pollGamepad() {
   const threshold = 0.5;
   const leftStickX = gp.axes[0];
 
-  if(leftStickX < -threshold) {
-    if(!gamepadState['axisLeft']) {
+  if (leftStickX < -threshold) {
+    if (!gamepadState['axisLeft']) {
       keyState['moveLeft'] = true;
       dasTimer['moveLeft'] = 0;
       arrTimer['moveLeft'] = 0;
@@ -5704,7 +5697,7 @@ function pollGamepad() {
       gamepadState['axisLeft'] = true;
     }
   } else {
-    if(gamepadState['axisLeft']) {
+    if (gamepadState['axisLeft']) {
       keyState['moveLeft'] = false;
       dasTimer['moveLeft'] = 0;
       arrTimer['moveLeft'] = 0;
@@ -5712,8 +5705,8 @@ function pollGamepad() {
     }
   }
 
-  if(leftStickX > threshold) {
-    if(!gamepadState['axisRight']) {
+  if (leftStickX > threshold) {
+    if (!gamepadState['axisRight']) {
       keyState['moveRight'] = true;
       dasTimer['moveRight'] = 0;
       arrTimer['moveRight'] = 0;
@@ -5721,7 +5714,7 @@ function pollGamepad() {
       gamepadState['axisRight'] = true;
     }
   } else {
-    if(gamepadState['axisRight']) {
+    if (gamepadState['axisRight']) {
       keyState['moveRight'] = false;
       dasTimer['moveRight'] = 0;
       arrTimer['moveRight'] = 0;
@@ -5730,22 +5723,87 @@ function pollGamepad() {
   }
 }
 
+function onGamepadConnected(e) {
+  const idx = e && e.gamepad ? e.gamepad.index : null;
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const gp = gamepads && Number.isFinite(idx) ? gamepads[idx] : (e ? e.gamepad : null);
+
+  connectedGamepad = gp || (e ? e.gamepad : null);
+
+  if (gamepadIndicator) gamepadIndicator.classList.add('connected');
+  if (gamepadName) {
+    const name = (connectedGamepad && connectedGamepad.id) ? connectedGamepad.id : '手柄已连接';
+    gamepadName.textContent = name.length > 20 ? name.substring(0, 20) + '...' : name;
+  }
+}
+
+function onGamepadDisconnected(e) {
+  connectedGamepad = null;
+  if (gamepadIndicator) gamepadIndicator.classList.remove('connected');
+
+  for (const action in gamepadState) {
+    if (gamepadState[action]) {
+      if (action === 'moveLeft' || action === 'moveRight') {
+        keyState[action] = false;
+        dasTimer[action] = 0;
+        arrTimer[action] = 0;
+      }
+    }
+  }
+
+  gamepadState = {};
+  lastGamepadState = {};
+}
+
+function initGamepadListeners() {
+  window.addEventListener('gamepadconnected', onGamepadConnected);
+  window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
+}
+
 function vibrate(duration) {
-  if(!vibrationEnabled) return;
+  if (!vibrationEnabled) return;
 
-  if(navigator.vibrate) {
-    navigator.vibrate(duration);
+  const isPattern = Array.isArray(duration);
+  const totalDuration = isPattern
+    ? duration.reduce((s, v) => s + (Number.isFinite(v) ? v : 0), 0)
+    : duration;
+
+  const safeDuration = Number.isFinite(totalDuration) ? Math.max(0, Math.floor(totalDuration)) : 0;
+  if (safeDuration <= 0 && !isPattern) return;
+
+  if (navigator.vibrate) {
+    try {
+      navigator.vibrate(isPattern ? duration : safeDuration);
+    } catch (e) {}
   }
 
-  if(connectedGamepad && connectedGamepad.vibrationActuator) {
-    const intensity = Math.min(1.0, duration / 50);
-    connectedGamepad.vibrationActuator.playEffect('dual-rumble', {
-      startDelay: 0,
-      duration: duration,
-      weakMagnitude: intensity * 0.5,
-      strongMagnitude: intensity
-    });
-  }
+  if (!connectedGamepad) return;
+
+  const pads = navigator.getGamepads ? navigator.getGamepads() : null;
+  const gp = pads && Number.isFinite(connectedGamepad.index) ? pads[connectedGamepad.index] : null;
+  const actuator = gp && gp.vibrationActuator;
+
+  if (!actuator || typeof actuator.playEffect !== 'function') return;
+
+  const burstMs = isPattern
+    ? Math.max(0, Math.min(200, duration[0] || safeDuration || 60))
+    : safeDuration;
+
+  const safeBurst = Number.isFinite(burstMs) ? Math.max(0, Math.floor(burstMs)) : 0;
+  if (safeBurst <= 0) return;
+
+  const intensity = Math.max(0, Math.min(1, safeBurst / 50));
+  const params = {
+    startDelay: 0,
+    duration: safeBurst,
+    weakMagnitude: Math.max(0, Math.min(1, intensity * 0.5)),
+    strongMagnitude: Math.max(0, Math.min(1, intensity))
+  };
+
+  try {
+    const r = actuator.playEffect('dual-rumble', params);
+    if (r && typeof r.catch === 'function') r.catch(() => {});
+  } catch (e) {}
 }
 
 function showResumePrompt(progress) {
@@ -5802,35 +5860,27 @@ function showResumePrompt(progress) {
 
 (function init(){
   storageManager = new StorageManager();
-
   loadSavedSettings();
   loadSavedKeybindings();
-
   audioSystem = new AudioSystem();
-
   audioSystem.setSFXVolume(parseInt(cfgSFXVolume.value) / 100);
   audioSystem.setMusicVolume(parseInt(cfgMusicVolume.value) / 100);
-
   screenShaker = new ScreenShake(document.querySelector('.playfield-wrap'));
   bgParticles = new BackgroundParticles(document.querySelector('.playfield-wrap'));
-
   applySkin(cfgSkin.value);
   buildPreviewCanvases();
   buildKeybindUI();
+  initGamepadListeners();
   resize();
   updateModeDisplay();
-
   const savedProgress = loadSavedProgress();
   if (savedProgress) {
     showResumePrompt(savedProgress);
   } else {
     showSettingsOverlay(true);
   }
-
   btnPlayPause.textContent = '▶ 开始';
-
   draw();
-
   initOrientationDetection();
 })();
 

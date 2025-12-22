@@ -3055,134 +3055,134 @@ function checkTSpin(p, kickIndex) {
 }
 
 function clearLines(){
-    const fullRows = [];
-    for(let y=0; y<ROWS; y++){
-        const isFull = board[y].every(v => v !== 0);
-        if(isFull) fullRows.push(y);
-    }
-
-    const cleared = fullRows.length;
-
-    if(cleared > 0){
-        vibrate([10, 20, 30][Math.min(cleared-1, 2)] || 30);
-
-        for(const y of fullRows){
-            for(let x=0; x<COLS; x++){
-                const type = board[y][x];
-                if(!type) continue;
-                const color = skin[type];
-                const px = x * BLOCK + BLOCK / 2;
-                const py = y * BLOCK + BLOCK / 2;
-                const count = 15 + Math.floor(Math.random() * 6);
-                for(let i=0; i<count; i++){
-                    particles.push(new Particle(px, py, color, 'normal'));
-                }
-            }
-        }
-
-        const isTetris = (cleared === 4);
-        const isTSpin = (tSpinType !== null && cleared > 0);
-        if (isTetris) {
-            sessionStats.tetrises++;
-        }
-        if (isTSpin) {
-            sessionStats.tSpins++;
-        }
-        sessionStats.maxCombo = Math.max(sessionStats.maxCombo, combo + 1);
-
-        const isSpecial = isTetris || isTSpin;
-
-        if(cleared > 0) {
-            audioSystem.playLineClear(cleared);
-            if(combo > 1) {
-                audioSystem.playComboSound(combo);
-            }
-            if(cleared === 4 || isTSpin) {
-                screenShaker.bigShake();
-            } else {
-                screenShaker.smallShake();
-            }
-        }
-
-        let b2bMultiplier = 1.0;
-        if(isSpecial) {
-            if(lastClearWasSpecial) {
-                b2bCount++;
-                b2bMultiplier = 1.5;
-            } else {
-                b2bCount = 1;
-            }
-            lastClearWasSpecial = true;
-        } else {
-            lastClearWasSpecial = false;
-            b2bCount = 0;
-        }
-
-        let baseScore = 0;
-        if(isTSpin) {
-            let effectiveTSpinType = tSpinType;
-            if(tSpinType === 'mini' && cleared >= 3) {
-                effectiveTSpinType = 'normal';
-            }
-
-            const tSpinScores = {
-                'mini': [100, 200, 400],
-                'normal': [400, 800, 1200, 1600]
-            };
-            const scoreTable = tSpinScores[effectiveTSpinType] || tSpinScores['normal'];
-            baseScore = scoreTable[Math.min(cleared - 1, scoreTable.length - 1)] || 0;
-        } else {
-            const normalScores = {1:100, 2:300, 3:500, 4:800};
-            baseScore = normalScores[cleared] || 0;
-        }
-
-        combo++;
-        const comboBonus = combo > 1 ? 50 * (combo - 1) : 0;
-
-        const totalScore = Math.floor((baseScore + comboBonus) * level * b2bMultiplier);
-        score += totalScore;
-
-        lines += cleared;
-
-        if(gameMode === 'cheese') {
-            updateCheeseProgress();
-        }
-
-        updateLevelByLines();
-        updateStats();
-
-        showClearNotification(cleared, isTSpin, tSpinType, b2bMultiplier > 1);
-
-        const fullSet = new Set(fullRows);
-        const kept = [];
-        for(let y=0; y<ROWS; y++){
-            if(!fullSet.has(y)) kept.push(board[y]);
-        }
-        const empties = new Array(cleared).fill(0).map(()=> new Array(COLS).fill(0));
-        board = [...empties, ...kept];
-
-        const allClear = board.every(row => row.every(cell => cell === 0));
-        if(allClear) {
-            triggerAllClear();
-        }
-
-        clearingLines = true;
-        clearAnimationTimer = 0;
-        setTimeout(()=>{
-            clearingLines = false;
-            processPendingInputs();
-        }, CLEAR_ANIMATION_DURATION);
-
-        checkModeCompletion();
-
-        spawn();
-    } else {
-        combo = 0;
-        updateStats();
-        spawn();
-    }
-
+  if (gameOverAnimating) {
     tSpinType = null;
+    return;
+  }
+
+  const fullRows = [];
+  for(let y=0; y<ROWS; y++){
+    const isFull = board[y].every(v => v !== 0);
+    if(isFull) fullRows.push(y);
+  }
+  const cleared = fullRows.length;
+
+  if(cleared > 0){
+    vibrate([10, 20, 30][Math.min(cleared-1, 2)] || 30);
+
+    for(const y of fullRows){
+      for(let x=0; x<COLS; x++){
+        const type = board[y][x];
+        if(!type) continue;
+        const color = skin[type];
+        const px = x * BLOCK + BLOCK / 2;
+        const py = y * BLOCK + BLOCK / 2;
+        const count = 15 + Math.floor(Math.random() * 6);
+        for(let i=0; i<count; i++){
+          particles.push(new Particle(px, py, color, 'normal'));
+        }
+      }
+    }
+
+    const isTetris = (cleared === 4);
+    const isTSpin = (tSpinType !== null && cleared > 0);
+    if (isTetris) sessionStats.tetrises++;
+    if (isTSpin) sessionStats.tSpins++;
+    sessionStats.maxCombo = Math.max(sessionStats.maxCombo, combo + 1);
+
+    const isSpecial = isTetris || isTSpin;
+
+    if(cleared > 0) {
+      audioSystem.playLineClear(cleared);
+      if(combo > 1) {
+        audioSystem.playComboSound(combo);
+      }
+      if(cleared === 4 || isTSpin) {
+        screenShaker.bigShake();
+      } else {
+        screenShaker.smallShake();
+      }
+    }
+
+    let b2bMultiplier = 1.0;
+    if(isSpecial) {
+      if(lastClearWasSpecial) {
+        b2bCount++;
+        b2bMultiplier = 1.5;
+      } else {
+        b2bCount = 1;
+      }
+      lastClearWasSpecial = true;
+    } else {
+      lastClearWasSpecial = false;
+      b2bCount = 0;
+    }
+
+    let baseScore = 0;
+    if(isTSpin) {
+      let effectiveTSpinType = tSpinType;
+      if(tSpinType === 'mini' && cleared >= 3) {
+        effectiveTSpinType = 'normal';
+      }
+      const tSpinScores = {
+        'mini': [100, 200, 400],
+        'normal': [400, 800, 1200, 1600]
+      };
+      const scoreTable = tSpinScores[effectiveTSpinType] || tSpinScores['normal'];
+      baseScore = scoreTable[Math.min(cleared - 1, scoreTable.length - 1)] || 0;
+    } else {
+      const normalScores = {1:100, 2:300, 3:500, 4:800};
+      baseScore = normalScores[cleared] || 0;
+    }
+
+    combo++;
+    const comboBonus = combo > 1 ? 50 * (combo - 1) : 0;
+    const totalScore = Math.floor((baseScore + comboBonus) * level * b2bMultiplier);
+    score += totalScore;
+    lines += cleared;
+
+    if(gameMode === 'cheese') {
+      updateCheeseProgress();
+    }
+
+    updateLevelByLines();
+    updateStats();
+    showClearNotification(cleared, isTSpin, tSpinType, b2bMultiplier > 1);
+
+    const fullSet = new Set(fullRows);
+    const kept = [];
+    for(let y=0; y<ROWS; y++){
+      if(!fullSet.has(y)) kept.push(board[y]);
+    }
+    const empties = new Array(cleared).fill(0).map(()=> new Array(COLS).fill(0));
+    board = [...empties, ...kept];
+
+    const allClear = board.every(row => row.every(cell => cell === 0));
+    if(allClear) {
+      triggerAllClear();
+    }
+
+    clearingLines = true;
+    clearAnimationTimer = 0;
+    const endAt = Date.now() + CLEAR_ANIMATION_DURATION;
+    if (pendingInputs && pendingInputs.length) {
+      for (const it of pendingInputs) {
+        if (it && typeof it === 'object') it.validUntil = endAt + 120;
+      }
+    }
+    setTimeout(()=>{
+      clearingLines = false;
+      processPendingInputs();
+    }, CLEAR_ANIMATION_DURATION);
+
+    checkModeCompletion();
+    spawn();
+  } else {
+    combo = 0;
+    updateStats();
+    spawn();
+  }
+  tSpinType = null;
 }
 
 function triggerAllClear() {
@@ -3333,39 +3333,52 @@ function rotate(dir = +1) {
   return false;
 }
 
-function spawn() {
-  piece = newPiece(takeFromQueue());
-  holdLocked = false;
-
-  const holdBox = document.querySelector('.hold-box');
-  if (holdBox) holdBox.classList.remove('locked');
-
-  lockTimer = 0;
-  lockWarningTimer = 0;
-  showLockWarning = false;
-  touchingGround = false;
-
-  lastActionWasRotate = false;
-  tSpinType = null;
-  lastKickIndex = 0;
-
-  lockMoveResets = 0;
-  lowestY = piece ? piece.y : -999;
-
-  if (piece) {
-    if (collide(board, piece)) {
-      piece.y -= 1;
-      if (collide(board, piece)) {
-        endGame();
+function flushPendingInputsOnSpawn() {
+    if (!pendingInputs || pendingInputs.length === 0) return;
+    if (!running || paused || gameOver) {
+        pendingInputs = [];
         return;
-      }
     }
-    lowestY = piece.y;
-    piece.animX = piece.x;
-    piece.animY = piece.y;
-  }
+    if (shouldBlockGameplayInput()) {
+        pendingInputs = [];
+        return;
+    }
+    processPendingInputs();
+}
 
-  redrawSidePanels();
+function spawn() {
+    piece = newPiece(takeFromQueue());
+    holdLocked = false;
+
+    const holdBox = document.querySelector('.hold-box');
+    if (holdBox) holdBox.classList.remove('locked');
+
+    lockTimer = 0;
+    lockWarningTimer = 0;
+    showLockWarning = false;
+    touchingGround = false;
+    lastActionWasRotate = false;
+    tSpinType = null;
+    lastKickIndex = 0;
+    lockMoveResets = 0;
+
+    lowestY = piece ? piece.y : -999;
+
+    if (piece) {
+        if (collide(board, piece)) {
+            piece.y -= 1;
+            if (collide(board, piece)) {
+                endGame();
+                return;
+            }
+        }
+        lowestY = piece.y;
+        piece.animX = piece.x;
+        piece.animY = piece.y;
+    }
+
+    redrawSidePanels();
+    flushPendingInputsOnSpawn();
 }
 
 function newPiece(type) {
@@ -4187,31 +4200,35 @@ function drawMini(c, type){
 let pendingInputs = [];
 const MAX_PENDING_INPUTS = 5;
   function inputAction(act) {
-  ensureAudioUnlocked();
+    ensureAudioUnlocked();
+    const blockedByUI = shouldBlockGameplayInput();
 
-  const blockedByUI = shouldBlockGameplayInput();
+    if (gameOver || gameOverAnimating) return;
 
-  if (gameOver || gameOverAnimating) return;
-
-  if (act !== 'pause') {
-    if (!running || paused) return;
-    if (blockedByUI) return;
-  } else {
-    if (!running || isCountingDown) return;
-    if (blockedByUI && !paused) return;
-  }
-
-  highlightKey(act);
-
-  if (clearingLines && act !== 'pause') {
-    if (pendingInputs.length < MAX_PENDING_INPUTS) {
-      pendingInputs.push({ action: act, time: Date.now() });
+    if (act !== 'pause') {
+        if (!running || paused) return;
+        if (blockedByUI) return;
+    } else {
+        if (!running || isCountingDown) return;
+        if (blockedByUI && !paused) return;
     }
-    return;
-  }
 
-  executeAction(act);
-  draw();
+    highlightKey(act);
+
+    if (clearingLines && act !== 'pause') {
+        if (pendingInputs.length < MAX_PENDING_INPUTS) {
+            const now = Date.now();
+            pendingInputs.push({
+                action: act,
+                time: now,
+                validUntil: now + CLEAR_ANIMATION_DURATION + 200
+            });
+        }
+        return;
+    }
+
+    executeAction(act);
+    draw();
 }
 function executeAction(act) {
     switch(act) {
@@ -4246,13 +4263,31 @@ function executeAction(act) {
     }
 }
 function processPendingInputs() {
-    const now = Date.now();
-    const validInputs = pendingInputs.filter(input => now - input.time < 200);
-    for(const input of validInputs) {
-      executeAction(input.action);
+    if (!pendingInputs || pendingInputs.length === 0) return;
+    if (!running || paused || gameOver) {
+        pendingInputs = [];
+        return;
     }
+    if (shouldBlockGameplayInput()) {
+        pendingInputs = [];
+        return;
+    }
+
+    const now = Date.now();
+    const validInputs = pendingInputs.filter(input => {
+        if (!input) return false;
+        const t = input.time || 0;
+        const until = input.validUntil || (t + 200);
+        return now <= until;
+    });
+
+    for (const input of validInputs) {
+        executeAction(input.action);
+    }
+
     pendingInputs = [];
 }
+
   window.addEventListener('keydown', onKeyDown, { passive: false });
   window.addEventListener('keyup', onKeyUp);
   cvs.addEventListener('touchstart', (e)=>{
@@ -4642,27 +4677,104 @@ function handlePlayPause() {
 }
 let gameOverAnimating = false;
 let gameOverAnimRow = 0;
-function startGameOverAnimation(callback) {
-  gameOverAnimating = true;
-  gameOverAnimRow = ROWS - 1;
-  function animateRow() {
-    if(gameOverAnimRow < 0) {
-      gameOverAnimating = false;
-      setTimeout(callback, 300);
-      return;
+function spawnFractureBurstAtCell(cx, cy, baseColor, intensity = 1) {
+  const px = cx * BLOCK + BLOCK / 2;
+  const py = cy * BLOCK + BLOCK / 2;
+
+  const count = Math.floor(10 + Math.random() * 10 + intensity * 10);
+  for (let i = 0; i < count; i++) {
+    const p = new Particle(px, py, baseColor, (Math.random() < 0.35 ? 'spark' : 'normal'));
+    p.vx *= 0.55 + Math.random() * 0.35;
+    p.vy *= 0.55 + Math.random() * 0.35;
+    p.vx += (Math.random() - 0.5) * (6 + intensity * 6);
+    p.vy += (Math.random() - 0.5) * (6 + intensity * 6);
+
+    p.size = Math.max(1.5, p.size * (0.55 + Math.random() * 0.35));
+    p.decay = Math.min(0.08, (p.decay || 0.02) * (1.2 + Math.random() * 0.8));
+    p.gravity = (p.gravity || 0.2) * (0.8 + Math.random() * 0.6);
+    particles.push(p);
+  }
+
+  const edgeCount = Math.floor(6 + Math.random() * 8 + intensity * 6);
+  for (let i = 0; i < edgeCount; i++) {
+    const ex = cx * BLOCK + (Math.random() < 0.5 ? 2 : BLOCK - 2);
+    const ey = cy * BLOCK + 4 + Math.random() * (BLOCK - 8);
+    const spark = new Particle(ex, ey, '#ffffff', 'spark');
+    spark.vx *= 0.7;
+    spark.vy *= 0.7;
+    spark.size = 1.5 + Math.random() * 2.5;
+    spark.decay = 0.04 + Math.random() * 0.03;
+    particles.push(spark);
+  }
+}
+
+function applyGameOverCrushRow(rowY, overlayType = 'G') {
+  const crushIntensity = 1 + (ROWS - 1 - rowY) / Math.max(1, ROWS - 1);
+
+  for (let x = 0; x < COLS; x++) {
+    const t = board[rowY][x];
+    if (t && t !== overlayType) {
+      const color = skin[t] || '#9aa3b2';
+      spawnFractureBurstAtCell(x, rowY, color, crushIntensity);
     }
-    for(let x = 0; x < COLS; x++) {
-      if(!board[gameOverAnimRow][x]) {
-        board[gameOverAnimRow][x] = 'G';
+    board[rowY][x] = overlayType;
+  }
+
+  const shockY = rowY - 1;
+  if (shockY >= 0) {
+    for (let x = 0; x < COLS; x++) {
+      const t2 = board[shockY][x];
+      if (t2 && t2 !== overlayType && Math.random() < 0.25) {
+        const color2 = skin[t2] || '#9aa3b2';
+        spawnFractureBurstAtCell(x, shockY, color2, 0.6 + crushIntensity * 0.25);
       }
     }
-    draw();
-    audioSystem.playSound('lock');
-    vibrate(5);
-    gameOverAnimRow--;
-    setTimeout(animateRow, 30);
   }
-  animateRow();
+}
+function finalizeGameOverBoard(overlayType = 'G') {
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      board[y][x] = overlayType;
+    }
+  }
+}
+function startGameOverCrushAnimation(callback, overlayType = 'G') {
+  gameOverAnimating = true;
+  gameOverAnimRow = ROWS - 1;
+
+  const stepMs = 26;
+  let lastSoundAt = 0;
+
+  function step() {
+    if (gameOverAnimRow < 0) {
+      finalizeGameOverBoard(overlayType);
+      draw();
+      gameOverAnimating = false;
+      setTimeout(callback, 220);
+      return;
+    }
+
+    applyGameOverCrushRow(gameOverAnimRow, overlayType);
+
+    const now = Date.now();
+    if (audioSystem && now - lastSoundAt > 55) {
+      audioSystem.playSound('lock', 0.9);
+      lastSoundAt = now;
+    }
+    if ((ROWS - 1 - gameOverAnimRow) % 3 === 0) vibrate(6);
+
+    if (screenShaker) {
+      const depth = (ROWS - 1 - gameOverAnimRow) / Math.max(1, ROWS - 1);
+      if (depth > 0.75) screenShaker.mediumShake();
+      else screenShaker.smallShake();
+    }
+
+    draw();
+    gameOverAnimRow--;
+    setTimeout(step, stepMs);
+  }
+
+  step();
 }
 function updateMobilePauseButtons(label) {
   const btns = document.querySelectorAll('.btn[data-act="pause"]');
@@ -4700,10 +4812,13 @@ function togglePause(){
   }
 }
 function endGame(message, isVictory = false) {
+  if (gameOver) return;
+
   gameOver = true;
   timerRunning = false;
+  releaseAllContinuousInputs();
 
-  audioSystem.stopBGM();
+  if (audioSystem) audioSystem.stopBGM();
 
   if (isVictory) {
     const rank = saveGameResult();
@@ -4711,24 +4826,26 @@ function endGame(message, isVictory = false) {
     running = false;
     paused = false;
     btnPlayPause.textContent = '▶ 开始';
-    audioSystem.playSound('levelUp');
-    screenShaker.bigShake();
+    if (audioSystem) audioSystem.playSound('levelUp');
+    if (screenShaker) screenShaker.bigShake();
     vibrate([50, 100, 50]);
     showGameOverStats(message, true, rank);
     return;
   }
 
-  startGameOverAnimation(() => {
+  const overlayType = 'G';
+
+  startGameOverCrushAnimation(() => {
     const rank = saveGameResult();
     stopProgressAutoSave();
     running = false;
     paused = false;
     btnPlayPause.textContent = '▶ 开始';
-    audioSystem.playSound('gameOver');
-    screenShaker.bigShake();
+    if (audioSystem) audioSystem.playSound('gameOver');
+    if (screenShaker) screenShaker.bigShake();
     vibrate([50, 100, 50]);
     showGameOverStats(message, false, rank);
-  });
+  }, overlayType);
 }
   function updateTimer(dt) {
   if (!timerRunning) return;
@@ -4989,22 +5106,24 @@ function getEventKeyTokens(e) {
 }
 
 function matchBinding(action, e) {
-  const binds = keyBindings[action] || [];
-  if (!binds.length) return false;
+    const binds = keyBindings[action] || [];
+    if (!binds.length) return false;
 
-  const tokens = getEventKeyTokens(e);
+    const tokens = getEventKeyTokens(e);
 
-  for (const raw of binds) {
-    const bKey = normalizeKeyName(raw);
-    const bCode = normalizeCodeName(raw);
+    for (const raw of binds) {
+        const bCode = normalizeCodeName(raw);
+        const bKey = normalizeKeyName(raw);
 
-    if (bKey && tokens.has(bKey)) return true;
-    if (bCode && tokens.has(bCode)) return true;
+        if (bCode && tokens.has(bCode)) return true;
+        if (bKey && tokens.has(bKey)) return true;
 
-    if (raw === ' ' && (tokens.has('Space') || tokens.has(' '))) return true;
-  }
-
-  return false;
+        if ((raw === ' ' || raw === 'Space' || raw === 'Spacebar' || bKey === 'Space' || bCode === 'Space') &&
+            (tokens.has('Space') || tokens.has(' '))) {
+            return true;
+        }
+    }
+    return false;
 }
 
   function formatKeys(keys) {
@@ -5040,29 +5159,38 @@ function matchBinding(action, e) {
 }
 
 function assignKeyFromEvent(action, e) {
-  const code = normalizeCodeName(e.code);
-  const key = normalizeKeyName(e.key);
+    const code = normalizeCodeName(e.code);
+    const key = normalizeKeyName(e.key);
 
-  const list = [];
-  if (code) list.push(code);
-  if (key && key !== code) list.push(key);
+    const tokens = [];
+    if (code) tokens.push(code);
 
-  for (const act in keyBindings) {
-    keyBindings[act] = (keyBindings[act] || [])
-      .map(v => normalizeKeyName(v))
-      .filter(v => !list.includes(v) && normalizeCodeName(v) !== code);
-  }
+    if (key) {
+        if (key === 'Space' && !tokens.includes('Space')) tokens.push('Space');
+        else if (key !== code && !tokens.includes(key)) tokens.push(key);
+    }
 
-  keyBindings[action] = list.length ? list : [key];
-  storageManager.saveKeybindings(keyBindings);
+    for (const act in keyBindings) {
+        const arr = keyBindings[act] || [];
+        keyBindings[act] = arr
+            .map(v => {
+                const nc = normalizeCodeName(v);
+                const nk = normalizeKeyName(v);
+                return nc || nk || v;
+            })
+            .filter(v => !tokens.includes(v));
+    }
 
-  const button = document.querySelector(`[data-action="${action}"]`);
-  if (button) {
-    button.textContent = formatKeys(keyBindings[action]);
-    button.classList.remove('listening');
-  }
+    keyBindings[action] = tokens.length ? tokens : [code || key];
 
-  listeningForKey = null;
+    storageManager.saveKeybindings(keyBindings);
+
+    const button = document.querySelector(`[data-action="${action}"]`);
+    if (button) {
+        button.textContent = formatKeys(keyBindings[action]);
+        button.classList.remove('listening');
+    }
+    listeningForKey = null;
 }
 
 function shouldBlockGameplayInput() {

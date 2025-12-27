@@ -535,7 +535,7 @@
         </div>
 
         <div class="hint">
-          <strong>💡 提示：</strong>每行文字按顺序对应左侧文件。名字不够时用原文件名补齐，多余的行将忽略。
+          <strong>💡 提示：</strong>每行文字按顺序对应左侧文件。名字不够时用原文件名补齐，多余的行将忽略。(不推荐重命名大型文件!)
         </div>
       </div>
     </section>
@@ -577,7 +577,7 @@
   <div class="progress-text" id="progressDetail">0 / 0</div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://gcore.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 // ===== 工具函数 =====
 const formatBytes = (b) => {
@@ -943,32 +943,23 @@ $('btnDownloadZip').addEventListener('click', async () => {
   $('btnDownloadZip').disabled = true;
   showProgress(true);
 
+  $('progressText').textContent = '打包中…';
+  $('progressFill').style.width = '0%';
+  $('progressDetail').textContent = `0 / ${okItems.length}`;
+
   try {
-    const zip = new JSZip();
-    const folder = zip.folder('renamed_files');
+    const blob = await generateZipBlobSafe(okItems);
 
-    for (let i = 0; i < okItems.length; i++) {
-      const item = okItems[i];
-      const buf = await item.file.arrayBuffer();
-      folder.file(item.newName, buf);
-      updateProgress((i + 1) / okItems.length * 100, i + 1, okItems.length);
-    }
-
-    // 附带对照表
-    const csv = ['index,oldName,newName,sizeBytes'].concat(
-      okItems.map((it, idx) => [idx + 1, csvEscape(it.oldName), csvEscape(it.newName), it.file.size].join(','))
-    ).join('\n');
-    folder.file('_rename_map.csv', csv);
-
-    const blob = await zip.generateAsync({ type: 'blob' });
-    downloadBlob(blob, `batch_renamed_${Date.now()}.zip`);
+    downloadBlobSafe(blob, `batch_renamed_${Date.now()}.zip`);
     showToast(`已下载 ${okItems.length} 个文件`);
+  } catch (e) {
+    console.error(e);
+    showToast('打包失败：文件过大或浏览器内存不足（建议减少文件数量/改用电脑）', 'error');
   } finally {
     showProgress(false);
     $('btnDownloadZip').disabled = false;
   }
 });
-
 // ===== 下载 CSV =====
 $('btnDownloadCSV').addEventListener('click', () => {
   if (!generated.length) return;
@@ -987,6 +978,72 @@ function downloadBlob(blob, name) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+async function generateZipBlobSafe(okItems) {
+  try {
+    return await generateZipBlob(okItems, {
+      compression: 'DEFLATE',
+      compressionOptions: { level: 1 },
+    });
+  } catch (e) {
+    console.warn('[zip] DEFLATE failed, fallback to STORE', e);
+    return await generateZipBlob(okItems, {
+      compression: 'STORE',
+      compressionOptions: undefined,
+    });
+  }
+}
+
+async function generateZipBlob(okItems, zipOptions) {
+  if (typeof JSZip === 'undefined') throw new Error('JSZip 未加载');
+
+  const zip = new JSZip();
+  const folder = zip.folder('重命名后的文件');
+
+  for (const item of okItems) {
+    folder.file(item.newName, item.file, {
+      binary: true,
+      createFolders: true,
+    });
+  }
+
+  const csv = ['index,oldName,newName,sizeBytes'].concat(
+    okItems.map((it, idx) => [idx + 1, csvEscape(it.oldName), csvEscape(it.newName), it.file.size].join(','))
+  ).join('\n');
+  folder.file('_rename_map.csv', csv);
+
+  const blob = await zip.generateAsync(
+    {
+      type: 'blob',
+      streamFiles: true,
+      compression: zipOptions.compression,
+      compressionOptions: zipOptions.compressionOptions,
+    },
+    (metadata) => {
+      const pct = Number(metadata.percent) || 0;
+      $('progressFill').style.width = pct.toFixed(2) + '%';
+      $('progressDetail').textContent = metadata.currentFile
+        ? `处理中：${metadata.currentFile}`
+        : `处理中… ${pct.toFixed(0)}%`;
+    }
+  );
+
+  return blob;
+}
+
+function downloadBlobSafe(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+
+  document.body.appendChild(a);
+
+  a.click();
+
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 // ===== Toast =====

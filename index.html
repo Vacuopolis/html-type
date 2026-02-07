@@ -1,629 +1,1418 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="content-type" content="text/html; charset=UTF-8">
-    <meta name="audience" content="education,developers">
-    <meta name="classification" content="technology,educational games">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>创意互动实验室 - 好玩又有趣的项目集合</title>
+<style>
+:root {
+    --primary: #4db6ac;
+    --primary-dark: #00897b;
+    --secondary: #5c6bc0;
+    --accent: #64b5f6;
+    --primary-gradient: linear-gradient(135deg, #4db6ac 0%, #5c6bc0 100%);
+    --secondary-gradient: linear-gradient(135deg, #81c784 0%, #64b5f6 100%);
+    --accent-gradient: linear-gradient(135deg, #64b5f6 0%, #8e99f3 100%);
+    --warm-gradient: linear-gradient(135deg, #4db6ac 0%, #26a69a 50%, #5c6bc0 100%);
+    --background-color: #0f1117;
+    --background-secondary: #161822;
+    --surface-color: rgba(230, 235, 250, 0.04);
+    --card-color: rgba(230, 235, 250, 0.06);
+    --card-hover: rgba(230, 235, 250, 0.1);
+    --text-primary: #f0f5ff;
+    --text-secondary: rgba(240, 245, 255, 0.7);
+    --text-muted: rgba(240, 245, 255, 0.45);
+    --border-color: rgba(240, 245, 255, 0.08);
+    --border-hover: rgba(240, 245, 255, 0.2);
+    --glow-primary: rgba(77, 182, 172, 0.4);
+    --glow-secondary: rgba(92, 107, 192, 0.4);
+}
 
-    <title>创意互动实验室 - 好玩又有趣的项目集合</title>
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #4db6ac 0%, #5c6bc0 100%);
-            --secondary-gradient: linear-gradient(135deg, #81c784 0%, #64b5f6 100%);
-            --accent-gradient: linear-gradient(135deg, #64b5f6 0%, #8e99f3 100%);
-            --success-gradient: linear-gradient(135deg, #a5d6a7 0%, #80cbc4 100%);
-            --background-color: #1a1d2e;
-            --surface-color: rgba(230, 235, 250, 0.06);
-            --card-color: rgba(230, 235, 250, 0.09);
-            --text-primary: #f0f5ff;
-            --text-secondary: rgba(240, 245, 255, 0.75);
-            --text-muted: rgba(240, 245, 255, 0.55);
-            --hover-glow: rgba(77, 182, 172, 0.3);
-            --border-color: rgba(240, 245, 255, 0.15);
-            --ripple-color: rgba(255, 255, 255, 0.3); /* 点击波纹颜色 */
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        html {
-            scroll-behavior: smooth; /* 全局平滑滚动 */
-        }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--background-color);
-            color: var(--text-primary);
-            line-height: 1.6;
-            overflow-x: hidden;
-            position: relative;
-        }
-        body::before { /* 背景径向渐变 */
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background:
-                radial-gradient(circle at 20% 50%, rgba(77, 182, 172, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(92, 107, 192, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(100, 181, 246, 0.15) 0%, transparent 50%);
-            z-index: -1;
-            animation: subtle-gradient-shift 25s ease infinite alternate;
-        }
-        @keyframes subtle-gradient-shift {
-            0% { background-position: 0% 50%, 100% 0%, 50% 100%; }
-            100% { background-position: 100% 50%, 0% 100%, 0% 0%; }
-        }
-        header {
-            background: var(--primary-gradient);
-            color: white;
-            text-align: center;
-            padding: 5rem 2rem; /* 增加一点内边距 */
-            margin-bottom: 3rem;
-            position: relative;
-            overflow: hidden;
-        }
-        header::before { /* 页头背景纹理 */
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="100%" height="100%" fill="rgba(255,255,255,0.03)"/><circle cx="4" cy="4" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grain)"/></svg>');
-            opacity: 0.5;
-            z-index: 1;
-        }
-        /* 页头动画背景 */
-        header::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 300%; /* 更宽以实现平移效果 */
-            height: 100%;
-            background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.05) 75%, transparent 75%, transparent 100%);
-            background-size: 100px 100px;
-            opacity: 0.3;
-            z-index: 0;
-            animation: header-bg-slide 40s linear infinite;
-        }
-        @keyframes header-bg-slide {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); } /* 向左平移一个周期 */
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        header > * {
-            position: relative;
-            z-index: 2;
-        }
-        h1 {
-            font-size: clamp(2.8rem, 6vw, 4.5rem); /* 稍微增大标题 */
-            margin-bottom: 1rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            text-shadow: 0 5px 20px rgba(0, 0, 0, 0.35);
-            animation: soft-glow 3s ease-in-out infinite alternate;
-        }
-        @keyframes soft-glow {
-            from { text-shadow: 0 5px 20px rgba(0, 0, 0, 0.35); opacity: 0.95; }
-            to { text-shadow: 0 5px 30px rgba(0, 0, 0, 0.45); opacity: 1; }
-        }
-        .subtitle {
-            font-size: clamp(1.1rem, 2.5vw, 1.4rem); /* 稍微增大副标题 */
-            opacity: 0.9;
-            max-width: 650px;
-            margin: 0 auto;
-            font-weight: 300;
-            line-height: 1.8;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            perspective: 1500px; /* 为卡片3D效果设置透视 */
-        }
-        .category {
-            margin-bottom: 4.5rem; /* 增加分类间距 */
-            /* 分类标题入场动画 (保持不变) */
-            animation: categoryFadeInUp 0.8s ease-out forwards;
-            opacity: 0;
-            transform: translateY(40px);
-            animation-play-state: paused;
-        }
-        @keyframes categoryFadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .category-title {
-            font-size: clamp(1.6rem, 3.5vw, 2.2rem); /* 增大分类标题 */
-            margin-bottom: 2.5rem;
-            padding: 1rem 0;
-            text-align: center;
-            position: relative;
-            font-weight: 700;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            color: transparent;
-        }
-        .category-title::after {
-            content: '';
-            position: absolute;
-            bottom: -5px; /* 微调下划线位置 */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90px; /* 加宽下划线 */
-            height: 4px; /* 加粗下划线 */
-            background: var(--accent-gradient);
-            border-radius: 3px;
-        }
-        .projects {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2.5rem; /* 增加卡片间距 */
-            margin-bottom: 2rem;
-        }
-        .project-card {
-            background: var(--card-color);
-            border-radius: 20px;
-            overflow: hidden;
-            /* 注意：视差效果的 transform 会覆盖这里的 transform */
-            transition: box-shadow 0.4s ease, border-color 0.4s ease, opacity 0.6s ease, transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); /* 添加 transform 过渡 */
-            border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            position: relative;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            transform-style: preserve-3d; /* 允许子元素3D变换 */
-             /* 卡片入场动画 */
-            opacity: 0;
-            transform: scale(0.95) translateY(20px);
-            animation: cardFadeInScale .6s ease-out forwards;
-            animation-play-state: paused; /* 由 JS 控制 */
-        }
+html {
+    scroll-behavior: smooth;
+}
 
-         @keyframes cardFadeInScale {
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--background-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
 
-        .project-card::before { /* 卡片悬停背景光晕 */
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--primary-gradient);
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            border-radius: 20px;
-            z-index: -1;
-        }
-        .project-card:hover {
-            /* 悬停效果由 JS 视差控制，这里只定义阴影和边框 */
-            box-shadow:
-                0 25px 50px rgba(0, 0, 0, 0.3),
-                0 0 0 1.5px rgba(240, 245, 255, 0.2);
-            border-color: rgba(240, 245, 255, 0.3);
-        }
-        .project-card:hover::before {
-            opacity: 0.1;
-        }
-        .card-img {
-            height: 200px;
-            background-color: rgba(255, 255, 255, 0.04);
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            overflow: hidden;
-            border-bottom: 1px solid var(--border-color); /* 图片和内容分割线 */
-            transition: transform 0.4s ease; /* 图片悬停效果 */
-        }
-        .project-card:hover .card-img {
-             transform: scale(1.03); /* 图片轻微放大 */
-        }
+/* ===== Scroll Progress Bar ===== */
+.scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: var(--primary-gradient);
+    z-index: 10000;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px var(--glow-primary);
+}
 
-        .card-img::after { /* 图片悬停扫光 */
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(60deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-            transform: translateX(-110%);
-            transition: transform 0.7s ease;
-            pointer-events: none;
-        }
-        .project-card:hover .card-img::after {
-            transform: translateX(110%);
-        }
-        .card-content {
-            padding: 1.8rem; /* 调整内边距 */
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        .card-title {
-            font-size: 1.5rem; /* 增大卡片标题 */
-            margin-bottom: 0.8rem;
-            color: var(--text-primary);
-            font-weight: 600;
-            line-height: 1.4;
-        }
-        .card-description {
-            color: var(--text-secondary);
-            margin-bottom: 1.8rem;
-            flex-grow: 1;
-            line-height: 1.6;
-            font-size: 0.95rem;
-        }
-        .card-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: white;
-            background: var(--primary-gradient);
-            padding: 0.8rem 1.8rem; /* 调整按钮内边距 */
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            font-size: 0.95rem;
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-            align-self: flex-start;
-            border: none;
-            cursor: pointer;
-            z-index: 1; /* 确保按钮在波纹效果之上 */
-        }
-        .card-link .icon { /* 外部链接图标样式 */
-            margin-left: 8px;
-            font-size: 0.9em;
-            opacity: 0.8;
-            display: inline-block;
-        }
-        /* 点击波纹效果 */
-        .card-link::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: var(--ripple-color);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1) translate(-50%, -50%);
-            transform-origin: 50% 50%;
-        }
-        @keyframes ripple {
-            0% {
-                transform: scale(0) translate(-50%, -50%);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(15) translate(-50%, -50%); /* 控制波纹大小 */
-                opacity: 0;
-            }
-        }
-        .card-link.ripple::after {
-            animation: ripple 0.6s ease-out;
-        }
+/* ===== Navigation ===== */
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    padding: 0 2rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-100%);
+    opacity: 0;
+}
 
-        .project-card:hover .card-link { /* 卡片悬停时按钮的变化 */
-             transform: translateY(-3px);
-             background: var(--secondary-gradient);
-             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-        }
+.nav.visible {
+    transform: translateY(0);
+    opacity: 1;
+}
 
-        .card-link:focus { /* 保持焦点样式 */
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.4); /* 焦点光环 */
-        }
-        .card-link:focus-visible { /* 键盘导航焦点 */
-             box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.6);
-        }
+.nav-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.5rem;
+    margin-top: 0.8rem;
+    background: rgba(15, 17, 23, 0.8);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
 
-        footer {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: var(--surface-color);
-            margin-top: 5rem; /* 增加底部间距 */
-            border-top: 1px solid var(--border-color);
-            color: var(--text-muted);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-        @media (max-width: 768px) {
-            header { padding: 4rem 1rem; }
-            .container { padding: 0 1rem; perspective: none; } /* 移动端禁用透视 */
-            .projects { gap: 1.8rem; }
-            .card-content { padding: 1.5rem; }
-             h1 { font-size: clamp(2.5rem, 8vw, 3.5rem); }
-            .subtitle { font-size: clamp(1rem, 4vw, 1.2rem); }
-            .category-title { font-size: clamp(1.5rem, 6vw, 1.8rem); }
-        }
-        @media (max-width: 480px) {
-            .project-card { border-radius: 15px; }
-            .card-img { height: 180px; } /* 调整小屏图片高度 */
-            .card-title { font-size: 1.3rem; }
-        }
-        /* 加载骨架屏样式 (保持不变) */
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .loading .card-img, .loading .card-title, .loading .card-description, .loading .card-link {
-            background-color: rgba(240, 245, 255, 0.1); color: transparent !important; border-radius: 4px; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        .loading .card-img { height: 200px; margin-bottom: 1rem;}
-        .loading .card-title { height: 1.5rem; width: 70%; margin-bottom: 0.8rem; } /* 匹配新标题大小 */
-        .loading .card-description { height: 4rem; width: 95%; margin-bottom: 1.8rem; }
-        .loading .card-link { width: 130px; height: 2.8rem; padding: 0; background-image: none; } /* 匹配新按钮大小 */
+.nav-logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    white-space: nowrap;
+}
 
-        /* 滚动条样式 (保持不变) */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--background-color); }
-        ::-webkit-scrollbar-thumb { background: var(--primary-gradient); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--secondary-gradient); }
-    </style>
+.nav-links {
+    display: flex;
+    gap: 0.5rem;
+    list-style: none;
+}
+
+.nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+    color: var(--text-primary);
+    background: rgba(77, 182, 172, 0.1);
+}
+
+.nav-links a.active::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 1px;
+}
+
+/* ===== Hero Section ===== */
+.hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 2rem;
+}
+
+.hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.hero-bg canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.hero-gradient-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 50%, rgba(77, 182, 172, 0.15) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(92, 107, 192, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 50% 80%, rgba(100, 181, 246, 0.1) 0%, transparent 60%);
+    z-index: 1;
+}
+
+.hero-bottom-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(to bottom, transparent, var(--background-color));
+    z-index: 2;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    max-width: 900px;
+}
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(77, 182, 172, 0.1);
+    border: 1px solid rgba(77, 182, 172, 0.2);
+    border-radius: 50px;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 500;
+    margin-bottom: 2rem;
+    animation: fadeInDown 0.8s ease-out 0.2s both;
+}
+
+.badge-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.hero h1 {
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    animation: fadeInDown 0.8s ease-out 0.4s both;
+}
+
+.hero h1 .gradient-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero h1 .line {
+    display: block;
+}
+
+.hero-description {
+    font-size: clamp(1.05rem, 2vw, 1.3rem);
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.8;
+    animation: fadeInDown 0.8s ease-out 0.6s both;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeInDown 0.8s ease-out 0.8s both;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 2rem;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 4px 15px rgba(77, 182, 172, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(77, 182, 172, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(240, 245, 255, 0.06);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover {
+    background: rgba(240, 245, 255, 0.1);
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+}
+
+.hero-stats {
+    display: flex;
+    gap: 3rem;
+    justify-content: center;
+    margin-top: 4rem;
+    animation: fadeInDown 0.8s ease-out 1s both;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+.scroll-indicator {
+    position: absolute;
+    bottom: 3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    animation: fadeInDown 0.8s ease-out 1.2s both;
+}
+
+.scroll-indicator span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.scroll-mouse {
+    width: 24px;
+    height: 38px;
+    border: 2px solid var(--border-hover);
+    border-radius: 12px;
+    position: relative;
+}
+
+.scroll-mouse::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 2px;
+    animation: scroll-wheel 2s ease-in-out infinite;
+}
+
+@keyframes scroll-wheel {
+    0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+    100% { transform: translateX(-50%) translateY(12px); opacity: 0; }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Floating Orbs ===== */
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+    animation: float-orb 20s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.orb-1 {
+    width: 400px;
+    height: 400px;
+    background: var(--primary);
+    top: 10%;
+    left: -5%;
+    animation-delay: 0s;
+}
+
+.orb-2 {
+    width: 350px;
+    height: 350px;
+    background: var(--secondary);
+    top: 60%;
+    right: -5%;
+    animation-delay: -7s;
+}
+
+.orb-3 {
+    width: 300px;
+    height: 300px;
+    background: var(--accent);
+    bottom: 10%;
+    left: 30%;
+    animation-delay: -14s;
+}
+
+@keyframes float-orb {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+    100% { transform: translate(10px, -10px) scale(1.02); }
+}
+
+/* ===== Main Content ===== */
+.main-content {
+    position: relative;
+    z-index: 1;
+    padding-top: 2rem;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* ===== Section ===== */
+.section {
+    margin-bottom: 6rem;
+    scroll-margin-top: 100px;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.section-header.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 1rem;
+}
+
+.section-label::before,
+.section-label::after {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background: var(--primary);
+    opacity: 0.5;
+}
+
+.section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.section-title .gradient-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.section-description {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+/* ===== Project Grid ===== */
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 2rem;
+}
+
+/* ===== Project Card ===== */
+.project-card {
+    position: relative;
+    background: var(--card-color);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(40px);
+    will-change: transform, opacity;
+}
+
+.project-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.project-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(77, 182, 172, 0), rgba(92, 107, 192, 0));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    transition: background 0.5s ease;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.project-card:hover::before {
+    background: linear-gradient(135deg, rgba(77, 182, 172, 0.5), rgba(92, 107, 192, 0.5));
+}
+
+.project-card:hover {
+    border-color: transparent;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        0 0 40px rgba(77, 182, 172, 0.08);
+    background: var(--card-hover);
+}
+
+/* Card Shine Effect */
+.card-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(255, 255, 255, 0.06),
+        transparent 40%);
+}
+
+.project-card:hover .card-shine {
+    opacity: 1;
+}
+
+.card-image-wrapper {
+    position: relative;
+    height: 210px;
+    overflow: hidden;
+    background: var(--background-secondary);
+}
+
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.project-card:hover .card-image {
+    transform: scale(1.08);
+}
+
+.card-image-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(15, 17, 23, 0.8) 100%);
+    z-index: 1;
+}
+
+/* Shimmer loading */
+.card-image-wrapper.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        transparent 100%);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.card-number {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 2;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+}
+
+.card-body {
+    padding: 1.5rem 1.8rem 1.8rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+.card-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+    transition: color 0.3s ease;
+}
+
+.project-card:hover .card-title {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.card-description {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    flex-grow: 1;
+    margin-bottom: 1.5rem;
+}
+
+.card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.92rem;
+    padding: 0.6rem 1.4rem;
+    border-radius: 12px;
+    background: rgba(77, 182, 172, 0.08);
+    border: 1px solid rgba(77, 182, 172, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.card-link:hover {
+    background: var(--primary-gradient);
+    color: white;
+    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(77, 182, 172, 0.3);
+}
+
+.card-link .arrow {
+    transition: transform 0.3s ease;
+    font-size: 1.1em;
+}
+
+.card-link:hover .arrow {
+    transform: translateX(3px);
+}
+
+.card-tag {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    padding: 0.3rem 0.8rem;
+    background: rgba(240, 245, 255, 0.04);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+/* ===== Skeleton Loading ===== */
+.skeleton {
+    background: rgba(240, 245, 255, 0.06);
+    border-radius: 8px;
+    animation: pulse-skeleton 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-skeleton {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ===== Footer ===== */
+footer {
+    position: relative;
+    margin-top: 4rem;
+    padding: 4rem 2rem 2rem;
+    background: var(--background-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+}
+
+.footer-brand h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.footer-brand p {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    max-width: 350px;
+}
+
+.footer-section h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.footer-section ul {
+    list-style: none;
+}
+
+.footer-section ul li {
+    margin-bottom: 0.6rem;
+}
+
+.footer-section ul li a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.footer-section ul li a:hover {
+    color: var(--primary);
+}
+
+.footer-bottom {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.footer-bottom p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.footer-bottom a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* ===== Back to Top ===== */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(15, 17, 23, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1.2rem;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    background: var(--primary-gradient);
+    border-color: transparent;
+    box-shadow: 0 4px 20px rgba(77, 182, 172, 0.3);
+    transform: translateY(-3px);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+    .footer-content {
+        grid-template-columns: 1fr 1fr;
+    }
+    .footer-brand {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero { min-height: 90vh; padding: 2rem 1rem; }
+    .container { padding: 0 1rem; }
+    .projects-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+    .hero-stats { gap: 2rem; }
+    .stat-number { font-size: 1.5rem; }
+    .nav-inner { padding: 0.6rem 1rem; }
+    .nav-links a { padding: 0.4rem 0.7rem; font-size: 0.82rem; }
+    .section { margin-bottom: 4rem; }
+    .footer-content { grid-template-columns: 1fr; gap: 2rem; }
+    .footer-bottom { flex-direction: column; text-align: center; }
+    .hero-actions { flex-direction: column; align-items: center; }
+    .btn { width: 100%; max-width: 280px; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+    .project-card { border-radius: 16px; }
+    .card-image-wrapper { height: 180px; }
+    .card-body { padding: 1.2rem 1.4rem 1.5rem; }
+    .card-title { font-size: 1.2rem; }
+    .hero-stats { flex-direction: column; gap: 1rem; }
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--background-color); }
+::-webkit-scrollbar-thumb { background: rgba(77, 182, 172, 0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(77, 182, 172, 0.5); }
+
+/* ===== Selection ===== */
+::selection {
+    background: rgba(77, 182, 172, 0.3);
+    color: var(--text-primary);
+}
+</style>
 </head>
 <body>
-    <header>
-        <h1>创意互动实验室</h1>
-        <p class="subtitle">这里汇集了各种有趣的互动项目和游戏，每个项目都精心制作，点击即可体验！</p>
-    </header>
-    <div class="container">
-        <div id="projects-container">
-            <!-- 初始骨架屏占位 -->
-            <div class="category">
-                 <h2 class="category-title" style="color: transparent; background: rgba(240, 245, 255, 0.1); width: 220px; margin: 1rem auto 2.5rem auto; height: 2.2rem; border-radius: 4px; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;">&nbsp;</h2>
-                <div class="projects">
-                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
-                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
-                </div>
-            </div>
-             <div class="category">
-                 <h2 class="category-title" style="color: transparent; background: rgba(240, 245, 255, 0.1); width: 180px; margin: 1rem auto 2.5rem auto; height: 2.2rem; border-radius: 4px; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;">&nbsp;</h2>
-                <div class="projects">
-                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
-                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
-                    <div class="project-card loading"><div class="card-img"></div><div class="card-content"><h3 class="card-title"></h3><p class="card-description"></p><a class="card-link"></a></div></div>
-                </div>
-            </div>
+
+<!-- Scroll Progress -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- Navigation -->
+<nav class="nav" id="mainNav">
+    <div class="nav-inner">
+        <div class="nav-logo">Creative Lab</div>
+        <ul class="nav-links" id="navLinks"></ul>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero" id="hero">
+    <div class="hero-bg">
+        <canvas id="heroCanvas"></canvas>
+    </div>
+    <div class="hero-gradient-overlay"></div>
+    <div class="hero-bottom-fade"></div>
+
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            <span>探索创意与技术的交汇</span>
+        </div>
+        <h1>
+            <span class="line">创意互动</span>
+            <span class="line"><span class="gradient-text">实验室</span></span>
+        </h1>
+        <p class="hero-description">
+            这里汇集了各种精心制作的互动项目与游戏，每一个作品都是一次创意与技术的碰撞，点击即可体验。
+        </p>
+        <div class="hero-actions">
+            <a href="#section-0" class="btn btn-primary">
+                <span>浏览作品</span>
+                <span class="arrow">&darr;</span>
+            </a>
+            <a href="#about" class="btn btn-secondary">
+                <span>了解更多</span>
+            </a>
+        </div>
+        <div class="hero-stats" id="heroStats">
+            <!-- JS 动态填充 -->
         </div>
     </div>
 
-    <footer>
-    <div class="compliance-statement">
-  <h3>内容声明</h3>
-  <p>本站所有项目均为前端技术演示及教育用途</p>
-  <p>不包含：真实金钱交易、用户数据收集、第三方广告</p>
-</div>
-        <p>如有任何问题，可以发送内容至邮箱：3256639070@qq.com进行联系</p>
-        <p>&copy;by空城 2025 创意互动实验室. 发现乐趣，体验创意。</p>
-    </footer>
-    <script>
-        const projectsData = {
-            "互动项目": [
-                { title: "文字磁场", description: "文字像被磁铁吸引一样在屏幕上运动，长按触碰或鼠标滑动形成有趣的动态效果！", imageUrl: "https://vacuopolis.netlify.app/image/wzcc.png", link: "https://vacuopolis.netlify.app/%E6%96%87%E5%AD%97%E7%A3%81%E5%9C%BA%EF%BC%88%E6%9B%B4%E6%96%B0%E4%B8%89%E7%89%88%EF%BC%89.html" },
-                { title: "太阳系模拟", description: "模拟太阳系中行星围绕太阳运行的场景，观察行星的轨道和运动规律，了解宇宙的奇妙之处。", imageUrl: "https://vacuopolis.netlify.app/image/tyxmn.png", link: "https://vacuopolis.netlify.app/%E5%A4%AA%E9%98%B3%E7%B3%BB%E6%A8%A1%E6%8B%9F.html" }
-            ],
-            "小游戏": [
-                { title: "亮灯解谜", description: "经典亮灯游戏，点击方块改变灯的状态，目标是将所有的灯都点亮。考验你的逻辑能力！", imageUrl: "https://vacuopolis.netlify.app/image/ldyx.png", link: "https://vacuopolis.netlify.app/%E4%BA%AE%E7%81%AF%E6%B8%B8%E6%88%8F.html" },
-                { title: "贪吃蛇大作战", description: "控制小蛇吃掉食物，让它变得越来越长。小心不要撞到墙壁或自己的身体哦！多种模式等你挑战。", imageUrl: "https://vacuopolis.netlify.app/image/tcs.png", link: "https://vacuopolis.netlify.app/%E8%B4%AA%E5%90%83%E8%9B%87.html" },
-                { title: "幸运转盘", description: "点击按钮转动转盘，猜猜会停在哪个数字？试试你的运气！", imageUrl: "https://vacuopolis.netlify.app/image/lpd.png", link: "https://vacuopolis.netlify.app/%E8%BD%AE%E7%9B%98%E8%B5%8C.html" },
-                { title: "经典扫雷", description: "根据数字提示避开地雷，开动脑筋，看看你能在多快的时间内完成挑战！", imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/sl.png", link: "https://vacuopolis.netlify.app/%E6%89%AB%E9%9B%B7.html" }
-            ]
-        };
+    <div class="scroll-indicator">
+        <div class="scroll-mouse"></div>
+        <span>向下滚动</span>
+    </div>
+</section>
 
-        function createProjectCard(project, index) { // 接收 index 用于动画延迟
-            const card = document.createElement('div');
-            card.className = 'project-card';
-             card.style.setProperty('--card-index', index); // 将索引存为 CSS 变量，用于交错动画
-            card.dataset.index = index; // 也存为 data属性，方便 JS 读取
 
-            const img = new Image();
-            img.src = project.imageUrl;
-            img.onload = () => {
-                const imgDiv = card.querySelector('.card-img');
-                if (imgDiv) imgDiv.style.backgroundImage = `url(${project.imageUrl})`;
-                setTimeout(() => card.classList.remove('loading'), 50);
-            };
-            img.onerror = () => {
-                 const imgDiv = card.querySelector('.card-img');
-                 if (imgDiv) imgDiv.style.backgroundImage = 'none'; // Or default image
-                 card.classList.remove('loading');
-            };
+<!-- Floating Orbs (背景装饰) -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 
-            // Unicode 外部链接图标：↗ (U+2197) 或 🔗 (U+1F517)
-            const externalLinkIcon = '↗';
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container" id="projectsContainer">
+        <!-- JS 动态生成 -->
+    </div>
+</main>
 
-            card.innerHTML = `
-                <div class="card-img" style="background-color: rgba(240, 245, 255, 0.1);"></div>
-                <div class="card-content">
-                    <h3 class="card-title">${project.title}</h3>
-                    <p class="card-description">${project.description}</p>
-                    <a href="${project.link}" class="card-link" target="_blank" rel="noopener noreferrer">
-                        马上体验 <span class="icon">${externalLinkIcon}</span>
-                    </a>
-                </div>
-            `;
+<!-- Footer -->
+<footer id="about">
+    <div class="footer-content">
+        <div class="footer-brand">
+            <h3>创意互动实验室</h3>
+            <p>每一个项目都是对前端技术的探索与实践，希望这些小作品能带给你一些乐趣和灵感。所有项目均为纯前端实现，无需安装，点击即玩。</p>
+        </div>
+        <div class="footer-section">
+            <h4>快速导航</h4>
+            <ul id="footerNav">
+                <!-- JS 动态填充 -->
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h4>联系方式</h4>
+            <ul>
+                <li><a href="mailto:3256639070@qq.com">3256639070@qq.com</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2025 创意互动实验室 by 空城. 发现乐趣，体验创意。</p>
+        <p>本站所有项目均为前端技术演示及教育用途，不包含真实交易与数据收集。</p>
+    </div>
+</footer>
 
-            if (img.complete && img.naturalHeight > 0) {
-                const imgDiv = card.querySelector('.card-img');
-                if (imgDiv) imgDiv.style.backgroundImage = `url(${project.imageUrl})`;
-                setTimeout(() => card.classList.remove('loading'), 50);
-            } else if (img.complete && img.naturalHeight === 0) {
-                const imgDiv = card.querySelector('.card-img');
-                if (imgDiv) imgDiv.style.backgroundImage = 'none';
-                card.classList.remove('loading');
-            } else {
-                 card.classList.add('loading');
+<!-- Back to Top -->
+<button class="back-to-top" id="backToTop" aria-label="回到顶部">&uarr;</button>
+
+<script>
+// ===== 项目数据 =====
+const projectsData = {
+    "互动项目": [
+        {
+            title: "文字磁场",
+            description: "文字像被磁铁吸引一样在屏幕上运动，长按触碰或鼠标滑动形成有趣的动态效果，感受文字与物理的奇妙结合。",
+            imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/wzcc.png",
+            link: "https://vacuopolis.netlify.app/%E6%96%87%E5%AD%97%E7%A3%81%E5%9C%BA%EF%BC%88%E6%9B%B4%E6%96%B0%E4%B8%89%E7%89%88%EF%BC%89.html",
+            tag: "物理模拟"
+        },
+        {
+            title: "太阳系模拟",
+            description: "模拟太阳系中行星围绕太阳运行的场景，观察行星的轨道和运动规律，了解宇宙的奇妙之处。",
+            imageUrl: "https://vacuopolis.netlify.app/image/tyxmn.png",
+            link: "https://vacuopolis.netlify.app/%E5%A4%AA%E9%98%B3%E7%B3%BB%E6%A8%A1%E6%8B%9F.html",
+            tag: "天文可视化"
+        }
+    ],
+    "小游戏": [
+        {
+            title: "亮灯解谜",
+            description: "经典亮灯游戏，点击方块改变灯的状态，目标是将所有的灯都点亮。考验你的逻辑推理能力！",
+            imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/ldyx.png",
+            link: "https://vacuopolis.netlify.app/%E4%BA%AE%E7%81%AF%E6%B8%B8%E6%88%8F.html",
+            tag: "逻辑解谜"
+        },
+        {
+            title: "贪吃蛇大作战",
+            description: "控制小蛇吃掉食物不断变长，小心不要撞到墙壁或自己的身体。多种模式等你挑战。",
+            imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/tcs.png",
+            link: "https://vacuopolis.netlify.app/%E8%B4%AA%E5%90%83%E8%9B%87.html",
+            tag: "经典街机"
+        },
+        {
+            title: "幸运转盘",
+            description: "点击按钮转动转盘，猜猜会停在哪个数字？试试你的运气，看看命运之轮如何转动！",
+            imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/lpd.png",
+            link: "https://vacuopolis.netlify.app/%E8%BD%AE%E7%9B%98%E8%B5%8C.html",
+            tag: "休闲娱乐"
+        },
+        {
+            title: "经典扫雷",
+            description: "根据数字提示避开地雷，开动脑筋，看看你能在多快的时间内完成挑战！",
+            imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/sl.png",
+            link: "https://vacuopolis.netlify.app/%E6%89%AB%E9%9B%B7.html",
+            tag: "策略推理"
+        },
+        {
+            title: "俄罗斯方块",
+            description: "将不断下落的不同形状方块移动、旋转并排列成完整的一行或多行以消除得分。",
+            imageUrl: "https://raw.githubusercontent.com/Vacuopolis/html-type/refs/heads/main/image/elsfk.png",
+            link: "https://vacuopolis.netlify.app/%E4%BF%84%E7%BD%97%E6%96%AF%E6%96%B9%E5%9D%97.html",
+            tag: "经典街机"
+        }
+    ]
+};
+
+// ===== Hero Canvas 粒子动画 =====
+function initHeroCanvas() {
+    const canvas = document.getElementById('heroCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width, height, particles, animationId;
+    const PARTICLE_COUNT = 80;
+    const CONNECTION_DISTANCE = 150;
+    let mouse = { x: -9999, y: -9999 };
+
+    function resize() {
+        width = canvas.width = canvas.offsetWidth;
+        height = canvas.height = canvas.offsetHeight;
+    }
+
+    function createParticles() {
+        particles = [];
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                radius: Math.random() * 2 + 0.5,
+                opacity: Math.random() * 0.5 + 0.2
+            });
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        particles.forEach((p, i) => {
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.x < 0 || p.x > width) p.vx *= -1;
+            if (p.y < 0 || p.y > height) p.vy *= -1;
+
+            // 鼠标排斥
+            const dx = p.x - mouse.x;
+            const dy = p.y - mouse.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+                const force = (120 - dist) / 120;
+                p.vx += (dx / dist) * force * 0.3;
+                p.vy += (dy / dist) * force * 0.3;
             }
 
-            // 添加点击波纹效果的事件监听
-            const link = card.querySelector('.card-link');
-            if (link) {
-                link.addEventListener('mousedown', (e) => { // 使用 mousedown 触发更及时
-                    link.classList.add('ripple');
-                    // 动画结束后移除类，以便下次点击
-                    link.addEventListener('animationend', () => {
-                         link.classList.remove('ripple');
-                    }, { once: true }); // 确保只触发一次
-                });
-            }
+            // 速度衰减
+            p.vx *= 0.99;
+            p.vy *= 0.99;
 
-            return card;
-        }
+            // 绘制粒子
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(77, 182, 172, ${p.opacity})`;
+            ctx.fill();
 
-        function createCategorySection(categoryName, projects) {
-            const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'category';
-            const categoryTitle = document.createElement('h2');
-            categoryTitle.className = 'category-title';
-            categoryTitle.textContent = categoryName;
-            const projectsGrid = document.createElement('div');
-            projectsGrid.className = 'projects';
-
-            projects.forEach((project, index) => {
-                const card = createProjectCard(project, index); // 传递 index
-                projectsGrid.appendChild(card);
-            });
-
-            categoryDiv.appendChild(categoryTitle);
-            categoryDiv.appendChild(projectsGrid);
-            return categoryDiv;
-        }
-
-         function initializePage() {
-            const projectsContainer = document.getElementById('projects-container');
-            projectsContainer.innerHTML = ''; // 清空骨架屏
-
-            Object.entries(projectsData).forEach(([category, projects], categoryIndex) => {
-                const categorySection = createCategorySection(category, projects);
-                 // 分类标题的入场动画延迟
-                categorySection.style.animationDelay = `${categoryIndex * 0.2}s`;
-                projectsContainer.appendChild(categorySection);
-            });
-
-            // 设置 IntersectionObserver 观察分类和卡片
-            setupIntersectionObserver();
-             // 启动视差效果 (如果需要且非触摸设备)
-             if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
-                setupParallaxEffect();
-            }
-        }
-
-        function setupIntersectionObserver() {
-             const categoryObserverOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
-             const cardObserverOptions = { threshold: 0.2, rootMargin: '0px 0px -80px 0px' }; // 卡片阈值可以高一点
-
-             const categoryObserver = new IntersectionObserver((entries, obs) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.animationPlayState = 'running';
-                         // obs.unobserve(entry.target); // 分类标题动画只播放一次
-                    }
-                });
-            }, categoryObserverOptions);
-
-             const cardObserver = new IntersectionObserver((entries, obs) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        // 根据卡片索引计算延迟时间，实现交错动画
-                        const index = parseInt(entry.target.dataset.index || '0', 10);
-                        entry.target.style.animationDelay = `${index * 0.08}s`; // 微调延迟
-                        entry.target.style.animationPlayState = 'running';
-                         obs.unobserve(entry.target); // 卡片动画也只播放一次
-                    }
-                });
-            }, cardObserverOptions);
-
-             document.querySelectorAll('.category').forEach(category => {
-                categoryObserver.observe(category);
-            });
-
-            document.querySelectorAll('.project-card').forEach(card => {
-                 cardObserver.observe(card);
-            });
-        }
-
-         // 鼠标视差效果 (Throttle function to limit execution rate)
-         function throttle(func, limit) {
-            let inThrottle;
-            return function() {
-                const args = arguments;
-                const context = this;
-                if (!inThrottle) {
-                func.apply(context, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
+            // 连线
+            for (let j = i + 1; j < particles.length; j++) {
+                const p2 = particles[j];
+                const ddx = p.x - p2.x;
+                const ddy = p.y - p2.y;
+                const distance = Math.sqrt(ddx * ddx + ddy * ddy);
+                if (distance < CONNECTION_DISTANCE) {
+                    const alpha = (1 - distance / CONNECTION_DISTANCE) * 0.15;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.strokeStyle = `rgba(77, 182, 172, ${alpha})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
                 }
             }
-        }
+        });
 
-        function setupParallaxEffect() {
-            const container = document.querySelector('.container'); // 获取容器用于计算相对位置
-            if (!container) return;
+        animationId = requestAnimationFrame(animate);
+    }
 
-            const cards = document.querySelectorAll('.project-card');
-            const parallaxIntensity = 0.015; // 调整视差强度
-            const rotateIntensity = 5; // 调整旋转强度 (角度)
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+    });
 
-             const handleMouseMove = throttle((e) => {
-                const containerRect = container.getBoundingClientRect();
-                 // 使用相对于 container 中心的坐标，减少页面滚动的影响
-                const mouseX = e.clientX - containerRect.left - containerRect.width / 2;
-                const mouseY = e.clientY - containerRect.top - containerRect.height / 2;
+    canvas.addEventListener('mouseleave', () => {
+        mouse.x = -9999;
+        mouse.y = -9999;
+    });
 
+    window.addEventListener('resize', () => {
+        resize();
+    });
 
-                cards.forEach((card) => {
-                    // 根据鼠标位置计算旋转和位移
-                    const rotateY = mouseX * parallaxIntensity * rotateIntensity * -1; // Y轴旋转与X鼠标位置相关
-                    const rotateX = mouseY * parallaxIntensity * rotateIntensity;      // X轴旋转与Y鼠标位置相关
-                    const translateX = mouseX * parallaxIntensity * 15; // 轻微位移
-                    const translateY = mouseY * parallaxIntensity * 10;
+    resize();
+    createParticles();
+    animate();
+}
 
+// ===== 统计数据 =====
+function renderHeroStats() {
+    const container = document.getElementById('heroStats');
+    if (!container) return;
+    let totalProjects = 0;
+    let totalCategories = Object.keys(projectsData).length;
+    Object.values(projectsData).forEach(arr => totalProjects += arr.length);
 
-                    // 应用 transform，注意保留卡片入场动画的最终状态 (scale(1))
-                     // 如果卡片动画未完成，不应用视差，避免冲突
-                    if (card.style.animationPlayState === 'running' || getComputedStyle(card).opacity !== '1') {
-                         // return; // 取消这行注释如果你想严格等动画结束再视差
-                     }
+    container.innerHTML = `
+        <div class="stat">
+            <div class="stat-number" data-target="${totalProjects}">0</div>
+            <div class="stat-label">个作品</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number" data-target="${totalCategories}">0</div>
+            <div class="stat-label">个分类</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number" data-target="100">0%</div>
+            <div class="stat-label">纯前端实现</div>
+        </div>
+    `;
 
-                     // 平滑过渡 transform
-                    card.style.transition = 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1)'; // 使用快速缓动
-                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateX(${translateX}px) translateY(${translateY}px) scale(1)`;
-                });
-            }, 16); // 大约 60fps
+    // 数字递增动画
+    setTimeout(() => {
+        container.querySelectorAll('.stat-number').forEach(el => {
+            const target = parseInt(el.dataset.target);
+            const isPercent = el.textContent.includes('%');
+            let current = 0;
+            const step = Math.max(1, Math.floor(target / 30));
+            const interval = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(interval);
+                }
+                el.textContent = current + (isPercent ? '%' : '');
+            }, 40);
+        });
+    }, 1200);
+}
 
-             container.addEventListener('mousemove', handleMouseMove);
+// ===== 渲染项目 =====
+function renderProjects() {
+    const container = document.getElementById('projectsContainer');
+    if (!container) return;
+    container.innerHTML = '';
 
-            // 鼠标离开容器区域时，卡片恢复原状
-            container.addEventListener('mouseleave', () => {
-                 cards.forEach((card) => {
-                    card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'; // 恢复时慢一点
-                    card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateX(0px) translateY(0px) scale(1)';
-                 });
+    const navLinks = document.getElementById('navLinks');
+    const footerNav = document.getElementById('footerNav');
+    let navHTML = '<li><a href="#hero">首页</a></li>';
+    let footerHTML = '<li><a href="#hero">首页</a></li>';
+    let globalIndex = 0;
+
+    Object.entries(projectsData).forEach(([category, projects], catIndex) => {
+        const sectionId = `section-${catIndex}`;
+
+        navHTML += `<li><a href="#${sectionId}">${category}</a></li>`;
+        footerHTML += `<li><a href="#${sectionId}">${category}</a></li>`;
+
+        const section = document.createElement('section');
+        section.className = 'section';
+        section.id = sectionId;
+
+        let cardsHTML = '';
+        projects.forEach((project, pIndex) => {
+            globalIndex++;
+            cardsHTML += `
+                <div class="project-card" data-delay="${pIndex * 0.1}" data-link="${project.link}">
+                    <div class="card-shine"></div>
+                    <div class="card-image-wrapper loading">
+                        <img class="card-image" data-src="${project.imageUrl}" alt="${project.title}" loading="lazy">
+                        <div class="card-image-overlay"></div>
+                        <span class="card-number">${String(globalIndex).padStart(2, '0')}</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">${project.title}</h3>
+                        <p class="card-description">${project.description}</p>
+                        <div class="card-footer">
+                            <a href="${project.link}" class="card-link" target="_blank" rel="noopener noreferrer">
+                                <span>马上体验</span>
+                                <span class="arrow">&rarr;</span>
+                            </a>
+                            ${project.tag ? `<span class="card-tag">${project.tag}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        section.innerHTML = `
+            <div class="section-header">
+                <div class="section-label"><span>${category}</span></div>
+                <h2 class="section-title">
+                    <span class="gradient-text">${category}</span>
+                </h2>
+                <p class="section-description">
+                    ${category === '互动项目' ? '探索有趣的互动体验，感受技术与创意的融合' : '经典与创新并存的小游戏合集，随时随地开始挑战'}
+                </p>
+            </div>
+            <div class="projects-grid">${cardsHTML}</div>
+        `;
+
+        container.appendChild(section);
+    });
+
+    if (navLinks) navLinks.innerHTML = navHTML;
+    if (footerNav) footerNav.innerHTML = footerHTML;
+
+    // 懒加载图片
+    lazyLoadImages();
+    // 设置卡片交互
+    setupCardInteractions();
+    // 设置滚动观察
+    setupScrollObservers();
+}
+
+// ===== 图片懒加载 =====
+function lazyLoadImages() {
+    document.querySelectorAll('.card-image[data-src]').forEach(img => {
+        const wrapper = img.closest('.card-image-wrapper');
+        const realImg = new Image();
+        realImg.onload = () => {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+            setTimeout(() => {
+                if (wrapper) wrapper.classList.remove('loading');
+            }, 100);
+        };
+        realImg.onerror = () => {
+            if (wrapper) wrapper.classList.remove('loading');
+        };
+        realImg.src = img.dataset.src;
+    });
+}
+
+// ===== 卡片鼠标跟随光效 =====
+function setupCardInteractions() {
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    document.querySelectorAll('.project-card').forEach(card => {
+        if (!isTouchDevice) {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                card.style.setProperty('--mouse-x', x + '%');
+                card.style.setProperty('--mouse-y', y + '%');
+
+                // 3D 倾斜
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const rotateX = ((e.clientY - centerY) / (rect.height / 2)) * -4;
+                const rotateY = ((e.clientX - centerX) / (rect.width / 2)) * 4;
+                card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(0) scale(1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(800px) rotateX(0) rotateY(0) translateY(0) scale(1)';
+                card.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s ease, border-color 0.5s ease, background 0.5s ease';
+            });
+
+            card.addEventListener('mouseenter', () => {
+                card.style.transition = 'box-shadow 0.5s ease, border-color 0.5s ease, background 0.5s ease';
             });
         }
+    });
+}
 
+// ===== 滚动观察器 =====
+function setupScrollObservers() {
+    // 观察 section-header
+    const headerObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.2, rootMargin: '0px 0px -60px 0px' });
 
-        document.addEventListener('DOMContentLoaded', initializePage);
+    document.querySelectorAll('.section-header').forEach(el => headerObserver.observe(el));
 
-    </script>
+    // 观察 project-card
+    const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const delay = parseFloat(entry.target.dataset.delay || 0);
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                    entry.target.style.transition = `opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s, transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s, box-shadow 0.5s ease, border-color 0.5s ease, background 0.5s ease`;
+                }, 50);
+                cardObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.project-card').forEach(el => cardObserver.observe(el));
+}
+
+// ===== 导航栏显示/隐藏 =====
+function setupNavigation() {
+    const nav = document.getElementById('mainNav');
+    const hero = document.getElementById('hero');
+    if (!nav || !hero) return;
+
+    let lastScroll = 0;
+
+    const heroObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) {
+                nav.classList.add('visible');
+            } else {
+                nav.classList.remove('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    heroObserver.observe(hero);
+
+    // 高亮当前导航
+    const sections = document.querySelectorAll('.section');
+    const navLinksContainer = document.getElementById('navLinks');
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && navLinksContainer) {
+                const id = entry.target.id;
+                navLinksContainer.querySelectorAll('a').forEach(a => {
+                    a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+                });
+            }
+        });
+    }, { threshold: 0.3, rootMargin: '-100px 0px -50% 0px' });
+
+    // 延迟观察，等 DOM 渲染完
+    setTimeout(() => {
+        document.querySelectorAll('.section').forEach(s => sectionObserver.observe(s));
+    }, 100);
+}
+
+// ===== 滚动进度条 =====
+function setupScrollProgress() {
+    const bar = document.getElementById('scrollProgress');
+    if (!bar) return;
+
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        bar.style.width = progress + '%';
+    }, { passive: true });
+}
+
+// ===== 回到顶部 =====
+function setupBackToTop() {
+    const btn = document.getElementById('backToTop');
+    if (!btn) return;
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 600) {
+            btn.classList.add('visible');
+        } else {
+            btn.classList.remove('visible');
+        }
+    }, { passive: true });
+
+    btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded', () => {
+    initHeroCanvas();
+    renderHeroStats();
+    renderProjects();
+    setupNavigation();
+    setupScrollProgress();
+    setupBackToTop();
+});
+</script>
 </body>
 </html>

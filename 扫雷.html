@@ -1855,6 +1855,23 @@ body.theme-transitioning * {
                     </div>
                 </div>
             </div>
+            <div class="controls-section">
+            <div class="controls-title">可解布局生成</div>
+            <div class="controls-options" style="grid-template-columns: 1fr;">
+                <div class="control-group">
+                    <h4>最大尝试次数</h4>
+                    <div class="control-option">
+                        <input type="number" id="max-attempts" min="1" max="∞" value="1000" style="width: 80px;">
+                        <label>次 (1-∞)</label>
+                    </div>
+                    <h4 style="margin-top: 15px;">并行数 (Worker数)</h4>
+                    <div class="control-option">
+                        <input type="number" id="parallel-count" min="1" max="16" value="8" style="width: 80px;">
+                        <label>个 (1-16，越多尝试越快但越占用CPU)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
             <div class="modal-buttons">
                 <button class="btn success" id="btn-save-controls">保存设置</button>
                 <button class="btn" id="btn-close-controls">取消</button>
@@ -2092,6 +2109,8 @@ body.theme-transitioning * {
                         },
                         gameData: {}
                     };
+                    this.maxAttempts = 30;          // 默认最大尝试次数
+                    this.parallelCount = 4;         // 默认并行Worker数
                     this.lastAutoSolvePosition = { row: 0, col: 0 };
                     this.achievements = {
                         firstWin: { unlocked: false, unlockedAt: null },
@@ -2160,6 +2179,33 @@ body.theme-transitioning * {
                     }, 100);
                 }
 
+            createTutorialBoard() {
+    const rows = this.tutorialState.rows;
+    const cols = this.tutorialState.cols;
+    const board = Array(rows).fill().map(() => Array(cols).fill(0));
+    // 放置预设地雷
+    this.tutorialState.minesLayout.forEach(([r, c]) => {
+        board[r][c] = -1;
+    });
+    // 计算周围数字
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (board[r][c] !== -1) {
+                let count = 0;
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        const nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc] === -1) count++;
+                    }
+                }
+                board[r][c] = count;
+            }
+        }
+    }
+    return board;
+}
+
 defineTutorialSteps() {
     this.tutorialState.rows = 7;
     this.tutorialState.cols = 7;
@@ -2184,7 +2230,7 @@ defineTutorialSteps() {
         { text: "现在 '1' 周围的地雷已被标记，我们可以安全地揭开它旁边的其他格子了。", target: '.cell[data-row="2"][data-col="2"]', action: 'click_anywhere' },
         { text: "【高级技巧】当一个数字周围标记的旗帜数与该数字相等时", action: 'click_anywhere' },
         { text: "您可以直接点击该数字（PC上双击，手机上单击），来快速揭开此数字周围的8个格子剩余的安全格。", action: 'click_anywhere' },
-        { text: "来试试吧！单击高亮的数字 '1'。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },
+        { text: "来试试吧！双击(电脑端)/单击(手机端)这个高亮的数字 '1'。", target: '.cell[data-row="2"][data-col="0"]', action: 'double_click', actionTarget: [2, 0] },
         { text: "不妨再试试这里。", target: '.cell[data-row="0"][data-col="2"]', action: 'double_click', actionTarget: [0, 2] },
         { text: "太棒了！您已掌握了最核心的扫雷技巧：识别模式并快速清场。", action: 'click_anywhere' },
         { text: "现在我们来看一个更复杂的情况：这个数字 '2'。", target: '.cell[data-row="6"][data-col="2"]', action: 'click_anywhere' },
@@ -2574,34 +2620,51 @@ clearHighlights() {
                     }
                 }
 
-                saveControlSettings() {
-                    // 获取电脑端设置
-                    this.controlSettings.pc.left = document.querySelector('input[name="pc-left"]:checked').value;
-                    this.controlSettings.pc.right = document.querySelector('input[name="pc-right"]:checked').value;
-                    
-                    // 获取移动端设置
-                    this.controlSettings.mobile.tap = document.querySelector('input[name="mobile-tap"]:checked').value;
-                    this.controlSettings.mobile.long = document.querySelector('input[name="mobile-long"]:checked').value;
+                        saveControlSettings() {
+                            // 获取电脑端设置
+                            this.controlSettings.pc.left = document.querySelector('input[name="pc-left"]:checked').value;
+                            this.controlSettings.pc.right = document.querySelector('input[name="pc-right"]:checked').value;
+                            // 获取移动端设置
+                            this.controlSettings.mobile.tap = document.querySelector('input[name="mobile-tap"]:checked').value;
+                            this.controlSettings.mobile.long = document.querySelector('input[name="mobile-long"]:checked').value;
 
-                    // 保存到本地存储
-                    try {
-                        localStorage.setItem(this.STORAGE_PREFIX + 'controls', JSON.stringify(this.controlSettings));
-                        this.showFloatingMessage('⚙️ 操作设置已保存！');
-                    } catch (e) {
-                        console.log('保存操作设置失败:', e);
-                    }
+                            // 获取新增设置
+                            const maxAttemptsInput = document.getElementById('max-attempts');
+                            const parallelCountInput = document.getElementById('parallel-count');
+                            if (maxAttemptsInput) {
+                                this.maxAttempts = parseInt(maxAttemptsInput.value) || 30;
+                                this.parallelCount = parseInt(parallelCountInput.value) || 4;
+                                this.controlSettings.maxAttempts = this.maxAttempts;
+                                this.controlSettings.parallelCount = this.parallelCount;
+                            }
 
-                    this.closeModal('controls-modal');
-                }
+                            // 保存到本地存储
+                            try {
+                                localStorage.setItem(this.STORAGE_PREFIX + 'controls', JSON.stringify(this.controlSettings));
+                                this.showFloatingMessage('⚙️ 操作设置已保存！');
+                            } catch (e) {
+                                console.log('保存操作设置失败:', e);
+                            }
+                            this.closeModal('controls-modal');
+                        }
 
                 loadControlSettings() {
                     try {
                         const saved = localStorage.getItem(this.STORAGE_PREFIX + 'controls');
                         if (saved) {
-                            this.controlSettings = { ...this.controlSettings, ...JSON.parse(saved) };
+                            const parsed = JSON.parse(saved);
+                            this.controlSettings = { ...this.controlSettings, ...parsed };
+                            // 新增设置：最大尝试次数和并行数
+                            this.maxAttempts = parsed.maxAttempts || 30;
+                            this.parallelCount = parsed.parallelCount || 4;
+                        } else {
+                            this.maxAttempts = 30;
+                            this.parallelCount = 4;
                         }
                     } catch (e) {
                         console.log('加载操作设置失败:', e);
+                        this.maxAttempts = 30;
+                        this.parallelCount = 4;
                     }
                 }
 
@@ -4568,76 +4631,6 @@ showFloatingMessage(message) {
                     }
                 }
 
-                // 地雷放置和游戏逻辑                             
-placeMines(excludeRow, excludeCol) {
-    // 教学模式使用预设布局，不进行可解性验证
-    if (this.tutorialState.active && this.tutorialState.minesLayout.length > 0) {
-        this.tutorialState.minesLayout.forEach(([r, c]) => {
-            this.board[r][c] = -1;
-        });
-        // 计算数字并返回
-        for (let r = 0; r < this.gameState.rows; r++) {
-            for (let c = 0; c < this.gameState.cols; c++) {
-                if (this.board[r][c] !== -1) {
-                    this.board[r][c] = this.countAdjacentMines(r, c);
-                }
-            }
-        }
-        return;
-    }
-
-    let attempts = 0;
-    const maxAttempts = 30; // 设定最大尝试次数，以防死循环
-
-    // 循环生成棋盘，直到生成可解的布局
-    while (attempts < maxAttempts) {
-        // 1. 重置棋盘并随机放置地雷
-        this.board = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(0));
-        const positions = [];
-        for (let r = 0; r < this.gameState.rows; r++) {
-            for (let c = 0; c < this.gameState.cols; c++) {
-                // 确保首次点击的3x3区域内没有地雷
-                if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
-                    positions.push([r, c]);
-                }
-            }
-        }
-
-        // 使用Fisher-Yates算法打乱位置
-        for (let i = positions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [positions[i], positions[j]] = [positions[j], positions[i]];
-        }
-
-        // 放置地雷
-        for (let i = 0; i < this.gameState.totalMines && i < positions.length; i++) {
-            const [r, c] = positions[i];
-            this.board[r][c] = -1;
-        }
-
-        // 2. 计算所有格子的数字
-        for (let r = 0; r < this.gameState.rows; r++) {
-            for (let c = 0; c < this.gameState.cols; c++) {
-                if (this.board[r][c] !== -1) {
-                    this.board[r][c] = this.countAdjacentMines(r, c);
-                }
-            }
-        }
-        
-        // 3. 验证当前生成的棋盘是否逻辑可解
-        if (this.canSolveLogically(excludeRow, excludeCol)) {
-            console.log(`成功生成可解棋盘 (尝试次数: ${attempts + 1})`);
-            this.addSpecialCells(); // 为最终的棋盘添加特殊格子
-            return; // 生成成功，退出函数
-        }
-        
-        attempts++;
-    }
-
-    // 如果达到最大尝试次数仍未成功，则使用最后一次生成的棋盘
-    console.warn(`无法在 ${maxAttempts} 次尝试内生成可解棋盘，将使用最后生成的随机棋盘。`);
-    this.addSpecialCells();
-}
 
                 addSpecialCells() {
     // 只在禅意模式下添加特殊格子
@@ -4674,15 +4667,22 @@ placeMines(excludeRow, excludeCol) {
                 }
 
 // 事件处理系统
-                                handleClick(row, col, event) {
+                    handleClick(row, col, event) {
                     if (event) event.preventDefault();
                     if (this.gameState.gameOver || this.gameState.autoSolving) return;
                     if (this.gameState.resumeAfterClick) this.resumeGameFromSave();
                     if (this.gameState.paused) return;
 
+                    // 教学模式：如果当前步骤需要双击，忽略单击
+                    if (this.tutorialState.active) {
+                        const step = this.tutorialState.steps[this.tutorialState.step];
+                        if (step && step.action === 'double_click' && step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1]) {
+                            return; // 忽略此次单击
+                        }
+                    }
+
                     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                     const action = isMobile ? this.controlSettings.mobile.tap : this.controlSettings.pc.left;
-                    
                     if (action === 'open') {
                         this.performOpenAction(row, col);
                     } else {
@@ -4706,8 +4706,9 @@ placeMines(excludeRow, excludeCol) {
                 }
 
                 handleDoubleClick(row, col, event) {
-                    if (event) event.preventDefault();
-                    this.handleNumberCellClick(row, col);
+                if (event) event.preventDefault();
+                if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
+                this.handleNumberCellClick(row, col);
                 }
 
                 handleTouch(row, col, event) {
@@ -4769,27 +4770,28 @@ recordMoveTiming() {
     this.gameState.gameData.lastMoveTimestamp = Date.now();
 }
 
-                                // 处理点击已揭开的数字格子（移动端和PC双击共用）
+// 处理点击已揭开的数字格子（移动端和PC双击共用）
                 
 handleNumberCellClick(row, col) {
-    // --- 教学模式守卫 ---
+    // 教学模式守卫
     if (this.tutorialState.active) {
         const step = this.tutorialState.steps[this.tutorialState.step];
         if (step && step.actionTarget && row === step.actionTarget[0] && col === step.actionTarget[1] && step.action !== 'double_click') {
             this.showTutorialErrorFeedback(step.action, 'double_click');
-            return; // 阻止错误操作
+            return;
         }
     }
-    // --- 守卫结束 ---
 
-    // --- 检查是否为无效操作 ---
-    // 游戏结束、暂停、未揭开或数字为0时，操作无效
-    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving || !this.revealed[row][col] || this.board[row][col] <= 0) {
+    // 游戏状态检查：游戏不可交互时直接返回，不记录任何统计
+    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) {
+        return;
+    }
+
+    // 检查格子是否已揭开且是数字
+    if (!this.revealed[row][col] || this.board[row][col] <= 0) {
+        // 尝试点击非数字格子或未揭开格子进行展开，视为无效操作
         this.gameState.gameData.ineffectiveMoves++;
-        // 只有当格子是已揭开的数字时，才算一次总点击
-        if (this.revealed[row][col] && this.board[row][col] > 0) {
-            this.gameState.gameData.totalClicks++;
-        }
+        this.gameState.gameData.totalClicks++; // 计入总点击
         return;
     }
 
@@ -4798,26 +4800,23 @@ handleNumberCellClick(row, col) {
         if (this.flags[nr][nc]) flagCount++;
     });
 
-    // --- 判断操作是否有效并计数 ---
     this.gameState.gameData.totalClicks++; // 尝试展开就算一次总点击
-
     if (flagCount === this.board[row][col]) {
-        // 条件满足，是有效操作
+        // 有效展开
         this.gameState.gameData.effectiveMoves++;
         this.gameState.gameData.numberExpansions++;
         this.recordMoveTiming();
-
         this.gameState.batchRevealing = true;
         const cellsToReveal = [];
         this.forEachNeighbor(row, col, (nr, nc) => {
+            // 修正：之前错误地使用了 this.flags[nc][nc]
             if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
                 cellsToReveal.push([nr, nc]);
             }
         });
-
         cellsToReveal.forEach(([nr, nc], index) => {
             setTimeout(() => {
-                if(this.gameState.gameOver) return; // 批量展开时可能踩雷，需检查
+                if (this.gameState.gameOver) return;
                 this.revealCell(nr, nc);
                 if (index === cellsToReveal.length - 1) {
                     this.gameState.batchRevealing = false;
@@ -4825,14 +4824,287 @@ handleNumberCellClick(row, col) {
             }, index * 30);
         });
     } else {
-        // 条件不满足，是无效操作
+        // 条件不满足，无效操作
         this.gameState.gameData.ineffectiveMoves++;
     }
-    
-    // 教学模式检查
+
     if (this.tutorialState.active) {
         this.checkTutorialAction('double_click', row, col);
     }
+}
+
+// ========== 异步生成可解棋盘（并行Worker） ==========
+generateBoardAsync(excludeRow, excludeCol, callback) {
+    const rows = this.gameState.rows;
+    const cols = this.gameState.cols;
+    const totalMines = this.gameState.totalMines;
+    const maxAttempts = this.maxAttempts;
+    const parallelCount = this.parallelCount;
+
+    let activeWorkers = 0;
+    let attempts = 0;
+    let success = false;
+    let finalBoard = null;
+    const workers = [];
+
+    const updateProgress = () => {
+        this.showFloatingMessage(`正在生成可解布局 (尝试 ${attempts}/${maxAttempts})...`);
+    };
+
+    let remainingAttempts = maxAttempts; // 剩余可分配尝试次数
+    for (let i = 0; i < parallelCount; i++) {
+        if (remainingAttempts <= 0) break;
+
+        const perWorker = Math.ceil(remainingAttempts / (parallelCount - i));
+        const workerMaxAttempts = Math.min(perWorker, remainingAttempts);
+
+        const worker = this.createSolvableBoardWorker();
+        activeWorkers++;
+        workers.push(worker);
+
+        worker.onmessage = (e) => {
+            const { type, board, attemptsMade } = e.data;
+            if (type === 'progress') {
+                attempts += attemptsMade;
+                updateProgress();
+            } else if (type === 'success') {
+                if (!success) {
+                    success = true;
+                    finalBoard = board;
+                    callback(finalBoard);
+                    workers.forEach(w => { if (w !== worker) w.terminate(); });
+                }
+                worker.terminate();
+                activeWorkers--;
+            } else if (type === 'failure') {
+                worker.terminate();
+                activeWorkers--;
+                if (activeWorkers === 0 && !success) {
+                    console.warn('所有Worker均未生成可解棋盘，使用最后生成的随机棋盘');
+                    finalBoard = board;
+                    callback(finalBoard);
+                }
+            }
+        };
+
+        worker.onerror = (err) => {
+            console.error('Worker错误:', err);
+            worker.terminate();
+            activeWorkers--;
+            if (activeWorkers === 0 && !success) {
+                this.fallbackGenerateBoard(excludeRow, excludeCol, callback);
+            }
+        };
+
+        worker.postMessage({
+            rows, cols, totalMines, excludeRow, excludeCol,
+            maxAttempts: workerMaxAttempts
+        });
+
+        remainingAttempts -= workerMaxAttempts; // 减去已分配的尝试次数
+    }
+}
+
+// ========== 创建Worker ==========
+createSolvableBoardWorker() {
+    const workerFunction = function() {
+        const isValid = (r, c, rows, cols) => r >= 0 && r < rows && c >= 0 && c < cols;
+        const forEachNeighbor = (r, c, rows, cols, callback) => {
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    if (dr === 0 && dc === 0) continue;
+                    const nr = r + dr, nc = c + dc;
+                    if (isValid(nr, nc, rows, cols)) callback(nr, nc);
+                }
+            }
+        };
+        const getNeighbors = (r, c, rows, cols) => {
+            const neighbors = [];
+            forEachNeighbor(r, c, rows, cols, (nr, nc) => neighbors.push([nr, nc]));
+            return neighbors;
+        };
+        const countAdjacentMines = (board, r, c, rows, cols) => {
+            let count = 0;
+            forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                if (board[nr][nc] === -1) count++;
+            });
+            return count;
+        };
+
+        const canSolveLogically = (board, rows, cols, startRow, startCol) => {
+            const simRevealed = Array(rows).fill().map(() => Array(cols).fill(false));
+            const simFlags = Array(rows).fill().map(() => Array(cols).fill(false));
+
+            const revealQueue = [];
+            if (isValid(startRow, startCol, rows, cols) && !simRevealed[startRow][startCol]) {
+                revealQueue.push([startRow, startCol]);
+                simRevealed[startRow][startCol] = true;
+            }
+            let head = 0;
+            while (head < revealQueue.length) {
+                const [r, c] = revealQueue[head++];
+                if (board[r][c] === 0) {
+                    forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                        if (!simRevealed[nr][nc]) {
+                            simRevealed[nr][nc] = true;
+                            revealQueue.push([nr, nc]);
+                        }
+                    });
+                }
+            }
+
+            let changed = true;
+            let iterations = 0;
+            const maxIterations = rows * cols;
+
+            while (changed && iterations < maxIterations) {
+                changed = false;
+                iterations++;
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (simRevealed[r][c] && board[r][c] > 0) {
+                            const neighbors = getNeighbors(r, c, rows, cols);
+                            const flaggedCount = neighbors.filter(([nr, nc]) => simFlags[nr][nc]).length;
+                            const unrevealed = neighbors.filter(([nr, nc]) => !simRevealed[nr][nc] && !simFlags[nr][nc]);
+
+                            if (flaggedCount === board[r][c] && unrevealed.length > 0) {
+                                for (const [nr, nc] of unrevealed) {
+                                    if (board[nr][nc] === -1) return false;
+                                    if (!simRevealed[nr][nc]) {
+                                        simRevealed[nr][nc] = true;
+                                        changed = true;
+                                    }
+                                }
+                            }
+
+                            if (unrevealed.length > 0 && unrevealed.length === board[r][c] - flaggedCount) {
+                                for (const [nr, nc] of unrevealed) {
+                                    if (board[nr][nc] !== -1) return false;
+                                    if (!simFlags[nr][nc]) {
+                                        simFlags[nr][nc] = true;
+                                        changed = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!changed) {
+                    changed = false; // 简化子集推理，可忽略
+                }
+            }
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (board[r][c] !== -1 && !simRevealed[r][c]) return false;
+                }
+            }
+            return true;
+        };
+
+        const generateRandomBoard = (rows, cols, totalMines, excludeRow, excludeCol) => {
+            const board = Array(rows).fill().map(() => Array(cols).fill(0));
+            const positions = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
+                        positions.push([r, c]);
+                    }
+                }
+            }
+            for (let i = positions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [positions[i], positions[j]] = [positions[j], positions[i]];
+            }
+            for (let i = 0; i < totalMines && i < positions.length; i++) {
+                const [r, c] = positions[i];
+                board[r][c] = -1;
+            }
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (board[r][c] !== -1) {
+                        board[r][c] = countAdjacentMines(board, r, c, rows, cols);
+                    }
+                }
+            }
+            return board;
+        };
+
+        self.addEventListener('message', (e) => {
+            const { rows, cols, totalMines, excludeRow, excludeCol, maxAttempts } = e.data;
+            let attemptsMade = 0;
+
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                attemptsMade++;
+                self.postMessage({ type: 'progress', attemptsMade: 1 });
+
+                const board = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
+                const solvable = canSolveLogically(board, rows, cols, excludeRow, excludeCol);
+                if (solvable) {
+                    self.postMessage({ type: 'success', board });
+                    return;
+                }
+            }
+
+            const lastBoard = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
+            self.postMessage({ type: 'failure', board: lastBoard });
+        });
+    };
+
+    const blob = new Blob([`(${workerFunction.toString()})()`], { type: 'application/javascript' });
+    return new Worker(URL.createObjectURL(blob));
+}
+
+// ========== 保底生成（同步） ==========
+fallbackGenerateBoard(excludeRow, excludeCol, callback) {
+    console.warn('使用保底生成（无验证）');
+    const board = this.generateRandomBoardSync(excludeRow, excludeCol);
+    callback(board);
+}
+
+generateRandomBoardSync(excludeRow, excludeCol) {
+    const rows = this.gameState.rows;
+    const cols = this.gameState.cols;
+    const totalMines = this.gameState.totalMines;
+    const board = Array(rows).fill().map(() => Array(cols).fill(0));
+    const positions = [];
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
+                positions.push([r, c]);
+            }
+        }
+    }
+    for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    for (let i = 0; i < totalMines && i < positions.length; i++) {
+        const [r, c] = positions[i];
+        board[r][c] = -1;
+    }
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (board[r][c] !== -1) {
+                board[r][c] = this.countAdjacentMinesFromBoard(board, r, c);
+            }
+        }
+    }
+    return board;
+}
+
+countAdjacentMinesFromBoard(board, row, col) {
+    let count = 0;
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = row + dr, nc = col + dc;
+            if (nr >= 0 && nr < this.gameState.rows && nc >= 0 && nc < this.gameState.cols && board[nr][nc] === -1) count++;
+        }
+    }
+    return count;
 }
 
 performOpenAction(row, col) {
@@ -4846,29 +5118,47 @@ performOpenAction(row, col) {
     }
 
     // --- 检查是否为无效操作 ---
-    // 如果格子已揭开或被标记，则操作无效
     if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
         this.gameState.gameData.ineffectiveMoves++;
-        this.gameState.gameData.totalClicks++; // 计入总点击
+        this.gameState.gameData.totalClicks++;
         return;
     }
 
-    // --- 记录为有效操作并计时 ---
     this.gameState.gameData.effectiveMoves++;
     this.gameState.gameData.leftClicks++;
     this.gameState.gameData.totalClicks++;
     this.recordMoveTiming();
-
     this.clearHints(true);
     this.recordMove({ type: 'click', row, col });
 
     if (this.gameState.firstClick) {
-        this.placeMines(row, col);
-        this.startTimer();
-        this.gameState.firstClick = false;
+        if (this.tutorialState.active) {
+            // 教学模式：直接使用预设布局
+            this.board = this.createTutorialBoard();
+            this.startTimer();
+            this.gameState.firstClick = false;
+            this.revealCell(row, col);
+            // 检查教学模式步骤（第一步：open）
+            if (this.tutorialState.active) {
+                this.checkTutorialAction('open', row, col);
+            }
+            return;
+        } else {
+            this.showFloatingMessage(`正在生成可解布局 (尝试 0/${this.maxAttempts})...`);
+            this.generateBoardAsync(row, col, (board) => {
+                this.board = board;
+                if (this.gameState.mode === 'zen') {
+                    this.addSpecialCells();
+                }
+                this.startTimer();
+                this.gameState.firstClick = false;
+                this.revealCell(row, col);
+            });
+            return;
+        }
     }
+
     this.revealCell(row, col);
-    
     // 教学模式检查
     if (this.tutorialState.active) {
         this.checkTutorialAction('open', row, col);
@@ -4929,76 +5219,100 @@ performFlagAction(row, col) {
                 
 
 // 核心游戏逻辑
-revealCell(row, col) {
-    if (!this.isValid(row, col) || this.revealed[row][col] ||
-        this.flags[row][col] || this.questions[row][col]) {
+revealCell(startRow, startCol) {
+    // 如果起始格子无效或已揭开/标记，直接返回
+    if (!this.isValid(startRow, startCol) || this.revealed[startRow][startCol] || this.flags[startRow][startCol] || this.questions[startRow][startCol]) {
         return;
     }
 
-    this.revealed[row][col] = true;
-    const cell = this.getCell(row, col);
+    // 使用队列进行广度优先遍历，避免递归栈溢出
+    const queue = [{ row: startRow, col: startCol }];
+    const visited = new Set(); // 防止重复入队
+    visited.add(`${startRow},${startCol}`);
 
-    if (this.specialCells[row][col]) {
-        this.handleSpecialCell(row, col);
-    }
-
-    if (this.board[row][col] === -1) {
-        if (this.gameState.mode === 'survival' && this.gameState.lives > 1) {
-            this.gameState.lives--;
-            this.revealed[row][col] = false;
-            this.updateSurvivalHealthDisplay();
-            this.showFloatingMessage(`💥 踩到地雷！剩余生命：${this.gameState.lives}`);
+    while (queue.length > 0) {
+        // 如果游戏已结束，立即停止所有展开
+        if (this.gameState.gameOver) {
             return;
         }
-        this.gameOver(false);
-        if (cell) {
-            cell.classList.add('mine');
-            this.createExplosion(cell);
-        }
-        this.playSound('explosion');
-        this.gameState.combo = 0;
-        return;
-    }
 
-    this.updateCell(cell, row, col);
-    this.updateMinimapCell(row, col);
+        const { row, col } = queue.shift();
 
-    // 批量展开时只播放一次音效
-    if (!this.gameState.batchRevealing) {
-        this.playSound('reveal');
-    }
-    
-    // 教学模式下不触发连击
-    if (!this.tutorialState.active) {
-        this.gameState.combo++;
-        this.gameState.maxCombo = Math.max(this.gameState.maxCombo, this.gameState.combo);
-
-        if (this.gameState.combo >= 5 && this.gameState.combo % 5 === 0) {
-            this.showComboIndicator(this.gameState.combo);
-            if (!this.gameState.batchRevealing) {
-                this.playSound('combo');
+        // --- 地雷处理 ---
+        if (this.board[row][col] === -1) {
+            if (this.gameState.mode === 'survival' && this.gameState.lives > 1) {
+                // 生存模式减血，不揭开此格，且停止本次点击的所有展开
+                this.gameState.lives--;
+                this.updateSurvivalHealthDisplay();
+                this.showFloatingMessage(`💥 踩到地雷！剩余生命：${this.gameState.lives}`);
+                return; // 一次点击中踩到雷即停止（即使还有命）
+            } else {
+                // 游戏结束
+                this.gameOver(false);
+                const cell = this.getCell(row, col);
+                if (cell) {
+                    cell.classList.add('mine');
+                    this.createExplosion(cell);
+                }
+                this.playSound('explosion');
+                this.gameState.combo = 0;
+                return;
             }
         }
-    }
 
+        // --- 揭开格子 ---
+        this.revealed[row][col] = true;
+        const cell = this.getCell(row, col);
+        if (this.specialCells[row][col]) {
+            this.handleSpecialCell(row, col);
+        }
 
-    if (this.board[row][col] === 0) {
-        this.forEachNeighbor(row, col, (nr, nc) => {
-            this.revealCell(nr, nc);
-        });
-    }
-    
-    // 计数展开操作（只计算成功的揭开操作）
-    if (this.revealed[row][col] && !this.gameState.firstClick && !this.gameState.gameOver) {
-        this.gameState.expandCount++;
-        // 教学模式下不触发自动临时存档
-        if (!this.tutorialState.active && this.gameState.expandCount > 0 && this.gameState.expandCount % this.gameState.autoSaveInterval === 0) {
-            this.createTempSave();
+        this.updateCell(cell, row, col);
+        this.updateMinimapCell(row, col);
+
+        // 批量展开时只播放一次音效（仅在非批量模式或首次展开时播放）
+        if (!this.gameState.batchRevealing) {
+            this.playSound('reveal');
+        }
+
+        // 连击逻辑
+        if (!this.tutorialState.active) {
+            this.gameState.combo++;
+            this.gameState.maxCombo = Math.max(this.gameState.maxCombo, this.gameState.combo);
+            if (this.gameState.combo >= 5 && this.gameState.combo % 5 === 0) {
+                this.showComboIndicator(this.gameState.combo);
+                if (!this.gameState.batchRevealing) {
+                    this.playSound('combo');
+                }
+            }
+        }
+
+        // 计数展开操作（用于自动存档）
+        if (!this.gameState.firstClick && !this.gameState.gameOver) {
+            this.gameState.expandCount++;
+            if (!this.tutorialState.active && this.gameState.expandCount > 0 && this.gameState.expandCount % this.gameState.autoSaveInterval === 0) {
+                this.createTempSave();
+            }
+        }
+
+        // --- 如果是空格（0），将其未揭开且未标记的邻居加入队列 ---
+        if (this.board[row][col] === 0) {
+            this.forEachNeighbor(row, col, (nr, nc) => {
+                const key = `${nr},${nc}`;
+                if (!this.revealed[nr][nc] && !this.flags[nr][nc] && !this.questions[nr][nc] && !visited.has(key)) {
+                    visited.add(key);
+                    queue.push({ row: nr, col: nc });
+                }
+            });
+        }
+
+        // 更新进度并检查胜利
+        this.updateProgress();
+        this.checkWin();
+        if (this.gameState.gameOver) {
+            return; // 如果胜利或失败，立即退出
         }
     }
-
-    this.updateProgress();
-    this.checkWin();
 }
 
                 handleSpecialCell(row, col) {
@@ -5975,178 +6289,131 @@ performAutoSolveStep() {
                     return neighbors;
                 }
 
-                performProbabilisticMove() {
-                    // 1. 识别前沿：与数字相邻的未揭开格子
-                    const frontier = new Map(); // 使用Map存储格子信息 {r, c} -> {}
-                    const numberCells = [];
-                    for (let r = 0; r < this.gameState.rows; r++) {
-                        for (let c = 0; c < this.gameState.cols; c++) {
-                            if (this.revealed[r][c] && this.board[r][c] > 0) {
-                                numberCells.push({ r, c, val: this.board[r][c] });
-                                this.forEachNeighbor(r, c, (nr, nc) => {
-                                    if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
-                                        const key = `${nr},${nc}`;
-                                        if (!frontier.has(key)) {
-                                            frontier.set(key, { r: nr, c: nc });
-                                        }
-                                    }
-                                });
-                            }
+performProbabilisticMove() {
+    // 1. 识别前沿：与数字相邻的未揭开格子
+    const frontier = new Map(); // 使用Map存储格子信息 {r, c} -> {}
+    const numberCells = [];
+    for (let r = 0; r < this.gameState.rows; r++) {
+        for (let c = 0; c < this.gameState.cols; c++) {
+            if (this.revealed[r][c] && this.board[r][c] > 0) {
+                numberCells.push({ r, c, val: this.board[r][c] });
+                this.forEachNeighbor(r, c, (nr, nc) => {
+                    if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
+                        const key = `${nr},${nc}`;
+                        if (!frontier.has(key)) {
+                            frontier.set(key, { r: nr, c: nc });
                         }
                     }
+                });
+            }
+        }
+    }
+    if (frontier.size === 0) {
+        return { actionTaken: false };
+    }
 
-                    if (frontier.size === 0) {
-                        return { actionTaken: false }; // 没有可分析的前沿
+    // 2. 将前沿格子分组为连通分量
+    const groups = [];
+    const visited = new Set();
+    const frontierCells = Array.from(frontier.keys());
+    for (const cellKey of frontierCells) {
+        if (visited.has(cellKey)) continue;
+        const group = [];
+        const queue = [cellKey];
+        visited.add(cellKey);
+        while (queue.length > 0) {
+            const currentKey = queue.shift();
+            const [r, c] = currentKey.split(',').map(Number);
+            group.push({ r, c });
+            const relatedNumbers = numberCells.filter(num => Math.abs(num.r - r) <= 1 && Math.abs(num.c - c) <= 1);
+            for (const num of relatedNumbers) {
+                this.forEachNeighbor(num.r, num.c, (nr, nc) => {
+                    const neighborKey = `${nr},${nc}`;
+                    if (frontier.has(neighborKey) && !visited.has(neighborKey)) {
+                        visited.add(neighborKey);
+                        queue.push(neighborKey);
                     }
-                    
-                    // 2. 将前沿格子分组为连通分量
-                    // 如果两个前沿格子共享一个相邻的数字格，则它们是连通的
-                    const groups = [];
-                    const visited = new Set();
-                    const frontierCells = Array.from(frontier.keys());
+                });
+            }
+        }
+        groups.push(group);
+    }
 
-                    for (const cellKey of frontierCells) {
-                        if (visited.has(cellKey)) continue;
+    // 3. 分析每个组
+    const allProbabilities = [];
+    for (const group of groups) {
+        const groupKeys = new Set(group.map(cell => `${cell.r},${cell.c}`));
+        const constraints = [];
+        const relatedNumberCells = new Set();
+        for (const cell of group) {
+            this.forEachNeighbor(cell.r, cell.c, (nr, nc) => {
+                if (this.revealed[nr][nc] && this.board[nr][nc] > 0) {
+                    relatedNumberCells.add(`${nr},${nc}`);
+                }
+            });
+        }
+        for (const numKey of relatedNumberCells) {
+            const [r, c] = numKey.split(',').map(Number);
+            let flaggedNeighbors = 0;
+            const unrevealedNeighbors = [];
+            this.forEachNeighbor(r, c, (nr, nc) => {
+                if (this.flags[nr][nc]) {
+                    flaggedNeighbors++;
+                } else if (!this.revealed[nr][nc]) {
+                    unrevealedNeighbors.push({ r: nr, c: nc });
+                }
+            });
+            const relevantNeighbors = unrevealedNeighbors.filter(cell => groupKeys.has(`${cell.r},${cell.c}`));
+            if (relevantNeighbors.length > 0) {
+                constraints.push({
+                    r, c,
+                    value: this.board[r][c] - flaggedNeighbors,
+                    cells: relevantNeighbors.map(cell => `${cell.r},${cell.c}`)
+                });
+            }
+        }
 
-                        const group = [];
-                        const queue = [cellKey];
-                        visited.add(cellKey);
+        const variables = group.map(cell => `${cell.r},${cell.c}`);
+        const solutions = [];
+        this.solveGroup(variables, constraints, 0, new Map(), solutions);
 
-                        while (queue.length > 0) {
-                            const currentKey = queue.shift();
-                            const [r, c] = currentKey.split(',').map(Number);
-                            group.push({ r, c });
+        if (solutions.length > 0) {
+            // 计算该组的概率
+            for (const cellKey of variables) {
+                const mineCount = solutions.filter(sol => sol.get(cellKey) === 1).length;
+                const probability = mineCount / solutions.length;
+                allProbabilities.push({ key: cellKey, prob: probability });
 
-                            // 查找连通的前沿格子
-                            const relatedNumbers = numberCells.filter(num => Math.abs(num.r - r) <= 1 && Math.abs(num.c - c) <= 1);
-                            for (const num of relatedNumbers) {
-                                this.forEachNeighbor(num.r, num.c, (nr, nc) => {
-                                    const neighborKey = `${nr},${nc}`;
-                                    if (frontier.has(neighborKey) && !visited.has(neighborKey)) {
-                                        visited.add(neighborKey);
-                                        queue.push(neighborKey);
-                                    }
-                                });
-                            }
-                        }
-                        groups.push(group);
-                    }
-                    
-                    // 3. 分析每个组
-                    const allProbabilities = [];
-                    let totalMinesInFrontier = 0;
-
-                    for (const group of groups) {
-                        // 查找此组的约束条件
-                        const groupKeys = new Set(group.map(cell => `${cell.r},${cell.c}`));
-                        const constraints = [];
-                        const relatedNumberCells = new Set();
-
-                        for (const cell of group) {
-                            this.forEachNeighbor(cell.r, cell.c, (nr, nc) => {
-                                if(this.revealed[nr][nc] && this.board[nr][nc] > 0) {
-                                    relatedNumberCells.add(`${nr},${nc}`);
-                                }
-                            });
-                        }
-                        
-                        for (const numKey of relatedNumberCells) {
-                            const [r, c] = numKey.split(',').map(Number);
-                            let flaggedNeighbors = 0;
-                            const unrevealedNeighbors = [];
-                            this.forEachNeighbor(r, c, (nr, nc) => {
-                                if (this.flags[nr][nc]) {
-                                    flaggedNeighbors++;
-                                } else if (!this.revealed[nr][nc]) {
-                                    unrevealedNeighbors.push({r: nr, c: nc});
-                                }
-                            });
-
-                            // 只考虑涉及当前组格子的约束
-                            const relevantNeighbors = unrevealedNeighbors.filter(cell => groupKeys.has(`${cell.r},${cell.c}`));
-                            if (relevantNeighbors.length > 0) {
-                                constraints.push({
-                                    r, c,
-                                    value: this.board[r][c] - flaggedNeighbors,
-                                    cells: relevantNeighbors.map(cell => `${cell.r},${cell.c}`)
-                                });
-                            }
-                        }
-                        
-                        // 4. 使用回溯法求解该组
-                        const variables = group.map(cell => `${cell.r},${cell.c}`);
-                        const solutions = [];
-                        this.solveGroup(variables, constraints, 0, new Map(), solutions);
-                        
-                        // 5. 计算该组的概率
-                        if (solutions.length > 0) {
-                            let groupMineSum = 0;
-                            const minesInSolution = solutions[0];
-                            minesInSolution.forEach(val => groupMineSum += val);
-
-                            for (const cellKey of variables) {
-                                const mineCount = solutions.filter(sol => sol.get(cellKey) === 1).length;
-                                const probability = mineCount / solutions.length;
-                                allProbabilities.push({ key: cellKey, prob: probability });
-                                
-                                if(probability === 1) {
-                                    const [r,c] = cellKey.split(',').map(Number);
-                                    this.flags[r][c] = true;
-                                    this.gameState.minesLeft--;
-                                    const cell = this.getCell(r, c);
-                                    this.updateCell(cell, r, c);
-                                    this.updateMinimapCell(r, c);
-                                    this.updateDisplay();
-                                    this.playSound('flag');
-                                    return { actionTaken: true, row: r, col: c };
-                                }
-                                if(probability === 0) {
-                                    const [r,c] = cellKey.split(',').map(Number);
-                                    this.revealCell(r, c);
-                                    return { actionTaken: true, row: r, col: c };
-                                }
-                            }
-                            totalMinesInFrontier += groupMineSum;
-                        }
-                    }
-                    
-                    // 6. 如果没有确定性移动，则进行最佳猜测
-                    const unrevealedCount = (this.gameState.rows * this.gameState.cols) - this.countRevealed() - this.countFlags();
-                    const nonFrontierUnrevealed = unrevealedCount - frontier.size;
-                    const minesLeftForGuessing = this.gameState.minesLeft - totalMinesInFrontier;
-                    
-                    // 计算非前沿格子的概率
-                    const backgroundProb = nonFrontierUnrevealed > 0 ? minesLeftForGuessing / nonFrontierUnrevealed : 1;
-                    
-                    let bestGuess = { key: null, prob: 1.1 };
-                    
-                    // 在前沿中找到最佳猜测
-                    for (const p of allProbabilities) {
-                        if (p.prob < bestGuess.prob) {
-                            bestGuess = p;
-                        }
-                    }
-                    
-                    // 与背景概率进行比较
-                    if (backgroundProb < bestGuess.prob && nonFrontierUnrevealed > 0) {
-                        // 找一个非前沿的格子来点击
-                        for (let r = 0; r < this.gameState.rows; r++) {
-                            for (let c = 0; c < this.gameState.cols; c++) {
-                                const key = `${r},${c}`;
-                                if (!this.revealed[r][c] && !this.flags[r][c] && !frontier.has(key)) {
-                                    this.revealCell(r, c);
-                                    return { actionTaken: true, row: r, col: c };
-                                }
-                            }
-                        }
-                    } else if (bestGuess.key) {
-                        const [r, c] = bestGuess.key.split(',').map(Number);
+                // 确定性操作：立即执行
+                if (probability === 1) {
+                    const [r, c] = cellKey.split(',').map(Number);
+                    this.flags[r][c] = true;
+                    this.gameState.minesLeft--;
+                    const cell = this.getCell(r, c);
+                    this.updateCell(cell, r, c);
+                    this.updateMinimapCell(r, c);
+                    this.updateDisplay();
+                    this.playSound('flag');
+                    return { actionTaken: true, row: r, col: c };
+                }
+                if (probability === 0) {
+                    const [r, c] = cellKey.split(',').map(Number);
+                    // 安全验证：确保不是雷（理论上应该成立，但以防万一）
+                    if (this.board[r][c] !== -1) {
                         this.revealCell(r, c);
                         return { actionTaken: true, row: r, col: c };
+                    } else {
+                        // 出现错误，不应该点击雷，返回 false 让上层处理
+                        return { actionTaken: false };
                     }
-                    
-                    return { actionTaken: false };
                 }
+            }
+        }
+    }
+
+    // 没有确定性操作，返回 false
+    return { actionTaken: false };
+}
 
                 solveGroup(variables, constraints, index, assignment, solutions) {
                     // 基本情况：如果所有变量都已分配，检查是否为有效解
@@ -6534,6 +6801,56 @@ createCompressionWorker() {
     
     // 创建Worker
     return new Worker(URL.createObjectURL(blob));
+}
+
+fallbackGenerateBoard(excludeRow, excludeCol, callback) {
+    console.warn('使用保底生成（无验证）');
+    const board = this.generateRandomBoardSync(excludeRow, excludeCol); // 生成一个随机棋盘
+    callback(board);
+}
+
+generateRandomBoardSync(excludeRow, excludeCol) {
+    const rows = this.gameState.rows;
+    const cols = this.gameState.cols;
+    const totalMines = this.gameState.totalMines;
+    const board = Array(rows).fill().map(() => Array(cols).fill(0));
+    const positions = [];
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
+                positions.push([r, c]);
+            }
+        }
+    }
+    for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    for (let i = 0; i < totalMines && i < positions.length; i++) {
+        const [r, c] = positions[i];
+        board[r][c] = -1;
+    }
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (board[r][c] !== -1) {
+                board[r][c] = this.countAdjacentMinesFromBoard(board, r, c);
+            }
+        }
+    }
+    return board;
+}
+
+// 辅助方法：计算周围地雷数（用于同步生成）
+countAdjacentMinesFromBoard(board, row, col) {
+    let count = 0;
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = row + dr, nc = col + dc;
+            if (nr >= 0 && nr < this.gameState.rows && nc >= 0 && nc < this.gameState.cols && board[nr][nc] === -1) count++;
+        }
+    }
+    return count;
 }
 
                 toggleSound() {

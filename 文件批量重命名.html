@@ -938,20 +938,22 @@ namesInput.addEventListener('input', updatePreview);
 $('btnDownloadZip').addEventListener('click', async () => {
   const okItems = generated.filter(x => x.ok);
   if (!okItems.length) return;
-  if (typeof JSZip === 'undefined') { showToast('JSZip 未加载', 'error'); return; }
-
+  if (typeof JSZip === 'undefined') {
+    showToast('JSZip 未加载', 'error');
+    return;
+  }
+  
   $('btnDownloadZip').disabled = true;
   showProgress(true);
-
   $('progressText').textContent = '打包中…';
   $('progressFill').style.width = '0%';
-  $('progressDetail').textContent = `0 / ${okItems.length}`;
-
+  $('progressDetail').textContent = `0/${okItems.length}`;
+  
   try {
-    const blob = await generateZipBlobSafe(okItems);
-
+    const includeCSV = confirm('是否在 ZIP 中包含对照表 CSV？\n\n点击"确定"包含，"取消"不包含');
+    const blob = await generateZipBlobSafe(okItems, includeCSV);
     downloadBlobSafe(blob, `batch_renamed_${Date.now()}.zip`);
-    showToast(`已下载 ${okItems.length} 个文件`);
+    showToast(`已下载${okItems.length}个文件`);
   } catch (e) {
     console.error(e);
     showToast('打包失败：文件过大或浏览器内存不足（建议减少文件数量/改用电脑）', 'error');
@@ -964,9 +966,16 @@ $('btnDownloadZip').addEventListener('click', async () => {
 $('btnDownloadCSV').addEventListener('click', () => {
   if (!generated.length) return;
   const csv = ['index,oldName,newName,status,error'].concat(
-    generated.map((it, i) => [i + 1, csvEscape(it.oldName), csvEscape(it.newName), it.ok ? 'OK' : 'ERR', csvEscape(it.err)].join(','))
+    generated.map((it, i) => [
+      i + 1,
+      csvEscape(it.oldName),
+      csvEscape(it.newName),
+      it.ok ? 'OK' : 'ERR',
+      csvEscape(it.err)
+    ].join(','))
   ).join('\n');
-  downloadBlob(new Blob([csv], { type: 'text/csv' }), `rename_map_${Date.now()}.csv`);
+  const csvWithBOM = '\uFEFF' + csv;
+  downloadBlob(new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8' }), `rename_map_${Date.now()}.csv`);
 });
 
 function downloadBlob(blob, name) {
@@ -980,55 +989,60 @@ function downloadBlob(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-async function generateZipBlobSafe(okItems) {
+async function generateZipBlobSafe(okItems, includeCSV = true) {
   try {
     return await generateZipBlob(okItems, {
       compression: 'DEFLATE',
       compressionOptions: { level: 1 },
-    });
+    }, includeCSV);
   } catch (e) {
     console.warn('[zip] DEFLATE failed, fallback to STORE', e);
     return await generateZipBlob(okItems, {
       compression: 'STORE',
       compressionOptions: undefined,
-    });
+    }, includeCSV);
   }
 }
 
-async function generateZipBlob(okItems, zipOptions) {
+async function generateZipBlob(okItems, zipOptions, includeCSV = true) {
   if (typeof JSZip === 'undefined') throw new Error('JSZip 未加载');
-
   const zip = new JSZip();
   const folder = zip.folder('重命名后的文件');
-
+  
   for (const item of okItems) {
     folder.file(item.newName, item.file, {
       binary: true,
       createFolders: true,
     });
   }
-
-  const csv = ['index,oldName,newName,sizeBytes'].concat(
-    okItems.map((it, idx) => [idx + 1, csvEscape(it.oldName), csvEscape(it.newName), it.file.size].join(','))
-  ).join('\n');
-  folder.file('_rename_map.csv', csv);
-
-  const blob = await zip.generateAsync(
-    {
-      type: 'blob',
-      streamFiles: true,
-      compression: zipOptions.compression,
-      compressionOptions: zipOptions.compressionOptions,
-    },
-    (metadata) => {
-      const pct = Number(metadata.percent) || 0;
-      $('progressFill').style.width = pct.toFixed(2) + '%';
-      $('progressDetail').textContent = metadata.currentFile
-        ? `处理中：${metadata.currentFile}`
-        : `处理中… ${pct.toFixed(0)}%`;
-    }
-  );
-
+  
+  if (includeCSV) {
+    const csv = ['index,oldName,newName,sizeBytes'].concat(
+      okItems.map((it, idx) => [
+        idx + 1,
+        csvEscape(it.oldName),
+        csvEscape(it.newName),
+        it.file.size
+      ].join(','))
+    ).join('\n');
+    // 添加 UTF-8 BOM
+    const csvWithBOM = '\uFEFF' + csv;
+    folder.file('_rename_map.csv', csvWithBOM);
+  }
+  
+  const blob = await zip.generateAsync({
+    type: 'blob',
+    streamFiles: true,
+    compression: zipOptions.compression,
+    compressionOptions: zipOptions.compressionOptions,
+  }, (metadata) => {
+    const pct = Number(metadata.percent) || 0;
+    $('progressFill').style.width = pct.toFixed(2) + '%';
+    $('progressDetail').textContent = metadata.currentFile
+      ? `处理中：${metadata.currentFile}`
+      : `处理中…${pct.toFixed(0)}%`;
+  });
+  
   return blob;
 }
 

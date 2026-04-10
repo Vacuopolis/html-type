@@ -1646,6 +1646,46 @@
         <div class="achievement-icon">👑</div>
         <div>生存之王</div>
     </div>
+    <div class="achievement" id="ach-efficiency-star" onclick="game.showAchievementDetails('efficiency-star')">
+        <div class="achievement-icon">🌟</div>
+        <div>效率之星</div>
+    </div>
+    <div class="achievement" id="ach-swift-thinker" onclick="game.showAchievementDetails('swift-thinker')">
+        <div class="achievement-icon">💨</div>
+        <div>决策如风</div>
+    </div>
+    <div class="achievement" id="ach-no-guess-master" onclick="game.showAchievementDetails('no-guess-master')">
+        <div class="achievement-icon">🧠</div>
+        <div>无猜达人</div>
+    </div>
+    <div class="achievement" id="ach-zen-master" onclick="game.showAchievementDetails('zen-master')">
+        <div class="achievement-icon">🧘</div>
+        <div>禅意修行</div>
+    </div>
+    <div class="achievement" id="ach-speed-hero" onclick="game.showAchievementDetails('speed-hero')">
+        <div class="achievement-icon">⏱️</div>
+        <div>极速英雄</div>
+    </div>
+    <div class="achievement" id="ach-intermediate-conquer" onclick="game.showAchievementDetails('intermediate-conquer')">
+        <div class="achievement-icon">🏔️</div>
+        <div>中级征服</div>
+    </div>
+    <div class="achievement" id="ach-expert-path" onclick="game.showAchievementDetails('expert-path')">
+        <div class="achievement-icon">🎓</div>
+        <div>专家之路</div>
+    </div>
+    <div class="achievement" id="ach-veteran" onclick="game.showAchievementDetails('veteran')">
+        <div class="achievement-icon">🎖️</div>
+        <div>百战老兵</div>
+    </div>
+    <div class="achievement" id="ach-win-streak" onclick="game.showAchievementDetails('win-streak')">
+        <div class="achievement-icon">🏆</div>
+        <div>常胜将军</div>
+    </div>
+    <div class="achievement" id="ach-combo-legend" onclick="game.showAchievementDetails('combo-legend')">
+        <div class="achievement-icon">💫</div>
+        <div>连击传奇</div>
+    </div>
 </section>
 
 <!-- 成就详情模态框 -->
@@ -1661,7 +1701,7 @@
     </div>
 </aside>
         <footer class="version-info">
-            <small>by空城 版本 <span id="version-number">1.4.5</span></small>
+            <small>by空城 版本 <span id="version-number">2.0.0</span></small>
         </footer>
     </main>
     
@@ -1792,7 +1832,6 @@
                     </div>
                 </div>
             </div>
-        </div>
             <div class="modal-buttons">
                 <button class="btn success" id="btn-save-controls">保存设置</button>
                 <button class="btn" id="btn-close-controls">取消</button>
@@ -1927,6 +1966,19 @@
                     </ul>
                 </div>
                 <div class="help-section">
+                    <h3>🏆 成就系统</h3>
+                    <ul>
+                        <li><strong>基础成就</strong>：首次胜利、完美游戏、幸运玩家等</li>
+                        <li><strong>速度成就</strong>：极速通关、决策如风</li>
+                        <li><strong>连击成就</strong>：连击大师(20连击)、连击传奇(50连击)</li>
+                        <li><strong>难度成就</strong>：中级征服、专家之路、巨型征服者</li>
+                        <li><strong>模式成就</strong>：无猜达人、禅意修行、极速英雄、生存之王</li>
+                        <li><strong>累计成就</strong>：地雷猎手、时间大师、百战老兵</li>
+                        <li><strong>技巧成就</strong>：效率之星、标记专家、常胜将军</li>
+                        <li><strong>点击成就卡片</strong>：可查看详细解锁条件和进度</li>
+                    </ul>
+                </div>
+                <div class="help-section">
                     <h3>⌨️ 键盘快捷键</h3>
                     <ul>
                         <li><strong>R</strong>：重新开始</li>
@@ -1950,7 +2002,7 @@
             class MinesweeperUltimate {
                                 constructor() {
                     // 版本控制
-                    this.VERSION = '1.4.5';
+                    this.VERSION = '2.0.0';
                     this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
 
                     this.progressiveHints = {
@@ -2041,7 +2093,17 @@
                         mineHunter: { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
                         timeMaster: { unlocked: false, currentValue: 0, unlockedAt: null },
                         flagExpert: { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
-                        survivalKing: { unlocked: false, unlockedAt: null }
+                        survivalKing: { unlocked: false, unlockedAt: null },
+                        efficiencyStar: { unlocked: false, currentValue: 0, unlockedAt: null },
+                        swiftThinker: { unlocked: false, unlockedAt: null },
+                        noGuessMaster: { unlocked: false, unlockedAt: null },
+                        zenMaster: { unlocked: false, currentValue: 0, unlockedAt: null },
+                        speedHero: { unlocked: false, unlockedAt: null },
+                        intermediateConquer: { unlocked: false, unlockedAt: null },
+                        expertPath: { unlocked: false, unlockedAt: null },
+                        veteran: { unlocked: false, currentValue: 0, unlockedAt: null },
+                        winStreak: { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
+                        comboLegend: { unlocked: false, currentValue: 0, unlockedAt: null }
                     };
 
                     this.achievementDetails = {
@@ -2054,7 +2116,17 @@
                         'mine-hunter': { baseId: 'mine-hunter', baseName: '地雷猎手', baseIcon: '🎯', isMultiLevel: true, levels: [ { level: 0, name: '初级地雷猎手', icon: '🎯', description: '累计正确标记50个地雷', condition: '累计正确标记地雷数达到50', targetValue: 50, tips: '多玩游戏，准确标记地雷，积累经验。' }, { level: 1, name: '中级地雷猎手', icon: '🎯✨', description: '累计正确标记200个地雷', condition: '累计正确标记地雷数达到200', targetValue: 200, tips: '标记地雷的准确性越来越高了！' }, { level: 2, name: '专家地雷猎手', icon: '🎯🏆', description: '累计正确标记500个地雷', condition: '累计正确标记地雷数达到500', targetValue: 500, tips: '您已成为一名真正的地雷追踪专家！' } ] },
                         'time-master': { baseId: 'time-master', name: '时间大师', icon: '⏰', description: '总游戏时间超过1小时', condition: '累计游戏时间达到3600秒', targetValue: 3600, isMultiLevel: false, tips: '坚持游戏，时间会自然累积' },
                         'flag-expert': { baseId: 'flag-expert', baseName: '标记专家', baseIcon: '🚩', isMultiLevel: true, levels: [ { level: 0, name: '初级标记专家', icon: '🚩', description: '连续3局游戏无错误标记获胜', condition: '连续3局获胜且每局都没有错误标记', targetValue: 3, tips: '需要极高的准确性！每次标记前都要仔细思考。' }, { level: 1, name: '中级标记专家', icon: '🚩✨', description: '连续7局游戏无错误标记获胜', condition: '连续7局获胜且每局都没有错误标记', targetValue: 7, tips: '您的标记几乎从不出错！' }, { level: 2, name: '高级标记专家', icon: '🚩🏆', description: '连续10局游戏无错误标记获胜', condition: '连续10局获胜且每局都没有错误标记', targetValue: 10, tips: '标记的艺术已被您完美掌握！' } ] },
-                        'survival-king': { baseId: 'survival-king', name: '生存之王', icon: '👑', description: '在生存模式下满血通关', condition: '生存模式获胜且生命值未减少', isMultiLevel: false, tips: '在生存模式中，避免踩到任何地雷，保持满血状态通关' }
+                        'survival-king': { baseId: 'survival-king', name: '生存之王', icon: '👑', description: '在生存模式下满血通关', condition: '生存模式获胜且生命值未减少', isMultiLevel: false, tips: '在生存模式中，避免踩到任何地雷，保持满血状态通关' },
+                        'efficiency-star': { baseId: 'efficiency-star', name: '效率之星', icon: '🌟', description: '以极高的点击效率完成一局游戏', condition: '获胜且点击效率(揭开/点击)达到80%以上', targetValue: 80, isMultiLevel: false, tips: '减少无效点击，每次点击都应有明确目的，善用数字展开功能' },
+                        'swift-thinker': { baseId: 'swift-thinker', name: '决策如风', icon: '💨', description: '以极快的决策速度完成一局游戏', condition: '获胜且平均决策时间低于2秒', isMultiLevel: false, tips: '快速识别安全区域和地雷位置，减少犹豫时间' },
+                        'no-guess-master': { baseId: 'no-guess-master', name: '无猜达人', icon: '🧠', description: '在无猜模式下获得胜利', condition: '在无猜模式下获胜', isMultiLevel: false, tips: '无猜模式需要纯逻辑推理，不依赖运气，展现真正的扫雷实力' },
+                        'zen-master': { baseId: 'zen-master', name: '禅意修行', icon: '🧘', description: '在禅意模式下累计收集指定数量的特殊格子', condition: '累计收集10个特殊格子', targetValue: 10, isMultiLevel: false, tips: '在禅意模式下揭开闪烁的特殊格子，它们会提供各种增益效果' },
+                        'speed-hero': { baseId: 'speed-hero', name: '极速英雄', icon: '⏱️', description: '在极速模式下获得胜利', condition: '在极速模式下获胜', isMultiLevel: false, tips: '极速模式时间紧迫，需要快速且准确地做出每一个决策' },
+                        'intermediate-conquer': { baseId: 'intermediate-conquer', name: '中级征服', icon: '🏔️', description: '在中级难度下获得胜利', condition: '在中级难度(16×16)下获胜', isMultiLevel: false, tips: '中级难度需要更好的逻辑推理能力，注意观察数字的分布规律' },
+                        'expert-path': { baseId: 'expert-path', name: '专家之路', icon: '🎓', description: '在专家难度下获得胜利', condition: '在专家难度(30×16)下获胜', isMultiLevel: false, tips: '专家难度是对扫雷技巧的终极考验，需要耐心和精确的逻辑推理' },
+                        'veteran': { baseId: 'veteran', name: '百战老兵', icon: '🎖️', description: '累计完成指定数量的游戏', condition: '累计完成100局游戏', targetValue: 100, isMultiLevel: false, tips: '坚持游戏，无论胜负都会累积，享受扫雷的过程' },
+                        'win-streak': { baseId: 'win-streak', baseName: '常胜将军', baseIcon: '🏆', isMultiLevel: true, levels: [ { level: 0, name: '初级常胜将军', icon: '🏆', description: '连续获胜3局', condition: '连续获胜3局', targetValue: 3, tips: '保持专注和稳定，连续获胜需要每一局都认真对待' }, { level: 1, name: '中级常胜将军', icon: '🏆✨', description: '连续获胜5局', condition: '连续获胜5局', targetValue: 5, tips: '连续5局不失误，说明您已经具备相当稳定的实力！' }, { level: 2, name: '高级常胜将军', icon: '🏆🏅', description: '连续获胜10局', condition: '连续获胜10局', targetValue: 10, tips: '连续10局获胜，您是真正的扫雷大师！' } ] },
+                        'combo-legend': { baseId: 'combo-legend', name: '连击传奇', icon: '💫', description: '在一局游戏中达到超高的连击数', condition: '单局最大连击数达到50', targetValue: 50, isMultiLevel: false, tips: '需要极高的精准度，连续揭开50个格子而不踩雷，善用特殊格子的连击加成' }
                     };
 
                     this.achievementQueue = [];
@@ -2067,7 +2139,10 @@
                         bestTimes: { beginner: Infinity, intermediate: Infinity, expert: Infinity, mega: Infinity },
                         totalCorrectFlags: 0,       
                         consecutivePerfectGames: 0,  
-                        maxConsecutivePerfectGames: 0 
+                        maxConsecutivePerfectGames: 0,
+                        consecutiveWins: 0,
+                        maxConsecutiveWins: 0,
+                        totalSpecialCellsCollected: 0
                     };
                     this.audioContext = null;
                     this.sounds = {};
@@ -2586,36 +2661,24 @@ saveCurrentGame() {
         this.showFloatingMessage('❌ 游戏还未开始，无法保存！');
         return;
     }
+    if (this.savedGames.length >= 20) {
+        this.showFloatingMessage('❌ 存档数量已达上限（20个）！请先删除旧存档。');
+        return;
+    }
     const timestamp = new Date();
     const saveName = `${this.gameState.difficulty}_${timestamp.toLocaleString()}`;
-    
-    const gameStateToSave = JSON.parse(JSON.stringify(this.gameState));
-    gameStateToSave.autoSolving = false;
-    gameStateToSave.resumeAfterClick = false;
-    
-    // 使用压缩的棋盘数据
-    const compressedBoard = this.compressBoardData();
-    
-const saveData = {
-    id: Date.now(),
-    name: saveName,
-    timestamp: timestamp.toISOString(),
-    gameState: gameStateToSave,
-    achievements: JSON.parse(JSON.stringify(this.achievements)),
-    stats: JSON.parse(JSON.stringify(this.stats))
-};
-
-// 异步压缩
-this.compressBoardData().then(compressed => {
-    saveData.boardData = compressed;
+    const gameStateToSave = this.stripGameStateForSave(this.gameState);
+    const saveData = {
+        id: Date.now(),
+        name: saveName,
+        timestamp: timestamp.toISOString(),
+        gameState: gameStateToSave,
+        boardData: this.compressBoardData()
+    };
     this.savedGames.push(saveData);
     this.saveSavedGames();
     this.playSound('powerup');
     this.showFloatingMessage('💾 游戏已保存！（自动扫雷已暂停）');
-}).catch(error => {
-    console.error('压缩失败:', error);
-    this.showFloatingMessage('❌ 保存失败！');
-});
 }
 
 
@@ -2630,24 +2693,19 @@ async loadSavedGame(saveId) {
     return success;
 }
 
-loadTempSaveAndClose(saveId) {
+async loadTempSaveAndClose(saveId) {
     const saveData = this.tempSaves.find(save => save.id === saveId);
     if (!saveData) {
         this.showFloatingMessage('❌ 临时存档不存在！');
         return;
     }
-    
-    // loadSavedGameFromData 是 async, 所以这里也用 async/await
-    (async () => {
-        if (await this.loadSavedGameFromData(saveData)) {
-            this.closeModal('save-modal');
-        }
-    })();
+    if (await this.loadSavedGameFromData(saveData)) {
+        this.closeModal('save-modal');
+    }
 }
 
 async loadSavedGameFromData(saveData) {
     try {
-        // 清理当前游戏状态
         if (this.gameState.timerInterval) {
             clearInterval(this.gameState.timerInterval);
         }
@@ -2655,29 +2713,27 @@ async loadSavedGameFromData(saveData) {
         this.clearXrayEffect();
         this.clearSafeDetectEffect();
         
-        // 停止当前的自动扫雷
         this.gameState.autoSolving = false;
         const autoStatus = document.getElementById('auto-solve-status');
         if (autoStatus) {
             autoStatus.style.display = 'none';
         }
         
-        // 恢复游戏数据
         this.gameState = JSON.parse(JSON.stringify(saveData.gameState));
+        this.loadSaveSettings();
 
-        // 异步解压棋盘数据
         if (saveData.boardData) {
-            await this.decompressBoardData(saveData.boardData);
-        } else { // 兼容旧格式
+            this.decompressBoardData(saveData.boardData);
+        } else if (saveData.board) {
             this.board = JSON.parse(JSON.stringify(saveData.board));
             this.revealed = JSON.parse(JSON.stringify(saveData.revealed));
             this.flags = JSON.parse(JSON.stringify(saveData.flags));
             this.questions = JSON.parse(JSON.stringify(saveData.questions));
             this.specialCells = JSON.parse(JSON.stringify(saveData.specialCells));
+    0        } else {
+            this.showFloatingMessage('❌ 存档数据损坏，缺少棋盘信息！');
+            return false;
         }
-
-        this.achievements = JSON.parse(JSON.stringify(saveData.achievements));
-        this.stats = JSON.parse(JSON.stringify(saveData.stats));
         
         // 确保自动扫雷是停止状态
         this.gameState.autoSolving = false;
@@ -2902,8 +2958,8 @@ async loadSavedGameFromData(saveData) {
     return html;
 }
 
-                loadSaveAndClose(saveId) {
-                    if (this.loadSavedGame(saveId)) {
+                async loadSaveAndClose(saveId) {
+                    if (await this.loadSavedGame(saveId)) {
                         this.closeModal('save-modal');
                     }
                 }
@@ -2960,7 +3016,7 @@ exportSaves() {
             achievements: this.achievements
         };
 
-        const jsonString = JSON.stringify(exportData, null, 2);
+        const jsonString = JSON.stringify(exportData);
         
         // 生成包含存档名称和日期的文件名
         const now = new Date();
@@ -3007,7 +3063,7 @@ showExportDialog() {
             achievements: this.achievements
         };
         
-        const jsonString = JSON.stringify(exportData, null, 2);
+        const jsonString = JSON.stringify(exportData);
         
         // 创建模态框显示JSON内容
         const modal = document.createElement('div');
@@ -3159,23 +3215,15 @@ createTempSave() {
     
     const timestamp = new Date();
     const saveName = `临时存档_${timestamp.toLocaleString()}`;
-    
-    const gameStateToSave = JSON.parse(JSON.stringify(this.gameState));
-    gameStateToSave.autoSolving = false;
-    gameStateToSave.resumeAfterClick = false;
+    const gameStateToSave = this.stripGameStateForSave(this.gameState);
     
     const saveData = {
-        id: Date.now() + Math.random(), // 确保唯一性
+        id: Date.now(),
         name: saveName,
         timestamp: timestamp.toISOString(),
         gameState: gameStateToSave,
-        board: JSON.parse(JSON.stringify(this.board)),
-        revealed: JSON.parse(JSON.stringify(this.revealed)),
-        flags: JSON.parse(JSON.stringify(this.flags)),
-        questions: JSON.parse(JSON.stringify(this.questions)),
-        specialCells: JSON.parse(JSON.stringify(this.specialCells)),
-        achievements: JSON.parse(JSON.stringify(this.achievements)),
-        stats: JSON.parse(JSON.stringify(this.stats))
+        boardData: this.compressBoardData(),
+        isTemp: true
     };
     
     this.tempSaves.push(saveData);
@@ -3301,115 +3349,96 @@ loadSaveSettings() {
     }
 }
 
-//  压缩棋盘数据
-compressBoardData() {
-    return new Promise((resolve, reject) => {
-        const worker = this.createCompressionWorker();
-        if (!worker) {
-            // 回退到同步压缩
-            const compressed = {
-                board: [],
-                revealed: [],
-                flags: [],
-                questions: [],
-                specialCells: []
-            };
-            
-            for (let r = 0; r < this.gameState.rows; r++) {
-                for (let c = 0; c < this.gameState.cols; c++) {
-                    compressed.board.push(this.board[r][c]);
-                    compressed.revealed.push(this.revealed[r][c] ? 1 : 0);
-                    compressed.flags.push(this.flags[r][c] ? 1 : 0);
-                    compressed.questions.push(this.questions[r][c] ? 1 : 0);
-                    compressed.specialCells.push(this.specialCells[r][c] ? 1 : 0);
-                }
-            }
-            resolve(compressed);
-            return;
-        }
-        
-        worker.onmessage = (event) => {
-            if (event.data.action === 'compressed') {
-                resolve(event.data.data);
-            }
-            worker.terminate();
-        };
-        
-        worker.onerror = (error) => {
-            reject(error);
-            worker.terminate();
-        };
-        
-        worker.postMessage({
-            action: 'compress',
-            data: {
-                board: this.board,
-                revealed: this.revealed,
-                flags: this.flags,
-                questions: this.questions,
-                specialCells: this.specialCells
-            },
-            rows: this.gameState.rows,
-            cols: this.gameState.cols
-        });
-    });
+stripGameStateForSave(gameState) {
+    const stripped = JSON.parse(JSON.stringify(gameState));
+    const runtimeFields = ['timerInterval', 'startTime', 'batchRevealing', 'autoSolving', 'resumeAfterClick', 'gameData'];
+    runtimeFields.forEach(field => delete stripped[field]);
+    return stripped;
 }
 
-// 解压棋盘数据
-decompressBoardData(compressed) {
-    return new Promise((resolve, reject) => {
-        const worker = this.createCompressionWorker();
-        if (!worker) {
-            // 回退到同步解压
-            const rows = this.gameState.rows;
-            const cols = this.gameState.cols;
-            
-            this.board = Array(rows).fill().map(() => Array(cols).fill(0));
-            this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
-            this.flags = Array(rows).fill().map(() => Array(cols).fill(false));
-            this.questions = Array(rows).fill().map(() => Array(cols).fill(false));
-            this.specialCells = Array(rows).fill().map(() => Array(cols).fill(false));
-            
-            let index = 0;
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    this.board[r][c] = compressed.board[index];
-                    this.revealed[r][c] = compressed.revealed[index] === 1;
-                    this.flags[r][c] = compressed.flags[index] === 1;
-                    this.questions[r][c] = compressed.questions[index] === 1;
-                    this.specialCells[r][c] = compressed.specialCells[index] === 1;
-                    index++;
-                }
-            }
-            resolve();
-            return;
+compressBoardData() {
+    const rows = this.gameState.rows;
+    const cols = this.gameState.cols;
+    let boardStr = '';
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            boardStr += String.fromCharCode(this.board[r][c] + 49);
         }
-        
-        worker.onmessage = (event) => {
-            if (event.data.action === 'decompressed') {
-                const decompressed = event.data.data;
-                this.board = decompressed.board;
-                this.revealed = decompressed.revealed;
-                this.flags = decompressed.flags;
-                this.questions = decompressed.questions;
-                this.specialCells = decompressed.specialCells;
-                resolve();
+    }
+    const packBooleans = (arr) => {
+        const totalCells = rows * cols;
+        const byteCount = Math.ceil(totalCells / 8);
+        const bytes = new Uint8Array(byteCount);
+        for (let i = 0; i < totalCells; i++) {
+            const r = Math.floor(i / cols);
+            const c = i % cols;
+            if (arr[r][c]) {
+                bytes[Math.floor(i / 8)] |= (1 << (i % 8));
             }
-            worker.terminate();
+        }
+        let binary = '';
+        for (let i = 0; i < byteCount; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    };
+    return {
+        v: 2,
+        board: boardStr,
+        revealed: packBooleans(this.revealed),
+        flags: packBooleans(this.flags),
+        questions: packBooleans(this.questions),
+        specialCells: packBooleans(this.specialCells)
+    };
+}
+
+decompressBoardData(compressed) {
+    const rows = this.gameState.rows;
+    const cols = this.gameState.cols;
+    if (compressed.v === 2) {
+        let idx = 0;
+        this.board = Array(rows).fill().map(() => Array(cols).fill(0));
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                this.board[r][c] = compressed.board.charCodeAt(idx) - 49;
+                idx++;
+            }
+        }
+        const unpackBooleans = (base64Str) => {
+            const binary = atob(base64Str);
+            const totalCells = rows * cols;
+            const arr = Array(rows).fill().map(() => Array(cols).fill(false));
+            for (let i = 0; i < totalCells; i++) {
+                const byteIndex = Math.floor(i / 8);
+                const bitIndex = i % 8;
+                const r = Math.floor(i / cols);
+                const c = i % cols;
+                arr[r][c] = (binary.charCodeAt(byteIndex) & (1 << bitIndex)) !== 0;
+            }
+            return arr;
         };
-        
-        worker.onerror = (error) => {
-            reject(error);
-            worker.terminate();
-        };
-        
-        worker.postMessage({
-            action: 'decompress',
-            data: compressed,
-            rows: this.gameState.rows,
-            cols: this.gameState.cols
-        });
-    });
+        this.revealed = unpackBooleans(compressed.revealed);
+        this.flags = unpackBooleans(compressed.flags);
+        this.questions = unpackBooleans(compressed.questions);
+        this.specialCells = unpackBooleans(compressed.specialCells);
+    } else {
+        this.board = Array(rows).fill().map(() => Array(cols).fill(0));
+        this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
+        this.flags = Array(rows).fill().map(() => Array(cols).fill(false));
+        this.questions = Array(rows).fill().map(() => Array(cols).fill(false));
+        this.specialCells = Array(rows).fill().map(() => Array(cols).fill(false));
+        let index = 0;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                this.board[r][c] = compressed.board[index];
+                this.revealed[r][c] = compressed.revealed[index] === 1;
+                this.flags[r][c] = compressed.flags[index] === 1;
+                this.questions[r][c] = compressed.questions[index] === 1;
+                this.specialCells[r][c] = compressed.specialCells[index] === 1;
+                index++;
+            }
+        }
+    }
 }
 
                 // 版本控制函数
@@ -3440,13 +3469,7 @@ decompressBoardData(compressed) {
 
                 migrateOldStats() {
                     try {
-                        const oldKeys = [
-                            'minesweeper-stats',
-                            'minesweeper_v2_0_0_stats',
-                            'minesweeper_v1_9_0_stats',
-                            'minesweeper_v1_8_0_stats'
-                        ];
-
+                        const oldKeys = ['minesweeper-stats'];
                         for (const key of oldKeys) {
                             const oldData = localStorage.getItem(key);
                             if (oldData) {
@@ -3455,7 +3478,8 @@ decompressBoardData(compressed) {
                                     const migratedData = this.migrateStatsData(parsed);
                                     if (migratedData) {
                                         this.stats = { ...this.stats, ...migratedData };
-                                        console.log(`成功迁移统计数据从: ${key}`);
+                                        this.saveStats();
+                                        localStorage.removeItem(key);
                                         break;
                                     }
                                 } catch (e) {
@@ -3470,13 +3494,7 @@ decompressBoardData(compressed) {
 
                 migrateOldAchievements() {
                     try {
-                        const oldKeys = [
-                            'minesweeper-achievements',
-                            'minesweeper_v2_0_0_achievements',
-                            'minesweeper_v1_9_0_achievements',
-                            'minesweeper_v1_8_0_achievements'
-                        ];
-
+                        const oldKeys = ['minesweeper-achievements'];
                         for (const key of oldKeys) {
                             const oldData = localStorage.getItem(key);
                             if (oldData) {
@@ -3486,7 +3504,8 @@ decompressBoardData(compressed) {
                                     if (migratedData) {
                                         this.achievements = { ...this.achievements, ...migratedData };
                                         this.updateAchievementDisplay();
-                                        console.log(`成功迁移成就数据从: ${key}`);
+                                        this.saveAchievements();
+                                        localStorage.removeItem(key);
                                         break;
                                     }
                                 } catch (e) {
@@ -3518,7 +3537,10 @@ decompressBoardData(compressed) {
             },
             totalCorrectFlags: oldData.totalCorrectFlags || 0,
             consecutivePerfectGames: oldData.consecutivePerfectGames || 0,
-            maxConsecutivePerfectGames: oldData.maxConsecutivePerfectGames || 0
+            maxConsecutivePerfectGames: oldData.maxConsecutivePerfectGames || 0,
+            consecutiveWins: oldData.consecutiveWins || 0,
+            maxConsecutiveWins: oldData.maxConsecutiveWins || 0,
+            totalSpecialCellsCollected: oldData.totalSpecialCellsCollected || 0
         };
         return migratedStats;
     } catch (e) {
@@ -3544,7 +3566,17 @@ migrateAchievementData(oldData) {
             mineHunter: oldData.mineHunter || { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
             timeMaster: oldData.timeMaster || { unlocked: false, currentValue: 0, unlockedAt: null },
             flagExpert: oldData.flagExpert || { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
-            survivalKing: oldData.survivalKing || { unlocked: false, unlockedAt: null }
+            survivalKing: oldData.survivalKing || { unlocked: false, unlockedAt: null },
+            efficiencyStar: oldData.efficiencyStar || { unlocked: false, currentValue: 0, unlockedAt: null },
+            swiftThinker: oldData.swiftThinker || { unlocked: false, unlockedAt: null },
+            noGuessMaster: oldData.noGuessMaster || { unlocked: false, unlockedAt: null },
+            zenMaster: oldData.zenMaster || { unlocked: false, currentValue: 0, unlockedAt: null },
+            speedHero: oldData.speedHero || { unlocked: false, unlockedAt: null },
+            intermediateConquer: oldData.intermediateConquer || { unlocked: false, unlockedAt: null },
+            expertPath: oldData.expertPath || { unlocked: false, unlockedAt: null },
+            veteran: oldData.veteran || { unlocked: false, currentValue: 0, unlockedAt: null },
+            winStreak: oldData.winStreak || { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
+            comboLegend: oldData.comboLegend || { unlocked: false, currentValue: 0, unlockedAt: null }
         };
 
         // 兼容更旧的布尔值格式
@@ -5311,6 +5343,8 @@ revealCell(startRow, startCol) {
                             this.playSound('special');
                         }
 
+                        this.stats.totalSpecialCellsCollected++;
+
                         const effects = [
                             () => {
                                 this.gameState.timer = Math.max(0, this.gameState.timer - 10);
@@ -5498,10 +5532,12 @@ gameOver(won) {
 
     this.stats.gamesPlayed++;
     this.stats.totalCorrectFlags += this.countCorrectFlags();
+    this.stats.totalTime += this.gameState.timer;
 
     if (won) {
         this.stats.gamesWon++;
-        this.stats.totalTime += this.gameState.timer;
+        this.stats.consecutiveWins++;
+        this.stats.maxConsecutiveWins = Math.max(this.stats.maxConsecutiveWins, this.stats.consecutiveWins);
 
         const difficulty = this.gameState.difficulty;
         if (difficulty !== 'custom' && this.gameState.timer < this.stats.bestTimes[difficulty]) {
@@ -5510,6 +5546,8 @@ gameOver(won) {
 
         this.playSound('win');
         this.createConfetti();
+    } else {
+        this.stats.consecutiveWins = 0;
     }
 
     // --- 游戏结束时，进行最终数据计算 ---
@@ -5579,7 +5617,7 @@ gameOver(won) {
     // flagExpert (连续完美游戏)
     if (wasPerfectGame) {
         this.stats.consecutivePerfectGames++;
-    } else if (this.gameState.won) { // 只有在获胜但非完美时才重置，失败不影响连续完美局数
+    } else {
         this.stats.consecutivePerfectGames = 0;
     }
     this.achievements.flagExpert.currentValue = this.stats.consecutivePerfectGames;
@@ -5600,14 +5638,16 @@ gameOver(won) {
     // 完美游戏
     if (!this.achievements.perfect.unlocked && wasPerfectGame) {
         this.unlockAchievement('perfect');
-        // consecutivePerfectGames 的主要更新逻辑移到 flagExpert 进度更新处
+    }
+    if (wasPerfectGame) {
         this.stats.maxConsecutivePerfectGames = Math.max(
             this.stats.maxConsecutivePerfectGames,
-            this.stats.consecutivePerfectGames // 使用更新后的值
+            this.stats.consecutivePerfectGames
         );
     }
     // 幸运玩家
-    if (!this.achievements.lucky.unlocked && this.gameState.moves.length === 1 && this.gameState.won) {
+    const clickMoveCount = this.gameState.moves.filter(m => m.type === 'click').length;
+    if (!this.achievements.lucky.unlocked && clickMoveCount === 1 && this.gameState.won) {
         this.unlockAchievement('lucky');
     }
     // 巨型征服者
@@ -5632,6 +5672,79 @@ gameOver(won) {
     const timeMasterDetails = this.achievementDetails['time-master'];
     if (!this.achievements.timeMaster.unlocked && this.achievements.timeMaster.currentValue >= timeMasterDetails.targetValue) {
         this.unlockAchievement('time-master');
+    }
+
+    // --- 新增：带进度的单级成就检查 ---
+    const { gameData } = this.gameState;
+    const clickEfficiency = gameData.totalClicks > 0 ? (gameData.totalRevealedCells / gameData.totalClicks) * 100 : 0;
+    if (clickEfficiency > (this.achievements.efficiencyStar.currentValue || 0)) {
+        this.achievements.efficiencyStar.currentValue = Math.round(clickEfficiency);
+    }
+    const efficiencyStarDetails = this.achievementDetails['efficiency-star'];
+    if (!this.achievements.efficiencyStar.unlocked && clickEfficiency >= efficiencyStarDetails.targetValue && this.gameState.won) {
+        this.unlockAchievement('efficiency-star');
+    }
+
+    this.achievements.zenMaster.currentValue = this.stats.totalSpecialCellsCollected;
+    const zenMasterDetails = this.achievementDetails['zen-master'];
+    if (!this.achievements.zenMaster.unlocked && this.achievements.zenMaster.currentValue >= zenMasterDetails.targetValue) {
+        this.unlockAchievement('zen-master');
+    }
+
+    this.achievements.veteran.currentValue = this.stats.gamesPlayed;
+    const veteranDetails = this.achievementDetails['veteran'];
+    if (!this.achievements.veteran.unlocked && this.achievements.veteran.currentValue >= veteranDetails.targetValue) {
+        this.unlockAchievement('veteran');
+    }
+
+    if (this.gameState.maxCombo > (this.achievements.comboLegend.currentValue || 0)) {
+        this.achievements.comboLegend.currentValue = this.gameState.maxCombo;
+    }
+    const comboLegendDetails = this.achievementDetails['combo-legend'];
+    if (!this.achievements.comboLegend.unlocked && this.achievements.comboLegend.currentValue >= comboLegendDetails.targetValue) {
+        this.unlockAchievement('combo-legend');
+    }
+
+    // --- 新增：单级成就检查 ---
+    if (!this.achievements.swiftThinker.unlocked &&
+        this.gameState.won &&
+        gameData.moveTimestamps.length > 0 &&
+        (gameData.averageMoveTime / 1000) < 2) {
+        this.unlockAchievement('swift-thinker');
+    }
+    if (!this.achievements.noGuessMaster.unlocked &&
+        this.gameState.mode === 'no-guess' &&
+        this.gameState.won) {
+        this.unlockAchievement('no-guess-master');
+    }
+    if (!this.achievements.speedHero.unlocked &&
+        this.gameState.mode === 'speed' &&
+        this.gameState.won) {
+        this.unlockAchievement('speed-hero');
+    }
+    if (!this.achievements.intermediateConquer.unlocked &&
+        this.gameState.difficulty === 'intermediate' &&
+        this.gameState.won) {
+        this.unlockAchievement('intermediate-conquer');
+    }
+    if (!this.achievements.expertPath.unlocked &&
+        this.gameState.difficulty === 'expert' &&
+        this.gameState.won) {
+        this.unlockAchievement('expert-path');
+    }
+
+    // --- 新增：多级成就检查 ---
+    this.achievements.winStreak.currentValue = this.stats.consecutiveWins;
+    const winStreakDetails = this.achievementDetails['win-streak'];
+    let currentWinStreakLevel = this.achievements.winStreak.unlockedLevel;
+    if (this.gameState.won) {
+        for (let i = (currentWinStreakLevel + 1); i < winStreakDetails.levels.length; i++) {
+            if (this.achievements.winStreak.currentValue >= winStreakDetails.levels[i].targetValue) {
+                this.unlockAchievement('win-streak', i);
+            } else {
+                break;
+            }
+        }
     }
 
     // --- 多级成就检查 ---
@@ -5726,10 +5839,9 @@ processAchievementQueue() {
     
     this.showAchievementUnlock(achievement.name, achievement.icon);
     
-    // 4秒后处理下一个成就
     setTimeout(() => {
         this.processAchievementQueue();
-    }, 3000);
+    }, 4000);
 }
 
 showAchievementUnlock(achievementName, icon = '🏆') {
@@ -5892,6 +6004,10 @@ showAchievementDetails(achievementId) {
                 const targetSeconds = details.targetValue;
                 const format = (s) => `${Math.floor(s/60)}分${s%60}秒`;
                 progressText = `${format(currentSeconds)} / ${Math.floor(targetSeconds/60)}分钟`;
+            }
+            // 特殊格式化'效率之星'的进度
+            if(achievementId === 'efficiency-star') {
+                progressText = `${currentValue}% / ${details.targetValue}%`;
             }
 
             htmlContent += `
@@ -6755,67 +6871,6 @@ undo() {
     });
     
     this.playSound('powerup');
-}
-
-createCompressionWorker() {
-    if (!window.Worker) return null; // 如果浏览器不支持Worker，返回null（回退同步）
-    
-    // Worker脚本内容（作为字符串）
-    const workerCode = `
-        self.addEventListener('message', (event) => {
-            const { action, data, rows, cols } = event.data;
-            
-            if (action === 'compress') {
-                const compressed = {
-                    board: [],
-                    revealed: [],
-                    flags: [],
-                    questions: [],
-                    specialCells: []
-                };
-                
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        compressed.board.push(data.board[r][c]);
-                        compressed.revealed.push(data.revealed[r][c] ? 1 : 0);
-                        compressed.flags.push(data.flags[r][c] ? 1 : 0);
-                        compressed.questions.push(data.questions[r][c] ? 1 : 0);
-                        compressed.specialCells.push(data.specialCells[r][c] ? 1 : 0);
-                    }
-                }
-                
-                self.postMessage({ action: 'compressed', data: compressed });
-            } else if (action === 'decompress') {
-                const decompressed = {
-                    board: Array(rows).fill().map(() => Array(cols).fill(0)),
-                    revealed: Array(rows).fill().map(() => Array(cols).fill(false)),
-                    flags: Array(rows).fill().map(() => Array(cols).fill(false)),
-                    questions: Array(rows).fill().map(() => Array(cols).fill(false)),
-                    specialCells: Array(rows).fill().map(() => Array(cols).fill(false))
-                };
-                
-                let index = 0;
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        decompressed.board[r][c] = data.board[index];
-                        decompressed.revealed[r][c] = data.revealed[index] === 1;
-                        decompressed.flags[r][c] = data.flags[index] === 1;
-                        decompressed.questions[r][c] = data.questions[index] === 1;
-                        decompressed.specialCells[r][c] = data.specialCells[index] === 1;
-                        index++;
-                    }
-                }
-                
-                self.postMessage({ action: 'decompressed', data: decompressed });
-            }
-        });
-    `;
-    
-    // 创建Blob对象（模拟一个JS文件）
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    
-    // 创建Worker
-    return new Worker(URL.createObjectURL(blob));
 }
 
 fallbackGenerateBoard(excludeRow, excludeCol, callback) {

@@ -496,13 +496,12 @@ body.theme-transitioning * {
         .minimap-cell {
             background: var(--cell-bg);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             border-radius: 2px;
             transform: translateZ(0);
+            will-change: background-color, box-shadow;
         }
         .minimap-cell:hover {
-            transform: scale(1.2) translateZ(0);
             z-index: 10;
             box-shadow: 0 0 8px var(--primary-color);
             border-radius: 50%;
@@ -524,8 +523,8 @@ body.theme-transitioning * {
             pointer-events: none;
             border-radius: 5px;
             background: rgba(76, 175, 80, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            will-change: transform, width, height;
         }
         /* ========== 进度条样式 ========== */
         .progress-bar {
@@ -2846,10 +2845,9 @@ async loadSavedGameFromData(saveData) {
             this.showFloatingMessage('📂 存档加载成功！（游戏已暂停，点击格子继续）');
         }
         
-        // 延迟设置小地图
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             this.setupMinimap();
-        }, 100);
+        });
         
         return true;
     } catch (error) {
@@ -3944,9 +3942,11 @@ migrateAchievementData(oldData) {
 
                     const container = document.getElementById('game-board-container');
                     if (container) {
-                        container.addEventListener('scroll', () => {
-                            this.updateMinimapViewport();
-                        });
+                        if (this._scrollHandler) {
+                            container.removeEventListener('scroll', this._scrollHandler);
+                        }
+                        this._scrollHandler = () => this.updateMinimapViewport();
+                        container.addEventListener('scroll', this._scrollHandler, { passive: true });
                     }
                 }
 
@@ -3974,16 +3974,18 @@ migrateAchievementData(oldData) {
                     }
 
                     // 延迟设置小地图，确保棋盘已完全渲染
-                    setTimeout(() => {
+                    requestAnimationFrame(() => {
                         this.setupMinimap();
                         this.updateZoomDisplay();
-                    }, 50);
+                    });
 
                     const container = document.getElementById('game-board-container');
                     if (container) {
-                        container.addEventListener('scroll', () => {
-                            this.updateMinimapViewport();
-                        });
+                        if (this._scrollHandler) {
+                            container.removeEventListener('scroll', this._scrollHandler);
+                        }
+                        this._scrollHandler = () => this.updateMinimapViewport();
+                        container.addEventListener('scroll', this._scrollHandler, { passive: true });
                     }
                 }
 
@@ -4003,10 +4005,9 @@ migrateAchievementData(oldData) {
 
                     document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
 
-                    // 在设置格子大小后，重新检查是否需要显示小地图
-                    setTimeout(() => {
+                    requestAnimationFrame(() => {
                         this.setupMinimap();
-                    }, 10);
+                    });
                 }
 
                 addCellEventListeners(cell, row, col) {
@@ -4112,10 +4113,10 @@ recordMoveTiming() {
                     const minimapSection = document.getElementById('minimap-section');
                     if (!minimapSection) return;
 
-                    // 检查是否需要显示小地图 - 当棋盘不能完全显示时
                     const shouldShowMinimap = this.shouldShowMinimap();
                     if (!shouldShowMinimap) {
                         minimapSection.style.display = 'none';
+                        this._minimapCellMap = null;
                         return;
                     }
 
@@ -4123,8 +4124,6 @@ recordMoveTiming() {
 
                     const minimapBoard = document.getElementById('minimap-board');
                     if (!minimapBoard) return;
-
-                    minimapBoard.innerHTML = '';
 
                     const maxCells = 400;
                     const totalCells = this.gameState.rows * this.gameState.cols;
@@ -4136,30 +4135,62 @@ recordMoveTiming() {
                     minimapBoard.style.gridTemplateColumns = `repeat(${minimapCols}, 1fr)`;
                     minimapBoard.style.gridTemplateRows = `repeat(${minimapRows}, 1fr)`;
 
-                    // 创建小地图格子
+                    const cellMap = new Map();
+                    const fragment = document.createDocumentFragment();
+
                     for (let row = 0; row < minimapRows; row++) {
                         for (let col = 0; col < minimapCols; col++) {
                             const minimapCell = document.createElement('div');
                             minimapCell.className = 'minimap-cell';
 
-                            // 计算对应的实际棋盘位置
                             const actualRow = Math.floor(row * this.gameState.rows / minimapRows);
                             const actualCol = Math.floor(col * this.gameState.cols / minimapCols);
 
                             minimapCell.dataset.row = actualRow;
                             minimapCell.dataset.col = actualCol;
 
-                            minimapCell.addEventListener('click', () => {
-                                this.scrollToCell(actualRow, actualCol);
-                            });
+                            const key = actualRow * this.gameState.cols + actualCol;
+                            if (!cellMap.has(key)) {
+                                cellMap.set(key, []);
+                            }
+                            cellMap.get(key).push(minimapCell);
 
                             this.updateMinimapCell(actualRow, actualCol, minimapCell);
-                            minimapBoard.appendChild(minimapCell);
+                            fragment.appendChild(minimapCell);
                         }
                     }
 
-                    // 初始化视口显示
+                    minimapBoard.innerHTML = '';
+                    minimapBoard.appendChild(fragment);
+                    this._minimapCellMap = cellMap;
+                    this._minimapRows = minimapRows;
+                    this._minimapCols = minimapCols;
+
+                    if (!this._minimapDelegateBound) {
+                        minimapBoard.addEventListener('click', (e) => {
+                            const cell = e.target.closest('.minimap-cell');
+                            if (!cell) return;
+                            const row = parseInt(cell.dataset.row);
+                            const col = parseInt(cell.dataset.col);
+                            this.scrollToCell(row, col);
+                        });
+                        this._minimapDelegateBound = true;
+                    }
+
+                    this._cachedMinimapMetrics = null;
                     this.updateMinimapViewport();
+
+                    if (!this._minimapResizeHandlerBound) {
+                        let resizeTimer = null;
+                        this._minimapResizeHandler = () => {
+                            clearTimeout(resizeTimer);
+                            resizeTimer = setTimeout(() => {
+                                this.setupMinimap();
+                            }, 200);
+                        };
+                        window.addEventListener('resize', this._minimapResizeHandler, { passive: true });
+                        this._minimapResizeHandlerBound = true;
+                    }
                 }
 
                 /// 检查是否应该显示小地图
@@ -4168,156 +4199,149 @@ recordMoveTiming() {
                     const board = document.getElementById('game-board');
                     if (!container || !board) return false;
 
-                    // 计算棋盘实际尺寸
-                    const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
-                    const gap = 2; // 格子间距
-                    const padding = 10; // 容器内边距
+                    const boardRect = board.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
 
-                    const boardWidth = this.gameState.cols * (cellSize + gap) - gap + padding;
-                    const boardHeight = this.gameState.rows * (cellSize + gap) - gap + padding;
-
-                    // 获取容器的可视区域大小
-                    const containerWidth = container.clientWidth;
-                    const containerHeight = container.clientHeight;
-
-                    // 如果棋盘尺寸超过容器可视区域，则需要显示小地图
-                    return boardWidth > containerWidth || boardHeight > containerHeight;
+                    return boardRect.width > containerRect.width + 2 || boardRect.height > containerRect.height + 2;
                 }
 
                 updateMinimapCell(row, col, minimapCell = null) {
     if (!minimapCell) {
-        // 优化：使用更高效的查询方式
-        const minimapBoard = document.getElementById('minimap-board');
-        if (!minimapBoard) return;
-        
-        const minimapCells = minimapBoard.children;
-        for (let i = 0; i < minimapCells.length; i++) {
-            const cell = minimapCells[i];
-            if (parseInt(cell.dataset.row) === row && parseInt(cell.dataset.col) === col) {
-                minimapCell = cell;
-                break;
+        if (this._minimapCellMap) {
+            const key = row * this.gameState.cols + col;
+            const cells = this._minimapCellMap.get(key);
+            if (cells) {
+                for (let i = 0; i < cells.length; i++) {
+                    this._applyMinimapCellClasses(row, col, cells[i]);
+                }
+            }
+        }
+        return;
+    }
+    this._applyMinimapCellClasses(row, col, minimapCell);
+}
+
+_applyMinimapCellClasses(row, col, minimapCell) {
+    let className = 'minimap-cell';
+    if (this.revealed[row] && this.revealed[row][col]) {
+        className += ' revealed';
+        if (this.board[row] && this.board[row][col] === -1) {
+            className += ' mine';
+        }
+    } else if (this.flags[row] && this.flags[row][col]) {
+        className += ' flagged';
+    }
+    if (minimapCell.className !== className) {
+        minimapCell.className = className;
+    }
+}
+
+updateMinimapBatch(cells) {
+    if (!this._minimapCellMap) return;
+    for (let i = 0; i < cells.length; i++) {
+        const [row, col] = cells[i];
+        const key = row * this.gameState.cols + col;
+        const minimapCells = this._minimapCellMap.get(key);
+        if (minimapCells) {
+            for (let j = 0; j < minimapCells.length; j++) {
+                this._applyMinimapCellClasses(row, col, minimapCells[j]);
             }
         }
     }
-    if (!minimapCell) return;
-
-    // 批量更新类名，减少重排
-    const classes = ['minimap-cell'];
-    if (this.revealed[row] && this.revealed[row][col]) {
-        classes.push('revealed');
-        if (this.board[row] && this.board[row][col] === -1) {
-            classes.push('mine');
-        }
-    } else if (this.flags[row] && this.flags[row][col]) {
-        classes.push('flagged');
-    }
-    
-    minimapCell.className = classes.join(' ');
-}
-
-// 
-updateMinimapBatch(cells) {
-    const minimapBoard = document.getElementById('minimap-board');
-    if (!minimapBoard) return;
-    
-    const minimapCells = minimapBoard.children;
-    const cellMap = new Map();
-    
-    // 创建位置映射以提高查找效率
-    for (let i = 0; i < minimapCells.length; i++) {
-        const cell = minimapCells[i];
-        const key = `${cell.dataset.row}-${cell.dataset.col}`;
-        cellMap.set(key, cell);
-    }
-    
-    // 批量更新
-    cells.forEach(([row, col]) => {
-        const key = `${row}-${col}`;
-        const minimapCell = cellMap.get(key);
-        if (minimapCell) {
-            this.updateMinimapCell(row, col, minimapCell);
-        }
-    });
 }
 
                 updateMinimapViewport() {
+                    if (this._minimapViewportRaf) return;
+                    this._minimapViewportRaf = requestAnimationFrame(() => {
+                        this._minimapViewportRaf = null;
+                        this._doUpdateMinimapViewport();
+                    });
+                }
+
+                _doUpdateMinimapViewport() {
                     const container = document.getElementById('game-board-container');
                     const viewport = document.getElementById('minimap-viewport');
                     const minimapSection = document.getElementById('minimap-section');
                     const minimap = document.getElementById('minimap');
+                    const minimapBoard = document.getElementById('minimap-board');
 
-                    if (!viewport || !container || !minimapSection || !minimap || minimapSection.style.display === 'none') return;
+                    if (!viewport || !container || !minimapSection || !minimap || !minimapBoard || minimapSection.style.display === 'none') return;
 
                     const boardElement = document.getElementById('game-board');
                     if (!boardElement) return;
 
-                    // 获取实际的小地图内容区域尺寸（减去padding）
                     const minimapRect = minimap.getBoundingClientRect();
-                    const minimapStyle = getComputedStyle(minimap);
-                    const minimapPadding = parseInt(minimapStyle.paddingLeft) + parseInt(minimapStyle.paddingRight);
-                    const minimapPaddingV = parseInt(minimapStyle.paddingTop) + parseInt(minimapStyle.paddingBottom);
-
-                    const minimapContentWidth = minimapRect.width - minimapPadding;
-                    const minimapContentHeight = minimapRect.height - minimapPaddingV;
-
-                    // 获取游戏板的实际尺寸
+                    const minimapBoardRect = minimapBoard.getBoundingClientRect();
                     const boardRect = boardElement.getBoundingClientRect();
-                    const containerRect = container.getBoundingClientRect();
 
                     if (!boardRect.width || !boardRect.height) return;
 
-                    // 计算缩放比例
-                    const scaleX = minimapContentWidth / boardRect.width;
-                    const scaleY = minimapContentHeight / boardRect.height;
+                    const minimapBoardWidth = minimapBoardRect.width;
+                    const minimapBoardHeight = minimapBoardRect.height;
 
-                    // 计算视口在小地图中的尺寸
-                    const viewportWidth = Math.min(containerRect.width * scaleX, minimapContentWidth);
-                    const viewportHeight = Math.min(containerRect.height * scaleY, minimapContentHeight);
+                    const minimapStyle = getComputedStyle(minimap);
+                    const offsetBoardX = minimapBoardRect.left - minimapRect.left - (parseFloat(minimapStyle.borderLeftWidth) || 0);
+                    const offsetBoardY = minimapBoardRect.top - minimapRect.top - (parseFloat(minimapStyle.borderTopWidth) || 0);
 
-                    // 计算视口在小地图中的位置
-                    const scrollRatioX = container.scrollLeft / (boardRect.width - containerRect.width || 1);
-                    const scrollRatioY = container.scrollTop / (boardRect.height - containerRect.height || 1);
+                    const boardStyle = getComputedStyle(boardElement);
+                    const boardPadLeft = parseFloat(boardStyle.paddingLeft) || 0;
+                    const boardPadTop = parseFloat(boardStyle.paddingTop) || 0;
+                    const boardPadRight = parseFloat(boardStyle.paddingRight) || 0;
+                    const boardPadBottom = parseFloat(boardStyle.paddingBottom) || 0;
 
-                    const maxScrollX = minimapContentWidth - viewportWidth;
-                    const maxScrollY = minimapContentHeight - viewportHeight;
+                    const contentW = boardRect.width - boardPadLeft - boardPadRight;
+                    const contentH = boardRect.height - boardPadTop - boardPadBottom;
 
-                    const viewportLeft = Math.max(0, Math.min(maxScrollX, scrollRatioX * maxScrollX));
-                    const viewportTop = Math.max(0, Math.min(maxScrollY, scrollRatioY * maxScrollY));
+                    const scaleX = contentW > 0 ? minimapBoardWidth / contentW : 0;
+                    const scaleY = contentH > 0 ? minimapBoardHeight / contentH : 0;
 
-                    // 应用位置和尺寸
-                    viewport.style.width = Math.max(10, viewportWidth) + 'px';
-                    viewport.style.height = Math.max(10, viewportHeight) + 'px';
-                    viewport.style.left = viewportLeft + 'px';
-                    viewport.style.top = viewportTop + 'px';
+                    const visibleW = container.clientWidth;
+                    const visibleH = container.clientHeight;
+
+                    const vpW = Math.min(visibleW * scaleX, minimapBoardWidth);
+                    const vpH = Math.min(visibleH * scaleY, minimapBoardHeight);
+
+                    const scrollContentX = container.scrollLeft - boardPadLeft;
+                    const scrollContentY = container.scrollTop - boardPadTop;
+
+                    let vpX = scrollContentX * scaleX;
+                    let vpY = scrollContentY * scaleY;
+
+                    vpX = Math.max(0, Math.min(minimapBoardWidth - vpW, vpX));
+                    vpY = Math.max(0, Math.min(minimapBoardHeight - vpH, vpY));
+
+                    const w = Math.max(10, vpW);
+                    const h = Math.max(10, vpH);
+
+                    if (viewport.style.width !== w + 'px') viewport.style.width = w + 'px';
+                    if (viewport.style.height !== h + 'px') viewport.style.height = h + 'px';
+                    viewport.style.left = offsetBoardX + 'px';
+                    viewport.style.top = offsetBoardY + 'px';
+                    viewport.style.transform = `translate(${vpX}px, ${vpY}px)`;
                 }
 
                 scrollToCell(row, col) {
                     const container = document.getElementById('game-board-container');
-                    if (!container) return;
+                    const boardElement = document.getElementById('game-board');
+                    if (!container || !boardElement) return;
 
-                    const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
-                    const gap = 2; // 格子间距
-
-                    // 计算目标格子的位置（考虑gap和padding）
-                    const targetX = col * (cellSize + gap) + 5 - container.clientWidth / 2;
-                    const targetY = row * (cellSize + gap) + 5 - container.clientHeight / 2;
-
-                    // 确保不超出边界
-                    const maxScrollLeft = container.scrollWidth - container.clientWidth;
-                    const maxScrollTop = container.scrollHeight - container.clientHeight;
-
-                    const scrollLeft = Math.max(0, Math.min(maxScrollLeft, targetX));
-                    const scrollTop = Math.max(0, Math.min(maxScrollTop, targetY));
-
-                    container.scrollTo({
-                        left: scrollLeft,
-                        top: scrollTop,
-                        behavior: 'smooth'
-                    });
-
-                    // 高亮目标格子
                     const targetCell = this.getCell(row, col);
                     if (targetCell) {
+                        const containerRect = container.getBoundingClientRect();
+                        const cellRect = targetCell.getBoundingClientRect();
+
+                        const offsetX = cellRect.left - containerRect.left + container.scrollLeft - container.clientWidth / 2 + cellRect.width / 2;
+                        const offsetY = cellRect.top - containerRect.top + container.scrollTop - container.clientHeight / 2 + cellRect.height / 2;
+
+                        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+                        const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+                        container.scrollTo({
+                            left: Math.max(0, Math.min(maxScrollLeft, offsetX)),
+                            top: Math.max(0, Math.min(maxScrollTop, offsetY)),
+                            behavior: 'smooth'
+                        });
+
                         targetCell.style.boxShadow = '0 0 20px rgba(33, 150, 243, 0.8)';
                         targetCell.style.transform = 'scale(1.1)';
                         targetCell.style.zIndex = '100';
@@ -4327,6 +4351,29 @@ updateMinimapBatch(cells) {
                             targetCell.style.transform = '';
                             targetCell.style.zIndex = '';
                         }, 2000);
+                    } else {
+                        const boardRect = boardElement.getBoundingClientRect();
+                        const boardStyle = getComputedStyle(boardElement);
+                        const bPadLeft = parseFloat(boardStyle.paddingLeft) || 0;
+                        const bPadTop = parseFloat(boardStyle.paddingTop) || 0;
+                        const bPadRight = parseFloat(boardStyle.paddingRight) || 0;
+                        const bPadBottom = parseFloat(boardStyle.paddingBottom) || 0;
+                        const contentW = boardRect.width - bPadLeft - bPadRight;
+                        const contentH = boardRect.height - bPadTop - bPadBottom;
+                        const cellW = contentW / this.gameState.cols;
+                        const cellH = contentH / this.gameState.rows;
+
+                        const targetX = bPadLeft + col * cellW + cellW / 2 - container.clientWidth / 2;
+                        const targetY = bPadTop + row * cellH + cellH / 2 - container.clientHeight / 2;
+
+                        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+                        const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+                        container.scrollTo({
+                            left: Math.max(0, Math.min(maxScrollLeft, targetX)),
+                            top: Math.max(0, Math.min(maxScrollTop, targetY)),
+                            behavior: 'smooth'
+                        });
                     }
                 }
 
@@ -4353,11 +4400,12 @@ updateMinimapBatch(cells) {
 
                     this.updateZoomDisplay();
 
-                    // 延迟更新小地图，确保DOM已更新
-                    setTimeout(() => {
-                        this.updateMinimapViewport();
-                        this.setupMinimap(); // 重新检查是否需要显示小地图
-                    }, 100);
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            this.setupMinimap();
+                            this.updateMinimapViewport();
+                        });
+                    });
                 }
 
                 updateZoomDisplay() {
@@ -4833,45 +4881,35 @@ handleNumberCellClick(row, col) {
     }
 }
 
-// ========== 异步生成可解棋盘（并行Worker） ==========
+// ========== 异步生成可解棋盘（约束驱动构造法） ==========
 generateBoardAsync(excludeRow, excludeCol, callback) {
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
     const totalMines = this.gameState.totalMines;
-    const maxAttempts = this.maxAttempts;
-    const parallelCount = this.parallelCount;
 
+    const workerCount = Math.min(this.parallelCount, 2);
     let activeWorkers = 0;
-    let attempts = 0;
     let success = false;
-    let finalBoard = null;
     const workers = [];
 
     const updateProgress = () => {
-        this.showFloatingMessage(`正在生成可解布局 (尝试 ${attempts}/${maxAttempts})...`);
+        this.showFloatingMessage(`正在生成可解布局...`);
     };
+    updateProgress();
 
-    let remainingAttempts = maxAttempts; // 剩余可分配尝试次数
-    for (let i = 0; i < parallelCount; i++) {
-        if (remainingAttempts <= 0) break;
-
-        const perWorker = Math.ceil(remainingAttempts / (parallelCount - i));
-        const workerMaxAttempts = Math.min(perWorker, remainingAttempts);
-
+    for (let i = 0; i < workerCount; i++) {
         const worker = this.createSolvableBoardWorker();
         activeWorkers++;
         workers.push(worker);
 
         worker.onmessage = (e) => {
-            const { type, board, attemptsMade } = e.data;
+            const { type, board } = e.data;
             if (type === 'progress') {
-                attempts += attemptsMade;
                 updateProgress();
             } else if (type === 'success') {
                 if (!success) {
                     success = true;
-                    finalBoard = board;
-                    callback(finalBoard);
+                    callback(board);
                     workers.forEach(w => { if (w !== worker) w.terminate(); });
                 }
                 worker.terminate();
@@ -4880,9 +4918,8 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
                 worker.terminate();
                 activeWorkers--;
                 if (activeWorkers === 0 && !success) {
-                    console.warn('所有Worker均未生成可解棋盘，使用最后生成的随机棋盘');
-                    finalBoard = board;
-                    callback(finalBoard);
+                    console.warn('约束构造未能生成完全可解棋盘，使用最佳结果');
+                    callback(board);
                 }
             }
         };
@@ -4898,158 +4935,249 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
 
         worker.postMessage({
             rows, cols, totalMines, excludeRow, excludeCol,
-            maxAttempts: workerMaxAttempts
+            maxAttempts: 3
         });
-
-        remainingAttempts -= workerMaxAttempts; // 减去已分配的尝试次数
     }
 }
 
-// ========== 创建Worker ==========
+// ========== 创建Worker（约束驱动构造法） ==========
 createSolvableBoardWorker() {
     const workerFunction = function() {
         const isValid = (r, c, rows, cols) => r >= 0 && r < rows && c >= 0 && c < cols;
-        const forEachNeighbor = (r, c, rows, cols, callback) => {
+
+        const forEachNeighbor = (r, c, rows, cols, cb) => {
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     if (dr === 0 && dc === 0) continue;
                     const nr = r + dr, nc = c + dc;
-                    if (isValid(nr, nc, rows, cols)) callback(nr, nc);
+                    if (isValid(nr, nc, rows, cols)) cb(nr, nc);
                 }
             }
         };
-        const getNeighbors = (r, c, rows, cols) => {
-            const neighbors = [];
-            forEachNeighbor(r, c, rows, cols, (nr, nc) => neighbors.push([nr, nc]));
-            return neighbors;
-        };
-        const countAdjacentMines = (board, r, c, rows, cols) => {
-            let count = 0;
-            forEachNeighbor(r, c, rows, cols, (nr, nc) => {
-                if (board[nr][nc] === -1) count++;
-            });
-            return count;
-        };
 
-        const canSolveLogically = (board, rows, cols, startRow, startCol) => {
-            const simRevealed = Array(rows).fill().map(() => Array(cols).fill(false));
-            const simFlags = Array(rows).fill().map(() => Array(cols).fill(false));
-
-            const revealQueue = [];
-            if (isValid(startRow, startCol, rows, cols) && !simRevealed[startRow][startCol]) {
-                revealQueue.push([startRow, startCol]);
-                simRevealed[startRow][startCol] = true;
-            }
-            let head = 0;
-            while (head < revealQueue.length) {
-                const [r, c] = revealQueue[head++];
-                if (board[r][c] === 0) {
+        const recalculateNumbers = (board, rows, cols) => {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (board[r][c] === -1) continue;
+                    let count = 0;
                     forEachNeighbor(r, c, rows, cols, (nr, nc) => {
-                        if (!simRevealed[nr][nc]) {
-                            simRevealed[nr][nc] = true;
-                            revealQueue.push([nr, nc]);
-                        }
+                        if (board[nr][nc] === -1) count++;
                     });
+                    board[r][c] = count;
                 }
             }
+        };
+
+        const canSolveLogicallyFast = (board, rows, cols, startRow, startCol) => {
+            const revealed = new Set();
+            const flagged = new Set();
+            const key = (r, c) => r * cols + c;
+
+            const bfsExpand = (sr, sc) => {
+                const queue = [[sr, sc]];
+                while (queue.length > 0) {
+                    const [r, c] = queue.shift();
+                    const k = key(r, c);
+                    if (revealed.has(k)) continue;
+                    revealed.add(k);
+                    if (board[r][c] === 0) {
+                        forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                            if (!revealed.has(key(nr, nc))) queue.push([nr, nc]);
+                        });
+                    }
+                }
+            };
+
+            bfsExpand(startRow, startCol);
 
             let changed = true;
             let iterations = 0;
-            const maxIterations = rows * cols;
+            const maxIter = rows * cols * 2;
 
-            while (changed && iterations < maxIterations) {
+            while (changed && iterations < maxIter) {
                 changed = false;
                 iterations++;
 
+                const constraints = [];
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
-                        if (simRevealed[r][c] && board[r][c] > 0) {
-                            const neighbors = getNeighbors(r, c, rows, cols);
-                            const flaggedCount = neighbors.filter(([nr, nc]) => simFlags[nr][nc]).length;
-                            const unrevealed = neighbors.filter(([nr, nc]) => !simRevealed[nr][nc] && !simFlags[nr][nc]);
+                        if (!revealed.has(key(r, c)) || board[r][c] <= 0) continue;
+                        const unrevealed = [];
+                        let flaggedCount = 0;
+                        forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                            const nk = key(nr, nc);
+                            if (flagged.has(nk)) flaggedCount++;
+                            else if (!revealed.has(nk)) unrevealed.push(nk);
+                        });
+                        if (unrevealed.length === 0) continue;
+                        const remaining = board[r][c] - flaggedCount;
+                        constraints.push({ unrevealed, remaining });
+                    }
+                }
 
-                            if (flaggedCount === board[r][c] && unrevealed.length > 0) {
-                                for (const [nr, nc] of unrevealed) {
-                                    if (board[nr][nc] === -1) return false;
-                                    if (!simRevealed[nr][nc]) {
-                                        simRevealed[nr][nc] = true;
-                                        changed = true;
+                for (const con of constraints) {
+                    if (con.remaining === 0) {
+                        for (const nk of con.unrevealed) {
+                            const nr = Math.floor(nk / cols), nc = nk % cols;
+                            if (board[nr][nc] === -1) return false;
+                            if (!revealed.has(nk)) {
+                                revealed.add(nk);
+                                if (board[nr][nc] === 0) bfsExpand(nr, nc);
+                                changed = true;
+                            }
+                        }
+                    } else if (con.remaining === con.unrevealed.length) {
+                        for (const nk of con.unrevealed) {
+                            const nr = Math.floor(nk / cols), nc = nk % cols;
+                            if (board[nr][nc] !== -1) return false;
+                            if (!flagged.has(nk)) {
+                                flagged.add(nk);
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!changed && constraints.length > 1) {
+                    for (let i = 0; i < constraints.length && !changed; i++) {
+                        for (let j = i + 1; j < constraints.length && !changed; j++) {
+                            const c1 = constraints[i], c2 = constraints[j];
+                            const set1 = new Set(c1.unrevealed);
+                            const set2 = new Set(c2.unrevealed);
+
+                            let is1Sub2 = true, is2Sub1 = true;
+                            for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
+                            for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
+
+                            if (is1Sub2 && !is2Sub1) {
+                                const diff = c2.unrevealed.filter(k => !set1.has(k));
+                                const diffRem = c2.remaining - c1.remaining;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (board[nr][nc] === -1) return false;
+                                        if (!revealed.has(nk)) {
+                                            revealed.add(nk);
+                                            if (board[nr][nc] === 0) bfsExpand(nr, nc);
+                                            changed = true;
+                                        }
+                                    }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (board[nr][nc] !== -1) return false;
+                                        if (!flagged.has(nk)) {
+                                            flagged.add(nk);
+                                            changed = true;
+                                        }
                                     }
                                 }
-                            }
-
-                            if (unrevealed.length > 0 && unrevealed.length === board[r][c] - flaggedCount) {
-                                for (const [nr, nc] of unrevealed) {
-                                    if (board[nr][nc] !== -1) return false;
-                                    if (!simFlags[nr][nc]) {
-                                        simFlags[nr][nc] = true;
-                                        changed = true;
+                            } else if (is2Sub1 && !is1Sub2) {
+                                const diff = c1.unrevealed.filter(k => !set2.has(k));
+                                const diffRem = c1.remaining - c2.remaining;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (board[nr][nc] === -1) return false;
+                                        if (!revealed.has(nk)) {
+                                            revealed.add(nk);
+                                            if (board[nr][nc] === 0) bfsExpand(nr, nc);
+                                            changed = true;
+                                        }
+                                    }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (board[nr][nc] !== -1) return false;
+                                        if (!flagged.has(nk)) {
+                                            flagged.add(nk);
+                                            changed = true;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-
-                if (!changed) {
-                    changed = false; // 简化子集推理，可忽略
-                }
             }
 
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
-                    if (board[r][c] !== -1 && !simRevealed[r][c]) return false;
+                    if (board[r][c] !== -1 && !revealed.has(key(r, c))) return false;
                 }
             }
             return true;
         };
 
-        const generateRandomBoard = (rows, cols, totalMines, excludeRow, excludeCol) => {
+        const generateSolvableBoard = (rows, cols, totalMines, excludeRow, excludeCol) => {
             const board = Array(rows).fill().map(() => Array(cols).fill(0));
-            const positions = [];
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
-                        positions.push([r, c]);
-                    }
+            const safeZone = new Set();
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nr = excludeRow + dr, nc = excludeCol + dc;
+                    if (isValid(nr, nc, rows, cols)) safeZone.add(nr * cols + nc);
                 }
             }
-            for (let i = positions.length - 1; i > 0; i--) {
+
+            const candidates = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (!safeZone.has(r * cols + c)) candidates.push([r, c]);
+                }
+            }
+
+            for (let i = candidates.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [positions[i], positions[j]] = [positions[j], positions[i]];
+                [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
             }
-            for (let i = 0; i < totalMines && i < positions.length; i++) {
-                const [r, c] = positions[i];
+
+            let placedMines = 0;
+            const minePositions = [];
+
+            for (const [r, c] of candidates) {
+                if (placedMines >= totalMines) break;
+
                 board[r][c] = -1;
-            }
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (board[r][c] !== -1) {
-                        board[r][c] = countAdjacentMines(board, r, c, rows, cols);
-                    }
+                recalculateNumbers(board, rows, cols);
+
+                if (canSolveLogicallyFast(board, rows, cols, excludeRow, excludeCol)) {
+                    placedMines++;
+                    minePositions.push([r, c]);
+                } else {
+                    board[r][c] = 0;
+                    recalculateNumbers(board, rows, cols);
                 }
             }
-            return board;
+
+            if (placedMines < totalMines) {
+                for (const [r, c] of candidates) {
+                    if (placedMines >= totalMines) break;
+                    if (board[r][c] === -1) continue;
+                    if (safeZone.has(r * cols + c)) continue;
+                    board[r][c] = -1;
+                    placedMines++;
+                }
+                recalculateNumbers(board, rows, cols);
+            }
+
+            return { board, solvable: minePositions.length === totalMines };
         };
 
         self.addEventListener('message', (e) => {
             const { rows, cols, totalMines, excludeRow, excludeCol, maxAttempts } = e.data;
-            let attemptsMade = 0;
+            const actualMax = Math.min(maxAttempts, 5);
 
-            for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                attemptsMade++;
+            for (let attempt = 0; attempt < actualMax; attempt++) {
                 self.postMessage({ type: 'progress', attemptsMade: 1 });
-
-                const board = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
-                const solvable = canSolveLogically(board, rows, cols, excludeRow, excludeCol);
-                if (solvable) {
-                    self.postMessage({ type: 'success', board });
+                const result = generateSolvableBoard(rows, cols, totalMines, excludeRow, excludeCol);
+                if (result.solvable) {
+                    self.postMessage({ type: 'success', board: result.board });
                     return;
                 }
             }
 
-            const lastBoard = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
-            self.postMessage({ type: 'failure', board: lastBoard });
+            const lastResult = generateSolvableBoard(rows, cols, totalMines, excludeRow, excludeCol);
+            self.postMessage({ type: 'failure', board: lastResult.board });
         });
     };
 
@@ -5144,7 +5272,7 @@ performOpenAction(row, col) {
             }
             return;
         } else {
-            this.showFloatingMessage(`正在生成可解布局 (尝试 0/${this.maxAttempts})...`);
+            this.showFloatingMessage(`正在生成可解布局...`);
             this.generateBoardAsync(row, col, (board) => {
                 this.board = board;
                 if (this.gameState.mode === 'zen') {
@@ -6478,153 +6606,180 @@ performProbabilisticMove() {
                     return true;
                 }
 
-                // 完整的逻辑可解性检查
+                // 完整的逻辑可解性检查（高效Set版本）
 canSolveLogically(startRow, startCol) {
-    // 创建游戏状态的副本进行模拟
-    const originalBoard = JSON.parse(JSON.stringify(this.board));
-    const simRevealed = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(false));
-    const simFlags = Array(this.gameState.rows).fill().map(() => Array(this.gameState.cols).fill(false));
+    const originalBoard = this.board;
+    const rows = this.gameState.rows;
+    const cols = this.gameState.cols;
+    const revealed = new Set();
+    const flagged = new Set();
+    const key = (r, c) => r * cols + c;
 
-    // 模拟首次点击，这是解题的起点
-    // 使用队列处理“0”格子的连锁反应
-    const revealQueue = [];
-    if (this.isValid(startRow, startCol) && !simRevealed[startRow][startCol]) {
-        revealQueue.push([startRow, startCol]);
-        simRevealed[startRow][startCol] = true;
-    }
-    
-    let head = 0;
-    while(head < revealQueue.length) {
-        const [r, c] = revealQueue[head++];
-        if (originalBoard[r][c] === 0) {
-            this.forEachNeighbor(r, c, (nr, nc) => {
-                if (!simRevealed[nr][nc]) {
-                    simRevealed[nr][nc] = true;
-                    revealQueue.push([nr, nc]);
-                }
-            });
+    const bfsExpand = (sr, sc) => {
+        const queue = [[sr, sc]];
+        while (queue.length > 0) {
+            const [r, c] = queue.shift();
+            const k = key(r, c);
+            if (revealed.has(k)) continue;
+            revealed.add(k);
+            if (originalBoard[r][c] === 0) {
+                this.forEachNeighbor(r, c, (nr, nc) => {
+                    if (!revealed.has(key(nr, nc))) queue.push([nr, nc]);
+                });
+            }
         }
-    }
+    };
+
+    bfsExpand(startRow, startCol);
 
     let changed = true;
     let iterations = 0;
-    const maxIterations = this.gameState.rows * this.gameState.cols;
+    const maxIterations = rows * cols * 2;
 
-    // 循环应用逻辑规则，直到没有新的格子可以被安全地揭开或标记
     while (changed && iterations < maxIterations) {
         changed = false;
         iterations++;
 
-        // 基础逻辑推理
-        for (let r = 0; r < this.gameState.rows; r++) {
-            for (let c = 0; c < this.gameState.cols; c++) {
-                if (simRevealed[r][c] && originalBoard[r][c] > 0) {
-                    const neighbors = this.getNeighbors(r, c);
-                    const flaggedCount = neighbors.filter(([nr, nc]) => simFlags[nr][nc]).length;
-                    const unrevealed = neighbors.filter(([nr, nc]) => !simRevealed[nr][nc] && !simFlags[nr][nc]);
+        const constraints = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!revealed.has(key(r, c)) || originalBoard[r][c] <= 0) continue;
+                const unrevealed = [];
+                let flaggedCount = 0;
+                this.forEachNeighbor(r, c, (nr, nc) => {
+                    const nk = key(nr, nc);
+                    if (flagged.has(nk)) flaggedCount++;
+                    else if (!revealed.has(nk)) unrevealed.push(nk);
+                });
+                if (unrevealed.length === 0) continue;
+                const remaining = originalBoard[r][c] - flaggedCount;
+                constraints.push({ unrevealed, remaining });
+            }
+        }
 
-                    // 规则 1: 如果已标记地雷数等于数字，剩余未开格子都是安全的
-                    if (flaggedCount === originalBoard[r][c] && unrevealed.length > 0) {
-                        for (const [nr, nc] of unrevealed) {
-                            if (originalBoard[nr][nc] === -1) return false; // 逻辑矛盾：安全区有雷
-                            if (!simRevealed[nr][nc]) {
-                                simRevealed[nr][nc] = true;
-                                changed = true;
-                            }
-                        }
+        for (const con of constraints) {
+            if (con.remaining === 0) {
+                for (const nk of con.unrevealed) {
+                    const nr = Math.floor(nk / cols), nc = nk % cols;
+                    if (originalBoard[nr][nc] === -1) return false;
+                    if (!revealed.has(nk)) {
+                        revealed.add(nk);
+                        if (originalBoard[nr][nc] === 0) bfsExpand(nr, nc);
+                        changed = true;
                     }
-
-                    // 规则 2: 如果未揭开格子数等于剩余地雷数，剩余未开格子都是地雷
-                    if (unrevealed.length > 0 && unrevealed.length === originalBoard[r][c] - flaggedCount) {
-                        for (const [nr, nc] of unrevealed) {
-                            if (originalBoard[nr][nc] !== -1) return false; // 逻辑矛盾：雷区是安全的
-                            if (!simFlags[nr][nc]) {
-                                simFlags[nr][nc] = true;
-                                changed = true;
-                            }
-                        }
+                }
+            } else if (con.remaining === con.unrevealed.length) {
+                for (const nk of con.unrevealed) {
+                    const nr = Math.floor(nk / cols), nc = nk % cols;
+                    if (originalBoard[nr][nc] !== -1) return false;
+                    if (!flagged.has(nk)) {
+                        flagged.add(nk);
+                        changed = true;
                     }
                 }
             }
         }
 
-        // 子集推理 (如果基础逻辑没有进展)
-        if (!changed) {
-            changed = this.performSubsetReasoning(simRevealed, simFlags, originalBoard);
+        if (!changed && constraints.length > 1) {
+            changed = this.performConstraintDiffReasoning(revealed, flagged, originalBoard, constraints);
         }
     }
 
-    // 最终检查：是否所有非地雷格子都已通过逻辑推理被揭开
-    for (let r = 0; r < this.gameState.rows; r++) {
-        for (let c = 0; c < this.gameState.cols; c++) {
-            if (originalBoard[r][c] !== -1 && !simRevealed[r][c]) {
-                return false; // 存在无法通过逻辑揭开的安全格，判定为不可解
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (originalBoard[r][c] !== -1 && !revealed.has(key(r, c))) {
+                return false;
             }
         }
     }
-
-    return true; // 所有安全格子均可通过逻辑揭开，棋盘可解
+    return true;
 }
 
-                performSubsetReasoning(simRevealed, simFlags, originalBoard) {
+                performConstraintDiffReasoning(revealed, flagged, originalBoard, constraints) {
+                    const rows = this.gameState.rows;
+                    const cols = this.gameState.cols;
+                    const key = (r, c) => r * cols + c;
                     let changed = false;
 
-                    // 寻找重叠区域的逻辑关系
-                    for (let r1 = 0; r1 < this.gameState.rows; r1++) {
-                        for (let c1 = 0; c1 < this.gameState.cols; c1++) {
-                            if (!simRevealed[r1][c1] || originalBoard[r1][c1] <= 0) continue;
+                    for (let i = 0; i < constraints.length && !changed; i++) {
+                        for (let j = i + 1; j < constraints.length && !changed; j++) {
+                            const c1 = constraints[i], c2 = constraints[j];
+                            const set1 = new Set(c1.unrevealed);
+                            const set2 = new Set(c2.unrevealed);
 
-                            const neighbors1 = this.getNeighbors(r1, c1);
-                            const unrevealed1 = neighbors1.filter(([r, c]) => !simRevealed[r][c] && !simFlags[r][c]);
-                            const flagged1 = neighbors1.filter(([r, c]) => simFlags[r][c]).length;
-                            const remaining1 = originalBoard[r1][c1] - flagged1;
+                            let is1Sub2 = true, is2Sub1 = true;
+                            for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
+                            for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
 
-                            if (unrevealed1.length === 0 || remaining1 <= 0) continue;
-
-                            // 寻找相邻的数字格子
-                            for (let r2 = 0; r2 < this.gameState.rows; r2++) {
-                                for (let c2 = 0; c2 < this.gameState.cols; c2++) {
-                                    if (r1 === r2 && c1 === c2) continue;
-                                    if (!simRevealed[r2][c2] || originalBoard[r2][c2] <= 0) continue;
-
-                                    const neighbors2 = this.getNeighbors(r2, c2);
-                                    const unrevealed2 = neighbors2.filter(([r, c]) => !simRevealed[r][c] && !simFlags[r][c]);
-                                    const flagged2 = neighbors2.filter(([r, c]) => simFlags[r][c]).length;
-                                    const remaining2 = originalBoard[r2][c2] - flagged2;
-
-                                    if (unrevealed2.length === 0 || remaining2 <= 0) continue;
-
-                                    // 检查是否有重叠的未揭开格子
-                                    const intersection = unrevealed1.filter(([r, c]) =>
-                                        unrevealed2.some(([r2, c2]) => r === r2 && c === c2));
-
-                                    if (intersection.length > 0) {
-                                        // 子集推理逻辑
-                                        const diff1 = unrevealed1.filter(([r, c]) =>
-                                            !intersection.some(([r2, c2]) => r === r2 && c === c2));
-                                        const diff2 = unrevealed2.filter(([r, c]) =>
-                                            !intersection.some(([r2, c2]) => r === r2 && c === c2));
-
-                                        // 如果一个是另一个的子集
-                                        if (diff1.length === 0 && remaining1 <= remaining2) {
-                                            // unrevealed1 是 unrevealed2 的子集
-                                            const diffRemaining = remaining2 - remaining1;
-
-                                            if (diffRemaining === diff2.length) {
-                                                // diff2 中所有格子都是地雷
-                                                for (const [r, c] of diff2) {
-                                                    if (originalBoard[r][c] !== -1) return false;
-                                                    simFlags[r][c] = true;
-                                                    changed = true;
-                                                }
-                                            } else if (diffRemaining === 0) {
-                                                // diff2 中所有格子都是安全的
-                                                for (const [r, c] of diff2) {
-                                                    if (originalBoard[r][c] === -1) return false;
-                                                    simRevealed[r][c] = true;
-                                                    changed = true;
+                            if (is1Sub2 && !is2Sub1) {
+                                const diff = c2.unrevealed.filter(k => !set1.has(k));
+                                const diffRem = c2.remaining - c1.remaining;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (originalBoard[nr][nc] === -1) return false;
+                                        if (!revealed.has(nk)) {
+                                            revealed.add(nk);
+                                            if (originalBoard[nr][nc] === 0) {
+                                                const queue = [[nr, nc]];
+                                                while (queue.length > 0) {
+                                                    const [r2, c2] = queue.shift();
+                                                    const k2 = key(r2, c2);
+                                                    if (revealed.has(k2)) continue;
+                                                    revealed.add(k2);
+                                                    if (originalBoard[r2][c2] === 0) {
+                                                        this.forEachNeighbor(r2, c2, (nr2, nc2) => {
+                                                            if (!revealed.has(key(nr2, nc2))) queue.push([nr2, nc2]);
+                                                        });
+                                                    }
                                                 }
                                             }
+                                            changed = true;
+                                        }
+                                    }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (originalBoard[nr][nc] !== -1) return false;
+                                        if (!flagged.has(nk)) {
+                                            flagged.add(nk);
+                                            changed = true;
+                                        }
+                                    }
+                                }
+                            } else if (is2Sub1 && !is1Sub2) {
+                                const diff = c1.unrevealed.filter(k => !set2.has(k));
+                                const diffRem = c1.remaining - c2.remaining;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (originalBoard[nr][nc] === -1) return false;
+                                        if (!revealed.has(nk)) {
+                                            revealed.add(nk);
+                                            if (originalBoard[nr][nc] === 0) {
+                                                const queue = [[nr, nc]];
+                                                while (queue.length > 0) {
+                                                    const [r2, c2] = queue.shift();
+                                                    const k2 = key(r2, c2);
+                                                    if (revealed.has(k2)) continue;
+                                                    revealed.add(k2);
+                                                    if (originalBoard[r2][c2] === 0) {
+                                                        this.forEachNeighbor(r2, c2, (nr2, nc2) => {
+                                                            if (!revealed.has(key(nr2, nc2))) queue.push([nr2, nc2]);
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            changed = true;
+                                        }
+                                    }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) {
+                                        const nr = Math.floor(nk / cols), nc = nk % cols;
+                                        if (originalBoard[nr][nc] !== -1) return false;
+                                        if (!flagged.has(nk)) {
+                                            flagged.add(nk);
+                                            changed = true;
                                         }
                                     }
                                 }

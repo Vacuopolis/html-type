@@ -708,53 +708,142 @@
         .num-8 { color: #424242; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         /* ========== 控制设置样式 ========== */
         .controls-section {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(10px);
-            padding: 20px;
+            padding: 25px;
             border-radius: 20px;
             margin: 20px 0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: var(--transition);
+        }
+        .controls-section:hover {
+            border-color: rgba(33, 150, 243, 0.3);
+            box-shadow: 0 4px 20px rgba(33, 150, 243, 0.1);
         }
         .controls-title {
             color: var(--primary-color);
             font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
+            font-weight: 700;
+            margin-bottom: 20px;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-shadow: 0 1px 3px rgba(33, 150, 243, 0.2);
+        }
+        .controls-title .title-icon {
+            font-size: 22px;
         }
         .controls-options {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
         }
         .control-group {
-            background: rgba(255, 255, 255, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: var(--transition);
+            transform: translateZ(0);
+        }
+        .control-group:hover {
+            transform: translateY(-3px) translateZ(0);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            border-color: rgba(33, 150, 243, 0.3);
         }
         .control-group h4 {
-            margin-bottom: 10px;
+            margin-bottom: 14px;
             color: var(--primary-color);
-            font-size: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(33, 150, 243, 0.15);
+        }
+        .control-group h4 .group-icon {
+            font-size: 18px;
         }
         .control-options {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
         .control-option {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0;
+            cursor: pointer;
+            padding: 10px 14px;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .control-option:hover {
+            background: rgba(33, 150, 243, 0.06);
+            border-color: rgba(33, 150, 243, 0.15);
+        }
+        .control-option.selected {
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.08), rgba(33, 150, 243, 0.15));
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(33, 150, 243, 0.15);
         }
         .control-option input[type="radio"] {
-            width: 16px;
-            height: 16px;
+            display: none;
+        }
+        .control-option .radio-custom {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            margin-right: 12px;
+            flex-shrink: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-option .radio-custom::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            transform: scale(0);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .control-option.selected .radio-custom {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+        }
+        .control-option.selected .radio-custom::after {
+            transform: scale(1);
         }
         .control-option label {
             cursor: pointer;
             flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+            line-height: 1.4;
+        }
+        .control-option.selected label {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        .control-option .option-icon {
+            font-size: 18px;
+            margin-right: 6px;
+            flex-shrink: 0;
         }
         /* ========== 游戏状态指示器 ========== */
         .mode-indicator {
@@ -1221,6 +1310,12 @@
         body.dark .cell.revealed:hover { background: linear-gradient(145deg, #353535, var(--revealed-bg)); border: 1px solid var(--primary-color); }
         body.dark .controls-section { background: rgba(0, 0, 0, 0.2); }
         body.dark .control-group { background: rgba(42, 42, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.dark .control-option { border-color: transparent; }
+        body.dark .control-option:hover { background: rgba(33, 150, 243, 0.1); border-color: rgba(33, 150, 243, 0.2); }
+        body.dark .control-option.selected { background: linear-gradient(135deg, rgba(33, 150, 243, 0.12), rgba(33, 150, 243, 0.22)); border-color: var(--primary-color); }
+        body.dark .control-option .radio-custom { border-color: rgba(255, 255, 255, 0.3); }
+        body.dark .control-option.selected .radio-custom { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2); }
+        body.dark .control-group h4 { border-bottom-color: rgba(33, 150, 243, 0.2); }
         body.dark .modal-content { background: rgba(42, 42, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); }
         body.dark .achievement { background: rgba(42, 42, 42, 0.9); }
         body.dark .help-section { background: rgba(255, 255, 255, 0.05); }
@@ -1304,6 +1399,12 @@
             }
             .header h1 {
                 font-size: 2.2em;
+            }
+            .controls-options {
+                grid-template-columns: 1fr;
+            }
+            .control-option {
+                padding: 8px 10px;
             }
         }
         @media (max-width: 320px) {
@@ -1769,32 +1870,40 @@
     <!-- 操作设置模态框 -->
     <aside class="modal" id="controls-modal" role="dialog" aria-modal="true" aria-label="操作设置">
         <div class="modal-content">
-            <h2>操作设置</h2>
+            <h2>🎮 操作设置</h2>
             <div class="controls-section">
-                <div class="controls-title">电脑端设置</div>
+                <div class="controls-title"><span class="title-icon">🖥️</span> 电脑端设置</div>
                 <div class="controls-options">
                     <div class="control-group">
-                        <h4>鼠标左键</h4>
+                        <h4><span class="group-icon">🖱️</span> 鼠标左键</h4>
                         <div class="control-options">
-                            <div class="control-option">
+                            <div class="control-option selected" data-name="pc-left" data-value="open">
                                 <input type="radio" id="pc-left-open" name="pc-left" value="open" checked>
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">👆</span>
                                 <label for="pc-left-open">直接打开方块</label>
                             </div>
-                            <div class="control-option">
+                            <div class="control-option" data-name="pc-left" data-value="flag">
                                 <input type="radio" id="pc-left-flag" name="pc-left" value="flag">
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">🚩</span>
                                 <label for="pc-left-flag">标记（旗帜→问号→空白）</label>
                             </div>
                         </div>
                     </div>
                     <div class="control-group">
-                        <h4>鼠标右键</h4>
+                        <h4><span class="group-icon">🖱️</span> 鼠标右键</h4>
                         <div class="control-options">
-                            <div class="control-option">
+                            <div class="control-option selected" data-name="pc-right" data-value="flag">
                                 <input type="radio" id="pc-right-flag" name="pc-right" value="flag" checked>
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">🚩</span>
                                 <label for="pc-right-flag">标记（旗帜→问号→空白）</label>
                             </div>
-                            <div class="control-option">
+                            <div class="control-option" data-name="pc-right" data-value="open">
                                 <input type="radio" id="pc-right-open" name="pc-right" value="open">
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">👆</span>
                                 <label for="pc-right-open">直接打开方块</label>
                             </div>
                         </div>
@@ -1802,30 +1911,38 @@
                 </div>
             </div>
             <div class="controls-section">
-                <div class="controls-title">移动端设置</div>
+                <div class="controls-title"><span class="title-icon">📱</span> 移动端设置</div>
                 <div class="controls-options">
                     <div class="control-group">
-                        <h4>点击</h4>
+                        <h4><span class="group-icon">👆</span> 点击</h4>
                         <div class="control-options">
-                            <div class="control-option">
+                            <div class="control-option selected" data-name="mobile-tap" data-value="flag">
                                 <input type="radio" id="mobile-tap-flag" name="mobile-tap" value="flag" checked>
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">🚩</span>
                                 <label for="mobile-tap-flag">标记（旗帜→问号→空白）</label>
                             </div>
-                            <div class="control-option">
+                            <div class="control-option" data-name="mobile-tap" data-value="open">
                                 <input type="radio" id="mobile-tap-open" name="mobile-tap" value="open">
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">👆</span>
                                 <label for="mobile-tap-open">直接打开方块</label>
                             </div>
                         </div>
                     </div>
                     <div class="control-group">
-                        <h4>长按</h4>
+                        <h4><span class="group-icon">✋</span> 长按</h4>
                         <div class="control-options">
-                            <div class="control-option">
+                            <div class="control-option selected" data-name="mobile-long" data-value="open">
                                 <input type="radio" id="mobile-long-open" name="mobile-long" value="open" checked>
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">👆</span>
                                 <label for="mobile-long-open">直接打开方块</label>
                             </div>
-                            <div class="control-option">
+                            <div class="control-option" data-name="mobile-long" data-value="flag">
                                 <input type="radio" id="mobile-long-flag" name="mobile-long" value="flag">
+                                <span class="radio-custom"></span>
+                                <span class="option-icon">🚩</span>
                                 <label for="mobile-long-flag">标记（旗帜→问号→空白）</label>
                             </div>
                         </div>
@@ -2503,6 +2620,21 @@ clearHighlights() {
                         });
                     }
 
+                    // 操作设置自定义radio按钮交互
+                    document.querySelectorAll('#controls-modal .control-option').forEach(opt => {
+                        opt.addEventListener('click', () => {
+                            const radio = opt.querySelector('input[type="radio"]');
+                            if (radio) {
+                                radio.checked = true;
+                                const name = radio.name;
+                                document.querySelectorAll(`#controls-modal .control-option`).forEach(o => {
+                                    const r = o.querySelector(`input[name="${name}"]`);
+                                    if (r) o.classList.toggle('selected', r.checked);
+                                });
+                            }
+                        });
+                    });
+
                     // 绑定下拉菜单事件
                     this.bindDropdownEvents();
                 }
@@ -2605,13 +2737,22 @@ clearHighlights() {
                 showControlsDialog() {
                     const modal = document.getElementById('controls-modal');
                     if (modal) {
-                        // 设置当前选择状态
                         document.getElementById(`pc-left-${this.controlSettings.pc.left}`).checked = true;
                         document.getElementById(`pc-right-${this.controlSettings.pc.right}`).checked = true;
                         document.getElementById(`mobile-tap-${this.controlSettings.mobile.tap}`).checked = true;
                         document.getElementById(`mobile-long-${this.controlSettings.mobile.long}`).checked = true;
+                        this.updateControlOptionStyles();
                         modal.style.display = 'flex';
                     }
+                }
+
+                updateControlOptionStyles() {
+                    document.querySelectorAll('#controls-modal .control-option').forEach(opt => {
+                        const radio = opt.querySelector('input[type="radio"]');
+                        if (radio) {
+                            opt.classList.toggle('selected', radio.checked);
+                        }
+                    });
                 }
 
                         saveControlSettings() {
@@ -4748,9 +4889,9 @@ handleNumberCellClick(row, col) {
 
     // 检查格子是否已揭开且是数字
     if (!this.revealed[row][col] || this.board[row][col] <= 0) {
-        // 尝试点击非数字格子或未揭开格子进行展开，视为无效操作
         this.gameState.gameData.ineffectiveMoves++;
-        this.gameState.gameData.totalClicks++; // 计入总点击
+        this.gameState.gameData.totalClicks++;
+        this.recordMoveTiming();
         return;
     }
 
@@ -4759,7 +4900,7 @@ handleNumberCellClick(row, col) {
         if (this.flags[nr][nc]) flagCount++;
     });
 
-    this.gameState.gameData.totalClicks++; // 尝试展开就算一次总点击
+    this.gameState.gameData.totalClicks++;
     if (flagCount === this.board[row][col]) {
         // 有效展开
         this.gameState.gameData.effectiveMoves++;
@@ -4785,6 +4926,8 @@ handleNumberCellClick(row, col) {
     } else {
         // 条件不满足，无效操作
         this.gameState.gameData.ineffectiveMoves++;
+        this.gameState.gameData.totalClicks++;
+        this.recordMoveTiming();
     }
 
     if (this.tutorialState.active) {
@@ -5141,6 +5284,7 @@ performOpenAction(row, col) {
     if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
         this.gameState.gameData.ineffectiveMoves++;
         this.gameState.gameData.totalClicks++;
+        this.recordMoveTiming();
         return;
     }
 
@@ -5199,7 +5343,8 @@ performFlagAction(row, col) {
     // 如果格子已被揭开，则操作无效
     if (this.revealed[row][col]) {
         this.gameState.gameData.ineffectiveMoves++;
-        this.gameState.gameData.totalClicks++; // 计入总点击
+        this.gameState.gameData.totalClicks++;
+        this.recordMoveTiming();
         return;
     }
 
@@ -5563,18 +5708,14 @@ gameOver(won) {
 
     // 2. 计算地雷标记准确率
     gameData.correctFlagsOnEnd = this.countCorrectFlags();
-    if (gameData.flagsPlaced > 0) {
-        // 准确率 = 最终正确的旗帜数 / 总共插旗的次数
-        gameData.flaggingAccuracy = (gameData.correctFlagsOnEnd / gameData.flagsPlaced) * 100;
+    const wrongFlagsOnEnd = this.countWrongFlags();
+    const totalFlagsOnBoard = gameData.correctFlagsOnEnd + wrongFlagsOnEnd;
+    if (totalFlagsOnBoard > 0) {
+        gameData.flaggingAccuracy = (gameData.correctFlagsOnEnd / totalFlagsOnBoard) * 100;
+    } else if (won) {
+        gameData.flaggingAccuracy = 100;
     } else {
-        // 如果没有插旗
-        const totalMines = this.gameState.totalMines;
-        // 如果赢了，说明所有非雷格子都点开了，没插旗也是100%准确
-        if (won && this.countRevealed() === (this.gameState.rows * this.gameState.cols - totalMines)) {
-             gameData.flaggingAccuracy = 100;
-        } else {
-             gameData.flaggingAccuracy = 0; // 没插旗就输了，准确率0
-        }
+        gameData.flaggingAccuracy = 0;
     }
     
     // 3. 记录总揭开格子数
@@ -6985,14 +7126,14 @@ showGameOverDialog() {
     const dataHtml = `
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
             <h4 style="margin-bottom: 10px; color: var(--primary-color);">本局数据分析</h4>
-            <ul style="list-style-type: none; padding: 0; line-height: 2; font-size: 14px; text-align: left; max-width: 350px; margin: 0 auto;">
-                <li style="display: flex; justify-content: space-between;"><strong>总点击次数:</strong> <span>${gameData.totalClicks} (揭开:${gameData.leftClicks}, 标记:${gameData.rightClicks}, 展开:${gameData.numberExpansions})</span></li>
+            <ul style="list-style-type: none; padding: 0; line-height: 2; font-size: 14px; text-align: left; max-width: 400px; margin: 0 auto;">
+                <li style="display: flex; justify-content: space-between;"><strong>总点击次数:</strong> <span>${gameData.totalClicks} (揭开:${gameData.leftClicks}, 标记:${gameData.rightClicks}, 展开:${gameData.numberExpansions}, 无效:${gameData.ineffectiveMoves})</span></li>
                 <li style="display: flex; justify-content: space-between;"><strong>总揭开格子:</strong> <span style="color: var(--success-color); font-weight: bold;">${gameData.totalRevealedCells}</span></li>
                 <li style="display: flex; justify-content: space-between;"><strong>操作统计:</strong> <span>${gameData.effectiveMoves} 有效 / ${gameData.ineffectiveMoves} 无效</span></li>
                 <li style="display: flex; justify-content: space-between;"><strong>平均决策耗时:</strong> <span style="color: var(--success-color); font-weight: bold;">${(gameData.averageMoveTime / 1000).toFixed(2)} 秒/步</span></li>
-                <li style="display: flex; justify-content: space-between;"><strong>最长决策耗时:</strong> <span>${(longestMove / 1000).toFixed(2)} 秒</span></li>
+                <li style="display: flex; justify-content: space-between;"><strong>最长决策耗时:</strong> <span style="color: var(--warning-color); font-weight: bold;">${(longestMove / 1000).toFixed(2)} 秒</span></li>
                 <li style="display: flex; justify-content: space-between;"><strong>地雷标记准确率:</strong> <span style="color: var(--success-color); font-weight: bold;">${gameData.flaggingAccuracy.toFixed(1)}%</span></li>
-                <li style="display: flex; justify-content: space-between;"><strong>点击效率 (揭开/点击):</strong> <span>${clickEfficiency.toFixed(1)}%</span></li>
+                <li style="display: flex; justify-content: space-between;"><strong>点击效率 (揭开/点击):</strong> <span style="color: var(--primary-color); font-weight: bold;">${clickEfficiency.toFixed(1)}%</span></li>
             </ul>
         </div>
         <div class="stats-charts">

@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>扫雷大师</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
     <style>
         * {
             margin: 0;
@@ -24,6 +25,7 @@
             --cell-hover: #b8b8b8;
             --revealed-bg: #f8f8f8;
             --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         /* ========== 基础样式 ========== */
         body {
@@ -34,7 +36,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
             touch-action: manipulation;
             overflow-x: hidden;
         }
@@ -49,34 +51,34 @@
             background: linear-gradient(135deg, var(--bg-color) 0%, #2a2a2a 100%);
         }
         
-body.theme-transitioning {
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        body.theme-transitioning {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-body.theme-transitioning * {
-    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        body.theme-transitioning * {
+            transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                        box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-/* 主题切换时的特效 */
-.theme-transition-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
-    opacity: 0;
-    pointer-events: none;
-    z-index: 10000;
-    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        /* 主题切换时的特效 */
+        .theme-transition-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10000;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-.theme-transition-overlay.active {
-    opacity: 1;
-}
+        .theme-transition-overlay.active {
+            opacity: 1;
+        }
         .container {
             width: 100%;
             max-width: 1400px;
@@ -92,10 +94,7 @@ body.theme-transitioning * {
             padding: 20px;
             border-radius: 20px;
             box-shadow: var(--shadow);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        body.dark .header {
-            background: rgba(0, 0, 0, 0.2);
+            transition: var(--transition);
         }
         .header h1 {
             font-size: 3em;
@@ -105,13 +104,13 @@ body.theme-transitioning * {
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .header p {
             font-size: 1.2em;
             opacity: 0.8;
             font-weight: 300;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         /* ========== 按钮样式 ========== */
         .btn {
@@ -122,7 +121,7 @@ body.theme-transitioning * {
             color: white;
             font-size: 16px;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
             box-shadow: var(--shadow);
             position: relative;
             overflow: hidden;
@@ -191,10 +190,6 @@ body.theme-transitioning * {
             border: 1px solid rgba(255, 255, 255, 0.3);
             animation: dropdownShow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        body.dark .dropdown-content {
-            background: rgba(42, 42, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
         .dropdown-content.show {
             display: block;
         }
@@ -208,6 +203,12 @@ body.theme-transitioning * {
             border-radius: 10px;
             margin: 0 8px;
             font-weight: 500;
+            background: none;
+            border: none;
+            width: calc(100% - 16px);
+            text-align: left;
+            font-size: inherit;
+            font-family: inherit;
         }
         .dropdown-item:hover {
             background: rgba(33, 150, 243, 0.1);
@@ -238,10 +239,6 @@ body.theme-transitioning * {
             border: 1px solid rgba(255, 255, 255, 0.3);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-        }
-        body.dark .save-item {
-            background: rgba(42, 42, 42, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .save-item:hover {
             transform: translateY(-2px);
@@ -327,13 +324,9 @@ body.theme-transitioning * {
             display: flex;
             align-items: center;
             gap: 15px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
             border: 1px solid rgba(255, 255, 255, 0.3);
             transform: translateZ(0);
-        }
-        body.dark .stat-box {
-            background: rgba(42, 42, 42, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .stat-box:hover {
             transform: translateY(-3px) scale(1.02) translateZ(0);
@@ -342,14 +335,14 @@ body.theme-transitioning * {
         .stat-icon {
             font-size: 28px;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .stat-value {
             font-size: 24px;
             font-weight: bold;
             color: var(--primary-color);
             text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .stat-label {
             font-size: 14px;
@@ -372,9 +365,6 @@ body.theme-transitioning * {
         .zen-items.show {
             display: flex;
         }
-        body.dark .zen-items {
-            background: rgba(0, 0, 0, 0.2);
-        }
         .zen-item {
             background: linear-gradient(45deg, #ff6b6b, #feca57);
             color: white;
@@ -383,7 +373,7 @@ body.theme-transitioning * {
             border: none;
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             position: relative;
             overflow: hidden;
@@ -426,14 +416,9 @@ body.theme-transitioning * {
             box-shadow: var(--shadow);
             text-align: center;
             min-width: 220px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
             border: 1px solid rgba(255, 255, 255, 0.3);
             transform: translateZ(0);
-        }
-        body.dark .zoom-control-section,
-        body.dark .minimap-section {
-            background: rgba(42, 42, 42, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .zoom-control-section:hover,
         .minimap-section:hover {
@@ -465,7 +450,7 @@ body.theme-transitioning * {
             border-radius: 15px;
             border: 2px solid var(--primary-color);
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         /* ========== 小地图样式 ========== */
         .minimap {
@@ -479,10 +464,7 @@ body.theme-transitioning * {
             margin: 0 auto;
             overflow: hidden;
             box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        body.dark .minimap {
-            background: var(--cell-bg);
+            transition: var(--transition);
         }
         .minimap-board {
             width: 100%;
@@ -536,7 +518,7 @@ body.theme-transitioning * {
             overflow: hidden;
             box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
             border: 2px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .progress-fill {
             height: 100%;
@@ -579,7 +561,7 @@ body.theme-transitioning * {
             scroll-behavior: smooth;
             scrollbar-width: thin;
             scrollbar-color: var(--primary-color) var(--bg-color);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .game-board-container::-webkit-scrollbar {
             width: 10px;
@@ -592,7 +574,7 @@ body.theme-transitioning * {
         .game-board-container::-webkit-scrollbar-thumb {
             background: linear-gradient(45deg, var(--primary-color), var(--success-color));
             border-radius: 8px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .game-board-container::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(45deg, var(--success-color), var(--warning-color));
@@ -668,37 +650,42 @@ body.theme-transitioning * {
             animation: bounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
-        .cell.hint-safe {
-            animation: hintSafeGlow 2s ease-in-out infinite;
-            box-shadow: 0 0 25px rgba(76, 175, 80, 0.9);
-            background: linear-gradient(45deg, rgba(76, 175, 80, 0.4), rgba(129, 199, 132, 0.4));
+        .cell.hint-safe, .cell.hint-mine, .cell.hint-error, .cell.hint-double-click {
             z-index: 10;
             border-radius: 8px;
-            border: 3px solid var(--success-color);
+            animation: hintGlow 2s ease-in-out infinite;
+        }
+        .cell.hint-safe {
+            --hint-color: 76, 175, 80;
+            --hint-color-light: 129, 199, 132;
+            --hint-border: var(--success-color);
+            box-shadow: 0 0 25px rgba(var(--hint-color), 0.9);
+            background: linear-gradient(45deg, rgba(var(--hint-color), 0.4), rgba(var(--hint-color-light), 0.4));
+            border: 3px solid var(--hint-border);
         }
         .cell.hint-mine {
-            animation: hintMineGlow 2s ease-in-out infinite;
-            box-shadow: 0 0 25px rgba(244, 67, 54, 0.9);
-            background: linear-gradient(45deg, rgba(244, 67, 54, 0.4), rgba(229, 115, 115, 0.4));
-            z-index: 10;
-            border-radius: 8px;
-            border: 3px solid var(--danger-color);
+            --hint-color: 244, 67, 54;
+            --hint-color-light: 229, 115, 115;
+            --hint-border: var(--danger-color);
+            box-shadow: 0 0 25px rgba(var(--hint-color), 0.9);
+            background: linear-gradient(45deg, rgba(var(--hint-color), 0.4), rgba(var(--hint-color-light), 0.4));
+            border: 3px solid var(--hint-border);
         }
         .cell.hint-error {
-            animation: hintErrorGlow 2s ease-in-out infinite;
-            box-shadow: 0 0 25px rgba(255, 193, 7, 0.9);
-            background: linear-gradient(45deg, rgba(255, 193, 7, 0.4), rgba(255, 183, 77, 0.4));
-            z-index: 10;
-            border-radius: 8px;
-            border: 3px solid var(--warning-color);
+            --hint-color: 255, 193, 7;
+            --hint-color-light: 255, 183, 77;
+            --hint-border: var(--warning-color);
+            box-shadow: 0 0 25px rgba(var(--hint-color), 0.9);
+            background: linear-gradient(45deg, rgba(var(--hint-color), 0.4), rgba(var(--hint-color-light), 0.4));
+            border: 3px solid var(--hint-border);
         }
         .cell.hint-double-click {
-            animation: hintDoubleClickGlow 2s ease-in-out infinite;
-            box-shadow: 0 0 25px rgba(156, 39, 176, 0.9);
-            background: linear-gradient(45deg, rgba(156, 39, 176, 0.4), rgba(186, 104, 200, 0.4));
-            z-index: 10;
-            border-radius: 8px;
-            border: 3px solid #9c27b0;
+            --hint-color: 156, 39, 176;
+            --hint-color-light: 186, 104, 200;
+            --hint-border: #9c27b0;
+            box-shadow: 0 0 25px rgba(var(--hint-color), 0.9);
+            background: linear-gradient(45deg, rgba(var(--hint-color), 0.4), rgba(var(--hint-color-light), 0.4));
+            border: 3px solid var(--hint-border);
         }
         .cell.special {
             background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb);
@@ -709,24 +696,6 @@ body.theme-transitioning * {
             background: linear-gradient(45deg, rgba(240, 9, 156, 0.6), rgba(255, 84, 112, 0.6));
             border: 2px solid #f009c9;
             animation: xrayGlow 1s ease-in-out infinite;
-        }
-        body.dark .cell {
-            background: linear-gradient(145deg, var(--cell-bg), #303030);
-            border: 2px solid rgba(255,255,255,0.1);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.1);
-        }
-        body.dark .cell.revealed {
-            background: linear-gradient(145deg, var(--revealed-bg), #1a1a1a);
-            box-shadow: inset 0 3px 6px rgba(0,0,0,0.4), inset 0 -1px 2px rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.05);
-        }
-        body.dark .cell:hover:not(.revealed):not(.flagged) {
-            background: linear-gradient(145deg, var(--cell-hover), #404040);
-            border: 2px solid var(--primary-color);
-        }
-        body.dark .cell.revealed:hover {
-            background: linear-gradient(145deg, #353535, var(--revealed-bg));
-            border: 1px solid var(--primary-color);
         }
         /* ========== 数字颜色 ========== */
         .num-1 { color: #1976d2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
@@ -746,9 +715,6 @@ body.theme-transitioning * {
             margin: 20px 0;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        body.dark .controls-section {
-            background: rgba(0, 0, 0, 0.2);
-        }
         .controls-title {
             color: var(--primary-color);
             font-size: 18px;
@@ -766,10 +732,6 @@ body.theme-transitioning * {
             padding: 15px;
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        body.dark .control-group {
-            background: rgba(42, 42, 42, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .control-group h4 {
             margin-bottom: 10px;
@@ -807,7 +769,7 @@ body.theme-transitioning * {
             z-index: 10;
             box-shadow: var(--shadow);
             font-weight: 500;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .auto-solve-status {
             position: fixed;
@@ -825,60 +787,57 @@ body.theme-transitioning * {
             box-shadow: 0 6px 25px rgba(33, 150, 243, 0.5);
             border: 2px solid rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(10px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         /* ========== 提示信息样式 ========== */
         .hint-tooltip {
-    position: fixed;
-    left: 50%;
-    bottom: 15%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 16px 24px;
-    border-radius: 15px;
-    font-size: 16px;
-    font-weight: 600;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    z-index: 10000;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    max-width: 85vw;
-    text-align: center;
-    backdrop-filter: blur(15px);
-    line-height: 1.4;
-    pointer-events: none !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-}
+            position: fixed;
+            left: 50%;
+            bottom: 15%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            z-index: 10000;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 85vw;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            line-height: 1.4;
+            pointer-events: none !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+        }
 
         .hint-tooltip::before {
             display: none;
         }
         /* 不同类型提示的背景色 */
+        .hint-tooltip.hint-safe, .hint-tooltip.hint-mine, .hint-tooltip.hint-error, .hint-tooltip.hint-double-click {
+            border-color: var(--hint-border);
+            box-shadow: 0 8px 30px rgba(var(--hint-color), 0.4);
+            background: linear-gradient(45deg, rgba(var(--hint-color), 0.95), rgba(var(--hint-color-light), 0.95));
+        }
         .hint-tooltip.hint-safe {
-            background: linear-gradient(45deg, rgba(76, 175, 80, 0.95), rgba(129, 199, 132, 0.95));
-            border-color: var(--success-color);
-            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.4);
+            --hint-color: 76, 175, 80; --hint-color-light: 129, 199, 132; --hint-border: var(--success-color);
         }
         .hint-tooltip.hint-mine {
-            background: linear-gradient(45deg, rgba(244, 67, 54, 0.95), rgba(229, 115, 115, 0.95));
-            border-color: var(--danger-color);
-            box-shadow: 0 8px 30px rgba(244, 67, 54, 0.4);
+            --hint-color: 244, 67, 54; --hint-color-light: 229, 115, 115; --hint-border: var(--danger-color);
         }
         .hint-tooltip.hint-error {
-            background: linear-gradient(45deg, rgba(255, 193, 7, 0.95), rgba(255, 183, 77, 0.95));
-            border-color: var(--warning-color);
-            box-shadow: 0 8px 30px rgba(255, 193, 7, 0.4);
+            --hint-color: 255, 193, 7; --hint-color-light: 255, 183, 77; --hint-border: var(--warning-color);
         }
         .hint-tooltip.hint-double-click {
-            background: linear-gradient(45deg, rgba(156, 39, 176, 0.95), rgba(186, 104, 200, 0.95));
-            border-color: #9c27b0;
-            box-shadow: 0 8px 30px rgba(156, 39, 176, 0.4);
+            --hint-color: 156, 39, 176; --hint-color-light: 186, 104, 200; --hint-border: #9c27b0;
         }
         @media (max-width: 768px) {
             .hint-tooltip {
@@ -945,10 +904,6 @@ body.theme-transitioning * {
             border: 1px solid rgba(255, 255, 255, 0.3);
             transform: translateZ(0);
         }
-        body.dark .modal-content {
-            background: rgba(42, 42, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
         .modal h2 {
             margin-bottom: 25px;
             color: var(--primary-color);
@@ -986,7 +941,7 @@ body.theme-transitioning * {
             font-size: 16px;
             background: var(--revealed-bg);
             color: var(--text-color);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .settings-item input:focus, .settings-item select:focus {
             outline: none;
@@ -1008,12 +963,9 @@ body.theme-transitioning * {
             border-radius: 15px;
             text-align: center;
             box-shadow: var(--shadow);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
             border: 2px solid transparent;
             transform: translateZ(0);
-        }
-        body.dark .achievement {
-            background: rgba(42, 42, 42, 0.9);
         }
         .achievement:hover {
             transform: translateY(-5px) scale(1.05) translateZ(0);
@@ -1031,7 +983,7 @@ body.theme-transitioning * {
             font-size: 36px;
             margin-bottom: 8px;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
         }
         .achievement div:last-child {
             font-weight: 600;
@@ -1048,10 +1000,7 @@ body.theme-transitioning * {
             background: rgba(249, 249, 249, 0.5);
             border-radius: 15px;
             border-left: 4px solid var(--primary-color);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        body.dark .help-section {
-            background: rgba(255, 255, 255, 0.05);
+            transition: var(--transition);
         }
         .help-section h3 {
             color: var(--primary-color);
@@ -1083,15 +1032,16 @@ body.theme-transitioning * {
             backdrop-filter: blur(10px);
             border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        body.dark .version-info {
-            background: rgba(0, 0, 0, 0.2);
+            transition: var(--transition);
         }
         .version-info small {
             color: var(--text-color);
             font-weight: 500;
         }
+        /* ========== 工具类 ========== */
+        .hidden { display: none; }
+        .narrow-input { width: 80px; }
+        .single-column { grid-template-columns: 1fr; }
         /* ========== 特效样式 ========== */
         .confetti {
             position: fixed;
@@ -1159,43 +1109,13 @@ body.theme-transitioning * {
             0%, 100% { transform: translateY(0) scale(1); }
             50% { transform: translateY(-8px) scale(1.1); }
         }
-        @keyframes hintSafeGlow {
+        @keyframes hintGlow {
             0%, 100% {
-                box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+                box-shadow: 0 0 20px rgba(var(--hint-color), 0.8);
                 transform: scale(1);
             }
             50% {
-                box-shadow: 0 0 35px rgba(76, 175, 80, 1);
-                transform: scale(1.05);
-            }
-        }
-        @keyframes hintMineGlow {
-            0%, 100% {
-                box-shadow: 0 0 20px rgba(244, 67, 54, 0.8);
-                transform: scale(1);
-            }
-            50% {
-                box-shadow: 0 0 35px rgba(244, 67, 54, 1);
-                transform: scale(1.05);
-            }
-        }
-        @keyframes hintErrorGlow {
-            0%, 100% {
-                box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
-                transform: scale(1);
-            }
-            50% {
-                box-shadow: 0 0 35px rgba(255, 193, 7, 1);
-                transform: scale(1.05);
-            }
-        }
-        @keyframes hintDoubleClickGlow {
-            0%, 100% {
-                box-shadow: 0 0 20px rgba(156, 39, 176, 0.8);
-                transform: scale(1);
-            }
-            50% {
-                box-shadow: 0 0 35px rgba(156, 39, 176, 1);
+                box-shadow: 0 0 35px rgba(var(--hint-color), 1);
                 transform: scale(1.05);
             }
         }
@@ -1287,6 +1207,24 @@ body.theme-transitioning * {
                 box-shadow: 0 0 25px rgba(240, 9, 156, 1);
             }
         }
+        /* ========== 暗色主题 ========== */
+        body.dark .header { background: rgba(0, 0, 0, 0.2); }
+        body.dark .dropdown-content { background: rgba(42, 42, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.dark .save-item { background: rgba(42, 42, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.dark .stat-box { background: rgba(42, 42, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.dark .zen-items { background: rgba(0, 0, 0, 0.2); }
+        body.dark .zoom-control-section, body.dark .minimap-section { background: rgba(42, 42, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.dark .minimap { background: var(--cell-bg); }
+        body.dark .cell { background: linear-gradient(145deg, var(--cell-bg), #303030); border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.1); }
+        body.dark .cell.revealed { background: linear-gradient(145deg, var(--revealed-bg), #1a1a1a); box-shadow: inset 0 3px 6px rgba(0,0,0,0.4), inset 0 -1px 2px rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.05); }
+        body.dark .cell:hover:not(.revealed):not(.flagged) { background: linear-gradient(145deg, var(--cell-hover), #404040); border: 2px solid var(--primary-color); }
+        body.dark .cell.revealed:hover { background: linear-gradient(145deg, #353535, var(--revealed-bg)); border: 1px solid var(--primary-color); }
+        body.dark .controls-section { background: rgba(0, 0, 0, 0.2); }
+        body.dark .control-group { background: rgba(42, 42, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.dark .modal-content { background: rgba(42, 42, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.dark .achievement { background: rgba(42, 42, 42, 0.9); }
+        body.dark .help-section { background: rgba(255, 255, 255, 0.05); }
+        body.dark .version-info { background: rgba(0, 0, 0, 0.2); }
         /* ========== 响应式设计 ========== */
         @media (max-width: 1024px) {
             .container {
@@ -1392,50 +1330,50 @@ body.theme-transitioning * {
             }
         }
         /* ========== 浮动消息样式 ========== */
-.floating-message {
-    position: fixed;
-    top: 30%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px 25px;
-    border-radius: 15px;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 10000;
-    pointer-events: none;
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    text-align: center;
-    min-width: 200px;
-    max-width: 80vw;
-    word-wrap: break-word;
-    animation: floatingMessageShow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        .floating-message {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10000;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            min-width: 200px;
+            max-width: 80vw;
+            word-wrap: break-word;
+            animation: floatingMessageShow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-@keyframes floatingMessageShow {
-    0% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-20px) scale(0.9);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
-    }
-}
+        @keyframes floatingMessageShow {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px) scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+        }
 
-@keyframes floatingMessageHide {
-    0% {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
-    }
-    100% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-20px) scale(0.9);
-    }
-}
+        @keyframes floatingMessageHide {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px) scale(0.9);
+            }
+        }
         /* ========== 教学模式样式========== */
         .tutorial-highlight {
             position: relative;
@@ -1456,61 +1394,61 @@ body.theme-transitioning * {
         }
 
         #tutorial-message-box {
-    position: fixed;
-    bottom: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(30, 30, 30, 0.9);
-    color: #ffeb3b;
-    padding: 14px 22px;
-    border-radius: 15px;
-    font-size: 16px;
-    font-weight: 600;
-    z-index: 10002;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-    border: 2px solid #fbc02d;
-    width: fit-content;
-    max-width: min(90vw, 600px);
-    text-align: center;
-    line-height: 1.5;
-    animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(8px);
-    white-space: pre-wrap; /* 保证换行符生效 */
-    pointer-events: none; /* 消息框本身不接收点击 */
-}
+            position: fixed;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 30, 0.9);
+            color: #ffeb3b;
+            padding: 14px 22px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            z-index: 10002;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            border: 2px solid #fbc02d;
+            width: fit-content;
+            max-width: min(90vw, 600px);
+            text-align: center;
+            line-height: 1.5;
+            animation: tooltipShow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(8px);
+            white-space: pre-wrap;
+            pointer-events: none;
+        }
 
 
-/* 教学模式错误反馈样式 */
-.tutorial-error-feedback {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(244, 67, 54, 0.95);
-    color: white;
-    padding: 20px 30px;
-    border-radius: 20px;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 10003;
-    box-shadow: 0 10px 40px rgba(244, 67, 54, 0.4);
-    border: 3px solid #ff5252;
-    animation: errorShake 0.5s ease-in-out;
-    max-width: 400px;
-    text-align: center;
-}
+        /* 教学模式错误反馈样式 */
+        .tutorial-error-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(244, 67, 54, 0.95);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 10003;
+            box-shadow: 0 10px 40px rgba(244, 67, 54, 0.4);
+            border: 3px solid #ff5252;
+            animation: errorShake 0.5s ease-in-out;
+            max-width: 400px;
+            text-align: center;
+        }
 
-.tutorial-error-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-    display: block;
-}
+        .tutorial-error-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+        }
 
-@keyframes errorShake {
-    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-    10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) rotate(-2deg); }
-    20%, 40%, 60%, 80% { transform: translate(-50%, -50%) rotate(2deg); }
-}
+        @keyframes errorShake {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) rotate(-2deg); }
+            20%, 40%, 60%, 80% { transform: translate(-50%, -50%) rotate(2deg); }
+        }
 
         @keyframes tutorialPulse {
             0%, 100% {
@@ -1522,78 +1460,78 @@ body.theme-transitioning * {
                 box-shadow: 0 0 0 6px rgba(255, 235, 59, 1), 0 0 50px #ffeb3b !important;
             }
         }
-/* ========== 统计图表样式 ========== */
-.stats-charts {
-    margin-top: 20px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
+        /* ========== 统计图表样式 ========== */
+        .stats-charts {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-.chart-container {
-    margin: 15px 0;
-    height: 200px;
-    position: relative;
-}
+        .chart-container {
+            margin: 15px 0;
+            height: 200px;
+            position: relative;
+        }
 
-.chart-title {
-    text-align: center;
-    font-weight: bold;
-    color: var(--primary-color);
-    margin-bottom: 10px;
-    font-size: 16px;
-}
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
 
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <main class="container">
+        <header class="header">
             <h1>扫雷大师</h1>
             <p>挑战极限，成为扫雷传奇！</p>
-        </div>
-        <div class="game-controls">
+        </header>
+        <nav class="game-controls" aria-label="游戏主控制">
             <button class="btn info" id="btn-help">❓ 帮助</button>
                         <!-- 模式选择下拉菜单 -->
             <div class="dropdown">
                 <button class="btn success" id="btn-mode-select">🎮 模式选择</button>
                 <div class="dropdown-content" id="mode-dropdown">
-                    <div class="dropdown-item" data-mode="beginner">初级 9×9 (10雷)</div>
-                    <div class="dropdown-item" data-mode="intermediate">中级 16×16 (40雷)</div>
-                    <div class="dropdown-item" data-mode="expert">高级 16×30 (99雷)</div>
-                    <div class="dropdown-item" data-mode="mega">巨型 30×50 (300雷)</div>
-                    <div class="dropdown-item" data-mode="custom">自定义游戏</div>
-                    <div class="dropdown-item" data-mode="tutorial">🎓 教学模式</div>       
+                    <button type="button" class="dropdown-item" data-mode="beginner">初级 9×9 (10雷)</button>
+                    <button type="button" class="dropdown-item" data-mode="intermediate">中级 16×16 (40雷)</button>
+                    <button type="button" class="dropdown-item" data-mode="expert">高级 16×30 (99雷)</button>
+                    <button type="button" class="dropdown-item" data-mode="mega">巨型 30×50 (300雷)</button>
+                    <button type="button" class="dropdown-item" data-mode="custom">自定义游戏</button>
+                    <button type="button" class="dropdown-item" data-mode="tutorial">🎓 教学模式</button>       
                 </div>
             </div>
             <!-- 个性化设置下拉菜单 -->
             <div class="dropdown">
                 <button class="btn warning" id="btn-audio-theme">🎨 个性化设置</button>
             <div class="dropdown-content" id="audio-theme-dropdown">
-                <div class="dropdown-item" id="dropdown-sound">🔊 音效开关</div>
-                <div class="dropdown-item" id="dropdown-theme">🌓 切换主题</div>
-                <div class="dropdown-item" id="dropdown-controls">🎮 操作设置</div>
-                <div class="dropdown-item" id="dropdown-save-settings">💾 存档设置</div>
+                <button type="button" class="dropdown-item" id="dropdown-sound">🔊 音效开关</button>
+                <button type="button" class="dropdown-item" id="dropdown-theme">🌓 切换主题</button>
+                <button type="button" class="dropdown-item" id="dropdown-controls">🎮 操作设置</button>
+                <button type="button" class="dropdown-item" id="dropdown-save-settings">💾 存档设置</button>
             </div>
             </div>
             <!-- 存档管理下拉菜单 -->
             <div class="dropdown">
                 <button class="btn info" id="btn-save-manage">💾 存档管理</button>
                 <div class="dropdown-content" id="save-dropdown">
-                    <div class="dropdown-item" id="dropdown-save-game">保存当前进度</div>
-                    <div class="dropdown-item" id="dropdown-load-game">加载存档</div>
-                    <div class="dropdown-item" id="dropdown-manage-saves">管理存档</div>
+                    <button type="button" class="dropdown-item" id="dropdown-save-game">保存当前进度</button>
+                    <button type="button" class="dropdown-item" id="dropdown-load-game">加载存档</button>
+                    <button type="button" class="dropdown-item" id="dropdown-manage-saves">管理存档</button>
                 </div>
             </div>
-        </div>
+        </nav>
         <!-- 生存模式血量显示 -->
-        <div class="survival-health" id="survival-health">
+        <section class="survival-health" id="survival-health" aria-label="生存模式生命值">
             <span class="health-icon">❤️</span>
             <span class="health-value" id="health-value">3</span>
             <span>剩余生命</span>
-        </div>
-        <div class="game-stats">
+        </section>
+        <section class="game-stats" aria-label="游戏统计">
             <div class="stat-box">
                 <span class="stat-icon">💣</span>
                 <div>
@@ -1622,18 +1560,18 @@ body.theme-transitioning * {
                     <div class="stat-value" id="combo">0</div>
                 </div>
             </div>
-        </div>
+        </section>
         <!-- 禅意模式道具区域 -->
-        <div class="zen-items" id="zen-items">
+        <section class="zen-items" id="zen-items" aria-label="禅意道具">
             <button class="zen-item time-stop" id="zen-time-stop">⏸️ 时间暂停</button>
             <button class="zen-item x-ray" id="zen-x-ray">👁️ 透视镜</button>
             <button class="zen-item safe-detect" id="zen-safe-detect">🛡️ 安全探测</button>
             <button class="zen-item auto-flag" id="zen-auto-flag">🚩 自动标记</button>
-        </div>
-        <div class="progress-bar">
+        </section>
+        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
         </div>
-        <div class="game-controls-extended">
+        <section class="game-controls-extended" aria-label="视图与导航">
             <!-- 缩放控制区 -->
             <div class="zoom-control-section">
                 <h4>视图控制</h4>
@@ -1652,22 +1590,22 @@ body.theme-transitioning * {
                     <div class="minimap-viewport" id="minimap-viewport"></div>
                 </div>
             </div>
-        </div>
-        <div class="game-board-wrapper">
+        </section>
+        <section class="game-board-wrapper" aria-label="游戏棋盘">
             <div class="game-board-container" id="game-board-container">
-                <div id="game-board" class="game-board">
+                <div id="game-board" class="game-board" role="grid">
                     <div class="mode-indicator" id="mode-indicator">经典模式</div>
                 </div>
             </div>
-        </div>
-        <div class="game-controls">
+        </section>
+        <nav class="game-controls" aria-label="游戏操作">
             <button class="btn warning" id="btn-hint">💡 提示</button>
             <button class="btn info" id="btn-auto-solve">🤖 自动扫雷</button>
             <button class="btn" id="btn-pause">⏸️ 暂停</button>
             <button class="btn" id="btn-undo">↩️ 撤销</button>
             <button class="btn" id="btn-restart">🔄 重新开始</button>
-        </div>
-        <div class="achievements">
+        </nav>
+        <section class="achievements" aria-label="成就列表">
     <div class="achievement" id="ach-first-win" onclick="game.showAchievementDetails('first-win')">
         <div class="achievement-icon">🥇</div>
         <div>首次胜利</div>
@@ -1708,10 +1646,10 @@ body.theme-transitioning * {
         <div class="achievement-icon">👑</div>
         <div>生存之王</div>
     </div>
-</div>
+</section>
 
 <!-- 成就详情模态框 -->
-<div class="modal" id="achievement-modal">
+<aside class="modal" id="achievement-modal" role="dialog" aria-modal="true" aria-label="成就详情">
     <div class="modal-content">
         <h2 id="achievement-modal-title">成就详情</h2>
         <div id="achievement-modal-content">
@@ -1721,18 +1659,18 @@ body.theme-transitioning * {
             <button class="btn" id="btn-close-achievement">关闭</button>
         </div>
     </div>
-</div>
-        <div class="version-info">
+</aside>
+        <footer class="version-info">
             <small>by空城 版本 <span id="version-number">1.4.5</span></small>
-        </div>
-    </div>
+        </footer>
+    </main>
     
     <!-- 自动排雷状态指示器 -->
     <div class="auto-solve-status" id="auto-solve-status">自动扫雷中...</div>
     <!-- 连击指示器 -->
     <div class="combo-indicator" id="combo-indicator">连击 x5!</div>
     <!-- 自定义设置模态框 -->
-    <div class="modal" id="custom-modal">
+    <aside class="modal" id="custom-modal" role="dialog" aria-modal="true" aria-label="自定义游戏">
         <div class="modal-content">
             <h2>自定义游戏</h2>
             <div class="settings-grid">
@@ -1777,7 +1715,7 @@ body.theme-transitioning * {
                         <option value="20">20%</option>
                     </select>
                 </div>
-                <div class="settings-item" id="survival-lives-setting" style="display: none;">
+                <div class="settings-item hidden" id="survival-lives-setting">
                     <label>生存模式生命数 (1-10)</label>
                     <input type="number" id="survival-lives" min="1" max="10" value="3">
                 </div>
@@ -1787,9 +1725,9 @@ body.theme-transitioning * {
                 <button class="btn" id="btn-close-custom">取消</button>
             </div>
         </div>
-    </div>
+    </aside>
     <!-- 操作设置模态框 -->
-    <div class="modal" id="controls-modal">
+    <aside class="modal" id="controls-modal" role="dialog" aria-modal="true" aria-label="操作设置">
         <div class="modal-content">
             <h2>操作设置</h2>
             <div class="controls-section">
@@ -1854,31 +1792,15 @@ body.theme-transitioning * {
                     </div>
                 </div>
             </div>
-            <div class="controls-section">
-            <div class="controls-title">可解布局生成</div>
-            <div class="controls-options" style="grid-template-columns: 1fr;">
-                <div class="control-group">
-                    <h4>最大尝试次数</h4>
-                    <div class="control-option">
-                        <input type="number" id="max-attempts" min="1" max="∞" value="1000" style="width: 80px;">
-                        <label>次 (1-∞)</label>
-                    </div>
-                    <h4 style="margin-top: 15px;">并行数 (Worker数)</h4>
-                    <div class="control-option">
-                        <input type="number" id="parallel-count" min="1" max="16" value="8" style="width: 80px;">
-                        <label>个 (1-16，越多尝试越快但越占用CPU)</label>
-                    </div>
-                </div>
-            </div>
         </div>
             <div class="modal-buttons">
                 <button class="btn success" id="btn-save-controls">保存设置</button>
                 <button class="btn" id="btn-close-controls">取消</button>
             </div>
         </div>
-    </div>
+    </aside>
     <!-- 存档管理模态框 -->
-    <div class="modal" id="save-modal">
+    <aside class="modal" id="save-modal" role="dialog" aria-modal="true" aria-label="存档管理">
         <div class="modal-content">
             <h2 id="save-modal-title">存档管理</h2>
             <div id="save-modal-content">
@@ -1888,9 +1810,9 @@ body.theme-transitioning * {
                 <button class="btn" id="btn-close-save-modal">关闭</button>
             </div>
         </div>
-    </div>
+    </aside>
     <!-- 存档设置模态框 -->
-<div class="modal" id="save-settings-modal">
+<aside class="modal" id="save-settings-modal" role="dialog" aria-modal="true" aria-label="存档设置">
     <div class="modal-content">
         <h2>存档设置</h2>
         <div class="settings-grid">
@@ -1908,9 +1830,9 @@ body.theme-transitioning * {
             <button class="btn" id="btn-close-save-settings">取消</button>
         </div>
     </div>
-</div>
+</aside>
     <!-- 游戏结束模态框 -->
-    <div class="modal" id="game-over-modal">
+    <aside class="modal" id="game-over-modal" role="dialog" aria-modal="true" aria-label="游戏结束">
         <div class="modal-content">
             <h2 id="game-over-title">游戏结束</h2>
             <p id="game-over-message"></p>
@@ -1921,9 +1843,9 @@ body.theme-transitioning * {
                 <button class="btn" id="btn-close-game-over">关闭</button>
             </div>
         </div>
-    </div>
+    </aside>
     <!-- 暂停模态框 -->
-    <div class="modal" id="pause-modal">
+    <aside class="modal" id="pause-modal" role="dialog" aria-modal="true" aria-label="游戏暂停">
         <div class="modal-content">
             <h2>游戏暂停</h2>
             <p>休息一下，准备好了再继续！</p>
@@ -1932,9 +1854,9 @@ body.theme-transitioning * {
                 <button class="btn danger" id="btn-restart-pause">重新开始</button>
             </div>
         </div>
-    </div>
+    </aside>
     <!-- 帮助模态框 -->
-    <div class="modal" id="help-modal">
+    <aside class="modal" id="help-modal" role="dialog" aria-modal="true" aria-label="游戏帮助">
         <div class="modal-content">
             <h2>游戏帮助</h2>
             <div class="help-content">
@@ -2021,7 +1943,7 @@ body.theme-transitioning * {
                 <button class="btn" id="btn-close-help">关闭</button>
             </div>
         </div>
-    </div>
+    </aside>
     <script>
         // 等待DOM完全加载后再初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -2108,8 +2030,6 @@ body.theme-transitioning * {
                         },
                         gameData: {}
                     };
-                    this.maxAttempts = 30;          // 默认最大尝试次数
-                    this.parallelCount = 4;         // 默认并行Worker数
                     this.lastAutoSolvePosition = { row: 0, col: 0 };
                     this.achievements = {
                         firstWin: { unlocked: false, unlockedAt: null },
@@ -2627,16 +2547,6 @@ clearHighlights() {
                             this.controlSettings.mobile.tap = document.querySelector('input[name="mobile-tap"]:checked').value;
                             this.controlSettings.mobile.long = document.querySelector('input[name="mobile-long"]:checked').value;
 
-                            // 获取新增设置
-                            const maxAttemptsInput = document.getElementById('max-attempts');
-                            const parallelCountInput = document.getElementById('parallel-count');
-                            if (maxAttemptsInput) {
-                                this.maxAttempts = parseInt(maxAttemptsInput.value) || 30;
-                                this.parallelCount = parseInt(parallelCountInput.value) || 4;
-                                this.controlSettings.maxAttempts = this.maxAttempts;
-                                this.controlSettings.parallelCount = this.parallelCount;
-                            }
-
                             // 保存到本地存储
                             try {
                                 localStorage.setItem(this.STORAGE_PREFIX + 'controls', JSON.stringify(this.controlSettings));
@@ -2653,17 +2563,9 @@ clearHighlights() {
                         if (saved) {
                             const parsed = JSON.parse(saved);
                             this.controlSettings = { ...this.controlSettings, ...parsed };
-                            // 新增设置：最大尝试次数和并行数
-                            this.maxAttempts = parsed.maxAttempts || 30;
-                            this.parallelCount = parsed.parallelCount || 4;
-                        } else {
-                            this.maxAttempts = 30;
-                            this.parallelCount = 4;
                         }
                     } catch (e) {
                         console.log('加载操作设置失败:', e);
-                        this.maxAttempts = 30;
-                        this.parallelCount = 4;
                     }
                 }
 
@@ -2901,7 +2803,7 @@ async loadSavedGameFromData(saveData) {
             <div style="margin-bottom: 20px; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
                 <button class="btn success small" onclick="game.exportSaves()" style="margin-right: 10px;">📤 导出存档</button>
                 <button class="btn info small" onclick="game.importSaves()">📥 导入存档</button>
-                <input type="file" id="import-file" accept=".json" style="display: none;" onchange="game.handleImportFile(event)">
+                <input type="file" id="import-file" accept=".json" class="hidden" onchange="game.handleImportFile(event)">
             </div>
         `;
     }
@@ -3320,19 +3222,6 @@ loadTempSaves() {
     } catch (e) {
         console.log('加载临时存档失败:', e);
         this.tempSaves = [];
-    }
-}
-
-// 加载临时存档并关闭窗口
-loadTempSaveAndClose(saveId) {
-    const saveData = this.tempSaves.find(save => save.id === saveId);
-    if (!saveData) {
-        this.showFloatingMessage('❌ 临时存档不存在！');
-        return;
-    }
-    
-    if (this.loadSavedGameFromData(saveData)) {
-        this.closeModal('save-modal');
     }
 }
 
@@ -4808,16 +4697,6 @@ resumeGameFromSave() {
     this.startTimer();
     this.showFloatingMessage('⏰ 游戏已继续！');
 }
-
-// 记录决策时间的函数
-recordMoveTiming() {
-    if (this.gameState.gameData.lastMoveTimestamp) {
-        const timeDiff = Date.now() - this.gameState.gameData.lastMoveTimestamp;
-        this.gameState.gameData.moveTimestamps.push(timeDiff);
-    }
-    this.gameState.gameData.lastMoveTimestamp = Date.now();
-}
-
 // 处理点击已揭开的数字格子（移动端和PC双击共用）
                 
 handleNumberCellClick(row, col) {
@@ -4887,7 +4766,7 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
     const cols = this.gameState.cols;
     const totalMines = this.gameState.totalMines;
 
-    const workerCount = Math.min(this.parallelCount, 2);
+    const workerCount = 2;
     let activeWorkers = 0;
     let success = false;
     const workers = [];
@@ -5185,13 +5064,6 @@ createSolvableBoardWorker() {
     return new Worker(URL.createObjectURL(blob));
 }
 
-// ========== 保底生成（同步） ==========
-fallbackGenerateBoard(excludeRow, excludeCol, callback) {
-    console.warn('使用保底生成（无验证）');
-    const board = this.generateRandomBoardSync(excludeRow, excludeCol);
-    callback(board);
-}
-
 generateRandomBoardSync(excludeRow, excludeCol) {
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
@@ -5221,18 +5093,6 @@ generateRandomBoardSync(excludeRow, excludeCol) {
         }
     }
     return board;
-}
-
-countAdjacentMinesFromBoard(board, row, col) {
-    let count = 0;
-    for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue;
-            const nr = row + dr, nc = col + dc;
-            if (nr >= 0 && nr < this.gameState.rows && nc >= 0 && nc < this.gameState.cols && board[nr][nc] === -1) count++;
-        }
-    }
-    return count;
 }
 
 performOpenAction(row, col) {
@@ -6960,39 +6820,8 @@ createCompressionWorker() {
 
 fallbackGenerateBoard(excludeRow, excludeCol, callback) {
     console.warn('使用保底生成（无验证）');
-    const board = this.generateRandomBoardSync(excludeRow, excludeCol); // 生成一个随机棋盘
+    const board = this.generateRandomBoardSync(excludeRow, excludeCol);
     callback(board);
-}
-
-generateRandomBoardSync(excludeRow, excludeCol) {
-    const rows = this.gameState.rows;
-    const cols = this.gameState.cols;
-    const totalMines = this.gameState.totalMines;
-    const board = Array(rows).fill().map(() => Array(cols).fill(0));
-    const positions = [];
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            if (Math.abs(r - excludeRow) > 1 || Math.abs(c - excludeCol) > 1) {
-                positions.push([r, c]);
-            }
-        }
-    }
-    for (let i = positions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [positions[i], positions[j]] = [positions[j], positions[i]];
-    }
-    for (let i = 0; i < totalMines && i < positions.length; i++) {
-        const [r, c] = positions[i];
-        board[r][c] = -1;
-    }
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            if (board[r][c] !== -1) {
-                board[r][c] = this.countAdjacentMinesFromBoard(board, r, c);
-            }
-        }
-    }
-    return board;
 }
 
 // 辅助方法：计算周围地雷数（用于同步生成）
@@ -7408,6 +7237,5 @@ renderGameOverCharts() {
             window.game = new MinesweeperUltimate();
         });
     </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 </body>
 </html>

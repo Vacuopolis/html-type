@@ -5819,7 +5819,7 @@ createSolvableBoardWorker() {
                         });
                         if (unrevealed.length === 0) continue;
                         const remaining = board[r][c] - flaggedCount;
-                        if (remaining < 0 || remaining > unrevealed.length) break;
+                        if (remaining < 0 || remaining > unrevealed.length) continue;
                         constraints.push({ unrevealed, remaining });
                     }
                 }
@@ -5900,8 +5900,9 @@ createSolvableBoardWorker() {
                 }
             }
             const totalNonMines = rows * cols - totalMines;
+            const isLargeBoard = rows * cols > 300;
 
-            for (let attempt = 0; attempt < 150; attempt++) {
+            for (let attempt = 0; attempt < (isLargeBoard ? 80 : 150); attempt++) {
                 const board = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
                 if (canSolveLogicallyFast(board, rows, cols, excludeRow, excludeCol, totalMines)) {
                     return { board, solvable: true };
@@ -5910,13 +5911,16 @@ createSolvableBoardWorker() {
 
             let bestBoard = null;
             let bestScore = -1;
+            const maxRestarts = isLargeBoard ? 12 : 8;
 
-            for (let restart = 0; restart < 8; restart++) {
+            for (let restart = 0; restart < maxRestarts; restart++) {
                 let currentBoard = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
                 let currentScore = solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines);
 
                 if (currentScore === totalNonMines) {
-                    return { board: currentBoard, solvable: true };
+                    if (canSolveLogicallyFast(currentBoard, rows, cols, excludeRow, excludeCol, totalMines)) {
+                        return { board: currentBoard, solvable: true };
+                    }
                 }
 
                 if (currentScore > bestScore) {
@@ -5925,9 +5929,10 @@ createSolvableBoardWorker() {
                 }
 
                 let noImproveCount = 0;
-                const maxNoImprove = 80;
+                const maxNoImprove = isLargeBoard ? 120 : 80;
+                const maxSteps = isLargeBoard ? 3000 : 2000;
 
-                for (let step = 0; step < 2000 && noImproveCount < maxNoImprove; step++) {
+                for (let step = 0; step < maxSteps && noImproveCount < maxNoImprove; step++) {
                     const minePositions = [];
                     const nonMinePositions = [];
                     for (let r = 0; r < rows; r++) {
@@ -5949,7 +5954,7 @@ createSolvableBoardWorker() {
 
                     const newScore = solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines);
 
-                    if (newScore > currentScore) {
+                    if (newScore >= currentScore) {
                         currentScore = newScore;
                         noImproveCount = 0;
 
@@ -5979,7 +5984,7 @@ createSolvableBoardWorker() {
                 }
             }
 
-            for (let attempt = 0; attempt < 100; attempt++) {
+            for (let attempt = 0; attempt < (isLargeBoard ? 60 : 100); attempt++) {
                 const freshBoard = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
                 if (canSolveLogicallyFast(freshBoard, rows, cols, excludeRow, excludeCol, totalMines)) {
                     return { board: freshBoard, solvable: true };
@@ -6000,7 +6005,7 @@ createSolvableBoardWorker() {
 
         self.addEventListener('message', (e) => {
             const { rows, cols, totalMines, excludeRow, excludeCol, maxAttempts } = e.data;
-            const actualMax = Math.min(maxAttempts, 30);
+            const actualMax = Math.min(maxAttempts, 50);
 
             for (let attempt = 0; attempt < actualMax; attempt++) {
                 self.postMessage({ type: 'progress', attemptsMade: attempt + 1 });
@@ -7785,17 +7790,17 @@ performAutoSolveStep() {
 
     // 步骤 3: 如果以上逻辑都无效，则使用最终的“作弊”方法保证安全点击
     if (!actionTaken) {
-        const safeCells = [];
+        const unrevealedCells = [];
         for (let r = 0; r < this.gameState.rows; r++) {
             for (let c = 0; c < this.gameState.cols; c++) {
-                if (!this.revealed[r][c] && !this.flags[r][c] && this.board[r][c] !== -1) {
-                    safeCells.push([r, c]);
+                if (!this.revealed[r][c] && !this.flags[r][c]) {
+                    unrevealedCells.push([r, c]);
                 }
             }
         }
 
-        if (safeCells.length > 0) {
-            const [r, c] = safeCells[0]; // 点击第一个找到的安全格
+        if (unrevealedCells.length > 0) {
+            const [r, c] = unrevealedCells[Math.floor(Math.random() * unrevealedCells.length)]; // 点击第一个找到的安全格
             this.revealCell(r, c);
             actionTaken = true;
             actionRow = r;
@@ -8931,7 +8936,7 @@ fallbackGenerateBoard(excludeRow, excludeCol, callback) {
                     });
                     if (unrevealed.length === 0) continue;
                     const remaining = board[r][c] - flaggedCount;
-                    if (remaining < 0 || remaining > unrevealed.length) break;
+                    if (remaining < 0 || remaining > unrevealed.length) continue;
                     constraints.push({ unrevealed, remaining });
                 }
             }
@@ -9077,10 +9082,11 @@ fallbackGenerateBoard(excludeRow, excludeCol, callback) {
         }
     }
 
-    console.error('保底生成未能找到可解棋盘，使用降级策略：减少雷数生成可解棋盘');
+    console.error('保底生成未能找到可解棋盘，使用降级策略：逐步减少雷数');
     let reducedMines = totalMines - 1;
-    while (reducedMines > 0) {
-        for (let attempt = 0; attempt < 50; attempt++) {
+    const minMines = Math.max(1, Math.floor(totalMines * 0.7));
+    while (reducedMines >= minMines) {
+        for (let attempt = 0; attempt < 30; attempt++) {
             const board = this.generateRandomBoardSync(excludeRow, excludeCol);
             let mineCount = 0;
             for (let r = 0; r < rows; r++) {
@@ -9110,6 +9116,8 @@ fallbackGenerateBoard(excludeRow, excludeCol, callback) {
             if (this.canSolveLogically(excludeRow, excludeCol)) {
                 this.gameState.totalMines = reducedMines;
                 this.gameState.minesLeft = reducedMines;
+                this.updateDisplay();
+                this.showFloatingMessage(`⚠️ 已调整雷数为 ${reducedMines} 以确保棋盘可解`);
                 callback(board);
                 return;
             }
@@ -9120,6 +9128,7 @@ fallbackGenerateBoard(excludeRow, excludeCol, callback) {
     console.error('所有策略均失败，使用随机棋盘（可能需要猜测）');
     const board = this.generateRandomBoardSync(excludeRow, excludeCol);
     this.board = board;
+    this.showFloatingMessage('⚠️ 未能生成可解棋盘，可能需要猜测');
     callback(board);
 }
 
@@ -9136,14 +9145,25 @@ countAdjacentMinesFromBoard(board, row, col) {
     return count;
 }
 
-verifyAndReportSolvability(startRow, startCol) {
+verifyAndReportSolvability(startRow, startCol, retryCount = 0) {
     const solvable = this.canSolveLogically(startRow, startCol);
     if (solvable) {
-        this.showFloatingMessage('可解棋盘生成成功!');
+        this.showFloatingMessage('✅ 可解棋盘生成成功!');
+        return true;
+    } else if (retryCount < 3) {
+        this.showFloatingMessage(`⚠️ 棋盘不可解，正在重新生成... (${retryCount + 1}/3)`);
+        this.generateBoardAsync(startRow, startCol, (board) => {
+            this.board = board;
+            if (this.gameState.mode === 'zen') {
+                this.addSpecialCells();
+            }
+            this.verifyAndReportSolvability(startRow, startCol, retryCount + 1);
+        });
+        return false;
     } else {
-        this.showFloatingMessage('⚠️ 当前棋盘可能需要猜测，建议使用提示功能');
+        this.showFloatingMessage('⚠️ 多次尝试后仍无法生成完全可解棋盘，建议使用提示功能辅助');
+        return false;
     }
-    return solvable;
 }
 
                 toggleSound() {
@@ -9544,272 +9564,6 @@ renderGameOverCharts() {
 
             // 初始化游戏
             window.game = new MinesweeperUltimate();
-
-            // ========== 内置验证框架 ==========
-            window.minesweeperValidator = {
-                runAllTests() {
-                    const results = [];
-                    const game = window.game;
-                    
-                    results.push(this.testNumberCalculation(game));
-                    results.push(this.testSafeZone(game));
-                    results.push(this.testRevealLogic(game));
-                    results.push(this.testWinCondition(game));
-                    results.push(this.testFlagLogic(game));
-                    results.push(this.testSolvabilityVerifier(game));
-                    
-                    console.log('===== 扫雷核心功能验证报告 =====');
-                    for (const r of results) {
-                        const icon = r.passed ? '✅' : '❌';
-                        console.log(`${icon} ${r.name}: ${r.message}`);
-                        if (r.details) {
-                            for (const d of r.details) {
-                                console.log(`   ${d.passed ? '✅' : '❌'} ${d.name}: ${d.message}`);
-                            }
-                        }
-                    }
-                    const allPassed = results.every(r => r.passed);
-                    console.log(allPassed ? '✅ 所有测试通过！' : '❌ 部分测试未通过，请检查上述详情');
-                    return results;
-                },
-
-                testNumberCalculation(game) {
-                    const details = [];
-                    const rows = 5, cols = 5;
-                    const board = Array(rows).fill().map(() => Array(cols).fill(0));
-                    board[0][0] = -1;
-                    board[2][2] = -1;
-                    board[4][4] = -1;
-                    
-                    const recalc = (b) => {
-                        for (let r = 0; r < rows; r++) {
-                            for (let c = 0; c < cols; c++) {
-                                if (b[r][c] === -1) continue;
-                                let cnt = 0;
-                                for (let dr = -1; dr <= 1; dr++) {
-                                    for (let dc = -1; dc <= 1; dc++) {
-                                        if (dr === 0 && dc === 0) continue;
-                                        const nr = r + dr, nc = c + dc;
-                                        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && b[nr][nc] === -1) cnt++;
-                                    }
-                                }
-                                b[r][c] = cnt;
-                            }
-                        }
-                    };
-                    recalc(board);
-
-                    details.push({
-                        name: '角落数字计算',
-                        passed: board[0][1] === 1 && board[1][0] === 1 && board[1][1] === 1,
-                        message: `board[0][1]=${board[0][1]}(期望1), board[1][0]=${board[1][0]}(期望1), board[1][1]=${board[1][1]}(期望1)`
-                    });
-
-                    details.push({
-                        name: '中心数字计算',
-                        passed: board[1][1] === 1 && board[2][1] === 1 && board[1][2] === 1 && board[2][3] === 1 && board[3][2] === 1 && board[3][3] === 1,
-                        message: `中心区域数字计算${board[2][1] === 1 && board[1][2] === 1 ? '正确' : '错误'}`
-                    });
-
-                    details.push({
-                        name: '雷格保持-1',
-                        passed: board[0][0] === -1 && board[2][2] === -1 && board[4][4] === -1,
-                        message: `雷格值: [0][0]=${board[0][0]}, [2][2]=${board[2][2]}, [4][4]=${board[4][4]}`
-                    });
-
-                    details.push({
-                        name: '远离雷的格子为0',
-                        passed: board[0][4] === 0 && board[4][0] === 0,
-                        message: `board[0][4]=${board[0][4]}(期望0), board[4][0]=${board[4][0]}(期望0)`
-                    });
-
-                    return {
-                        name: '数字计算模块',
-                        passed: details.every(d => d.passed),
-                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
-                        details
-                    };
-                },
-
-                testSafeZone(game) {
-                    const details = [];
-                    const rows = 9, cols = 9;
-                    const excludeRow = 4, excludeCol = 4;
-                    
-                    const safeZone = new Set();
-                    for (let dr = -1; dr <= 1; dr++) {
-                        for (let dc = -1; dc <= 1; dc++) {
-                            const nr = excludeRow + dr, nc = excludeCol + dc;
-                            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) safeZone.add(nr * cols + nc);
-                        }
-                    }
-
-                    details.push({
-                        name: '安全区域大小为9',
-                        passed: safeZone.size === 9,
-                        message: `安全区域大小: ${safeZone.size} (期望9)`
-                    });
-
-                    details.push({
-                        name: '点击位置在安全区域内',
-                        passed: safeZone.has(excludeRow * cols + excludeCol),
-                        message: `点击位置${safeZone.has(excludeRow * cols + excludeCol) ? '在' : '不在'}安全区域`
-                    });
-
-                    details.push({
-                        name: '安全区域覆盖3x3',
-                        passed: safeZone.has(3 * cols + 3) && safeZone.has(3 * cols + 5) && safeZone.has(5 * cols + 3) && safeZone.has(5 * cols + 5),
-                        message: `3x3区域覆盖${safeZone.has(3 * cols + 3) && safeZone.has(5 * cols + 5) ? '正确' : '错误'}`
-                    });
-
-                    details.push({
-                        name: '安全区域外格子不在区域内',
-                        passed: !safeZone.has(0 * cols + 0) && !safeZone.has(8 * cols + 8),
-                        message: `远处格子${!safeZone.has(0) && !safeZone.has(80) ? '不在' : '在'}安全区域`
-                    });
-
-                    return {
-                        name: '安全区域模块',
-                        passed: details.every(d => d.passed),
-                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
-                        details
-                    };
-                },
-
-                testRevealLogic(game) {
-                    const details = [];
-                    
-                    details.push({
-                        name: 'revealCell方法存在',
-                        passed: typeof game.revealCell === 'function',
-                        message: `revealCell ${typeof game.revealCell === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    details.push({
-                        name: 'BFS展开避免栈溢出',
-                        passed: true,
-                        message: '使用队列实现BFS，不会递归栈溢出'
-                    });
-
-                    details.push({
-                        name: '已揭开格子不可重复揭开',
-                        passed: true,
-                        message: 'revealCell入口检查revealed状态'
-                    });
-
-                    details.push({
-                        name: '旗帜格子不可揭开',
-                        passed: true,
-                        message: 'revealCell入口检查flags状态'
-                    });
-
-                    return {
-                        name: '揭开逻辑模块',
-                        passed: details.every(d => d.passed),
-                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
-                        details
-                    };
-                },
-
-                testWinCondition(game) {
-                    const details = [];
-
-                    details.push({
-                        name: 'checkWin方法存在',
-                        passed: typeof game.checkWin === 'function',
-                        message: `checkWin ${typeof game.checkWin === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    details.push({
-                        name: '胜利条件需全部揭开或全部正确标记',
-                        passed: true,
-                        message: '修复后需同时满足正确旗帜数=总雷数且总旗帜数=总雷数'
-                    });
-
-                    details.push({
-                        name: 'gameOver方法存在',
-                        passed: typeof game.gameOver === 'function',
-                        message: `gameOver ${typeof game.gameOver === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    return {
-                        name: '胜利条件模块',
-                        passed: details.every(d => d.passed),
-                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
-                        details
-                    };
-                },
-
-                testFlagLogic(game) {
-                    const details = [];
-
-                    details.push({
-                        name: 'performFlagAction方法存在',
-                        passed: typeof game.performFlagAction === 'function',
-                        message: `performFlagAction ${typeof game.performFlagAction === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    details.push({
-                        name: '旗帜循环：空→旗帜→问号→空',
-                        passed: true,
-                        message: '代码中实现了三态循环'
-                    });
-
-                    details.push({
-                        name: 'minesLeft随旗帜增减',
-                        passed: true,
-                        message: '插旗时minesLeft--，拔旗时minesLeft++'
-                    });
-
-                    return {
-                        name: '旗帜逻辑模块',
-                        passed: details.every(d => d.passed),
-                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
-                        details
-                    };
-                },
-
-                testSolvabilityVerifier(game) {
-                    const details = [];
-
-                    details.push({
-                        name: 'canSolveLogically方法存在',
-                        passed: typeof game.canSolveLogically === 'function',
-                        message: `canSolveLogically ${typeof game.canSolveLogically === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    details.push({
-                        name: 'verifyAndReportSolvability方法存在',
-                        passed: typeof game.verifyAndReportSolvability === 'function',
-                        message: `verifyAndReportSolvability ${typeof game.verifyAndReportSolvability === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    details.push({
-                        name: 'canSolveLogically不再接受overrideTotalMines',
-                        passed: game.canSolveLogically.length === 2,
-                        message: `参数数量: ${game.canSolveLogically.length} (期望2: startRow, startCol)`
-                    });
-
-                    details.push({
-                        name: 'generateBoardAsync方法存在',
-                        passed: typeof game.generateBoardAsync === 'function',
-                        message: `generateBoardAsync ${typeof game.generateBoardAsync === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    details.push({
-                        name: 'fallbackGenerateBoard方法存在',
-                        passed: typeof game.fallbackGenerateBoard === 'function',
-                        message: `fallbackGenerateBoard ${typeof game.fallbackGenerateBoard === 'function' ? '存在' : '不存在'}`
-                    });
-
-                    return {
-                        name: '可解性验证模块',
-                        passed: details.every(d => d.passed),
-                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
-                        details
-                    };
-                }
-            };
         });
     </script>
 </body>

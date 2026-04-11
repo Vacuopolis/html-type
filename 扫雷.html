@@ -1129,8 +1129,6 @@
         }
         /* ========== 工具类 ========== */
         .hidden { display: none; }
-        .narrow-input { width: 80px; }
-        .single-column { grid-template-columns: 1fr; }
         /* ========== 特效样式 ========== */
         .confetti {
             position: fixed;
@@ -1149,21 +1147,6 @@
             animation: particle 1s ease-out forwards;
             z-index: 999;
             border-radius: 50%;
-        }
-        .power-up {
-            position: absolute;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, gold, orange);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            animation: powerUpFloat 2s ease infinite;
-            cursor: pointer;
-            z-index: 10;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
         }
         /* ========== 动画定义 ========== */
         @keyframes fadeIn {
@@ -1246,10 +1229,6 @@
                 transform: translate(var(--x), var(--y)) scale(0);
                 opacity: 0;
             }
-        }
-        @keyframes powerUpFloat {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-15px) rotate(180deg); }
         }
         @keyframes comboShow {
             0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 0; }
@@ -2144,6 +2123,10 @@
                         mega: { rows: 30, cols: 50, mines: 300 }
                     };
 
+                    this.difficultyNames = {
+                        beginner: '初级', intermediate: '中级', expert: '高级', mega: '巨型', custom: '自定义'
+                    };
+
                     // 操作设置
                     this.controlSettings = {
                         pc: {
@@ -3034,10 +3017,7 @@ async loadSavedGameFromData(saveData) {
         
         sortedTempSaves.forEach(save => {
             const date = new Date(save.timestamp);
-            const difficultyNames = {
-                beginner: '初级', intermediate: '中级', expert: '高级', mega: '巨型', custom: '自定义'
-            };
-            const difficultyName = difficultyNames[save.gameState.difficulty] || '未知';
+            const difficultyName = this.difficultyNames[save.gameState.difficulty] || '未知';
             const progress = save.gameState.gameOver ? 
                 (save.gameState.won ? '已完成' : '已失败') : 
                 `进行中 (${this.formatTime(save.gameState.timer)})`;
@@ -3076,10 +3056,7 @@ async loadSavedGameFromData(saveData) {
         
         sortedSaves.forEach(save => {
             const date = new Date(save.timestamp);
-            const difficultyNames = {
-                beginner: '初级', intermediate: '中级', expert: '高级', mega: '巨型', custom: '自定义'
-            };
-            const difficultyName = difficultyNames[save.gameState.difficulty] || '未知';
+            const difficultyName = this.difficultyNames[save.gameState.difficulty] || '未知';
             const progress = save.gameState.gameOver ? 
                 (save.gameState.won ? '已完成' : '已失败') : 
                 `进行中 (${this.formatTime(save.gameState.timer)})`;
@@ -4772,21 +4749,6 @@ showFloatingMessage(message) {
     }
 }
 
-                                countAdjacentMines(row, col) {
-                    let count = 0;
-                    for (let dr = -1; dr <= 1; dr++) {
-                        for (let dc = -1; dc <= 1; dc++) {
-                            if (dr === 0 && dc === 0) continue;
-                            const nr = row + dr;
-                            const nc = col + dc;
-                            if (this.isValid(nr, nc) && this.board[nr][nc] === -1) {
-                                count++;
-                            }
-                        }
-                    }
-                    return count;
-                }
-
                 isValid(row, col) {
                     return row >= 0 && row < this.gameState.rows &&
                            col >= 0 && col < this.gameState.cols;
@@ -6049,7 +6011,7 @@ generateRandomBoardSync(excludeRow, excludeCol) {
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             if (board[r][c] !== -1) {
-                board[r][c] = this.countAdjacentMinesFromBoard(board, r, c);
+                board[r][c] = this.countAdjacentMines(r, c, board);
             }
         }
     }
@@ -7913,16 +7875,15 @@ performProbabilisticMove() {
             const relevantNeighbors = unrevealedNeighbors.filter(cell => groupKeys.has(`${cell.r},${cell.c}`));
             if (relevantNeighbors.length > 0) {
                 constraints.push({
-                    r, c,
-                    value: this.board[r][c] - flaggedNeighbors,
-                    cells: relevantNeighbors.map(cell => `${cell.r},${cell.c}`)
+                    unrevealed: relevantNeighbors.map(cell => `${cell.r},${cell.c}`),
+                    remaining: this.board[r][c] - flaggedNeighbors
                 });
             }
         }
 
         const variables = group.map(cell => `${cell.r},${cell.c}`);
         const solutions = [];
-        this.solveGroup(variables, constraints, 0, new Map(), solutions);
+        this.enumerateCSPGroup(variables, constraints, 0, new Map(), solutions, Infinity, 0, variables.length);
 
         if (solutions.length > 0) {
             // 计算该组的概率
@@ -7961,69 +7922,6 @@ performProbabilisticMove() {
     // 没有确定性操作，返回 false
     return { actionTaken: false };
 }
-
-                solveGroup(variables, constraints, index, assignment, solutions) {
-                    // 基本情况：如果所有变量都已分配，检查是否为有效解
-                    if (index === variables.length) {
-                        for (const constraint of constraints) {
-                            let sum = 0;
-                            for (const cellKey of constraint.cells) {
-                                if (assignment.has(cellKey)) {
-                                    sum += assignment.get(cellKey);
-                                }
-                            }
-                            if (sum !== constraint.value) {
-                                return; // 无效解
-                            }
-                        }
-                        // 如果所有约束都满足，则添加到解集中
-                        solutions.push(new Map(assignment));
-                        return;
-                    }
-
-                    const variableKey = variables[index];
-                    
-                    // 尝试分配 0 (安全)
-                    assignment.set(variableKey, 0);
-                    if (this.isConsistent(assignment, constraints)) {
-                        this.solveGroup(variables, constraints, index + 1, assignment, solutions);
-                    }
-                    
-                    // 尝试分配 1 (地雷)
-                    assignment.set(variableKey, 1);
-                     if (this.isConsistent(assignment, constraints)) {
-                        this.solveGroup(variables, constraints, index + 1, assignment, solutions);
-                    }
-                    
-                    // 回溯
-                    assignment.delete(variableKey);
-                }
-
-                isConsistent(assignment, constraints) {
-                    for (const constraint of constraints) {
-                        let assignedCount = 0;
-                        let sum = 0;
-                        for(const cellKey of constraint.cells) {
-                            if(assignment.has(cellKey)) {
-                                assignedCount++;
-                                sum += assignment.get(cellKey);
-                            }
-                        }
-                        
-                        // 如果已分配地雷的总和已经超过约束值，则不一致
-                        if (sum > constraint.value) {
-                            return false;
-                        }
-
-                        // 如果剩余需要的地雷数大于剩余未分配的格子数，则不一致
-                        const remainingMinesNeeded = constraint.value - sum;
-                        const remainingCells = constraint.cells.length - assignedCount;
-                        if (remainingMinesNeeded > remainingCells) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
 
                 // 完整的逻辑可解性检查（增强版：基础推理 + 子集推理 + 全局雷数 + CSP枚举）
 canSolveLogically(startRow, startCol) {
@@ -9132,14 +9030,14 @@ fallbackGenerateBoard(excludeRow, excludeCol, callback) {
     callback(board);
 }
 
-// 辅助方法：计算周围地雷数（用于同步生成）
-countAdjacentMinesFromBoard(board, row, col) {
+countAdjacentMines(row, col, board = null) {
     let count = 0;
+    const b = board || this.board;
     for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
             if (dr === 0 && dc === 0) continue;
             const nr = row + dr, nc = col + dc;
-            if (nr >= 0 && nr < this.gameState.rows && nc >= 0 && nc < this.gameState.cols && board[nr][nc] === -1) count++;
+            if (this.isValid(nr, nc) && b[nr][nc] === -1) count++;
         }
     }
     return count;

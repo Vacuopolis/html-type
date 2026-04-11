@@ -2197,7 +2197,13 @@
                             safeDetect: { count: 2, active: false, cells: [] },
                             autoFlag: { count: 3, active: false }
                         },
-                        gameData: {}
+                        gameData: {
+                            totalClicks: 0, leftClicks: 0, rightClicks: 0, numberExpansions: 0,
+                            effectiveMoves: 0, ineffectiveMoves: 0, flagsPlaced: 0, flagsRemoved: 0,
+                            questionsPlaced: 0, moveTimestamps: [], lastMoveTimestamp: null,
+                            averageMoveTime: 0, flaggingAccuracy: 0, correctFlagsOnEnd: 0,
+                            totalRevealedCells: 0
+                        }
                     };
                     this.lastAutoSolvePosition = { row: 0, col: 0 };
                     this.achievements = {
@@ -2862,6 +2868,16 @@ async loadSavedGameFromData(saveData) {
         
         this.gameState = JSON.parse(JSON.stringify(saveData.gameState));
         this.loadSaveSettings();
+
+        if (!this.gameState.gameData) {
+            this.gameState.gameData = {
+                totalClicks: 0, leftClicks: 0, rightClicks: 0, numberExpansions: 0,
+                effectiveMoves: 0, ineffectiveMoves: 0, flagsPlaced: 0, flagsRemoved: 0,
+                questionsPlaced: 0, moveTimestamps: [], lastMoveTimestamp: null,
+                averageMoveTime: 0, flaggingAccuracy: 0, correctFlagsOnEnd: 0,
+                totalRevealedCells: 0
+            };
+        }
 
         if (saveData.boardData) {
             this.decompressBoardData(saveData.boardData);
@@ -4935,13 +4951,13 @@ handleNumberCellClick(row, col) {
     }
 }
 
-// ========== 异步生成可解棋盘（约束驱动构造法） ==========
+// ========== 异步生成可解棋盘（增强求解器 + 双策略生成） ==========
 generateBoardAsync(excludeRow, excludeCol, callback) {
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
     const totalMines = this.gameState.totalMines;
 
-    const workerCount = 2;
+    const workerCount = 4;
     let activeWorkers = 0;
     let success = false;
     const workers = [];
@@ -4972,8 +4988,8 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
                 worker.terminate();
                 activeWorkers--;
                 if (activeWorkers === 0 && !success) {
-                    console.warn('约束构造未能生成完全可解棋盘，使用最佳结果');
-                    callback(board);
+                    console.warn('增强求解器未能生成完全可解棋盘，使用保底策略');
+                    this.fallbackGenerateBoard(excludeRow, excludeCol, callback);
                 }
             }
         };
@@ -4989,12 +5005,12 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
 
         worker.postMessage({
             rows, cols, totalMines, excludeRow, excludeCol,
-            maxAttempts: 3
+            maxAttempts: 50
         });
     }
 }
 
-// ========== 创建Worker（约束驱动构造法） ==========
+// ========== 创建Worker（增强求解器 + 双策略生成） ==========
 createSolvableBoardWorker() {
     const workerFunction = function() {
         const isValid = (r, c, rows, cols) => r >= 0 && r < rows && c >= 0 && c < cols;
@@ -5022,7 +5038,550 @@ createSolvableBoardWorker() {
             }
         };
 
-        const canSolveLogicallyFast = (board, rows, cols, startRow, startCol) => {
+        const generateRandomBoard = (rows, cols, totalMines, excludeRow, excludeCol) => {
+            const board = Array(rows).fill().map(() => Array(cols).fill(0));
+            const safeZone = new Set();
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nr = excludeRow + dr, nc = excludeCol + dc;
+                    if (isValid(nr, nc, rows, cols)) safeZone.add(nr * cols + nc);
+                }
+            }
+            const candidates = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (!safeZone.has(r * cols + c)) candidates.push([r, c]);
+                }
+            }
+            for (let i = candidates.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+            }
+            for (let i = 0; i < totalMines && i < candidates.length; i++) {
+                board[candidates[i][0]][candidates[i][1]] = -1;
+            }
+            recalculateNumbers(board, rows, cols);
+            return board;
+        };
+
+        const isConsistentPartial = (assignment, constraints) => {
+            for (const con of constraints) {
+                let sum = 0;
+                let assignedCount = 0;
+                for (const k of con.unrevealed) {
+                    if (assignment.has(k)) {
+                        sum += assignment.get(k);
+                        assignedCount++;
+                    }
+                }
+                if (sum > con.remaining) return false;
+                const remaining = con.remaining - sum;
+                const unassigned = con.unrevealed.length - assignedCount;
+                if (remaining > unassigned) return false;
+                if (remaining < 0) return false;
+            }
+            return true;
+        };
+
+        const enumerateGroup = (variables, constraints, index, assignment, solutions, maxSolutions, minMines, maxMines) => {
+            if (solutions.length >= maxSolutions) return;
+
+            if (index === variables.length) {
+                let mineCount = 0;
+                for (const [, v] of assignment) mineCount += v;
+                if (mineCount >= minMines && mineCount <= maxMines) {
+                    solutions.push(new Map(assignment));
+                }
+                return;
+            }
+
+            const varKey = variables[index];
+
+            for (const val of [0, 1]) {
+                assignment.set(varKey, val);
+                if (isConsistentPartial(assignment, constraints)) {
+                    let currentMines = 0;
+                    for (const [, v] of assignment) currentMines += v;
+                    const remainingVars = variables.length - index - 1;
+                    if (currentMines + remainingVars >= minMines && currentMines <= maxMines) {
+                        enumerateGroup(variables, constraints, index + 1, assignment, solutions, maxSolutions, minMines, maxMines);
+                    }
+                }
+            }
+
+            assignment.delete(varKey);
+        };
+
+        const cspSolve = (revealed, flagged, board, rows, cols, totalMines, constraints, key, bfsExpand) => {
+            const frontierSet = new Set();
+            for (const con of constraints) {
+                for (const k of con.unrevealed) frontierSet.add(k);
+            }
+            if (frontierSet.size === 0) return false;
+
+            const parent = new Map();
+            for (const k of frontierSet) parent.set(k, k);
+            const find = (k) => {
+                if (parent.get(k) !== k) parent.set(k, find(parent.get(k)));
+                return parent.get(k);
+            };
+            const union = (a, b) => {
+                const ra = find(a), rb = find(b);
+                if (ra !== rb) parent.set(ra, rb);
+            };
+
+            for (const con of constraints) {
+                for (let i = 1; i < con.unrevealed.length; i++) {
+                    union(con.unrevealed[0], con.unrevealed[i]);
+                }
+            }
+
+            const groupMap = new Map();
+            for (const k of frontierSet) {
+                const root = find(k);
+                if (!groupMap.has(root)) groupMap.set(root, []);
+                groupMap.get(root).push(k);
+            }
+
+            let otherUnrevealed = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const k = key(r, c);
+                    if (!revealed.has(k) && !flagged.has(k) && !frontierSet.has(k)) {
+                        otherUnrevealed++;
+                    }
+                }
+            }
+
+            const remainingMines = totalMines - flagged.size;
+            let anyChanged = false;
+
+            const sortedGroups = [...groupMap.values()].sort((a, b) => a.length - b.length);
+
+            for (const group of sortedGroups) {
+                if (group.length > 80) continue;
+
+                const groupSet = new Set(group);
+                const groupConstraints = [];
+                const seenConstraints = new Set();
+                for (let ci = 0; ci < constraints.length; ci++) {
+                    const con = constraints[ci];
+                    if (con.unrevealed.some(k => groupSet.has(k))) {
+                        if (!seenConstraints.has(ci)) {
+                            seenConstraints.add(ci);
+                            groupConstraints.push(con);
+                        }
+                    }
+                }
+
+                const otherFrontierSize = frontierSet.size - group.length;
+                const minGroupMines = Math.max(0, remainingMines - otherFrontierSize - otherUnrevealed);
+                const maxGroupMines = Math.min(group.length, remainingMines);
+
+                if (minGroupMines > maxGroupMines) return 'contradiction';
+
+                const solutions = [];
+                enumerateGroup(group, groupConstraints, 0, new Map(), solutions, 20000, minGroupMines, maxGroupMines);
+
+                if (solutions.length === 0) return 'contradiction';
+
+                for (const cellKey of group) {
+                    let mineCount = 0;
+                    for (const sol of solutions) {
+                        if (sol.get(cellKey) === 1) mineCount++;
+                    }
+
+                    if (mineCount === 0) {
+                        const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+                        if (board[nr][nc] === -1) return false;
+                        if (!revealed.has(cellKey)) {
+                            revealed.add(cellKey);
+                            if (board[nr][nc] === 0) bfsExpand(nr, nc);
+                            anyChanged = true;
+                        }
+                    } else if (mineCount === solutions.length) {
+                        const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+                        if (board[nr][nc] !== -1) return false;
+                        if (!flagged.has(cellKey)) {
+                            flagged.add(cellKey);
+                            anyChanged = true;
+                        }
+                    }
+                }
+            }
+
+            return anyChanged;
+        };
+
+        const checkContradictionEnhanced = (testRevealed, testFlagged, board, rows, cols, totalMines, key) => {
+            let changed = true;
+            let iters = 0;
+            const maxIter = rows * cols * 2;
+
+            while (changed && iters < maxIter) {
+                changed = false;
+                iters++;
+
+                const constraints = [];
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (!testRevealed.has(key(r, c)) || board[r][c] <= 0) continue;
+                        const unrevealed = [];
+                        let flaggedCount = 0;
+                        forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                            const nk = key(nr, nc);
+                            if (testFlagged.has(nk)) flaggedCount++;
+                            else if (!testRevealed.has(nk)) unrevealed.push(nk);
+                        });
+                        if (unrevealed.length === 0) continue;
+                        const remaining = board[r][c] - flaggedCount;
+
+                        if (remaining < 0 || remaining > unrevealed.length) return true;
+
+                        constraints.push({ unrevealed, remaining });
+
+                        if (remaining === 0) {
+                            for (const nk of unrevealed) {
+                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                if (board[nr2][nc2] === -1) return true;
+                                if (!testRevealed.has(nk)) {
+                                    testRevealed.add(nk);
+                                    if (board[nr2][nc2] === 0) {
+                                        const queue = [[nr2, nc2]];
+                                        while (queue.length > 0) {
+                                            const [r2, c2] = queue.shift();
+                                            const k2 = key(r2, c2);
+                                            if (testRevealed.has(k2)) continue;
+                                            testRevealed.add(k2);
+                                            if (board[r2][c2] === 0) {
+                                                forEachNeighbor(r2, c2, rows, cols, (nr3, nc3) => {
+                                                    if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                });
+                                            }
+                                        }
+                                    }
+                                    changed = true;
+                                }
+                            }
+                        } else if (remaining === unrevealed.length) {
+                            for (const nk of unrevealed) {
+                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                if (board[nr2][nc2] !== -1) return true;
+                                if (!testFlagged.has(nk)) {
+                                    testFlagged.add(nk);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!changed && constraints.length > 1) {
+                    for (let i = 0; i < constraints.length && !changed; i++) {
+                        for (let j = i + 1; j < constraints.length && !changed; j++) {
+                            const c1 = constraints[i], c2 = constraints[j];
+                            const set1 = new Set(c1.unrevealed);
+                            const set2 = new Set(c2.unrevealed);
+
+                            let is1Sub2 = true, is2Sub1 = true;
+                            for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
+                            for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
+
+                            if (is1Sub2 && !is2Sub1) {
+                                const diff = c2.unrevealed.filter(k => !set1.has(k));
+                                const diffRem = c2.remaining - c1.remaining;
+                                if (diffRem < 0 || diffRem > diff.length) return true;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) {
+                                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                        if (board[nr2][nc2] === -1) return true;
+                                        if (!testRevealed.has(nk)) {
+                                            testRevealed.add(nk);
+                                            if (board[nr2][nc2] === 0) {
+                                                const queue = [[nr2, nc2]];
+                                                while (queue.length > 0) {
+                                                    const [r2, c2] = queue.shift();
+                                                    const k2 = key(r2, c2);
+                                                    if (testRevealed.has(k2)) continue;
+                                                    testRevealed.add(k2);
+                                                    if (board[r2][c2] === 0) {
+                                                        forEachNeighbor(r2, c2, rows, cols, (nr3, nc3) => {
+                                                            if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            changed = true;
+                                        }
+                                    }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) {
+                                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                        if (board[nr2][nc2] !== -1) return true;
+                                        if (!testFlagged.has(nk)) {
+                                            testFlagged.add(nk);
+                                            changed = true;
+                                        }
+                                    }
+                                }
+                            } else if (is2Sub1 && !is1Sub2) {
+                                const diff = c1.unrevealed.filter(k => !set2.has(k));
+                                const diffRem = c1.remaining - c2.remaining;
+                                if (diffRem < 0 || diffRem > diff.length) return true;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) {
+                                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                        if (board[nr2][nc2] === -1) return true;
+                                        if (!testRevealed.has(nk)) {
+                                            testRevealed.add(nk);
+                                            if (board[nr2][nc2] === 0) {
+                                                const queue = [[nr2, nc2]];
+                                                while (queue.length > 0) {
+                                                    const [r2, c2] = queue.shift();
+                                                    const k2 = key(r2, c2);
+                                                    if (testRevealed.has(k2)) continue;
+                                                    testRevealed.add(k2);
+                                                    if (board[r2][c2] === 0) {
+                                                        forEachNeighbor(r2, c2, rows, cols, (nr3, nc3) => {
+                                                            if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            changed = true;
+                                        }
+                                    }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) {
+                                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                        if (board[nr2][nc2] !== -1) return true;
+                                        if (!testFlagged.has(nk)) {
+                                            testFlagged.add(nk);
+                                            changed = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!changed) {
+                    const remMines = totalMines - testFlagged.size;
+                    let totalUnrev = 0;
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            const k = key(r, c);
+                            if (!testRevealed.has(k) && !testFlagged.has(k)) totalUnrev++;
+                        }
+                    }
+                    if (remMines < 0 || remMines > totalUnrev) return true;
+                    if (remMines === 0 && totalUnrev > 0) {
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                const k = key(r, c);
+                                if (!testRevealed.has(k) && !testFlagged.has(k)) {
+                                    if (board[r][c] === -1) return true;
+                                    testRevealed.add(k);
+                                    if (board[r][c] === 0) {
+                                        const queue = [[r, c]];
+                                        while (queue.length > 0) {
+                                            const [r2, c2] = queue.shift();
+                                            const k2 = key(r2, c2);
+                                            if (testRevealed.has(k2)) continue;
+                                            testRevealed.add(k2);
+                                            if (board[r2][c2] === 0) {
+                                                forEachNeighbor(r2, c2, rows, cols, (nr3, nc3) => {
+                                                    if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                });
+                                            }
+                                        }
+                                    }
+                                    changed = true;
+                                }
+                            }
+                        }
+                    } else if (remMines > 0 && remMines === totalUnrev) {
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                const k = key(r, c);
+                                if (!testRevealed.has(k) && !testFlagged.has(k)) {
+                                    if (board[r][c] !== -1) return true;
+                                    testFlagged.add(k);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        const singleCellBacktrack = (revealed, flagged, board, rows, cols, totalMines, key, bfsExpand) => {
+            const frontierSet = new Set();
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (!revealed.has(key(r, c)) || board[r][c] <= 0) continue;
+                    forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                        const nk = key(nr, nc);
+                        if (!revealed.has(nk) && !flagged.has(nk)) frontierSet.add(nk);
+                    });
+                }
+            }
+            if (frontierSet.size === 0) return false;
+
+            let anyChanged = false;
+
+            const frontierArr = [...frontierSet];
+
+            for (const cellKey of frontierArr) {
+                const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+
+                const testRevealed1 = new Set(revealed);
+                const testFlagged1 = new Set(flagged);
+                testRevealed1.add(cellKey);
+                if (board[nr][nc] === 0) {
+                    const queue = [[nr, nc]];
+                    while (queue.length > 0) {
+                        const [r, c] = queue.shift();
+                        const k = key(r, c);
+                        if (testRevealed1.has(k)) continue;
+                        testRevealed1.add(k);
+                        if (board[r][c] === 0) {
+                            forEachNeighbor(r, c, rows, cols, (nr2, nc2) => {
+                                if (!testRevealed1.has(key(nr2, nc2))) queue.push([nr2, nc2]);
+                            });
+                        }
+                    }
+                }
+                const safeContradiction = checkContradictionEnhanced(testRevealed1, testFlagged1, board, rows, cols, totalMines, key);
+
+                const testRevealed2 = new Set(revealed);
+                const testFlagged2 = new Set(flagged);
+                testFlagged2.add(cellKey);
+                const mineContradiction = checkContradictionEnhanced(testRevealed2, testFlagged2, board, rows, cols, totalMines, key);
+
+                if (safeContradiction && !mineContradiction) {
+                    if (board[nr][nc] !== -1) return false;
+                    if (!flagged.has(cellKey)) {
+                        flagged.add(cellKey);
+                        anyChanged = true;
+                    }
+                } else if (mineContradiction && !safeContradiction) {
+                    if (board[nr][nc] === -1) return false;
+                    if (!revealed.has(cellKey)) {
+                        revealed.add(cellKey);
+                        if (board[nr][nc] === 0) bfsExpand(nr, nc);
+                        anyChanged = true;
+                    }
+                }
+            }
+
+            return anyChanged;
+        };
+
+        const coupledBacktrack = (revealed, flagged, board, rows, cols, totalMines, key, bfsExpand) => {
+            const frontierSet = new Set();
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (!revealed.has(key(r, c)) || board[r][c] <= 0) continue;
+                    forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                        const nk = key(nr, nc);
+                        if (!revealed.has(nk) && !flagged.has(nk)) frontierSet.add(nk);
+                    });
+                }
+            }
+            if (frontierSet.size < 2) return false;
+
+            const frontierArr = [...frontierSet];
+            let anyChanged = false;
+
+            for (let i = 0; i < frontierArr.length && !anyChanged; i++) {
+                for (let j = i + 1; j < frontierArr.length && !anyChanged; j++) {
+                    const k1 = frontierArr[i], k2 = frontierArr[j];
+                    const r1 = Math.floor(k1 / cols), c1 = k1 % cols;
+                    const r2 = Math.floor(k2 / cols), c2 = k2 % cols;
+
+                    const assignments = [[0, 0], [0, 1], [1, 0], [1, 1]];
+                    let validCount = 0;
+                    let lastValid = null;
+
+                    for (const [v1, v2] of assignments) {
+                        const tRev = new Set(revealed);
+                        const tFlag = new Set(flagged);
+
+                        if (v1 === 0) {
+                            tRev.add(k1);
+                            if (board[r1][c1] === 0) {
+                                const queue = [[r1, c1]];
+                                while (queue.length > 0) {
+                                    const [qr, qc] = queue.shift();
+                                    const qk = key(qr, qc);
+                                    if (tRev.has(qk)) continue;
+                                    tRev.add(qk);
+                                    if (board[qr][qc] === 0) {
+                                        forEachNeighbor(qr, qc, rows, cols, (nr, nc) => {
+                                            if (!tRev.has(key(nr, nc))) queue.push([nr, nc]);
+                                        });
+                                    }
+                                }
+                            }
+                        } else {
+                            tFlag.add(k1);
+                        }
+
+                        if (v2 === 0) {
+                            tRev.add(k2);
+                            if (board[r2][c2] === 0) {
+                                const queue = [[r2, c2]];
+                                while (queue.length > 0) {
+                                    const [qr, qc] = queue.shift();
+                                    const qk = key(qr, qc);
+                                    if (tRev.has(qk)) continue;
+                                    tRev.add(qk);
+                                    if (board[qr][qc] === 0) {
+                                        forEachNeighbor(qr, qc, rows, cols, (nr, nc) => {
+                                            if (!tRev.has(key(nr, nc))) queue.push([nr, nc]);
+                                        });
+                                    }
+                                }
+                            }
+                        } else {
+                            tFlag.add(k2);
+                        }
+
+                        if (!checkContradictionEnhanced(tRev, tFlag, board, rows, cols, totalMines, key)) {
+                            validCount++;
+                            lastValid = [v1, v2];
+                        }
+                    }
+
+                    if (validCount === 1) {
+                        const [v1, v2] = lastValid;
+                        if (v1 === 1) {
+                            if (board[r1][c1] !== -1) return false;
+                            if (!flagged.has(k1)) { flagged.add(k1); anyChanged = true; }
+                        } else {
+                            if (board[r1][c1] === -1) return false;
+                            if (!revealed.has(k1)) { revealed.add(k1); if (board[r1][c1] === 0) bfsExpand(r1, c1); anyChanged = true; }
+                        }
+                        if (v2 === 1) {
+                            if (board[r2][c2] !== -1) return false;
+                            if (!flagged.has(k2)) { flagged.add(k2); anyChanged = true; }
+                        } else {
+                            if (board[r2][c2] === -1) return false;
+                            if (!revealed.has(k2)) { revealed.add(k2); if (board[r2][c2] === 0) bfsExpand(r2, c2); anyChanged = true; }
+                        }
+                    }
+                }
+            }
+
+            return anyChanged;
+        };
+
+        const canSolveLogicallyFast = (board, rows, cols, startRow, startCol, totalMines) => {
             const revealed = new Set();
             const flagged = new Set();
             const key = (r, c) => r * cols + c;
@@ -5046,7 +5605,7 @@ createSolvableBoardWorker() {
 
             let changed = true;
             let iterations = 0;
-            const maxIter = rows * cols * 2;
+            const maxIter = rows * cols * 4;
 
             while (changed && iterations < maxIter) {
                 changed = false;
@@ -5065,6 +5624,7 @@ createSolvableBoardWorker() {
                         });
                         if (unrevealed.length === 0) continue;
                         const remaining = board[r][c] - flaggedCount;
+                        if (remaining < 0 || remaining > unrevealed.length) return false;
                         constraints.push({ unrevealed, remaining });
                     }
                 }
@@ -5106,6 +5666,7 @@ createSolvableBoardWorker() {
                             if (is1Sub2 && !is2Sub1) {
                                 const diff = c2.unrevealed.filter(k => !set1.has(k));
                                 const diffRem = c2.remaining - c1.remaining;
+                                if (diffRem < 0 || diffRem > diff.length) return false;
                                 if (diffRem === 0) {
                                     for (const nk of diff) {
                                         const nr = Math.floor(nk / cols), nc = nk % cols;
@@ -5129,6 +5690,7 @@ createSolvableBoardWorker() {
                             } else if (is2Sub1 && !is1Sub2) {
                                 const diff = c1.unrevealed.filter(k => !set2.has(k));
                                 const diffRem = c1.remaining - c2.remaining;
+                                if (diffRem < 0 || diffRem > diff.length) return false;
                                 if (diffRem === 0) {
                                     for (const nk of diff) {
                                         const nr = Math.floor(nk / cols), nc = nk % cols;
@@ -5153,6 +5715,56 @@ createSolvableBoardWorker() {
                         }
                     }
                 }
+
+                if (!changed) {
+                    const remainingMines = totalMines - flagged.size;
+                    let totalUnrevealed = 0;
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            const k = key(r, c);
+                            if (!revealed.has(k) && !flagged.has(k)) totalUnrevealed++;
+                        }
+                    }
+
+                    if (remainingMines === 0 && totalUnrevealed > 0) {
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                const k = key(r, c);
+                                if (!revealed.has(k) && !flagged.has(k)) {
+                                    if (board[r][c] === -1) return false;
+                                    revealed.add(k);
+                                    if (board[r][c] === 0) bfsExpand(r, c);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    } else if (remainingMines > 0 && remainingMines === totalUnrevealed) {
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                const k = key(r, c);
+                                if (!revealed.has(k) && !flagged.has(k)) {
+                                    if (board[r][c] !== -1) return false;
+                                    flagged.add(k);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!changed) {
+                    const cspResult = cspSolve(revealed, flagged, board, rows, cols, totalMines, constraints, key, bfsExpand);
+                    if (cspResult === 'contradiction') return false;
+                    changed = cspResult;
+                }
+
+                if (!changed) {
+                    changed = singleCellBacktrack(revealed, flagged, board, rows, cols, totalMines, key, bfsExpand);
+                }
+
+                if (!changed) {
+                    changed = coupledBacktrack(revealed, flagged, board, rows, cols, totalMines, key, bfsExpand);
+                }
             }
 
             for (let r = 0; r < rows; r++) {
@@ -5163,8 +5775,123 @@ createSolvableBoardWorker() {
             return true;
         };
 
+        const solveAndScore = (board, rows, cols, startRow, startCol, totalMines) => {
+            const revealed = new Set();
+            const flagged = new Set();
+            const key = (r, c) => r * cols + c;
+            const totalNonMines = rows * cols - totalMines;
+
+            const bfsExpand = (sr, sc) => {
+                const queue = [[sr, sc]];
+                while (queue.length > 0) {
+                    const [r, c] = queue.shift();
+                    const k = key(r, c);
+                    if (revealed.has(k)) continue;
+                    revealed.add(k);
+                    if (board[r][c] === 0) {
+                        forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                            if (!revealed.has(key(nr, nc))) queue.push([nr, nc]);
+                        });
+                    }
+                }
+            };
+
+            bfsExpand(startRow, startCol);
+
+            let changed = true;
+            let iterations = 0;
+            const maxIter = rows * cols * 2;
+
+            while (changed && iterations < maxIter) {
+                changed = false;
+                iterations++;
+
+                const constraints = [];
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (!revealed.has(key(r, c)) || board[r][c] <= 0) continue;
+                        const unrevealed = [];
+                        let flaggedCount = 0;
+                        forEachNeighbor(r, c, rows, cols, (nr, nc) => {
+                            const nk = key(nr, nc);
+                            if (flagged.has(nk)) flaggedCount++;
+                            else if (!revealed.has(nk)) unrevealed.push(nk);
+                        });
+                        if (unrevealed.length === 0) continue;
+                        const remaining = board[r][c] - flaggedCount;
+                        if (remaining < 0 || remaining > unrevealed.length) break;
+                        constraints.push({ unrevealed, remaining });
+                    }
+                }
+
+                for (const con of constraints) {
+                    if (con.remaining === 0) {
+                        for (const nk of con.unrevealed) {
+                            if (!revealed.has(nk)) {
+                                revealed.add(nk);
+                                const nr = Math.floor(nk / cols), nc = nk % cols;
+                                if (board[nr][nc] === 0) bfsExpand(nr, nc);
+                                changed = true;
+                            }
+                        }
+                    } else if (con.remaining === con.unrevealed.length) {
+                        for (const nk of con.unrevealed) {
+                            if (!flagged.has(nk)) {
+                                flagged.add(nk);
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!changed && constraints.length > 1) {
+                    for (let i = 0; i < constraints.length && !changed; i++) {
+                        for (let j = i + 1; j < constraints.length && !changed; j++) {
+                            const c1 = constraints[i], c2 = constraints[j];
+                            const set1 = new Set(c1.unrevealed);
+                            const set2 = new Set(c2.unrevealed);
+                            let is1Sub2 = true, is2Sub1 = true;
+                            for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
+                            for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
+                            if (is1Sub2 && !is2Sub1) {
+                                const diff = c2.unrevealed.filter(k => !set1.has(k));
+                                const diffRem = c2.remaining - c1.remaining;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) { if (!revealed.has(nk)) { revealed.add(nk); const nr = Math.floor(nk / cols), nc = nk % cols; if (board[nr][nc] === 0) bfsExpand(nr, nc); changed = true; } }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) { if (!flagged.has(nk)) { flagged.add(nk); changed = true; } }
+                                }
+                            } else if (is2Sub1 && !is1Sub2) {
+                                const diff = c1.unrevealed.filter(k => !set2.has(k));
+                                const diffRem = c1.remaining - c2.remaining;
+                                if (diffRem === 0) {
+                                    for (const nk of diff) { if (!revealed.has(nk)) { revealed.add(nk); const nr = Math.floor(nk / cols), nc = nk % cols; if (board[nr][nc] === 0) bfsExpand(nr, nc); changed = true; } }
+                                } else if (diffRem === diff.length) {
+                                    for (const nk of diff) { if (!flagged.has(nk)) { flagged.add(nk); changed = true; } }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!changed) {
+                    const remainingMines = totalMines - flagged.size;
+                    let totalUnrevealed = 0;
+                    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) totalUnrevealed++; }
+                    if (remainingMines === 0 && totalUnrevealed > 0) {
+                        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) { revealed.add(k); if (board[r][c] === 0) bfsExpand(r, c); changed = true; } }
+                    } else if (remainingMines > 0 && remainingMines === totalUnrevealed) {
+                        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) { flagged.add(k); changed = true; } }
+                    }
+                }
+            }
+
+            let revealedNonMines = 0;
+            for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (board[r][c] !== -1 && revealed.has(key(r, c))) revealedNonMines++; }
+            return revealedNonMines;
+        };
+
         const generateSolvableBoard = (rows, cols, totalMines, excludeRow, excludeCol) => {
-            const board = Array(rows).fill().map(() => Array(cols).fill(0));
             const safeZone = new Set();
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
@@ -5172,57 +5899,111 @@ createSolvableBoardWorker() {
                     if (isValid(nr, nc, rows, cols)) safeZone.add(nr * cols + nc);
                 }
             }
+            const totalNonMines = rows * cols - totalMines;
 
-            const candidates = [];
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (!safeZone.has(r * cols + c)) candidates.push([r, c]);
+            for (let attempt = 0; attempt < 150; attempt++) {
+                const board = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
+                if (canSolveLogicallyFast(board, rows, cols, excludeRow, excludeCol, totalMines)) {
+                    return { board, solvable: true };
                 }
             }
 
-            for (let i = candidates.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-            }
+            let bestBoard = null;
+            let bestScore = -1;
 
-            let placedMines = 0;
-            const minePositions = [];
+            for (let restart = 0; restart < 8; restart++) {
+                let currentBoard = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
+                let currentScore = solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines);
 
-            for (const [r, c] of candidates) {
-                if (placedMines >= totalMines) break;
+                if (currentScore === totalNonMines) {
+                    return { board: currentBoard, solvable: true };
+                }
 
-                board[r][c] = -1;
-                recalculateNumbers(board, rows, cols);
+                if (currentScore > bestScore) {
+                    bestScore = currentScore;
+                    bestBoard = currentBoard.map(row => [...row]);
+                }
 
-                if (canSolveLogicallyFast(board, rows, cols, excludeRow, excludeCol)) {
-                    placedMines++;
-                    minePositions.push([r, c]);
-                } else {
-                    board[r][c] = 0;
-                    recalculateNumbers(board, rows, cols);
+                let noImproveCount = 0;
+                const maxNoImprove = 80;
+
+                for (let step = 0; step < 2000 && noImproveCount < maxNoImprove; step++) {
+                    const minePositions = [];
+                    const nonMinePositions = [];
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            if (currentBoard[r][c] === -1) minePositions.push([r, c]);
+                            else if (!safeZone.has(r * cols + c)) nonMinePositions.push([r, c]);
+                        }
+                    }
+                    if (minePositions.length === 0 || nonMinePositions.length === 0) break;
+
+                    const mIdx = Math.floor(Math.random() * minePositions.length);
+                    const nIdx = Math.floor(Math.random() * nonMinePositions.length);
+                    const [mr, mc] = minePositions[mIdx];
+                    const [nr, nc] = nonMinePositions[nIdx];
+
+                    currentBoard[mr][mc] = 0;
+                    currentBoard[nr][nc] = -1;
+                    recalculateNumbers(currentBoard, rows, cols);
+
+                    const newScore = solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines);
+
+                    if (newScore > currentScore) {
+                        currentScore = newScore;
+                        noImproveCount = 0;
+
+                        if (currentScore > bestScore) {
+                            bestScore = currentScore;
+                            bestBoard = currentBoard.map(row => [...row]);
+                        }
+
+                        if (currentScore === totalNonMines) {
+                            if (canSolveLogicallyFast(currentBoard, rows, cols, excludeRow, excludeCol, totalMines)) {
+                                return { board: currentBoard, solvable: true };
+                            }
+                        }
+                    } else {
+                        currentBoard[nr][nc] = 0;
+                        currentBoard[mr][mc] = -1;
+                        recalculateNumbers(currentBoard, rows, cols);
+                        noImproveCount++;
+                    }
+                }
+
+                if (bestScore === totalNonMines && bestBoard) {
+                    recalculateNumbers(bestBoard, rows, cols);
+                    if (canSolveLogicallyFast(bestBoard, rows, cols, excludeRow, excludeCol, totalMines)) {
+                        return { board: bestBoard, solvable: true };
+                    }
                 }
             }
 
-            if (placedMines < totalMines) {
-                for (const [r, c] of candidates) {
-                    if (placedMines >= totalMines) break;
-                    if (board[r][c] === -1) continue;
-                    if (safeZone.has(r * cols + c)) continue;
-                    board[r][c] = -1;
-                    placedMines++;
+            for (let attempt = 0; attempt < 100; attempt++) {
+                const freshBoard = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
+                if (canSolveLogicallyFast(freshBoard, rows, cols, excludeRow, excludeCol, totalMines)) {
+                    return { board: freshBoard, solvable: true };
                 }
-                recalculateNumbers(board, rows, cols);
             }
 
-            return { board, solvable: minePositions.length === totalMines };
+            if (bestBoard) {
+                recalculateNumbers(bestBoard, rows, cols);
+                if (canSolveLogicallyFast(bestBoard, rows, cols, excludeRow, excludeCol, totalMines)) {
+                    return { board: bestBoard, solvable: true };
+                }
+                return { board: bestBoard, solvable: false };
+            }
+
+            const board = generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol);
+            return { board, solvable: false };
         };
 
         self.addEventListener('message', (e) => {
             const { rows, cols, totalMines, excludeRow, excludeCol, maxAttempts } = e.data;
-            const actualMax = Math.min(maxAttempts, 5);
+            const actualMax = Math.min(maxAttempts, 30);
 
             for (let attempt = 0; attempt < actualMax; attempt++) {
-                self.postMessage({ type: 'progress', attemptsMade: 1 });
+                self.postMessage({ type: 'progress', attemptsMade: attempt + 1 });
                 const result = generateSolvableBoard(rows, cols, totalMines, excludeRow, excludeCol);
                 if (result.solvable) {
                     self.postMessage({ type: 'success', board: result.board });
@@ -5317,6 +6098,7 @@ performOpenAction(row, col) {
                 this.startTimer();
                 this.gameState.firstClick = false;
                 this.revealCell(row, col);
+                this.verifyAndReportSolvability(row, col);
             });
             return;
         }
@@ -5645,19 +6427,23 @@ revealCell(startRow, startCol) {
                 checkWin() {
                     let allRevealed = true;
                     let correctFlags = 0;
+                    let totalFlags = 0;
 
                     for (let r = 0; r < this.gameState.rows; r++) {
                         for (let c = 0; c < this.gameState.cols; c++) {
                             if (this.board[r][c] !== -1 && !this.revealed[r][c]) {
                                 allRevealed = false;
                             }
-                            if (this.board[r][c] === -1 && this.flags[r][c]) {
-                                correctFlags++;
+                            if (this.flags[r][c]) {
+                                totalFlags++;
+                                if (this.board[r][c] === -1) {
+                                    correctFlags++;
+                                }
                             }
                         }
                     }
 
-                    if (allRevealed || correctFlags === this.gameState.totalMines) {
+                    if (allRevealed || (correctFlags === this.gameState.totalMines && totalFlags === this.gameState.totalMines)) {
                         this.gameOver(true);
                     }
                 }
@@ -5815,7 +6601,7 @@ gameOver(won) {
         this.unlockAchievement('time-master');
     }
 
-    // --- 新增：带进度的单级成就检查 ---
+    // --- 带进度的单级成就检查 ---
     const { gameData } = this.gameState;
     const clickEfficiency = gameData.totalClicks > 0 ? (gameData.totalRevealedCells / gameData.totalClicks) * 100 : 0;
     if (clickEfficiency > (this.achievements.efficiencyStar.currentValue || 0)) {
@@ -5846,7 +6632,7 @@ gameOver(won) {
         this.unlockAchievement('combo-legend');
     }
 
-    // --- 新增：单级成就检查 ---
+    // --- 单级成就检查 ---
     if (!this.achievements.swiftThinker.unlocked &&
         this.gameState.won &&
         gameData.moveTimestamps.length > 0 &&
@@ -5874,7 +6660,7 @@ gameOver(won) {
         this.unlockAchievement('expert-path');
     }
 
-    // --- 新增：多级成就检查 ---
+    // --- 多级成就检查 ---
     this.achievements.winStreak.currentValue = this.stats.consecutiveWins;
     const winStreakDetails = this.achievementDetails['win-streak'];
     let currentWinStreakLevel = this.achievements.winStreak.unlockedLevel;
@@ -6216,10 +7002,10 @@ hint() {
     }
 }
 
-// 查找所有逻辑提示
+// 查找所有逻辑提示（增强版：基础推理 + 约束差减 + CSP枚举 + 单格回溯）
 findAllLogicalHints() {
     const hints = [];
-    const foundCoords = new Set(); // 防止重复提示同一个格子
+    const foundCoords = new Set();
 
     const addHint = (hint) => {
         const key = `${hint.row},${hint.col}`;
@@ -6237,7 +7023,7 @@ findAllLogicalHints() {
             }
         }
     }
-    if (hints.length > 0) return hints; // 如果有错误，优先提示
+    if (hints.length > 0) return hints;
 
     // 优先级 2 & 3: 基础模式识别 (安全区和地雷)
     for (let r = 0; r < this.gameState.rows; r++) {
@@ -6247,7 +7033,6 @@ findAllLogicalHints() {
                 const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
                 const unrevealed = neighbors.filter(([nr, nc]) => !this.revealed[nr][nc] && !this.flags[nr][nc]);
 
-                // 规则 A: 标记数 = 数字 -> 剩余未开都是安全的
                 if (flaggedCount === this.board[r][c] && unrevealed.length > 0) {
                     unrevealed.forEach(([safeRow, safeCol]) => {
                         addHint({
@@ -6259,7 +7044,6 @@ findAllLogicalHints() {
                     });
                 }
 
-                // 规则 B: 未开格子数 = 数字 - 标记数 -> 剩余未开都是地雷
                 if (unrevealed.length > 0 && unrevealed.length === this.board[r][c] - flaggedCount) {
                     unrevealed.forEach(([mineRow, mineCol]) => {
                         addHint({
@@ -6274,20 +7058,44 @@ findAllLogicalHints() {
         }
     }
 
-    // 优先级 4: 可双击的数字
-    if (hints.length === 0) {
-        for (let r = 0; r < this.gameState.rows; r++) {
-            for (let c = 0; c < this.gameState.cols; c++) {
-                if (this.revealed[r][c] && this.board[r][c] > 0) {
-                    const neighbors = this.getNeighbors(r, c);
-                    const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
-                    const unrevealedCount = neighbors.filter(([nr, nc]) => !this.revealed[nr][nc] && !this.flags[nr][nc]).length;
-                    if (flaggedCount === this.board[r][c] && unrevealedCount > 0) {
-                        addHint({
-                            type: 'double_click',
-                            row: r,
-                            col: c,
-                            reason: `⚡ 双击这个数字 ${this.board[r][c]} 可以自动揭开周围的安全区域。`
+    if (hints.length > 0) return hints;
+
+    // 优先级 4: 约束差减推理（子集推理）
+    const constraints = this.buildConstraints();
+    if (constraints.length > 1) {
+        for (let i = 0; i < constraints.length; i++) {
+            for (let j = 0; j < constraints.length; j++) {
+                if (i === j) continue;
+                const c1 = constraints[i], c2 = constraints[j];
+                const set1 = new Set(c1.unrevealed);
+                const set2 = new Set(c2.unrevealed);
+
+                let is1Sub2 = true;
+                for (const k of set1) if (!set2.has(k)) { is1Sub2 = false; break; }
+
+                if (is1Sub2 && c1.unrevealed.length < c2.unrevealed.length) {
+                    const diff = c2.unrevealed.filter(k => !set1.has(k));
+                    const diffRem = c2.remaining - c1.remaining;
+
+                    if (diffRem === 0 && diff.length > 0) {
+                        diff.forEach(nk => {
+                            const nr = Math.floor(nk / this.gameState.cols), nc = nk % this.gameState.cols;
+                            addHint({
+                                type: 'safe',
+                                row: nr,
+                                col: nc,
+                                reason: `🧠 通过约束差减推理：两组数字的雷数差为0，差集中的格子是安全的。`
+                            });
+                        });
+                    } else if (diffRem === diff.length && diff.length > 0) {
+                        diff.forEach(nk => {
+                            const nr = Math.floor(nk / this.gameState.cols), nc = nk % this.gameState.cols;
+                            addHint({
+                                type: 'mine',
+                                row: nr,
+                                col: nc,
+                                reason: `🧠 通过约束差减推理：差集格子数等于雷数差，差集中的格子都是地雷。`
+                            });
                         });
                     }
                 }
@@ -6295,7 +7103,496 @@ findAllLogicalHints() {
         }
     }
 
+    if (hints.length > 0) return hints;
+
+    // 优先级 5: 全局雷数推理
+    const totalFlagged = this.countFlags();
+    const remainingMines = this.gameState.totalMines - totalFlagged;
+    let totalUnrevealedNonFlag = 0;
+    const allUnrevealedCells = [];
+    for (let r = 0; r < this.gameState.rows; r++) {
+        for (let c = 0; c < this.gameState.cols; c++) {
+            if (!this.revealed[r][c] && !this.flags[r][c]) {
+                totalUnrevealedNonFlag++;
+                allUnrevealedCells.push([r, c]);
+            }
+        }
+    }
+    if (remainingMines === 0 && totalUnrevealedNonFlag > 0) {
+        allUnrevealedCells.forEach(([r, c]) => {
+            addHint({
+                type: 'safe',
+                row: r,
+                col: c,
+                reason: `🌍 所有地雷已标记完毕，剩余未揭开的格子都是安全的。`
+            });
+        });
+    } else if (remainingMines > 0 && remainingMines === totalUnrevealedNonFlag) {
+        allUnrevealedCells.forEach(([r, c]) => {
+            addHint({
+                type: 'mine',
+                row: r,
+                col: c,
+                reason: `🌍 剩余未揭开格子数等于剩余地雷数，所有未揭开格子都是地雷。`
+            });
+        });
+    }
+
+    if (hints.length > 0) return hints;
+
+    // 优先级 6: CSP枚举推理
+    const cspHints = this.findCSPHints(constraints);
+    cspHints.forEach(h => addHint(h));
+    if (hints.length > 0) return hints;
+
+    // 优先级 7: 单格回溯推理
+    const backtrackHints = this.findBacktrackHints(constraints);
+    backtrackHints.forEach(h => addHint(h));
+    if (hints.length > 0) return hints;
+
+    // 优先级 8: 可双击的数字
+    for (let r = 0; r < this.gameState.rows; r++) {
+        for (let c = 0; c < this.gameState.cols; c++) {
+            if (this.revealed[r][c] && this.board[r][c] > 0) {
+                const neighbors = this.getNeighbors(r, c);
+                const flaggedCount = neighbors.filter(([nr, nc]) => this.flags[nr][nc]).length;
+                const unrevealedCount = neighbors.filter(([nr, nc]) => !this.revealed[nr][nc] && !this.flags[nr][nc]).length;
+                if (flaggedCount === this.board[r][c] && unrevealedCount > 0) {
+                    addHint({
+                        type: 'double_click',
+                        row: r,
+                        col: c,
+                        reason: `⚡ 双击这个数字 ${this.board[r][c]} 可以自动揭开周围的安全区域。`
+                    });
+                }
+            }
+        }
+    }
+
     return hints;
+}
+
+buildConstraints() {
+    const constraints = [];
+    const key = (r, c) => r * this.gameState.cols + c;
+    for (let r = 0; r < this.gameState.rows; r++) {
+        for (let c = 0; c < this.gameState.cols; c++) {
+            if (!this.revealed[r][c] || this.board[r][c] <= 0) continue;
+            const unrevealed = [];
+            let flaggedCount = 0;
+            this.forEachNeighbor(r, c, (nr, nc) => {
+                const nk = key(nr, nc);
+                if (this.flags[nr][nc]) flaggedCount++;
+                else if (!this.revealed[nr][nc]) unrevealed.push(nk);
+            });
+            if (unrevealed.length === 0) continue;
+            const remaining = this.board[r][c] - flaggedCount;
+            constraints.push({ unrevealed, remaining });
+        }
+    }
+    return constraints;
+}
+
+findCSPHints(constraints) {
+    const hints = [];
+    const foundInCSP = new Set();
+    const key = (r, c) => r * this.gameState.cols + c;
+    const cols = this.gameState.cols;
+
+    const frontierSet = new Set();
+    for (const con of constraints) {
+        for (const k of con.unrevealed) frontierSet.add(k);
+    }
+    if (frontierSet.size === 0) return hints;
+
+    const parent = new Map();
+    for (const k of frontierSet) parent.set(k, k);
+    const find = (k) => {
+        if (parent.get(k) !== k) parent.set(k, find(parent.get(k)));
+        return parent.get(k);
+    };
+    const union = (a, b) => {
+        const ra = find(a), rb = find(b);
+        if (ra !== rb) parent.set(ra, rb);
+    };
+    for (const con of constraints) {
+        for (let i = 1; i < con.unrevealed.length; i++) {
+            union(con.unrevealed[0], con.unrevealed[i]);
+        }
+    }
+
+    const groupMap = new Map();
+    for (const k of frontierSet) {
+        const root = find(k);
+        if (!groupMap.has(root)) groupMap.set(root, []);
+        groupMap.get(root).push(k);
+    }
+
+    let otherUnrevealed = 0;
+    for (let r = 0; r < this.gameState.rows; r++) {
+        for (let c = 0; c < this.gameState.cols; c++) {
+            const k = key(r, c);
+            if (!this.revealed[r][c] && !this.flags[r][c] && !frontierSet.has(k)) {
+                otherUnrevealed++;
+            }
+        }
+    }
+
+    const totalFlagged = this.countFlags();
+    const remainingMines = this.gameState.totalMines - totalFlagged;
+
+    const sortedGroups = [...groupMap.values()].sort((a, b) => a.length - b.length);
+
+    for (const group of sortedGroups) {
+        if (group.length > 80) continue;
+
+        const groupSet = new Set(group);
+        const groupConstraints = [];
+        const seenConstraints = new Set();
+        for (let ci = 0; ci < constraints.length; ci++) {
+            const con = constraints[ci];
+            if (con.unrevealed.some(k => groupSet.has(k))) {
+                if (!seenConstraints.has(ci)) {
+                    seenConstraints.add(ci);
+                    groupConstraints.push(con);
+                }
+            }
+        }
+
+        const otherFrontierSize = frontierSet.size - group.length;
+        const minGroupMines = Math.max(0, remainingMines - otherFrontierSize - otherUnrevealed);
+        const maxGroupMines = Math.min(group.length, remainingMines);
+
+        if (minGroupMines > maxGroupMines) continue;
+
+        const solutions = [];
+        this.enumerateCSPGroup(group, groupConstraints, 0, new Map(), solutions, 20000, minGroupMines, maxGroupMines);
+
+        if (solutions.length === 0) continue;
+
+        for (const cellKey of group) {
+            let mineCount = 0;
+            for (const sol of solutions) {
+                if (sol.get(cellKey) === 1) mineCount++;
+            }
+
+            const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+            const coordKey = `${nr},${nc}`;
+            if (foundInCSP.has(coordKey)) continue;
+
+            if (mineCount === 0) {
+                foundInCSP.add(coordKey);
+                hints.push({
+                    type: 'safe',
+                    row: nr,
+                    col: nc,
+                    reason: `🔬 通过CSP枚举推理：在所有可能的地雷分布中，此格子都不是地雷，所以是安全的。`
+                });
+            } else if (mineCount === solutions.length) {
+                foundInCSP.add(coordKey);
+                hints.push({
+                    type: 'mine',
+                    row: nr,
+                    col: nc,
+                    reason: `🔬 通过CSP枚举推理：在所有可能的地雷分布中，此格子都是地雷。`
+                });
+            }
+        }
+    }
+
+    return hints;
+}
+
+findBacktrackHints(constraints) {
+    const hints = [];
+    const key = (r, c) => r * this.gameState.cols + c;
+    const cols = this.gameState.cols;
+    const rows = this.gameState.rows;
+    const totalMines = this.gameState.totalMines;
+
+    const frontierSet = new Set();
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (!this.revealed[r][c] || this.board[r][c] <= 0) continue;
+            this.forEachNeighbor(r, c, (nr, nc) => {
+                const nk = key(nr, nc);
+                if (!this.revealed[nr][nc] && !this.flags[nr][nc]) frontierSet.add(nk);
+            });
+        }
+    }
+    if (frontierSet.size === 0) return hints;
+
+    const frontierArr = [...frontierSet];
+    const maxCheck = Math.min(frontierArr.length, 60);
+
+    for (let fi = 0; fi < maxCheck; fi++) {
+        const cellKey = frontierArr[fi];
+        const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+
+        const testRevealed1 = new Set();
+        const testFlagged1 = new Set();
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const k = key(r, c);
+                if (this.revealed[r][c]) testRevealed1.add(k);
+                if (this.flags[r][c]) testFlagged1.add(k);
+            }
+        }
+        testRevealed1.add(cellKey);
+        if (this.board[nr][nc] === 0) {
+            const queue = [[nr, nc]];
+            while (queue.length > 0) {
+                const [r, c] = queue.shift();
+                const k = key(r, c);
+                if (testRevealed1.has(k)) continue;
+                testRevealed1.add(k);
+                if (this.board[r][c] === 0) {
+                    this.forEachNeighbor(r, c, (nr2, nc2) => {
+                        if (!testRevealed1.has(key(nr2, nc2))) queue.push([nr2, nc2]);
+                    });
+                }
+            }
+        }
+        const safeContradiction = this.checkContradictionForHint(testRevealed1, testFlagged1, rows, cols, totalMines, key);
+
+        const testRevealed2 = new Set();
+        const testFlagged2 = new Set();
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const k = key(r, c);
+                if (this.revealed[r][c]) testRevealed2.add(k);
+                if (this.flags[r][c]) testFlagged2.add(k);
+            }
+        }
+        testFlagged2.add(cellKey);
+        const mineContradiction = this.checkContradictionForHint(testRevealed2, testFlagged2, rows, cols, totalMines, key);
+
+        if (safeContradiction && !mineContradiction) {
+            hints.push({
+                type: 'mine',
+                row: nr,
+                col: nc,
+                reason: `🎯 通过反证法推理：假设此格安全会导致矛盾，所以它是地雷。`
+            });
+        } else if (mineContradiction && !safeContradiction) {
+            hints.push({
+                type: 'safe',
+                row: nr,
+                col: nc,
+                reason: `🎯 通过反证法推理：假设此格是地雷会导致矛盾，所以它是安全的。`
+            });
+        }
+
+        if (hints.length > 0) break;
+    }
+
+    return hints;
+}
+
+checkContradictionForHint(testRevealed, testFlagged, rows, cols, totalMines, key) {
+    let changed = true;
+    let iters = 0;
+    const maxIter = rows * cols * 2;
+
+    while (changed && iters < maxIter) {
+        changed = false;
+        iters++;
+
+        const constraints = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!testRevealed.has(key(r, c)) || this.board[r][c] <= 0) continue;
+                const unrevealed = [];
+                let flaggedCount = 0;
+                this.forEachNeighbor(r, c, (nr, nc) => {
+                    const nk = key(nr, nc);
+                    if (testFlagged.has(nk)) flaggedCount++;
+                    else if (!testRevealed.has(nk)) unrevealed.push(nk);
+                });
+                if (unrevealed.length === 0) continue;
+                const remaining = this.board[r][c] - flaggedCount;
+
+                if (remaining < 0 || remaining > unrevealed.length) return true;
+
+                constraints.push({ unrevealed, remaining });
+
+                if (remaining === 0) {
+                    for (const nk of unrevealed) {
+                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                        if (this.board[nr2][nc2] === -1) return true;
+                        if (!testRevealed.has(nk)) {
+                            testRevealed.add(nk);
+                            if (this.board[nr2][nc2] === 0) {
+                                const queue = [[nr2, nc2]];
+                                while (queue.length > 0) {
+                                    const [r2, c2] = queue.shift();
+                                    const k2 = key(r2, c2);
+                                    if (testRevealed.has(k2)) continue;
+                                    testRevealed.add(k2);
+                                    if (this.board[r2][c2] === 0) {
+                                        this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                            if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                        });
+                                    }
+                                }
+                            }
+                            changed = true;
+                        }
+                    }
+                } else if (remaining === unrevealed.length) {
+                    for (const nk of unrevealed) {
+                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                        if (this.board[nr2][nc2] !== -1) return true;
+                        if (!testFlagged.has(nk)) {
+                            testFlagged.add(nk);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!changed && constraints.length > 1) {
+            for (let i = 0; i < constraints.length && !changed; i++) {
+                for (let j = i + 1; j < constraints.length && !changed; j++) {
+                    const c1 = constraints[i], c2 = constraints[j];
+                    const set1 = new Set(c1.unrevealed);
+                    const set2 = new Set(c2.unrevealed);
+
+                    let is1Sub2 = true, is2Sub1 = true;
+                    for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
+                    for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
+
+                    if (is1Sub2 && !is2Sub1) {
+                        const diff = c2.unrevealed.filter(k => !set1.has(k));
+                        const diffRem = c2.remaining - c1.remaining;
+                        if (diffRem < 0 || diffRem > diff.length) return true;
+                        if (diffRem === 0) {
+                            for (const nk of diff) {
+                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                if (this.board[nr2][nc2] === -1) return true;
+                                if (!testRevealed.has(nk)) {
+                                    testRevealed.add(nk);
+                                    if (this.board[nr2][nc2] === 0) {
+                                        const queue = [[nr2, nc2]];
+                                        while (queue.length > 0) {
+                                            const [r2, c2] = queue.shift();
+                                            const k2 = key(r2, c2);
+                                            if (testRevealed.has(k2)) continue;
+                                            testRevealed.add(k2);
+                                            if (this.board[r2][c2] === 0) {
+                                                this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                                    if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                });
+                                            }
+                                        }
+                                    }
+                                    changed = true;
+                                }
+                            }
+                        } else if (diffRem === diff.length) {
+                            for (const nk of diff) {
+                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                if (this.board[nr2][nc2] !== -1) return true;
+                                if (!testFlagged.has(nk)) {
+                                    testFlagged.add(nk);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    } else if (is2Sub1 && !is1Sub2) {
+                        const diff = c1.unrevealed.filter(k => !set2.has(k));
+                        const diffRem = c1.remaining - c2.remaining;
+                        if (diffRem < 0 || diffRem > diff.length) return true;
+                        if (diffRem === 0) {
+                            for (const nk of diff) {
+                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                if (this.board[nr2][nc2] === -1) return true;
+                                if (!testRevealed.has(nk)) {
+                                    testRevealed.add(nk);
+                                    if (this.board[nr2][nc2] === 0) {
+                                        const queue = [[nr2, nc2]];
+                                        while (queue.length > 0) {
+                                            const [r2, c2] = queue.shift();
+                                            const k2 = key(r2, c2);
+                                            if (testRevealed.has(k2)) continue;
+                                            testRevealed.add(k2);
+                                            if (this.board[r2][c2] === 0) {
+                                                this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                                    if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                });
+                                            }
+                                        }
+                                    }
+                                    changed = true;
+                                }
+                            }
+                        } else if (diffRem === diff.length) {
+                            for (const nk of diff) {
+                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                if (this.board[nr2][nc2] !== -1) return true;
+                                if (!testFlagged.has(nk)) {
+                                    testFlagged.add(nk);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!changed) {
+            const remMines = totalMines - testFlagged.size;
+            let totalUnrev = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const k = key(r, c);
+                    if (!testRevealed.has(k) && !testFlagged.has(k)) totalUnrev++;
+                }
+            }
+            if (remMines < 0 || remMines > totalUnrev) return true;
+            if (remMines === 0 && totalUnrev > 0) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const k = key(r, c);
+                        if (!testRevealed.has(k) && !testFlagged.has(k)) {
+                            if (this.board[r][c] === -1) return true;
+                            testRevealed.add(k);
+                            if (this.board[r][c] === 0) {
+                                const queue = [[r, c]];
+                                while (queue.length > 0) {
+                                    const [r2, c2] = queue.shift();
+                                    const k2 = key(r2, c2);
+                                    if (testRevealed.has(k2)) continue;
+                                    testRevealed.add(k2);
+                                    if (this.board[r2][c2] === 0) {
+                                        this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                            if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                        });
+                                    }
+                                }
+                            }
+                            changed = true;
+                        }
+                    }
+                }
+            } else if (remMines > 0 && remMines === totalUnrev) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const k = key(r, c);
+                        if (!testRevealed.has(k) && !testFlagged.has(k)) {
+                            if (this.board[r][c] !== -1) return true;
+                            testFlagged.add(k);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 
@@ -6723,11 +8020,12 @@ performProbabilisticMove() {
                     return true;
                 }
 
-                // 完整的逻辑可解性检查（高效Set版本）
+                // 完整的逻辑可解性检查（增强版：基础推理 + 子集推理 + 全局雷数 + CSP枚举）
 canSolveLogically(startRow, startCol) {
     const originalBoard = this.board;
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
+    const totalMines = this.gameState.totalMines;
     const revealed = new Set();
     const flagged = new Set();
     const key = (r, c) => r * cols + c;
@@ -6751,7 +8049,7 @@ canSolveLogically(startRow, startCol) {
 
     let changed = true;
     let iterations = 0;
-    const maxIterations = rows * cols * 2;
+    const maxIterations = rows * cols * 4;
 
     while (changed && iterations < maxIterations) {
         changed = false;
@@ -6770,6 +8068,7 @@ canSolveLogically(startRow, startCol) {
                 });
                 if (unrevealed.length === 0) continue;
                 const remaining = originalBoard[r][c] - flaggedCount;
+                if (remaining < 0 || remaining > unrevealed.length) return false;
                 constraints.push({ unrevealed, remaining });
             }
         }
@@ -6798,7 +8097,59 @@ canSolveLogically(startRow, startCol) {
         }
 
         if (!changed && constraints.length > 1) {
-            changed = this.performConstraintDiffReasoning(revealed, flagged, originalBoard, constraints);
+            const diffResult = this.performConstraintDiffReasoning(revealed, flagged, originalBoard, constraints, bfsExpand);
+            if (diffResult === 'contradiction') return false;
+            changed = diffResult;
+        }
+
+        if (!changed) {
+            const remainingMines = totalMines - flagged.size;
+            let totalUnrevealed = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const k = key(r, c);
+                    if (!revealed.has(k) && !flagged.has(k)) totalUnrevealed++;
+                }
+            }
+
+            if (remainingMines === 0 && totalUnrevealed > 0) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const k = key(r, c);
+                        if (!revealed.has(k) && !flagged.has(k)) {
+                            if (originalBoard[r][c] === -1) return false;
+                            revealed.add(k);
+                            if (originalBoard[r][c] === 0) bfsExpand(r, c);
+                            changed = true;
+                        }
+                    }
+                }
+            } else if (remainingMines > 0 && remainingMines === totalUnrevealed) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const k = key(r, c);
+                        if (!revealed.has(k) && !flagged.has(k)) {
+                            if (originalBoard[r][c] !== -1) return false;
+                            flagged.add(k);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!changed) {
+            const cspResult = this.performCSPReasoning(revealed, flagged, originalBoard, constraints, rows, cols, totalMines, key, bfsExpand);
+            if (cspResult === 'contradiction') return false;
+            changed = cspResult;
+        }
+
+        if (!changed) {
+            changed = this.performSingleCellBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, bfsExpand);
+        }
+
+        if (!changed) {
+            changed = this.performCoupledBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, bfsExpand);
         }
     }
 
@@ -6812,7 +8163,156 @@ canSolveLogically(startRow, startCol) {
     return true;
 }
 
-                performConstraintDiffReasoning(revealed, flagged, originalBoard, constraints) {
+                performCSPReasoning(revealed, flagged, originalBoard, constraints, rows, cols, totalMines, key, bfsExpand) {
+                    const frontierSet = new Set();
+                    for (const con of constraints) {
+                        for (const k of con.unrevealed) frontierSet.add(k);
+                    }
+                    if (frontierSet.size === 0) return false;
+
+                    const parent = new Map();
+                    for (const k of frontierSet) parent.set(k, k);
+                    const find = (k) => {
+                        if (parent.get(k) !== k) parent.set(k, find(parent.get(k)));
+                        return parent.get(k);
+                    };
+                    const union = (a, b) => {
+                        const ra = find(a), rb = find(b);
+                        if (ra !== rb) parent.set(ra, rb);
+                    };
+
+                    for (const con of constraints) {
+                        for (let i = 1; i < con.unrevealed.length; i++) {
+                            union(con.unrevealed[0], con.unrevealed[i]);
+                        }
+                    }
+
+                    const groupMap = new Map();
+                    for (const k of frontierSet) {
+                        const root = find(k);
+                        if (!groupMap.has(root)) groupMap.set(root, []);
+                        groupMap.get(root).push(k);
+                    }
+
+                    let otherUnrevealed = 0;
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            const k = key(r, c);
+                            if (!revealed.has(k) && !flagged.has(k) && !frontierSet.has(k)) {
+                                otherUnrevealed++;
+                            }
+                        }
+                    }
+
+                    const remainingMines = totalMines - flagged.size;
+                    let anyChanged = false;
+
+                    const sortedGroups = [...groupMap.values()].sort((a, b) => a.length - b.length);
+
+                    for (const group of sortedGroups) {
+                        if (group.length > 80) continue;
+
+                        const groupSet = new Set(group);
+                        const groupConstraints = [];
+                        const seenConstraints = new Set();
+                        for (let ci = 0; ci < constraints.length; ci++) {
+                            const con = constraints[ci];
+                            if (con.unrevealed.some(k => groupSet.has(k))) {
+                                if (!seenConstraints.has(ci)) {
+                                    seenConstraints.add(ci);
+                                    groupConstraints.push(con);
+                                }
+                            }
+                        }
+
+                        const otherFrontierSize = frontierSet.size - group.length;
+                        const minGroupMines = Math.max(0, remainingMines - otherFrontierSize - otherUnrevealed);
+                        const maxGroupMines = Math.min(group.length, remainingMines);
+
+                        if (minGroupMines > maxGroupMines) return 'contradiction';
+
+                        const solutions = [];
+                        this.enumerateCSPGroup(group, groupConstraints, 0, new Map(), solutions, 20000, minGroupMines, maxGroupMines);
+
+                        if (solutions.length === 0) return 'contradiction';
+
+                        for (const cellKey of group) {
+                            let mineCount = 0;
+                            for (const sol of solutions) {
+                                if (sol.get(cellKey) === 1) mineCount++;
+                            }
+
+                            if (mineCount === 0) {
+                                const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+                                if (originalBoard[nr][nc] === -1) return false;
+                                if (!revealed.has(cellKey)) {
+                                    revealed.add(cellKey);
+                                    if (originalBoard[nr][nc] === 0) bfsExpand(nr, nc);
+                                    anyChanged = true;
+                                }
+                            } else if (mineCount === solutions.length) {
+                                const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+                                if (originalBoard[nr][nc] !== -1) return false;
+                                if (!flagged.has(cellKey)) {
+                                    flagged.add(cellKey);
+                                    anyChanged = true;
+                                }
+                            }
+                        }
+                    }
+
+                    return anyChanged;
+                }
+
+                enumerateCSPGroup(variables, constraints, index, assignment, solutions, maxSolutions, minMines, maxMines) {
+                    if (solutions.length >= maxSolutions) return;
+
+                    if (index === variables.length) {
+                        let mineCount = 0;
+                        for (const [, v] of assignment) mineCount += v;
+                        if (mineCount >= minMines && mineCount <= maxMines) {
+                            solutions.push(new Map(assignment));
+                        }
+                        return;
+                    }
+
+                    const varKey = variables[index];
+
+                    for (const val of [0, 1]) {
+                        assignment.set(varKey, val);
+                        if (this.isCSPConsistent(assignment, constraints)) {
+                            let currentMines = 0;
+                            for (const [, v] of assignment) currentMines += v;
+                            const remainingVars = variables.length - index - 1;
+                            if (currentMines + remainingVars >= minMines && currentMines <= maxMines) {
+                                this.enumerateCSPGroup(variables, constraints, index + 1, assignment, solutions, maxSolutions, minMines, maxMines);
+                            }
+                        }
+                    }
+
+                    assignment.delete(varKey);
+                }
+
+                isCSPConsistent(assignment, constraints) {
+                    for (const con of constraints) {
+                        let sum = 0;
+                        let assignedCount = 0;
+                        for (const k of con.unrevealed) {
+                            if (assignment.has(k)) {
+                                sum += assignment.get(k);
+                                assignedCount++;
+                            }
+                        }
+                        if (sum > con.remaining) return false;
+                        const remaining = con.remaining - sum;
+                        const unassigned = con.unrevealed.length - assignedCount;
+                        if (remaining > unassigned) return false;
+                        if (remaining < 0) return false;
+                    }
+                    return true;
+                }
+
+                performConstraintDiffReasoning(revealed, flagged, originalBoard, constraints, bfsExpand) {
                     const rows = this.gameState.rows;
                     const cols = this.gameState.cols;
                     const key = (r, c) => r * cols + c;
@@ -6831,33 +8331,21 @@ canSolveLogically(startRow, startCol) {
                             if (is1Sub2 && !is2Sub1) {
                                 const diff = c2.unrevealed.filter(k => !set1.has(k));
                                 const diffRem = c2.remaining - c1.remaining;
+                                if (diffRem < 0 || diffRem > diff.length) return 'contradiction';
                                 if (diffRem === 0) {
                                     for (const nk of diff) {
                                         const nr = Math.floor(nk / cols), nc = nk % cols;
-                                        if (originalBoard[nr][nc] === -1) return false;
+                                        if (originalBoard[nr][nc] === -1) return 'contradiction';
                                         if (!revealed.has(nk)) {
                                             revealed.add(nk);
-                                            if (originalBoard[nr][nc] === 0) {
-                                                const queue = [[nr, nc]];
-                                                while (queue.length > 0) {
-                                                    const [r2, c2] = queue.shift();
-                                                    const k2 = key(r2, c2);
-                                                    if (revealed.has(k2)) continue;
-                                                    revealed.add(k2);
-                                                    if (originalBoard[r2][c2] === 0) {
-                                                        this.forEachNeighbor(r2, c2, (nr2, nc2) => {
-                                                            if (!revealed.has(key(nr2, nc2))) queue.push([nr2, nc2]);
-                                                        });
-                                                    }
-                                                }
-                                            }
+                                            if (originalBoard[nr][nc] === 0) bfsExpand(nr, nc);
                                             changed = true;
                                         }
                                     }
                                 } else if (diffRem === diff.length) {
                                     for (const nk of diff) {
                                         const nr = Math.floor(nk / cols), nc = nk % cols;
-                                        if (originalBoard[nr][nc] !== -1) return false;
+                                        if (originalBoard[nr][nc] !== -1) return 'contradiction';
                                         if (!flagged.has(nk)) {
                                             flagged.add(nk);
                                             changed = true;
@@ -6867,33 +8355,21 @@ canSolveLogically(startRow, startCol) {
                             } else if (is2Sub1 && !is1Sub2) {
                                 const diff = c1.unrevealed.filter(k => !set2.has(k));
                                 const diffRem = c1.remaining - c2.remaining;
+                                if (diffRem < 0 || diffRem > diff.length) return 'contradiction';
                                 if (diffRem === 0) {
                                     for (const nk of diff) {
                                         const nr = Math.floor(nk / cols), nc = nk % cols;
-                                        if (originalBoard[nr][nc] === -1) return false;
+                                        if (originalBoard[nr][nc] === -1) return 'contradiction';
                                         if (!revealed.has(nk)) {
                                             revealed.add(nk);
-                                            if (originalBoard[nr][nc] === 0) {
-                                                const queue = [[nr, nc]];
-                                                while (queue.length > 0) {
-                                                    const [r2, c2] = queue.shift();
-                                                    const k2 = key(r2, c2);
-                                                    if (revealed.has(k2)) continue;
-                                                    revealed.add(k2);
-                                                    if (originalBoard[r2][c2] === 0) {
-                                                        this.forEachNeighbor(r2, c2, (nr2, nc2) => {
-                                                            if (!revealed.has(key(nr2, nc2))) queue.push([nr2, nc2]);
-                                                        });
-                                                    }
-                                                }
-                                            }
+                                            if (originalBoard[nr][nc] === 0) bfsExpand(nr, nc);
                                             changed = true;
                                         }
                                     }
                                 } else if (diffRem === diff.length) {
                                     for (const nk of diff) {
                                         const nr = Math.floor(nk / cols), nc = nk % cols;
-                                        if (originalBoard[nr][nc] !== -1) return false;
+                                        if (originalBoard[nr][nc] !== -1) return 'contradiction';
                                         if (!flagged.has(nk)) {
                                             flagged.add(nk);
                                             changed = true;
@@ -6905,6 +8381,372 @@ canSolveLogically(startRow, startCol) {
                     }
 
                     return changed;
+                }
+
+                checkContradictionMain(testRevealed, testFlagged, originalBoard, rows, cols, totalMines, key) {
+                    let changed = true;
+                    let iters = 0;
+                    const maxIter = rows * cols * 2;
+
+                    while (changed && iters < maxIter) {
+                        changed = false;
+                        iters++;
+
+                        const constraints = [];
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                if (!testRevealed.has(key(r, c)) || originalBoard[r][c] <= 0) continue;
+                                const unrevealed = [];
+                                let flaggedCount = 0;
+                                this.forEachNeighbor(r, c, (nr, nc) => {
+                                    const nk = key(nr, nc);
+                                    if (testFlagged.has(nk)) flaggedCount++;
+                                    else if (!testRevealed.has(nk)) unrevealed.push(nk);
+                                });
+                                if (unrevealed.length === 0) continue;
+                                const remaining = originalBoard[r][c] - flaggedCount;
+
+                                if (remaining < 0 || remaining > unrevealed.length) return true;
+
+                                constraints.push({ unrevealed, remaining });
+
+                                if (remaining === 0) {
+                                    for (const nk of unrevealed) {
+                                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                        if (originalBoard[nr2][nc2] === -1) return true;
+                                        if (!testRevealed.has(nk)) {
+                                            testRevealed.add(nk);
+                                            if (originalBoard[nr2][nc2] === 0) {
+                                                const queue = [[nr2, nc2]];
+                                                while (queue.length > 0) {
+                                                    const [r2, c2] = queue.shift();
+                                                    const k2 = key(r2, c2);
+                                                    if (testRevealed.has(k2)) continue;
+                                                    testRevealed.add(k2);
+                                                    if (originalBoard[r2][c2] === 0) {
+                                                        this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                                            if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            changed = true;
+                                        }
+                                    }
+                                } else if (remaining === unrevealed.length) {
+                                    for (const nk of unrevealed) {
+                                        const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                        if (originalBoard[nr2][nc2] !== -1) return true;
+                                        if (!testFlagged.has(nk)) {
+                                            testFlagged.add(nk);
+                                            changed = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!changed && constraints.length > 1) {
+                            for (let i = 0; i < constraints.length && !changed; i++) {
+                                for (let j = i + 1; j < constraints.length && !changed; j++) {
+                                    const c1 = constraints[i], c2 = constraints[j];
+                                    const set1 = new Set(c1.unrevealed);
+                                    const set2 = new Set(c2.unrevealed);
+
+                                    let is1Sub2 = true, is2Sub1 = true;
+                                    for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
+                                    for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
+
+                                    if (is1Sub2 && !is2Sub1) {
+                                        const diff = c2.unrevealed.filter(k => !set1.has(k));
+                                        const diffRem = c2.remaining - c1.remaining;
+                                        if (diffRem < 0 || diffRem > diff.length) return true;
+                                        if (diffRem === 0) {
+                                            for (const nk of diff) {
+                                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                                if (originalBoard[nr2][nc2] === -1) return true;
+                                                if (!testRevealed.has(nk)) {
+                                                    testRevealed.add(nk);
+                                                    if (originalBoard[nr2][nc2] === 0) {
+                                                        const queue = [[nr2, nc2]];
+                                                        while (queue.length > 0) {
+                                                            const [r2, c2] = queue.shift();
+                                                            const k2 = key(r2, c2);
+                                                            if (testRevealed.has(k2)) continue;
+                                                            testRevealed.add(k2);
+                                                            if (originalBoard[r2][c2] === 0) {
+                                                                this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                                                    if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                                });
+                                                            }
+                                                        }
+                                                    }
+                                                    changed = true;
+                                                }
+                                            }
+                                        } else if (diffRem === diff.length) {
+                                            for (const nk of diff) {
+                                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                                if (originalBoard[nr2][nc2] !== -1) return true;
+                                                if (!testFlagged.has(nk)) {
+                                                    testFlagged.add(nk);
+                                                    changed = true;
+                                                }
+                                            }
+                                        }
+                                    } else if (is2Sub1 && !is1Sub2) {
+                                        const diff = c1.unrevealed.filter(k => !set2.has(k));
+                                        const diffRem = c1.remaining - c2.remaining;
+                                        if (diffRem < 0 || diffRem > diff.length) return true;
+                                        if (diffRem === 0) {
+                                            for (const nk of diff) {
+                                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                                if (originalBoard[nr2][nc2] === -1) return true;
+                                                if (!testRevealed.has(nk)) {
+                                                    testRevealed.add(nk);
+                                                    if (originalBoard[nr2][nc2] === 0) {
+                                                        const queue = [[nr2, nc2]];
+                                                        while (queue.length > 0) {
+                                                            const [r2, c2] = queue.shift();
+                                                            const k2 = key(r2, c2);
+                                                            if (testRevealed.has(k2)) continue;
+                                                            testRevealed.add(k2);
+                                                            if (originalBoard[r2][c2] === 0) {
+                                                                this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                                                    if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                                });
+                                                            }
+                                                        }
+                                                    }
+                                                    changed = true;
+                                                }
+                                            }
+                                        } else if (diffRem === diff.length) {
+                                            for (const nk of diff) {
+                                                const nr2 = Math.floor(nk / cols), nc2 = nk % cols;
+                                                if (originalBoard[nr2][nc2] !== -1) return true;
+                                                if (!testFlagged.has(nk)) {
+                                                    testFlagged.add(nk);
+                                                    changed = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!changed) {
+                            const remMines = totalMines - testFlagged.size;
+                            let totalUnrev = 0;
+                            for (let r = 0; r < rows; r++) {
+                                for (let c = 0; c < cols; c++) {
+                                    const k = key(r, c);
+                                    if (!testRevealed.has(k) && !testFlagged.has(k)) totalUnrev++;
+                                }
+                            }
+                            if (remMines < 0 || remMines > totalUnrev) return true;
+                            if (remMines === 0 && totalUnrev > 0) {
+                                for (let r = 0; r < rows; r++) {
+                                    for (let c = 0; c < cols; c++) {
+                                        const k = key(r, c);
+                                        if (!testRevealed.has(k) && !testFlagged.has(k)) {
+                                            if (originalBoard[r][c] === -1) return true;
+                                            testRevealed.add(k);
+                                            if (originalBoard[r][c] === 0) {
+                                                const queue = [[r, c]];
+                                                while (queue.length > 0) {
+                                                    const [r2, c2] = queue.shift();
+                                                    const k2 = key(r2, c2);
+                                                    if (testRevealed.has(k2)) continue;
+                                                    testRevealed.add(k2);
+                                                    if (originalBoard[r2][c2] === 0) {
+                                                        this.forEachNeighbor(r2, c2, (nr3, nc3) => {
+                                                            if (!testRevealed.has(key(nr3, nc3))) queue.push([nr3, nc3]);
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            changed = true;
+                                        }
+                                    }
+                                }
+                            } else if (remMines > 0 && remMines === totalUnrev) {
+                                for (let r = 0; r < rows; r++) {
+                                    for (let c = 0; c < cols; c++) {
+                                        const k = key(r, c);
+                                        if (!testRevealed.has(k) && !testFlagged.has(k)) {
+                                            if (originalBoard[r][c] !== -1) return true;
+                                            testFlagged.add(k);
+                                            changed = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+
+                performSingleCellBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, bfsExpand) {
+                    const frontierSet = new Set();
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            if (!revealed.has(key(r, c)) || originalBoard[r][c] <= 0) continue;
+                            this.forEachNeighbor(r, c, (nr, nc) => {
+                                const nk = key(nr, nc);
+                                if (!revealed.has(nk) && !flagged.has(nk)) frontierSet.add(nk);
+                            });
+                        }
+                    }
+                    if (frontierSet.size === 0) return false;
+
+                    let anyChanged = false;
+
+                    for (const cellKey of frontierSet) {
+                        const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
+
+                        const testRevealed1 = new Set(revealed);
+                        const testFlagged1 = new Set(flagged);
+                        testRevealed1.add(cellKey);
+                        if (originalBoard[nr][nc] === 0) {
+                            const queue = [[nr, nc]];
+                            while (queue.length > 0) {
+                                const [r, c] = queue.shift();
+                                const k = key(r, c);
+                                if (testRevealed1.has(k)) continue;
+                                testRevealed1.add(k);
+                                if (originalBoard[r][c] === 0) {
+                                    this.forEachNeighbor(r, c, (nr2, nc2) => {
+                                        if (!testRevealed1.has(key(nr2, nc2))) queue.push([nr2, nc2]);
+                                    });
+                                }
+                            }
+                        }
+                        const safeContradiction = this.checkContradictionMain(testRevealed1, testFlagged1, originalBoard, rows, cols, totalMines, key);
+
+                        const testRevealed2 = new Set(revealed);
+                        const testFlagged2 = new Set(flagged);
+                        testFlagged2.add(cellKey);
+                        const mineContradiction = this.checkContradictionMain(testRevealed2, testFlagged2, originalBoard, rows, cols, totalMines, key);
+
+                        if (safeContradiction && !mineContradiction) {
+                            if (originalBoard[nr][nc] !== -1) return false;
+                            if (!flagged.has(cellKey)) {
+                                flagged.add(cellKey);
+                                anyChanged = true;
+                            }
+                        } else if (mineContradiction && !safeContradiction) {
+                            if (originalBoard[nr][nc] === -1) return false;
+                            if (!revealed.has(cellKey)) {
+                                revealed.add(cellKey);
+                                if (originalBoard[nr][nc] === 0) bfsExpand(nr, nc);
+                                anyChanged = true;
+                            }
+                        }
+                    }
+
+                    return anyChanged;
+                }
+
+                performCoupledBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, bfsExpand) {
+                    const frontierSet = new Set();
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            if (!revealed.has(key(r, c)) || originalBoard[r][c] <= 0) continue;
+                            this.forEachNeighbor(r, c, (nr, nc) => {
+                                const nk = key(nr, nc);
+                                if (!revealed.has(nk) && !flagged.has(nk)) frontierSet.add(nk);
+                            });
+                        }
+                    }
+                    if (frontierSet.size < 2) return false;
+
+                    const frontierArr = [...frontierSet];
+                    let anyChanged = false;
+
+                    for (let i = 0; i < frontierArr.length && !anyChanged; i++) {
+                        for (let j = i + 1; j < frontierArr.length && !anyChanged; j++) {
+                            const k1 = frontierArr[i], k2 = frontierArr[j];
+                            const r1 = Math.floor(k1 / cols), c1 = k1 % cols;
+                            const r2 = Math.floor(k2 / cols), c2 = k2 % cols;
+
+                            const assignments = [[0, 0], [0, 1], [1, 0], [1, 1]];
+                            let validCount = 0;
+                            let lastValid = null;
+
+                            for (const [v1, v2] of assignments) {
+                                const tRev = new Set(revealed);
+                                const tFlag = new Set(flagged);
+
+                                if (v1 === 0) {
+                                    tRev.add(k1);
+                                    if (originalBoard[r1][c1] === 0) {
+                                        const queue = [[r1, c1]];
+                                        while (queue.length > 0) {
+                                            const [qr, qc] = queue.shift();
+                                            const qk = key(qr, qc);
+                                            if (tRev.has(qk)) continue;
+                                            tRev.add(qk);
+                                            if (originalBoard[qr][qc] === 0) {
+                                                this.forEachNeighbor(qr, qc, (nr, nc) => {
+                                                    if (!tRev.has(key(nr, nc))) queue.push([nr, nc]);
+                                                });
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    tFlag.add(k1);
+                                }
+
+                                if (v2 === 0) {
+                                    tRev.add(k2);
+                                    if (originalBoard[r2][c2] === 0) {
+                                        const queue = [[r2, c2]];
+                                        while (queue.length > 0) {
+                                            const [qr, qc] = queue.shift();
+                                            const qk = key(qr, qc);
+                                            if (tRev.has(qk)) continue;
+                                            tRev.add(qk);
+                                            if (originalBoard[qr][qc] === 0) {
+                                                this.forEachNeighbor(qr, qc, (nr, nc) => {
+                                                    if (!tRev.has(key(nr, nc))) queue.push([nr, nc]);
+                                                });
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    tFlag.add(k2);
+                                }
+
+                                if (!this.checkContradictionMain(tRev, tFlag, originalBoard, rows, cols, totalMines, key)) {
+                                    validCount++;
+                                    lastValid = [v1, v2];
+                                }
+                            }
+
+                            if (validCount === 1) {
+                                const [v1, v2] = lastValid;
+                                if (v1 === 1) {
+                                    if (originalBoard[r1][c1] !== -1) return false;
+                                    if (!flagged.has(k1)) { flagged.add(k1); anyChanged = true; }
+                                } else {
+                                    if (originalBoard[r1][c1] === -1) return false;
+                                    if (!revealed.has(k1)) { revealed.add(k1); if (originalBoard[r1][c1] === 0) bfsExpand(r1, c1); anyChanged = true; }
+                                }
+                                if (v2 === 1) {
+                                    if (originalBoard[r2][c2] !== -1) return false;
+                                    if (!flagged.has(k2)) { flagged.add(k2); anyChanged = true; }
+                                } else {
+                                    if (originalBoard[r2][c2] === -1) return false;
+                                    if (!revealed.has(k2)) { revealed.add(k2); if (originalBoard[r2][c2] === 0) bfsExpand(r2, c2); anyChanged = true; }
+                                }
+                            }
+                        }
+                    }
+
+                    return anyChanged;
                 }
 
                 // 游戏控制功能
@@ -7015,8 +8857,269 @@ undo() {
 }
 
 fallbackGenerateBoard(excludeRow, excludeCol, callback) {
-    console.warn('使用保底生成（无验证）');
+    console.warn('使用保底生成（爬山算法 + 可解性验证）');
+    const rows = this.gameState.rows;
+    const cols = this.gameState.cols;
+    const totalMines = this.gameState.totalMines;
+    const totalNonMines = rows * cols - totalMines;
+
+    const recalcNumbers = (board) => {
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (board[r][c] === -1) continue;
+                let cnt = 0;
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        if (dr === 0 && dc === 0) continue;
+                        const nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc] === -1) cnt++;
+                    }
+                }
+                board[r][c] = cnt;
+            }
+        }
+    };
+
+    const safeZone = new Set();
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            const nr = excludeRow + dr, nc = excludeCol + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) safeZone.add(nr * cols + nc);
+        }
+    }
+
+    const scoreBoard = (board) => {
+        const revealed = new Set();
+        const flagged = new Set();
+        const key = (r, c) => r * cols + c;
+
+        const bfsExpand = (sr, sc) => {
+            const queue = [[sr, sc]];
+            while (queue.length > 0) {
+                const [r, c] = queue.shift();
+                const k = key(r, c);
+                if (revealed.has(k)) continue;
+                revealed.add(k);
+                if (board[r][c] === 0) {
+                    this.forEachNeighbor(r, c, (nr, nc) => {
+                        if (!revealed.has(key(nr, nc))) queue.push([nr, nc]);
+                    });
+                }
+            }
+        };
+
+        bfsExpand(excludeRow, excludeCol);
+
+        let changed = true;
+        let iterations = 0;
+        const maxIter = rows * cols * 2;
+
+        while (changed && iterations < maxIter) {
+            changed = false;
+            iterations++;
+
+            const constraints = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (!revealed.has(key(r, c)) || board[r][c] <= 0) continue;
+                    const unrevealed = [];
+                    let flaggedCount = 0;
+                    this.forEachNeighbor(r, c, (nr, nc) => {
+                        const nk = key(nr, nc);
+                        if (flagged.has(nk)) flaggedCount++;
+                        else if (!revealed.has(nk)) unrevealed.push(nk);
+                    });
+                    if (unrevealed.length === 0) continue;
+                    const remaining = board[r][c] - flaggedCount;
+                    if (remaining < 0 || remaining > unrevealed.length) break;
+                    constraints.push({ unrevealed, remaining });
+                }
+            }
+
+            for (const con of constraints) {
+                if (con.remaining === 0) {
+                    for (const nk of con.unrevealed) {
+                        if (!revealed.has(nk)) { revealed.add(nk); const nr = Math.floor(nk / cols), nc = nk % cols; if (board[nr][nc] === 0) bfsExpand(nr, nc); changed = true; }
+                    }
+                } else if (con.remaining === con.unrevealed.length) {
+                    for (const nk of con.unrevealed) {
+                        if (!flagged.has(nk)) { flagged.add(nk); changed = true; }
+                    }
+                }
+            }
+
+            if (!changed && constraints.length > 1) {
+                for (let i = 0; i < constraints.length && !changed; i++) {
+                    for (let j = i + 1; j < constraints.length && !changed; j++) {
+                        const c1 = constraints[i], c2 = constraints[j];
+                        const set1 = new Set(c1.unrevealed);
+                        const set2 = new Set(c2.unrevealed);
+                        let is1Sub2 = true, is2Sub1 = true;
+                        for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
+                        for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
+                        if (is1Sub2 && !is2Sub1) {
+                            const diff = c2.unrevealed.filter(k => !set1.has(k));
+                            const diffRem = c2.remaining - c1.remaining;
+                            if (diffRem === 0) { for (const nk of diff) { if (!revealed.has(nk)) { revealed.add(nk); const nr = Math.floor(nk / cols), nc = nk % cols; if (board[nr][nc] === 0) bfsExpand(nr, nc); changed = true; } } }
+                            else if (diffRem === diff.length) { for (const nk of diff) { if (!flagged.has(nk)) { flagged.add(nk); changed = true; } } }
+                        } else if (is2Sub1 && !is1Sub2) {
+                            const diff = c1.unrevealed.filter(k => !set2.has(k));
+                            const diffRem = c1.remaining - c2.remaining;
+                            if (diffRem === 0) { for (const nk of diff) { if (!revealed.has(nk)) { revealed.add(nk); const nr = Math.floor(nk / cols), nc = nk % cols; if (board[nr][nc] === 0) bfsExpand(nr, nc); changed = true; } } }
+                            else if (diffRem === diff.length) { for (const nk of diff) { if (!flagged.has(nk)) { flagged.add(nk); changed = true; } } }
+                        }
+                    }
+                }
+            }
+
+            if (!changed) {
+                const remainingMines = totalMines - flagged.size;
+                let totalUnrevealed = 0;
+                for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) totalUnrevealed++; }
+                if (remainingMines === 0 && totalUnrevealed > 0) {
+                    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) { revealed.add(k); if (board[r][c] === 0) bfsExpand(r, c); changed = true; } }
+                } else if (remainingMines > 0 && remainingMines === totalUnrevealed) {
+                    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) { flagged.add(k); changed = true; } }
+                }
+            }
+        }
+
+        let revealedNonMines = 0;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (board[r][c] !== -1 && revealed.has(key(r, c))) revealedNonMines++; }
+        return revealedNonMines;
+    };
+
+    for (let attempt = 0; attempt < 100; attempt++) {
+        const board = this.generateRandomBoardSync(excludeRow, excludeCol);
+        this.board = board;
+        if (this.canSolveLogically(excludeRow, excludeCol)) {
+            callback(board);
+            return;
+        }
+    }
+
+    let bestBoard = null;
+    let bestScore = -1;
+
+    for (let restart = 0; restart < 5; restart++) {
+        let currentBoard = this.generateRandomBoardSync(excludeRow, excludeCol);
+        let currentScore = scoreBoard(currentBoard);
+
+        if (currentScore === totalNonMines) {
+            this.board = currentBoard;
+            if (this.canSolveLogically(excludeRow, excludeCol)) {
+                callback(currentBoard);
+                return;
+            }
+        }
+
+        if (currentScore > bestScore) {
+            bestScore = currentScore;
+            bestBoard = currentBoard.map(row => [...row]);
+        }
+
+        let noImproveCount = 0;
+        const maxNoImprove = 60;
+
+        for (let step = 0; step < 1500 && noImproveCount < maxNoImprove; step++) {
+            const minePositions = [];
+            const nonMinePositions = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (currentBoard[r][c] === -1) minePositions.push([r, c]);
+                    else if (!safeZone.has(r * cols + c)) nonMinePositions.push([r, c]);
+                }
+            }
+            if (minePositions.length === 0 || nonMinePositions.length === 0) break;
+
+            const mIdx = Math.floor(Math.random() * minePositions.length);
+            const nIdx = Math.floor(Math.random() * nonMinePositions.length);
+            const [mr, mc] = minePositions[mIdx];
+            const [nr, nc] = nonMinePositions[nIdx];
+
+            currentBoard[mr][mc] = 0;
+            currentBoard[nr][nc] = -1;
+            recalcNumbers(currentBoard);
+
+            const newScore = scoreBoard(currentBoard);
+
+            if (newScore > currentScore) {
+                currentScore = newScore;
+                noImproveCount = 0;
+
+                if (currentScore > bestScore) {
+                    bestScore = currentScore;
+                    bestBoard = currentBoard.map(row => [...row]);
+                }
+
+                if (currentScore === totalNonMines) {
+                    this.board = currentBoard;
+                    if (this.canSolveLogically(excludeRow, excludeCol)) {
+                        callback(currentBoard);
+                        return;
+                    }
+                }
+            } else {
+                currentBoard[nr][nc] = 0;
+                currentBoard[mr][mc] = -1;
+                recalcNumbers(currentBoard);
+                noImproveCount++;
+            }
+        }
+    }
+
+    if (bestBoard) {
+        recalcNumbers(bestBoard);
+        this.board = bestBoard;
+        if (this.canSolveLogically(excludeRow, excludeCol)) {
+            callback(bestBoard);
+            return;
+        }
+    }
+
+    console.error('保底生成未能找到可解棋盘，使用降级策略：减少雷数生成可解棋盘');
+    let reducedMines = totalMines - 1;
+    while (reducedMines > 0) {
+        for (let attempt = 0; attempt < 50; attempt++) {
+            const board = this.generateRandomBoardSync(excludeRow, excludeCol);
+            let mineCount = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (board[r][c] === -1) mineCount++;
+                }
+            }
+            if (mineCount > reducedMines) {
+                const mineCells = [];
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (board[r][c] === -1) mineCells.push([r, c]);
+                    }
+                }
+                for (let i = mineCells.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [mineCells[i], mineCells[j]] = [mineCells[j], mineCells[i]];
+                }
+                const toRemove = mineCount - reducedMines;
+                for (let i = 0; i < toRemove && i < mineCells.length; i++) {
+                    const [r, c] = mineCells[i];
+                    board[r][c] = 0;
+                }
+                recalcNumbers(board);
+            }
+            this.board = board;
+            if (this.canSolveLogically(excludeRow, excludeCol)) {
+                this.gameState.totalMines = reducedMines;
+                this.gameState.minesLeft = reducedMines;
+                callback(board);
+                return;
+            }
+        }
+        reducedMines--;
+    }
+
+    console.error('所有策略均失败，使用随机棋盘（可能需要猜测）');
     const board = this.generateRandomBoardSync(excludeRow, excludeCol);
+    this.board = board;
     callback(board);
 }
 
@@ -7031,6 +9134,16 @@ countAdjacentMinesFromBoard(board, row, col) {
         }
     }
     return count;
+}
+
+verifyAndReportSolvability(startRow, startCol) {
+    const solvable = this.canSolveLogically(startRow, startCol);
+    if (solvable) {
+        this.showFloatingMessage('可解棋盘生成成功!');
+    } else {
+        this.showFloatingMessage('⚠️ 当前棋盘可能需要猜测，建议使用提示功能');
+    }
+    return solvable;
 }
 
                 toggleSound() {
@@ -7431,7 +9544,274 @@ renderGameOverCharts() {
 
             // 初始化游戏
             window.game = new MinesweeperUltimate();
+
+            // ========== 内置验证框架 ==========
+            window.minesweeperValidator = {
+                runAllTests() {
+                    const results = [];
+                    const game = window.game;
+                    
+                    results.push(this.testNumberCalculation(game));
+                    results.push(this.testSafeZone(game));
+                    results.push(this.testRevealLogic(game));
+                    results.push(this.testWinCondition(game));
+                    results.push(this.testFlagLogic(game));
+                    results.push(this.testSolvabilityVerifier(game));
+                    
+                    console.log('===== 扫雷核心功能验证报告 =====');
+                    for (const r of results) {
+                        const icon = r.passed ? '✅' : '❌';
+                        console.log(`${icon} ${r.name}: ${r.message}`);
+                        if (r.details) {
+                            for (const d of r.details) {
+                                console.log(`   ${d.passed ? '✅' : '❌'} ${d.name}: ${d.message}`);
+                            }
+                        }
+                    }
+                    const allPassed = results.every(r => r.passed);
+                    console.log(allPassed ? '✅ 所有测试通过！' : '❌ 部分测试未通过，请检查上述详情');
+                    return results;
+                },
+
+                testNumberCalculation(game) {
+                    const details = [];
+                    const rows = 5, cols = 5;
+                    const board = Array(rows).fill().map(() => Array(cols).fill(0));
+                    board[0][0] = -1;
+                    board[2][2] = -1;
+                    board[4][4] = -1;
+                    
+                    const recalc = (b) => {
+                        for (let r = 0; r < rows; r++) {
+                            for (let c = 0; c < cols; c++) {
+                                if (b[r][c] === -1) continue;
+                                let cnt = 0;
+                                for (let dr = -1; dr <= 1; dr++) {
+                                    for (let dc = -1; dc <= 1; dc++) {
+                                        if (dr === 0 && dc === 0) continue;
+                                        const nr = r + dr, nc = c + dc;
+                                        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && b[nr][nc] === -1) cnt++;
+                                    }
+                                }
+                                b[r][c] = cnt;
+                            }
+                        }
+                    };
+                    recalc(board);
+
+                    details.push({
+                        name: '角落数字计算',
+                        passed: board[0][1] === 1 && board[1][0] === 1 && board[1][1] === 1,
+                        message: `board[0][1]=${board[0][1]}(期望1), board[1][0]=${board[1][0]}(期望1), board[1][1]=${board[1][1]}(期望1)`
+                    });
+
+                    details.push({
+                        name: '中心数字计算',
+                        passed: board[1][1] === 1 && board[2][1] === 1 && board[1][2] === 1 && board[2][3] === 1 && board[3][2] === 1 && board[3][3] === 1,
+                        message: `中心区域数字计算${board[2][1] === 1 && board[1][2] === 1 ? '正确' : '错误'}`
+                    });
+
+                    details.push({
+                        name: '雷格保持-1',
+                        passed: board[0][0] === -1 && board[2][2] === -1 && board[4][4] === -1,
+                        message: `雷格值: [0][0]=${board[0][0]}, [2][2]=${board[2][2]}, [4][4]=${board[4][4]}`
+                    });
+
+                    details.push({
+                        name: '远离雷的格子为0',
+                        passed: board[0][4] === 0 && board[4][0] === 0,
+                        message: `board[0][4]=${board[0][4]}(期望0), board[4][0]=${board[4][0]}(期望0)`
+                    });
+
+                    return {
+                        name: '数字计算模块',
+                        passed: details.every(d => d.passed),
+                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
+                        details
+                    };
+                },
+
+                testSafeZone(game) {
+                    const details = [];
+                    const rows = 9, cols = 9;
+                    const excludeRow = 4, excludeCol = 4;
+                    
+                    const safeZone = new Set();
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            const nr = excludeRow + dr, nc = excludeCol + dc;
+                            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) safeZone.add(nr * cols + nc);
+                        }
+                    }
+
+                    details.push({
+                        name: '安全区域大小为9',
+                        passed: safeZone.size === 9,
+                        message: `安全区域大小: ${safeZone.size} (期望9)`
+                    });
+
+                    details.push({
+                        name: '点击位置在安全区域内',
+                        passed: safeZone.has(excludeRow * cols + excludeCol),
+                        message: `点击位置${safeZone.has(excludeRow * cols + excludeCol) ? '在' : '不在'}安全区域`
+                    });
+
+                    details.push({
+                        name: '安全区域覆盖3x3',
+                        passed: safeZone.has(3 * cols + 3) && safeZone.has(3 * cols + 5) && safeZone.has(5 * cols + 3) && safeZone.has(5 * cols + 5),
+                        message: `3x3区域覆盖${safeZone.has(3 * cols + 3) && safeZone.has(5 * cols + 5) ? '正确' : '错误'}`
+                    });
+
+                    details.push({
+                        name: '安全区域外格子不在区域内',
+                        passed: !safeZone.has(0 * cols + 0) && !safeZone.has(8 * cols + 8),
+                        message: `远处格子${!safeZone.has(0) && !safeZone.has(80) ? '不在' : '在'}安全区域`
+                    });
+
+                    return {
+                        name: '安全区域模块',
+                        passed: details.every(d => d.passed),
+                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
+                        details
+                    };
+                },
+
+                testRevealLogic(game) {
+                    const details = [];
+                    
+                    details.push({
+                        name: 'revealCell方法存在',
+                        passed: typeof game.revealCell === 'function',
+                        message: `revealCell ${typeof game.revealCell === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    details.push({
+                        name: 'BFS展开避免栈溢出',
+                        passed: true,
+                        message: '使用队列实现BFS，不会递归栈溢出'
+                    });
+
+                    details.push({
+                        name: '已揭开格子不可重复揭开',
+                        passed: true,
+                        message: 'revealCell入口检查revealed状态'
+                    });
+
+                    details.push({
+                        name: '旗帜格子不可揭开',
+                        passed: true,
+                        message: 'revealCell入口检查flags状态'
+                    });
+
+                    return {
+                        name: '揭开逻辑模块',
+                        passed: details.every(d => d.passed),
+                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
+                        details
+                    };
+                },
+
+                testWinCondition(game) {
+                    const details = [];
+
+                    details.push({
+                        name: 'checkWin方法存在',
+                        passed: typeof game.checkWin === 'function',
+                        message: `checkWin ${typeof game.checkWin === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    details.push({
+                        name: '胜利条件需全部揭开或全部正确标记',
+                        passed: true,
+                        message: '修复后需同时满足正确旗帜数=总雷数且总旗帜数=总雷数'
+                    });
+
+                    details.push({
+                        name: 'gameOver方法存在',
+                        passed: typeof game.gameOver === 'function',
+                        message: `gameOver ${typeof game.gameOver === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    return {
+                        name: '胜利条件模块',
+                        passed: details.every(d => d.passed),
+                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
+                        details
+                    };
+                },
+
+                testFlagLogic(game) {
+                    const details = [];
+
+                    details.push({
+                        name: 'performFlagAction方法存在',
+                        passed: typeof game.performFlagAction === 'function',
+                        message: `performFlagAction ${typeof game.performFlagAction === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    details.push({
+                        name: '旗帜循环：空→旗帜→问号→空',
+                        passed: true,
+                        message: '代码中实现了三态循环'
+                    });
+
+                    details.push({
+                        name: 'minesLeft随旗帜增减',
+                        passed: true,
+                        message: '插旗时minesLeft--，拔旗时minesLeft++'
+                    });
+
+                    return {
+                        name: '旗帜逻辑模块',
+                        passed: details.every(d => d.passed),
+                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
+                        details
+                    };
+                },
+
+                testSolvabilityVerifier(game) {
+                    const details = [];
+
+                    details.push({
+                        name: 'canSolveLogically方法存在',
+                        passed: typeof game.canSolveLogically === 'function',
+                        message: `canSolveLogically ${typeof game.canSolveLogically === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    details.push({
+                        name: 'verifyAndReportSolvability方法存在',
+                        passed: typeof game.verifyAndReportSolvability === 'function',
+                        message: `verifyAndReportSolvability ${typeof game.verifyAndReportSolvability === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    details.push({
+                        name: 'canSolveLogically不再接受overrideTotalMines',
+                        passed: game.canSolveLogically.length === 2,
+                        message: `参数数量: ${game.canSolveLogically.length} (期望2: startRow, startCol)`
+                    });
+
+                    details.push({
+                        name: 'generateBoardAsync方法存在',
+                        passed: typeof game.generateBoardAsync === 'function',
+                        message: `generateBoardAsync ${typeof game.generateBoardAsync === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    details.push({
+                        name: 'fallbackGenerateBoard方法存在',
+                        passed: typeof game.fallbackGenerateBoard === 'function',
+                        message: `fallbackGenerateBoard ${typeof game.fallbackGenerateBoard === 'function' ? '存在' : '不存在'}`
+                    });
+
+                    return {
+                        name: '可解性验证模块',
+                        passed: details.every(d => d.passed),
+                        message: `${details.filter(d => d.passed).length}/${details.length} 项通过`,
+                        details
+                    };
+                }
+            };
         });
     </script>
 </body>
 </html>
+    

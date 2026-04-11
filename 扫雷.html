@@ -1110,7 +1110,7 @@
         .help-section strong {
             color: var(--primary-color);
         }
-        /* ========== 版本信息样式 ========== */
+        /* ========== 更新信息样式 ========== */
         .version-info {
             text-align: center;
             margin-top: 30px;
@@ -1781,7 +1781,7 @@
     </div>
 </aside>
         <footer class="version-info">
-            <small>by空城 版本 <span id="version-number">2.0.0</span></small>
+            <small>by空城 更新次数 <span id="version-number">42</span></small>
         </footer>
     </main>
     
@@ -2097,9 +2097,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             class MinesweeperUltimate {
                                 constructor() {
-                    // 版本控制
-                    this.VERSION = '2.0.0';
-                    this.STORAGE_PREFIX = `minesweeper_v${this.VERSION.replace(/\./g, '_')}_`;
+                    this.VERSION = 42;
+                    this.STORAGE_PREFIX = 'minesweeper_';
 
                     this.progressiveHints = {
                         hints: [],
@@ -2530,7 +2529,6 @@ clearHighlights() {
                         this.loadAchievements();
                         this.loadSavedGames();
                         this.loadTempSaves();
-                        this.cleanOldVersionData();
                         this.initAudio();
                         this.bindEvents();
                         this.checkMobileDevice();
@@ -3109,12 +3107,7 @@ async loadSavedGameFromData(saveData) {
 
                 saveSavedGames() {
                     try {
-                        const saveData = {
-                            version: this.VERSION,
-                            timestamp: Date.now(),
-                            data: this.savedGames
-                        };
-                        localStorage.setItem(this.STORAGE_PREFIX + 'saved_games', JSON.stringify(saveData));
+                        localStorage.setItem(this.STORAGE_PREFIX + 'saved_games', JSON.stringify(this.savedGames));
                     } catch (e) {
                         console.log('保存存档列表失败:', e);
                     }
@@ -3124,13 +3117,7 @@ async loadSavedGameFromData(saveData) {
                     try {
                         const saved = localStorage.getItem(this.STORAGE_PREFIX + 'saved_games');
                         if (saved) {
-                            const saveData = JSON.parse(saved);
-                            if (saveData.version && this.isCompatibleVersion(saveData.version)) {
-                                this.savedGames = saveData.data || [];
-                            } else {
-                                console.log('存档数据版本不兼容，清空存档');
-                                this.savedGames = [];
-                            }
+                            this.savedGames = JSON.parse(saved) || [];
                         }
                     } catch (e) {
                         console.log('加载存档列表失败:', e);
@@ -3142,7 +3129,6 @@ async loadSavedGameFromData(saveData) {
 exportSaves() {
     try {
         const exportData = {
-            version: this.VERSION,
             timestamp: Date.now(),
             normalSaves: this.savedGames,
             tempSaves: this.tempSaves,
@@ -3189,7 +3175,6 @@ exportSaves() {
 showExportDialog() {
     try {
         const exportData = {
-            version: this.VERSION,
             timestamp: Date.now(),
             normalSaves: this.savedGames,
             tempSaves: this.tempSaves,
@@ -3279,11 +3264,6 @@ handleImportFile(event) {
     reader.onload = (e) => {
         try {
             const importData = JSON.parse(e.target.result);
-            
-            if (!importData.version || !this.isCompatibleVersion(importData.version)) {
-                this.showFloatingMessage('❌ 存档版本不兼容！');
-                return;
-            }
             
             let importCount = 0;
             
@@ -3377,29 +3357,17 @@ limitTempSaves() {
 // 保存临时存档到本地存储
 saveTempSaves() {
     try {
-        const saveData = {
-            version: this.VERSION,
-            timestamp: Date.now(),
-            data: this.tempSaves
-        };
-        localStorage.setItem(this.STORAGE_PREFIX + 'temp_saves', JSON.stringify(saveData));
+        localStorage.setItem(this.STORAGE_PREFIX + 'temp_saves', JSON.stringify(this.tempSaves));
     } catch (e) {
         console.log('保存临时存档失败:', e);
     }
 }
 
-// 加载临时存档
 loadTempSaves() {
     try {
         const saved = localStorage.getItem(this.STORAGE_PREFIX + 'temp_saves');
         if (saved) {
-            const saveData = JSON.parse(saved);
-            if (saveData.version && this.isCompatibleVersion(saveData.version)) {
-                this.tempSaves = saveData.data || [];
-            } else {
-                console.log('临时存档版本不兼容，清空临时存档');
-                this.tempSaves = [];
-            }
+            this.tempSaves = JSON.parse(saved) || [];
         }
     } catch (e) {
         console.log('加载临时存档失败:', e);
@@ -3517,7 +3485,6 @@ compressBoardData() {
         return btoa(binary);
     };
     return {
-        v: 2,
         board: boardStr,
         revealed: packBooleans(this.revealed),
         flags: packBooleans(this.flags),
@@ -3529,203 +3496,34 @@ compressBoardData() {
 decompressBoardData(compressed) {
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
-    if (compressed.v === 2) {
-        let idx = 0;
-        this.board = Array(rows).fill().map(() => Array(cols).fill(0));
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                this.board[r][c] = compressed.board.charCodeAt(idx) - 49;
-                idx++;
-            }
-        }
-        const unpackBooleans = (base64Str) => {
-            const binary = atob(base64Str);
-            const totalCells = rows * cols;
-            const arr = Array(rows).fill().map(() => Array(cols).fill(false));
-            for (let i = 0; i < totalCells; i++) {
-                const byteIndex = Math.floor(i / 8);
-                const bitIndex = i % 8;
-                const r = Math.floor(i / cols);
-                const c = i % cols;
-                arr[r][c] = (binary.charCodeAt(byteIndex) & (1 << bitIndex)) !== 0;
-            }
-            return arr;
-        };
-        this.revealed = unpackBooleans(compressed.revealed);
-        this.flags = unpackBooleans(compressed.flags);
-        this.questions = unpackBooleans(compressed.questions);
-        this.specialCells = unpackBooleans(compressed.specialCells);
-    } else {
-        this.board = Array(rows).fill().map(() => Array(cols).fill(0));
-        this.revealed = Array(rows).fill().map(() => Array(cols).fill(false));
-        this.flags = Array(rows).fill().map(() => Array(cols).fill(false));
-        this.questions = Array(rows).fill().map(() => Array(cols).fill(false));
-        this.specialCells = Array(rows).fill().map(() => Array(cols).fill(false));
-        let index = 0;
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                this.board[r][c] = compressed.board[index];
-                this.revealed[r][c] = compressed.revealed[index] === 1;
-                this.flags[r][c] = compressed.flags[index] === 1;
-                this.questions[r][c] = compressed.questions[index] === 1;
-                this.specialCells[r][c] = compressed.specialCells[index] === 1;
-                index++;
-            }
+    let idx = 0;
+    this.board = Array(rows).fill().map(() => Array(cols).fill(0));
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            this.board[r][c] = compressed.board.charCodeAt(idx) - 49;
+            idx++;
         }
     }
-}
-
-                // 版本控制函数
-                isCompatibleVersion(dataVersion) {
-                    const parseVersion = (version) => {
-                        return version.split('.').map(num => parseInt(num, 10));
-                    };
-
-                    try {
-                        const currentVersion = parseVersion(this.VERSION);
-                        const savedVersion = parseVersion(dataVersion);
-
-                        if (currentVersion[0] === savedVersion[0]) {
-                            return true;
-                        }
-
-                        if (currentVersion[0] > savedVersion[0]) {
-                            const compatibleVersions = ['2.0.0', '1.9.0', '1.8.0'];
-                            return compatibleVersions.includes(dataVersion);
-                        }
-
-                        return false;
-                    } catch (e) {
-                        console.log('版本检查失败:', e);
-                        return false;
-                    }
-                }
-
-                migrateOldStats() {
-                    try {
-                        const oldKeys = ['minesweeper-stats'];
-                        for (const key of oldKeys) {
-                            const oldData = localStorage.getItem(key);
-                            if (oldData) {
-                                try {
-                                    const parsed = JSON.parse(oldData);
-                                    const migratedData = this.migrateStatsData(parsed);
-                                    if (migratedData) {
-                                        this.stats = { ...this.stats, ...migratedData };
-                                        this.saveStats();
-                                        localStorage.removeItem(key);
-                                        break;
-                                    }
-                                } catch (e) {
-                                    console.log(`迁移统计数据失败 ${key}:`, e);
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.log('统计数据迁移过程失败:', e);
-                    }
-                }
-
-                migrateOldAchievements() {
-                    try {
-                        const oldKeys = ['minesweeper-achievements'];
-                        for (const key of oldKeys) {
-                            const oldData = localStorage.getItem(key);
-                            if (oldData) {
-                                try {
-                                    const parsed = JSON.parse(oldData);
-                                    const migratedData = this.migrateAchievementData(parsed);
-                                    if (migratedData) {
-                                        this.achievements = { ...this.achievements, ...migratedData };
-                                        this.updateAchievementDisplay();
-                                        this.saveAchievements();
-                                        localStorage.removeItem(key);
-                                        break;
-                                    }
-                                } catch (e) {
-                                    console.log(`迁移成就数据失败 ${key}:`, e);
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.log('成就数据迁移过程失败:', e);
-                    }
-                }
-
-                migrateStatsData(oldData) {
-    try {
-        // 如果数据本身是新格式，直接返回其data部分
-        if (oldData.version && oldData.data) {
-            return oldData.data;
+    const unpackBooleans = (base64Str) => {
+        const binary = atob(base64Str);
+        const totalCells = rows * cols;
+        const arr = Array(rows).fill().map(() => Array(cols).fill(false));
+        for (let i = 0; i < totalCells; i++) {
+            const byteIndex = Math.floor(i / 8);
+            const bitIndex = i % 8;
+            const r = Math.floor(i / cols);
+            const c = i % cols;
+            arr[r][c] = (binary.charCodeAt(byteIndex) & (1 << bitIndex)) !== 0;
         }
-        // 处理旧的、扁平化的数据结构
-        const migratedStats = {
-            gamesPlayed: oldData.gamesPlayed || 0,
-            gamesWon: oldData.gamesWon || 0,
-            totalTime: oldData.totalTime || 0,
-            bestTimes: {
-                beginner: oldData.bestTimes?.beginner || Infinity,
-                intermediate: oldData.bestTimes?.intermediate || Infinity,
-                expert: oldData.bestTimes?.expert || Infinity,
-                mega: oldData.bestTimes?.mega || Infinity
-            },
-            totalCorrectFlags: oldData.totalCorrectFlags || 0,
-            consecutivePerfectGames: oldData.consecutivePerfectGames || 0,
-            maxConsecutivePerfectGames: oldData.maxConsecutivePerfectGames || 0,
-            consecutiveWins: oldData.consecutiveWins || 0,
-            maxConsecutiveWins: oldData.maxConsecutiveWins || 0,
-            totalSpecialCellsCollected: oldData.totalSpecialCellsCollected || 0
-        };
-        return migratedStats;
-    } catch (e) {
-        console.log('统计数据转换失败:', e);
-        return null;
-    }
+        return arr;
+    };
+    this.revealed = unpackBooleans(compressed.revealed);
+    this.flags = unpackBooleans(compressed.flags);
+    this.questions = unpackBooleans(compressed.questions);
+    this.specialCells = unpackBooleans(compressed.specialCells);
 }
 
-migrateAchievementData(oldData) {
-    try {
-        // 如果数据本身是新格式，直接返回其data部分
-        if (oldData.version && oldData.data) {
-            return oldData.data;
-        }
-        // 处理旧的、扁平化的数据结构
-        const migratedAchievements = {
-            firstWin: oldData.firstWin || { unlocked: false, unlockedAt: null },
-            speedDemon: oldData.speedDemon || { unlocked: false, unlockedAt: null },
-            perfect: oldData.perfect || { unlocked: false, unlockedAt: null },
-            lucky: oldData.lucky || { unlocked: false, unlockedAt: null },
-            comboMaster: oldData.comboMaster || { unlocked: false, currentValue: 0, unlockedAt: null },
-            giantSlayer: oldData.giantSlayer || { unlocked: false, unlockedAt: null },
-            mineHunter: oldData.mineHunter || { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
-            timeMaster: oldData.timeMaster || { unlocked: false, currentValue: 0, unlockedAt: null },
-            flagExpert: oldData.flagExpert || { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
-            survivalKing: oldData.survivalKing || { unlocked: false, unlockedAt: null },
-            efficiencyStar: oldData.efficiencyStar || { unlocked: false, currentValue: 0, unlockedAt: null },
-            swiftThinker: oldData.swiftThinker || { unlocked: false, unlockedAt: null },
-            noGuessMaster: oldData.noGuessMaster || { unlocked: false, unlockedAt: null },
-            zenMaster: oldData.zenMaster || { unlocked: false, currentValue: 0, unlockedAt: null },
-            speedHero: oldData.speedHero || { unlocked: false, unlockedAt: null },
-            intermediateConquer: oldData.intermediateConquer || { unlocked: false, unlockedAt: null },
-            expertPath: oldData.expertPath || { unlocked: false, unlockedAt: null },
-            veteran: oldData.veteran || { unlocked: false, currentValue: 0, unlockedAt: null },
-            winStreak: oldData.winStreak || { unlockedLevel: -1, currentValue: 0, unlockedAt: null },
-            comboLegend: oldData.comboLegend || { unlocked: false, currentValue: 0, unlockedAt: null }
-        };
 
-        // 兼容更旧的布尔值格式
-        Object.keys(migratedAchievements).forEach(key => {
-            if (typeof oldData[key] === 'boolean') {
-                migratedAchievements[key] = { unlocked: oldData[key], unlockedAt: null };
-            }
-        });
-
-        return migratedAchievements;
-    } catch (e) {
-        console.log('成就数据转换失败:', e);
-        return null;
-    }
-}
 
                 updateAchievementDisplay() {
     Object.keys(this.achievements).forEach(key => {
@@ -3768,35 +3566,6 @@ migrateAchievementData(oldData) {
                     const versionElement = document.getElementById('version-number');
                     if (versionElement) {
                         versionElement.textContent = this.VERSION;
-                    }
-                }
-
-                cleanOldVersionData() {
-                    try {
-                        const oldKeys = [
-                            'minesweeper-stats',
-                            'minesweeper-achievements',
-                            'minesweeper_v1_8_0_stats',
-                            'minesweeper_v1_8_0_achievements',
-                            'minesweeper_v1_9_0_stats',
-                            'minesweeper_v1_9_0_achievements',
-                            'minesweeper_v2_0_0_stats',
-                            'minesweeper_v2_0_0_achievements'
-                        ];
-
-                        let cleanedCount = 0;
-                        oldKeys.forEach(key => {
-                            if (localStorage.getItem(key)) {
-                                localStorage.removeItem(key);
-                                cleanedCount++;
-                            }
-                        });
-
-                        if (cleanedCount > 0) {
-                            console.log(`清理了 ${cleanedCount} 个旧版本数据项`);
-                        }
-                    } catch (e) {
-                        console.log('清理旧版本数据失败:', e);
                     }
                 }
 
@@ -9391,15 +9160,9 @@ renderGameOverCharts() {
                     return `${mins}:${secs.toString().padStart(2, '0')}`;
                 }
 
-                // 数据持久化（版本化）
                 saveStats() {
                     try {
-                        const statsData = {
-                            version: this.VERSION,
-                            timestamp: Date.now(),
-                            data: this.stats
-                        };
-                        localStorage.setItem(this.STORAGE_PREFIX + 'stats', JSON.stringify(statsData));
+                        localStorage.setItem(this.STORAGE_PREFIX + 'stats', JSON.stringify(this.stats));
                     } catch (e) {
                         console.log('保存统计数据失败:', e);
                     }
@@ -9409,30 +9172,16 @@ renderGameOverCharts() {
                     try {
                         const saved = localStorage.getItem(this.STORAGE_PREFIX + 'stats');
                         if (saved) {
-                            const statsData = JSON.parse(saved);
-                            if (statsData.version && this.isCompatibleVersion(statsData.version)) {
-                                this.stats = { ...this.stats, ...statsData.data };
-                            } else {
-                                console.log('统计数据版本不兼容，使用默认数据');
-                                this.migrateOldStats();
-                            }
-                        } else {
-                            this.migrateOldStats();
+                            this.stats = { ...this.stats, ...JSON.parse(saved) };
                         }
                     } catch (e) {
                         console.log('加载统计数据失败:', e);
-                        this.migrateOldStats();
                     }
                 }
 
                 saveAchievements() {
                     try {
-                        const achievementData = {
-                            version: this.VERSION,
-                            timestamp: Date.now(),
-                            data: this.achievements
-                        };
-                        localStorage.setItem(this.STORAGE_PREFIX + 'achievements', JSON.stringify(achievementData));
+                        localStorage.setItem(this.STORAGE_PREFIX + 'achievements', JSON.stringify(this.achievements));
                     } catch (e) {
                         console.log('保存成就数据失败:', e);
                     }
@@ -9442,20 +9191,11 @@ renderGameOverCharts() {
                     try {
                         const saved = localStorage.getItem(this.STORAGE_PREFIX + 'achievements');
                         if (saved) {
-                            const achievementData = JSON.parse(saved);
-                            if (achievementData.version && this.isCompatibleVersion(achievementData.version)) {
-                                this.achievements = { ...this.achievements, ...achievementData.data };
-                                this.updateAchievementDisplay();
-                            } else {
-                                console.log('成就数据版本不兼容，使用默认数据');
-                                this.migrateOldAchievements();
-                            }
-                        } else {
-                            this.migrateOldAchievements();
+                            this.achievements = { ...this.achievements, ...JSON.parse(saved) };
+                            this.updateAchievementDisplay();
                         }
                     } catch (e) {
                         console.log('加载成就数据失败:', e);
-                        this.migrateOldAchievements();
                     }
                 }
             }

@@ -67,7 +67,7 @@ button.danger:hover{background:#b91c1c}
 canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10px; touch-action:none;}
 .overlay{
   position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-  background:rgba(10,12,24,.65); backdrop-filter: blur(4px);
+  background:rgba(10,12,24,.65); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
   z-index:1000;
 }
 .overlay.visible{display:flex}
@@ -823,6 +823,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   align-items: center;
   justify-content: center;
   background: rgba(10,12,24,.75);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   z-index: 2000;
 }
@@ -1108,6 +1109,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   align-items: center;
   justify-content: center;
   background: rgba(10,12,24,.85);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   z-index: 3000;
 }
@@ -1156,6 +1158,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   align-items: center;
   justify-content: center;
   background: rgba(10,12,24,.7);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   z-index: 2500;
 }
@@ -1285,6 +1288,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   align-items: center;
   justify-content: center;
   background: rgba(10,12,24,.85);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   z-index: 3500;
 }
@@ -2092,7 +2096,7 @@ class StorageManager {
     } else {
         leaderboard[mode].sort((a, b) => (b.score || 0) - (a.score || 0));
     }
-    leaderboard[mode] = leaderboard[mode].slice(0, 20);
+    leaderboard[mode] = leaderboard[mode].slice(0, LEADERBOARD_MAX_ENTRIES);
     this.saveLeaderboard(leaderboard);
     const rank = leaderboard[mode].findIndex(e => e.id === entry.id) + 1;
     return rank;
@@ -2684,14 +2688,14 @@ const SRS_KICKS_JLSTZ = {
     '2->1': [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
     '2->3': [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
     '3->2': [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
-    '3->0': [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
-    '0->3': [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]]
+    '3->0': [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+    '0->3': [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]]
 };
 const SRS_KICKS_I = {
-    '0->1': [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
-    '1->0': [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
-    '1->2': [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
-    '2->1': [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+    '0->1': [[0, 0], [-2, 0], [1, 0], [-2, 1], [1, -2]],
+    '1->0': [[0, 0], [2, 0], [-1, 0], [2, -1], [-1, 2]],
+    '1->2': [[0, 0], [-1, 0], [2, 0], [-1, -2], [2, 1]],
+    '2->1': [[0, 0], [1, 0], [-2, 0], [1, 2], [-2, -1]],
     '2->3': [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
     '3->2': [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
     '3->0': [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
@@ -2788,6 +2792,30 @@ const statTetrises = document.getElementById('statTetrises');
 const statTSpins = document.getElementById('statTSpins');
 const cfgSFXVolume = document.getElementById('cfgSFXVolume');
 const cfgMusicVolume = document.getElementById('cfgMusicVolume');
+const holdBoxEl = document.querySelector('.hold-box');
+const CLEAR_ANIMATION_DURATION = 800;
+const GRAVITY_MIN = 80;
+const GRAVITY_BASE = 900;
+const GRAVITY_STEP = 60;
+const TAP_THRESHOLD = 14;
+const TAP_MAX_DURATION = 220;
+const SWIPE_SOFT_DROP_THRESHOLD = 26;
+const MOBILE_SWIPE_SENSITIVITY = 26;
+const SWIPE_STEP_MIN = 14;
+const TWO_FINGER_TAP_MAX_DURATION = 260;
+const TWO_FINGER_MOVE_THRESHOLD = 18;
+const SPAWN_CONSUME_WINDOW = 220;
+const HARD_DROP_ANIM_SPEED = 3;
+const SOFT_DROP_SPEED = 50;
+const ANIM_LERP_FACTOR = 0.35;
+const MAX_LEVEL = 20;
+const LINES_PER_LEVEL = 10;
+const ALL_CLEAR_BONUS_MULTIPLIER = 10000;
+const B2B_MULTIPLIER = 1.5;
+const COMBO_BONUS_PER = 50;
+const LEADERBOARD_MAX_ENTRIES = 20;
+const PROGRESS_SAVE_INTERVAL = 30000;
+const PROGRESS_EXPIRY_MS = 24 * 60 * 60 * 1000;
 let COLS = 10, ROWS = 20;
 let BLOCK = 30;
 let board = createMatrix(COLS, ROWS);
@@ -2812,12 +2840,11 @@ let hardDropping = false;
 let hardDropStartY = 0;
 let hardDropTargetY = 0;
 let hardDropCurrentY = 0;
-let hardDropSpeed = 3;
+let hardDropSpeed = HARD_DROP_ANIM_SPEED;
 let clearingLines = false;
 let clearAnimationTimer = 0;
-const CLEAR_ANIMATION_DURATION = 800;
 let gravity = 800;
-const levelSpeed = lvl => Math.max(80, 900 - (lvl - 1) * 60);
+const levelSpeed = lvl => Math.max(GRAVITY_MIN, GRAVITY_BASE - (lvl - 1) * GRAVITY_STEP);
 let dropTimer = 0;
 let lastTS = 0;
 let lockDelay = 1500;
@@ -2898,7 +2925,7 @@ let heldKeys = {
 let spawnJustHappened = false;
 let spawnConsumeDeadline = 0;
 
-let mobileSwipeSensitivity = 26;
+let mobileSwipeSensitivity = MOBILE_SWIPE_SENSITIVITY;
 let mobileSwipeAccumX = 0;
 let mobileSwipeLastX = 0;
 let mobileSwipeActive = false;
@@ -2911,45 +2938,84 @@ let mobileTwoFinger = {
   moved: false
 };
 
-const EXTRA_KICKS = {
-  JLSTZ: [
-    [0,0],[ -1,0],[ 1,0],[ -2,0],[ 2,0],
-    [0,-1],[ -1,-1],[ 1,-1],
-    [0,-2],[ -1,-2],[ 1,-2]
-  ],
-  I: [
-    [0,0],[ -1,0],[ 1,0],[ -2,0],[ 2,0],
-    [0,-1],[ -1,-1],[ 1,-1],
-    [0,-2],[ -1,-2],[ 1,-2],
-    [0,1]
-  ]
+const EXTENDED_KICKS = {
+  JLSTZ: {
+    '0->1': [[1, 0], [2, 0], [-2, 0], [0, -1], [1, -1], [-2, -1], [2, -1], [0, 1], [1, 1], [-1, 1], [2, 1], [-2, 1]],
+    '1->0': [[-1, 0], [-2, 0], [2, 0], [0, 1], [-1, 1], [2, 1], [-2, 1], [0, -1], [-1, -1], [1, -1], [-2, -1], [2, -1]],
+    '1->2': [[-1, 0], [-2, 0], [2, 0], [0, 1], [-1, 1], [2, 1], [-2, 1], [0, -1], [-1, -1], [1, -1], [-2, -1], [2, -1]],
+    '2->1': [[1, 0], [2, 0], [-2, 0], [0, -1], [1, -1], [-2, -1], [2, -1], [0, 1], [1, 1], [-1, 1], [2, 1], [-2, 1]],
+    '2->3': [[-1, 0], [-2, 0], [2, 0], [0, -1], [-1, -1], [2, -1], [-2, -1], [0, 1], [-1, 1], [1, 1], [-2, 1], [2, 1]],
+    '3->2': [[1, 0], [2, 0], [-2, 0], [0, 1], [1, 1], [-2, 1], [2, 1], [0, -1], [1, -1], [-1, -1], [-2, -1], [2, -1]],
+    '3->0': [[1, 0], [2, 0], [-2, 0], [0, 1], [1, 1], [-2, 1], [2, 1], [0, -1], [1, -1], [-1, -1], [-2, -1], [2, -1]],
+    '0->3': [[-1, 0], [-2, 0], [2, 0], [0, -1], [-1, -1], [2, -1], [-2, -1], [0, 1], [-1, 1], [1, 1], [-2, 1], [2, 1]]
+  },
+  I: {
+    '0->1': [[-1, 0], [2, 0], [-3, 0], [3, 0], [0, -1], [-1, -1], [1, -1], [-2, -1], [2, -1], [0, 1], [-1, 1], [1, 1], [-2, 1], [2, 1], [0, -2], [0, 2]],
+    '1->0': [[1, 0], [-2, 0], [-3, 0], [3, 0], [0, 1], [1, 1], [-1, 1], [2, 1], [-2, 1], [0, -1], [1, -1], [-1, -1], [2, -1], [-2, -1], [0, 2], [0, -2]],
+    '1->2': [[1, 0], [-2, 0], [-3, 0], [3, 0], [0, 1], [1, 1], [-1, 1], [2, 1], [-2, 1], [0, -1], [1, -1], [-1, -1], [2, -1], [-2, -1], [0, 2], [0, -2]],
+    '2->1': [[-1, 0], [2, 0], [-3, 0], [3, 0], [0, -1], [-1, -1], [1, -1], [-2, -1], [2, -1], [0, 1], [-1, 1], [1, 1], [-2, 1], [2, 1], [0, -2], [0, 2]],
+    '2->3': [[1, 0], [-2, 0], [-3, 0], [3, 0], [0, 1], [1, 1], [-1, 1], [2, 1], [-2, 1], [0, -1], [1, -1], [-1, -1], [2, -1], [-2, -1], [0, 2], [0, -2]],
+    '3->2': [[-1, 0], [2, 0], [-3, 0], [3, 0], [0, -1], [-1, -1], [1, -1], [-2, -1], [2, -1], [0, 1], [-1, 1], [1, 1], [-2, 1], [2, 1], [0, -2], [0, 2]],
+    '3->0': [[-1, 0], [2, 0], [-3, 0], [3, 0], [0, -1], [-1, -1], [1, -1], [-2, -1], [2, -1], [0, 1], [-1, 1], [1, 1], [-2, 1], [2, 1], [0, -2], [0, 2]],
+    '0->3': [[1, 0], [-2, 0], [-3, 0], [3, 0], [0, -1], [1, -1], [-1, -1], [2, -1], [-2, -1], [0, 1], [1, 1], [-1, 1], [2, 1], [-2, 1], [0, -2], [0, 2]]
+  }
 };
+
+const PARTICLE_POOL_SIZE = 300;
+const particlePool = [];
+let particlePoolInitialized = false;
+
+function initParticlePool() {
+  if (particlePoolInitialized) return;
+  for (let i = 0; i < PARTICLE_POOL_SIZE; i++) {
+    particlePool.push({ active: false, x:0, y:0, vx:0, vy:0, life:0, decay:0, size:0, gravity:0, color:'', rotation:0, rotationSpeed:0, type:'normal' });
+  }
+  particlePoolInitialized = true;
+}
+
+function acquireParticle(x, y, color, type = 'normal') {
+  initParticlePool();
+  let p = null;
+  for (let i = 0; i < particlePool.length; i++) {
+    if (!particlePool[i].active) { p = particlePool[i]; break; }
+  }
+  if (!p) {
+    if (particlePool.length < PARTICLE_POOL_SIZE * 2) {
+      p = { active: false, x:0, y:0, vx:0, vy:0, life:0, decay:0, size:0, gravity:0, color:'', rotation:0, rotationSpeed:0, type:'normal' };
+      particlePool.push(p);
+    } else {
+      p = { active: false, x:0, y:0, vx:0, vy:0, life:0, decay:0, size:0, gravity:0, color:'', rotation:0, rotationSpeed:0, type:'normal' };
+    }
+  }
+  p.active = true;
+  p.x = x;
+  p.y = y;
+  p.color = color;
+  p.type = type;
+  p.rotation = Math.random() * Math.PI * 2;
+  p.rotationSpeed = (Math.random() - 0.5) * 0.3;
+  if (type === 'spark') {
+    p.vx = (Math.random() - 0.5) * 12;
+    p.vy = Math.random() * 4 - 1;
+    p.life = 1.0;
+    p.decay = 0.03 + Math.random() * 0.02;
+    p.size = 2 + Math.random() * 3;
+    p.gravity = 0.15;
+  } else {
+    p.vx = (Math.random() - 0.5) * 10;
+    p.vy = (Math.random() - 0.5) * 10 - 3;
+    p.life = 1.0;
+    p.decay = 0.008 + Math.random() * 0.008;
+    p.size = 4 + Math.random() * 5;
+    p.gravity = 0.25;
+  }
+  return p;
+}
 
 class Particle {
     constructor(x, y, color, type = 'normal') {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-
-        if(type === 'spark') {
-            this.vx = (Math.random() - 0.5) * 12;
-            this.vy = Math.random() * 4 - 1;
-            this.life = 1.0;
-            this.decay = 0.03 + Math.random() * 0.02;
-            this.size = 2 + Math.random() * 3;
-            this.gravity = 0.15;
-        } else {
-            this.vx = (Math.random() - 0.5) * 10;
-            this.vy = (Math.random() - 0.5) * 10 - 3;
-            this.life = 1.0;
-            this.decay = 0.008 + Math.random() * 0.008;
-            this.size = 4 + Math.random() * 5;
-            this.gravity = 0.25;
-        }
-
-        this.color = color;
-        this.rotation = Math.random() * Math.PI * 2;
-        this.rotationSpeed = (Math.random() - 0.5) * 0.3;
+        const pooled = acquireParticle(x, y, color, type);
+        Object.assign(this, pooled);
     }
 
     update() {
@@ -2959,10 +3025,15 @@ class Particle {
         this.vx *= 0.98;
         this.life -= this.decay;
         this.rotation += this.rotationSpeed;
-        return this.life > 0;
+        if (this.life <= 0) {
+          this.active = false;
+          return false;
+        }
+        return true;
     }
 
     draw(ctx) {
+        if (!this.active) return;
         ctx.save();
         ctx.globalAlpha = this.life;
         ctx.translate(this.x, this.y);
@@ -3019,7 +3090,9 @@ function collide(b, p) {
                 return true;
             }
 
-            if(ny >= 0 && b[ny][nx]) {
+            if(ny < 0) continue;
+
+            if(b[ny][nx]) {
                 return true;
             }
         }
@@ -3084,14 +3157,16 @@ function checkTSpin(p, kickIndex) {
 
     if(filledCorners < 3) return null;
 
+    if(filledCorners >= 4) return 'normal';
+
+    if(kickIndex === 4) return 'normal';
+
     const front = frontCorners[p.rotation] || frontCorners[0];
     const frontFilled = front.filter(c => isCornerFilled(c)).length;
 
-    if(kickIndex >= 3 || frontFilled < 2) {
-        return 'mini';
-    }
+    if(kickIndex === 0 && frontFilled >= 2) return 'normal';
 
-    return 'normal';
+    return 'mini';
 }
 
 function clearLines() {
@@ -3133,7 +3208,7 @@ function clearLines() {
     if (isSpecial) {
       if (lastClearWasSpecial) {
         b2bCount++;
-        b2bMultiplier = 1.5;
+        b2bMultiplier = B2B_MULTIPLIER;
       } else {
         b2bCount = 1;
       }
@@ -3157,7 +3232,7 @@ function clearLines() {
       baseScore = normalScores[cleared] || 0;
     }
     combo++;
-    const comboBonus = combo > 1 ? 50 * (combo - 1) : 0;
+    const comboBonus = combo > 1 ? COMBO_BONUS_PER * (combo - 1) : 0;
     const totalScore = Math.floor((baseScore + comboBonus) * level * b2bMultiplier);
     score += totalScore;
     lines += cleared;
@@ -3176,12 +3251,11 @@ function clearLines() {
     clearAnimationTimer = 0;
     
     spawn();
-    
+    checkModeCompletion();
+
     setTimeout(() => {
       clearingLines = false;
     }, CLEAR_ANIMATION_DURATION);
-    
-    checkModeCompletion();
   } else {
     combo = 0;
     updateStats();
@@ -3191,7 +3265,7 @@ function clearLines() {
 }
 
 function triggerAllClear() {
-    const allClearBonus = 10000 * level;
+    const allClearBonus = ALL_CLEAR_BONUS_MULTIPLIER * level;
     score += allClearBonus;
 
     audioSystem.playSound('tetris', 1.5);
@@ -3308,7 +3382,7 @@ function onCanvasTouchMove(e) {
     const avgX = (t0.clientX + t1.clientX) / 2;
     const avgY = (t0.clientY + t1.clientY) / 2;
     const dy = avgY - mobileTwoFinger.startAvgY;
-    if (Math.abs(dy) > 18) mobileTwoFinger.moved = true;
+    if (Math.abs(dy) > TWO_FINGER_MOVE_THRESHOLD) mobileTwoFinger.moved = true;
     return;
   }
 
@@ -3318,7 +3392,7 @@ function onCanvasTouchMove(e) {
   mobileSwipeLastX = t.clientX;
   mobileSwipeAccumX += dx;
 
-  const step = Math.max(14, mobileSwipeSensitivity);
+  const step = Math.max(SWIPE_STEP_MIN, mobileSwipeSensitivity);
   while (mobileSwipeAccumX >= step) {
     mobileSwipeAccumX -= step;
     inputAction('moveRight');
@@ -3329,7 +3403,7 @@ function onCanvasTouchMove(e) {
   }
 
   const dyTotal = t.clientY - touchStartY;
-  if (dyTotal > 26) {
+  if (dyTotal > SWIPE_SOFT_DROP_THRESHOLD) {
     if (!keyState['softDrop']) {
       keyState['softDrop'] = true;
       startSoftDrop();
@@ -3347,7 +3421,7 @@ function onCanvasTouchEnd(e) {
     const dt = Date.now() - mobileTwoFinger.startTime;
     const endTouches = e.changedTouches ? e.changedTouches.length : 0;
 
-    if (dt < 260 && !mobileTwoFinger.moved) {
+    if (dt < TWO_FINGER_TAP_MAX_DURATION && !mobileTwoFinger.moved) {
       inputAction('pause');
     } else if (mobileTwoFinger.moved) {
       inputAction('hardDrop');
@@ -3372,8 +3446,7 @@ function onCanvasTouchEnd(e) {
   const adx = Math.abs(dx), ady = Math.abs(dy);
   const dt = Date.now() - touchStartTime;
 
-  const TAP_TH = 14;
-  if (adx < TAP_TH && ady < TAP_TH && dt < 220) {
+  if (adx < TAP_THRESHOLD && ady < TAP_THRESHOLD && dt < TAP_MAX_DURATION) {
     const rect = cvs.getBoundingClientRect();
     const relY = t.clientY - rect.top;
     if (relY < rect.height * 0.5) inputAction('rotateRight');
@@ -3401,7 +3474,8 @@ function rotate(dir = +1) {
   const baseKicks = (piece.type === 'I')
     ? (SRS_KICKS_I[kickKey] || [[0, 0]])
     : (SRS_KICKS_JLSTZ[kickKey] || [[0, 0]]);
-  const extra = (piece.type === 'I') ? EXTRA_KICKS.I : EXTRA_KICKS.JLSTZ;
+  const extendedTable = (piece.type === 'I') ? EXTENDED_KICKS.I : EXTENDED_KICKS.JLSTZ;
+  const extra = extendedTable[kickKey] || [];
   const kicks = baseKicks.concat(extra);
   for (let kickIdx = 0; kickIdx < kicks.length; kickIdx++) {
     const kick = kicks[kickIdx];
@@ -3447,8 +3521,7 @@ function flushPendingInputsOnSpawn() {
 function spawn() {
   piece = newPiece(takeFromQueue());
   holdLocked = false;
-  const holdBox = document.querySelector('.hold-box');
-  if (holdBox) holdBox.classList.remove('locked');
+  if (holdBoxEl) holdBoxEl.classList.remove('locked');
 
   lockTimer = 0;
   lockWarningTimer = 0;
@@ -3476,7 +3549,7 @@ function spawn() {
   redrawSidePanels();
 
   spawnJustHappened = true;
-  spawnConsumeDeadline = Date.now() + 220;
+  spawnConsumeDeadline = Date.now() + SPAWN_CONSUME_WINDOW;
 
   applyIRS_IHS_OnSpawn();
   flushPendingInputsOnSpawn();
@@ -3500,7 +3573,7 @@ function newPiece(type) {
     };
 
     if(type === 'I') {
-        p.y = -2;
+        p.y = -1;
     }
 
     if(p.x < 0) {
@@ -3519,8 +3592,8 @@ function newPiece(type) {
 function updateLevelByLines(){
     if(gameMode === 'sprint' || gameMode === 'ultra' || gameMode === 'cheese' || gameMode === 'practice') return;
 
-    const computed = startLevel + Math.floor(lines / 10);
-    const newLevel = Math.min(20, Math.max(1, computed));
+    const computed = startLevel + Math.floor(lines / LINES_PER_LEVEL);
+    const newLevel = Math.min(MAX_LEVEL, Math.max(1, computed));
     if(newLevel !== level){
         const oldLevel = level;
         level = newLevel;
@@ -3568,7 +3641,6 @@ function move(dx) {
 
 let softDropActive = false;
 let softDropTimer = 0;
-const SOFT_DROP_SPEED = 50;
 
 function softDropStep() {
   if (!piece || hardDropping) return false;
@@ -3714,12 +3786,14 @@ function maybeResetLockTimer(reason = '') {
 }
 
 function ghostY(){
-    let gy = piece.y;
-    while(true){
-        gy++;
-        const test = { ...piece, y: gy };
-        if(collide(board, test)) return gy - 1;
+    let lo = piece.y, hi = ROWS;
+    while(lo < hi){
+        const mid = (lo + hi + 1) >> 1;
+        const test = { ...piece, y: mid };
+        if(collide(board, test)) hi = mid - 1;
+        else lo = mid;
     }
+    return lo;
 }
 
 function lerp(a,b,t){ return a + (b - a) * t; }
@@ -3807,10 +3881,14 @@ function draw() {
     ctx.strokeRect(barX, barY, barW, barH);
   }
 
-  for (let i = particles.length - 1; i >= 0; i--) {
-    if (!particles[i].update()) particles.splice(i, 1);
-    else particles[i].draw(ctx);
+  let writeIdx = 0;
+  for (let i = 0; i < particles.length; i++) {
+    if (particles[i].update()) {
+      particles[i].draw(ctx);
+      particles[writeIdx++] = particles[i];
+    }
   }
+  particles.length = writeIdx;
 }
 
 function drawPieceOutline(p) {
@@ -3851,95 +3929,114 @@ function drawPieceOutline(p) {
     ctx.shadowBlur = 0;
 }
 
-function varGap(){ return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap')) || 1; }
+let cachedGap = 1;
+function updateCachedGap(){ cachedGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap')) || 1; }
+function varGap(){ return cachedGap; }
+
+const cellCache = new Map();
+let cellCacheBlockSize = 0;
+let cellCacheTexture = '';
+
+function getCellCacheKey(color, texture, blockSize) {
+  return `${color}|${texture}|${blockSize}`;
+}
+
+function prerenderCell(color, texture, blockSize) {
+  const gap = cachedGap;
+  const size = blockSize - 2 * gap;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = blockSize;
+  offscreen.height = blockSize;
+  const oc = offscreen.getContext('2d');
+
+  switch(texture) {
+    case 'glossy':
+      oc.fillStyle = color;
+      oc.fillRect(gap, gap, size, size);
+      const gg = oc.createLinearGradient(gap, gap, gap, size * 0.4);
+      gg.addColorStop(0, 'rgba(255,255,255,0.6)');
+      gg.addColorStop(1, 'rgba(255,255,255,0)');
+      oc.fillStyle = gg;
+      oc.fillRect(gap, gap, size, size * 0.4);
+      const sg = oc.createLinearGradient(gap, size * 0.6, gap, size);
+      sg.addColorStop(0, 'rgba(0,0,0,0)');
+      sg.addColorStop(1, 'rgba(0,0,0,0.4)');
+      oc.fillStyle = sg;
+      oc.fillRect(gap, size * 0.6, size, size * 0.4);
+      oc.strokeStyle = 'rgba(255,255,255,0.3)';
+      oc.lineWidth = 1;
+      oc.strokeRect(gap + 0.5, gap + 0.5, size - 1, size - 1);
+      break;
+    case 'glow':
+      oc.shadowBlur = 15;
+      oc.shadowColor = color;
+      oc.fillStyle = color;
+      oc.fillRect(gap, gap, size, size);
+      oc.shadowBlur = 0;
+      const rg = oc.createRadialGradient(blockSize/2, blockSize/2, 0, blockSize/2, blockSize/2, size/2);
+      rg.addColorStop(0, 'rgba(255,255,255,0.6)');
+      rg.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+      rg.addColorStop(1, 'rgba(255,255,255,0)');
+      oc.fillStyle = rg;
+      oc.fillRect(gap, gap, size, size);
+      break;
+    case 'pixel':
+      oc.fillStyle = color;
+      oc.fillRect(gap, gap, size, size);
+      oc.fillStyle = 'rgba(255,255,255,0.5)';
+      oc.fillRect(gap, gap, size, 2);
+      oc.fillRect(gap, gap, 2, size);
+      oc.fillStyle = 'rgba(0,0,0,0.5)';
+      oc.fillRect(gap, gap + size - 2, size, 2);
+      oc.fillRect(gap + size - 2, gap, 2, size);
+      break;
+    case 'outline':
+      oc.strokeStyle = color;
+      oc.lineWidth = 2;
+      oc.strokeRect(gap + 1, gap + 1, size - 2, size - 2);
+      oc.fillStyle = color + '20';
+      oc.fillRect(gap + 2, gap + 2, size - 4, size - 4);
+      break;
+    default:
+      oc.fillStyle = color;
+      oc.fillRect(gap, gap, size, size);
+      oc.globalAlpha = 0.4;
+      oc.fillStyle = 'rgba(255,255,255,0.10)';
+      oc.fillRect(gap, gap, size, 4);
+      oc.globalAlpha = 0.35;
+      oc.fillStyle = 'rgba(0,0,0,0.25)';
+      oc.fillRect(gap, size - 4, size, 4);
+      break;
+  }
+  return offscreen;
+}
+
+function invalidateCellCache() {
+  cellCache.clear();
+  cellCacheBlockSize = BLOCK;
+  cellCacheTexture = skin.texture || 'flat';
+}
+
+function getCachedCell(color) {
+  const texture = skin.texture || 'flat';
+  if (cellCacheBlockSize !== BLOCK || cellCacheTexture !== texture) {
+    invalidateCellCache();
+  }
+  const key = getCellCacheKey(color, texture, BLOCK);
+  let cached = cellCache.get(key);
+  if (!cached) {
+    cached = prerenderCell(color, texture, BLOCK);
+    cellCache.set(key, cached);
+  }
+  return cached;
+}
 
 function drawCell(x, y, color, alpha = 1) {
     const px = x * BLOCK;
     const py = y * BLOCK;
-    const gap = varGap();
-    const size = BLOCK - 2 * gap;
-
     ctx.globalAlpha = alpha;
-
-    const texture = skin.texture || 'flat';
-
-    switch(texture) {
-        case 'glossy':
-            ctx.fillStyle = color;
-            ctx.fillRect(px + gap, py + gap, size, size);
-
-            const glossGradient = ctx.createLinearGradient(px + gap, py + gap, px + gap, py + size * 0.4);
-            glossGradient.addColorStop(0, 'rgba(255,255,255,0.6)');
-            glossGradient.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = glossGradient;
-            ctx.fillRect(px + gap, py + gap, size, size * 0.4);
-
-            const shadowGradient = ctx.createLinearGradient(px + gap, py + size * 0.6, px + gap, py + size);
-            shadowGradient.addColorStop(0, 'rgba(0,0,0,0)');
-            shadowGradient.addColorStop(1, 'rgba(0,0,0,0.4)');
-            ctx.fillStyle = shadowGradient;
-            ctx.fillRect(px + gap, py + size * 0.6, size, size * 0.4);
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(px + gap + 0.5, py + gap + 0.5, size - 1, size - 1);
-            break;
-
-        case 'glow':
-            ctx.shadowBlur = 15 * alpha;
-            ctx.shadowColor = color;
-            ctx.fillStyle = color;
-            ctx.fillRect(px + gap, py + gap, size, size);
-            ctx.shadowBlur = 0;
-
-            const glowGradient = ctx.createRadialGradient(
-                px + BLOCK/2, py + BLOCK/2, 0,
-                px + BLOCK/2, py + BLOCK/2, size/2
-            );
-            glowGradient.addColorStop(0, 'rgba(255,255,255,0.6)');
-            glowGradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
-            glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = glowGradient;
-            ctx.fillRect(px + gap, py + gap, size, size);
-            break;
-
-        case 'pixel':
-            ctx.fillStyle = color;
-            ctx.fillRect(px + gap, py + gap, size, size);
-
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            ctx.fillRect(px + gap, py + gap, size, 2);
-            ctx.fillRect(px + gap, py + gap, 2, size);
-
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(px + gap, py + gap + size - 2, size, 2);
-            ctx.fillRect(px + gap + size - 2, py + gap, 2, size);
-            break;
-
-        case 'outline':
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(px + gap + 1, py + gap + 1, size - 2, size - 2);
-
-            ctx.fillStyle = color + '20';
-            ctx.fillRect(px + gap + 2, py + gap + 2, size - 4, size - 4);
-            break;
-
-        case 'flat':
-        default:
-            ctx.fillStyle = color;
-            ctx.fillRect(px + gap, py + gap, size, size);
-
-            ctx.globalAlpha = alpha * 0.4;
-            ctx.fillStyle = 'rgba(255,255,255,0.10)';
-            ctx.fillRect(px + gap, py + gap, size, 4);
-
-            ctx.globalAlpha = alpha * 0.35;
-            ctx.fillStyle = 'rgba(0,0,0,0.25)';
-            ctx.fillRect(px + gap, py + size - 4, size, 4);
-            break;
-    }
-
+    const cached = getCachedCell(color);
+    ctx.drawImage(cached, px, py);
     ctx.globalAlpha = 1;
 }
 
@@ -4015,6 +4112,11 @@ function drawMini(c, type){
   updateDASARR(dt);
   pollGamepad();
 
+  if (inputBuffer.length > 0) {
+    const now = Date.now();
+    inputBuffer = inputBuffer.filter(it => it && now <= (it.validUntil || 0));
+  }
+
   if (piece && !hardDropping) {
     if (gameMode === 'master') {
       const gy = ghostY();
@@ -4042,10 +4144,10 @@ function drawMini(c, type){
     const frac = grounded ? 0 : Math.min(0.999, dropTimer / denom);
     const targetY = piece.y + frac;
 
-    piece.animX = lerp(piece.animX, piece.x, 0.35);
+    piece.animX = lerp(piece.animX, piece.x, ANIM_LERP_FACTOR);
 
     if (piece.animY > targetY) piece.animY = targetY;
-    else piece.animY = lerp(piece.animY, targetY, 0.35);
+    else piece.animY = lerp(piece.animY, targetY, ANIM_LERP_FACTOR);
 
     if (grounded) {
       dropTimer = 0;
@@ -4171,9 +4273,8 @@ function drawMini(c, type){
   softDropActive = false;
   softDropTimer = 0;
   gameOverAnimating = false;
-  const holdBox = document.querySelector('.hold-box');
-  if(holdBox) {
-    holdBox.classList.remove('locked');
+  if(holdBoxEl) {
+    holdBoxEl.classList.remove('locked');
   }
   if(gameMode === 'cheese') {
     initCheeseMode();
@@ -4203,13 +4304,12 @@ function drawMini(c, type){
   touchingGround = false;
 }
 function hold() {
-  const holdBox = document.querySelector('.hold-box');
   if (!piece) return;
   if (gameOverAnimating) return;
   if (holdLocked || hardDropping) {
-    if (holdLocked && holdBox) {
-      holdBox.classList.add('shake');
-      setTimeout(() => holdBox.classList.remove('shake'), 300);
+    if (holdLocked && holdBoxEl) {
+      holdBoxEl.classList.add('shake');
+      setTimeout(() => holdBoxEl.classList.remove('shake'), 300);
       vibrate(10);
     }
     return;
@@ -4229,7 +4329,7 @@ function hold() {
     lockMoveResets = 0;
     lowestY = piece.y;
     if (piece.type === 'I') {
-      piece.y = -2;
+      piece.y = -1;
     } else {
       piece.y = 0;
     }
@@ -4251,17 +4351,17 @@ function hold() {
   };
   if (!holdType) {
     holdType = currentType;
-    if (holdBox) {
-      holdBox.classList.remove('locked');
-      holdBox.classList.add('animate-in');
-      setTimeout(() => holdBox.classList.remove('animate-in'), 500);
+    if (holdBoxEl) {
+      holdBoxEl.classList.remove('locked');
+      holdBoxEl.classList.add('animate-in');
+      setTimeout(() => holdBoxEl.classList.remove('animate-in'), 500);
     }
     piece = newPiece(takeFromQueue());
     centerPiece();
     applySpawnSafety();
   } else {
-    if (holdBox) {
-      holdBox.classList.add('animate-out');
+    if (holdBoxEl) {
+      holdBoxEl.classList.add('animate-out');
     }
     const nextType = holdType;
     holdType = currentType;
@@ -4269,18 +4369,18 @@ function hold() {
     centerPiece();
     applySpawnSafety();
     setTimeout(() => {
-      if (holdBox) {
-        holdBox.classList.remove('animate-out');
-        holdBox.classList.add('animate-in');
-        setTimeout(() => holdBox.classList.remove('animate-in'), 500);
+      if (holdBoxEl) {
+        holdBoxEl.classList.remove('animate-out');
+        holdBoxEl.classList.add('animate-in');
+        setTimeout(() => holdBoxEl.classList.remove('animate-in'), 500);
       }
       redrawSidePanels();
       draw();
     }, 0);
   }
   holdLocked = true;
-  if (holdBox) {
-    holdBox.classList.add('locked');
+  if (holdBoxEl) {
+    holdBoxEl.classList.add('locked');
   }
   redrawSidePanels();
   draw();
@@ -4349,11 +4449,6 @@ function inputAction(act) {
   }
   
   highlightKey(act);
-  
-  if (clearingLines && !piece && act !== 'pause') {
-    bufferInput(act, CLEAR_ANIMATION_DURATION + 260);
-    return;
-  }
   
   executeAction(act);
   draw();
@@ -4506,7 +4601,6 @@ function attachMobileHandlers(el) {
     updateHeldForMobile(mapped, true);
 
     if (!startContinuous(mapped)) {
-      if (clearingLines && mapped !== 'pause') bufferInput(mapped, CLEAR_ANIMATION_DURATION + 260);
       inputAction(mapped);
     }
   }, { passive: false });
@@ -4571,6 +4665,7 @@ function releaseAllContinuousInputs() {
 }
 
   function resize(){
+    updateCachedGap();
     const wrap = cvs.parentElement;
     const w = wrap.clientWidth - 8;
     const h = wrap.clientHeight - 8;
@@ -5066,7 +5161,7 @@ function formatTime(ms) {
     } : null
   };
   historyStates = historyStates.slice(0, historyIndex + 1);
-  historyStates.push(JSON.parse(JSON.stringify(state)));
+  historyStates.push(state);
   historyIndex = historyStates.length - 1;
   while(historyStates.length > MAX_HISTORY) {
     historyStates.shift();
@@ -5119,9 +5214,8 @@ function formatTime(ms) {
   lockWarningTimer = 0;
   showLockWarning = false;
   touchingGround = false;
-  const holdBox = document.querySelector('.hold-box');
-  if(holdBox) {
-    holdBox.classList.toggle('locked', holdLocked);
+  if(holdBoxEl) {
+    holdBoxEl.classList.toggle('locked', holdLocked);
   }
   updateStats();
   redrawSidePanels();
@@ -5339,7 +5433,6 @@ function onKeyDown(e) {
 
     if (action === 'rotateLeft' || action === 'rotateRight' || action === 'hold') {
       updateHeldKeyStateFromAction(action, true);
-      if (clearingLines) bufferInput(action, CLEAR_ANIMATION_DURATION + 260);
     }
 
     if (action === 'moveLeft' || action === 'moveRight') {
@@ -5565,7 +5658,7 @@ function loadSavedProgress() {
   const progress = storageManager.loadGameProgress();
   if (!progress) return false;
 
-  if (Date.now() - progress.savedAt > 24 * 60 * 60 * 1000) {
+  if (Date.now() - progress.savedAt > PROGRESS_EXPIRY_MS) {
     storageManager.clearGameProgress();
     return false;
   }
@@ -5626,8 +5719,7 @@ function restoreGameProgress(progress) {
   resize();
   draw();
 
-  const holdBox = document.querySelector('.hold-box');
-  if (holdBox) holdBox.classList.toggle('locked', holdLocked);
+  if (holdBoxEl) holdBoxEl.classList.toggle('locked', holdLocked);
 
   storageManager.clearGameProgress();
   return true;
@@ -5641,7 +5733,7 @@ function startProgressAutoSave() {
     if (running && !paused && !gameOver) {
       saveCurrentProgress();
     }
-  }, 30000);
+  }, PROGRESS_SAVE_INTERVAL);
 }
 
 function stopProgressAutoSave() {
@@ -5682,10 +5774,11 @@ function saveCurrentSettings() {
     ultraTime: parseInt(cfgUltraTime.value)
   };
 
-  storageManager.saveSettings(settings);
+  if (storageManager) storageManager.saveSettings(settings);
 }
 
 function loadSavedSettings() {
+  if (!storageManager) return;
   const settings = storageManager.loadSettings();
 
   cfgCols.value = settings.cols || 10;
@@ -5721,6 +5814,7 @@ function loadSavedSettings() {
 }
 
 function loadSavedKeybindings() {
+  if (!storageManager) return;
   const saved = storageManager.loadKeybindings();
   if (saved) {
     for (const action in saved) {
@@ -5994,7 +6088,6 @@ function showResumePrompt(progress) {
   draw();
   initOrientationDetection();
 })();
-
 })();
 </script>
 </body>

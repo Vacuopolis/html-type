@@ -79,8 +79,15 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
 .modal h3{margin:0 0 8px 0}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
 .row{display:flex; gap:10px; align-items:center; margin:6px 0}
-.row label{flex:1; color:var(--muted); font-size:14px}
-.row input[type="number"], .row select{width:140px}
+.row label{flex:1; color:var(--muted); font-size:14px; min-width:0}
+.row input[type="number"], .row select{width:140px; flex-shrink:0}
+.grid2 .row input[type="number"]{width:110px}
+.range-hint{font-size:11px; color:#6b7194; white-space:nowrap; margin-left:2px; flex-shrink:0}
+.range-hint .range-rec{color:var(--accent); opacity:0.8}
+.input-error{animation: inputShake 0.4s ease; border-color: #ef4444 !important}
+@keyframes inputShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.param-toast{position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#2d1b3d; border:1px solid #a855f7; color:#e0d4f5; padding:8px 18px; border-radius:8px; font-size:13px; z-index:99999; opacity:0; transition:opacity 0.3s; pointer-events:none; box-shadow:0 4px 20px rgba(168,85,247,0.3)}
+.param-toast.show{opacity:1}
 .modal .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:12px}
 .legend{font-size:12px; color:var(--muted); line-height:1.5}
 .badges{display:flex; gap:6px; flex-wrap:wrap; font-size:11px; margin-top:6px}
@@ -1541,10 +1548,149 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
 .piece-locking {
   animation: pieceBlink 0.2s ease-in-out infinite;
 }
-        
+
+.mode-rules {
+  margin-top: 12px;
+  padding: 12px;
+  background: #10142a;
+  border: 1px solid #2b3156;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  display: none;
+}
+.mode-rules.visible { display: block; }
+.mode-rules h5 {
+  margin: 0 0 6px 0;
+  color: var(--accent);
+  font-size: 13px;
+}
+.mode-rules ul {
+  margin: 4px 0;
+  padding-left: 16px;
+}
+.mode-rules li {
+  margin: 2px 0;
+}
+.mode-rules .score-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 11px;
+}
+.mode-rules .score-table th,
+.mode-rules .score-table td {
+  padding: 3px 6px;
+  border: 1px solid #2b3156;
+  text-align: center;
+}
+.mode-rules .score-table th {
+  background: #1a1f3d;
+  color: var(--accent);
+}
+.mode-settings-panel {
+  margin-top: 12px;
+  padding: 16px;
+  background: #10142a;
+  border: 1px solid #2b3156;
+  border-radius: 8px;
+  display: none;
+}
+.mode-settings-panel.visible { display: block; }
+.mode-settings-panel h5 {
+  margin: 0 0 12px 0;
+  color: var(--accent);
+  font-size: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #2b3156;
+}
+#tabModeSettings .mode-settings-panel.visible {
+  display: block;
+}
+.mode-settings-hint {
+  text-align: center;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 13px;
+  background: #10142a;
+  border: 1px dashed #2b3156;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+.difficulty-selector {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+.difficulty-btn {
+  flex: 1;
+  padding: 8px;
+  background: #1b2140;
+  border: 2px solid #2b345d;
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+.difficulty-btn:hover { border-color: #4f8cff; }
+.difficulty-btn.selected {
+  border-color: #4f8cff;
+  background: #1f2847;
+  color: var(--text);
+  box-shadow: 0 0 10px rgba(79,140,255,0.2);
+}
+.difficulty-btn .diff-label { font-weight: 600; display: block; margin-bottom: 2px; }
+.difficulty-btn .diff-desc { font-size: 10px; opacity: 0.7; }
+.practice-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0;
+}
+.practice-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #1b2140;
+  border: 1px solid #2b345d;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  color: var(--muted);
+}
+.practice-option:hover { border-color: #4f8cff; }
+.practice-option.active {
+  border-color: #4f8cff;
+  color: var(--text);
+  background: #1f2847;
+}
+.practice-option input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+.timer-beep-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4000;
+  opacity: 0;
+  font-size: 80px;
+  font-weight: 900;
+  color: #ef4444;
+  text-shadow: 0 0 30px rgba(239,68,68,0.8);
+  transition: opacity 0.1s ease;
+}
+.timer-beep-indicator.flash { opacity: 1; }
   </style>
 </head>
 <body>
+<div class="param-toast" id="paramToast"></div>
 <div class="app">
 <div id="portraitWarning" class="portrait-warning">
   <div class="portrait-content">
@@ -1662,6 +1808,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
                       
             <div class="tab-nav">
               <button class="tab-btn active" data-tab="mode">游戏模式</button>
+              <button class="tab-btn" data-tab="modeSettings">模式设置</button>
               <button class="tab-btn" data-tab="general">常规设置</button>
               <button class="tab-btn" data-tab="controls">控制设置</button>
             </div>
@@ -1670,41 +1817,158 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
               <div class="mode-selector">
                 <div class="mode-card selected" data-mode="marathon">
                   <h4>🏃 马拉松模式</h4>
-                  <p>经典玩法，随分数/行数升级，挑战高分</p>
+                  <p>经典玩法，随分数/行数升级，挑战高分。支持自定义升级速度和最高等级</p>
                 </div>
                 <div class="mode-card" data-mode="sprint">
                   <h4>⚡ 40行竞速</h4>
-                  <p>消除40行，记录最快时间，竞技首选</p>
+                  <p>消除指定行数，记录最快时间。可选初始难度，竞技首选</p>
                 </div>
                 <div class="mode-card" data-mode="ultra">
                   <h4>⏱️ 限时打分</h4>
-                  <p>2分钟限时，追求最高分数</p>
+                  <p>限时内追求最高分数，最后10秒音效倒计时提示</p>
                 </div>
                 <div class="mode-card" data-mode="cheese">
                   <h4>⛏️ 挖掘模式</h4>
-                  <p>清除预填充的垃圾行,考验挖掘技巧</p>
+                  <p>清除预填充的垃圾行，三档难度可选，考验挖掘技巧</p>
                 </div>
                 <div class="mode-card" data-mode="master">
                   <h4>👑 大师模式</h4>
-                  <p>20G重力，极短锁延，硬核挑战</p>
+                  <p>20G/10G/5G高重力，极短锁延，支持T-spin判定，硬核挑战</p>
                 </div>
                 <div class="mode-card" data-mode="practice">
                   <h4>📚 练习模式</h4>
-                  <p>支持撤销/重做，适合练习技巧</p>
+                  <p>撤销/重做，可调速度/锁延，无失败机制，自由练习</p>
                 </div>
               </div>
-          
-              <div id="cheeseSettings" style="display:none; margin-top:12px;">
-                <div class="row">
-                  <label>垃圾行数量</label>
-                  <input id="cfgCheeseLines" type="number" min="5" max="18" value="10">
-                </div>
+
+              <div id="modeRules" class="mode-rules"></div>
+            </div>
+
+            <div class="tab-content" id="tabModeSettings">
+              <div id="modeSettingsHeader" style="margin-bottom:12px;padding:10px 14px;background:#1a1f3d;border-radius:8px;display:flex;align-items:center;gap:8px;">
+                <span style="color:var(--muted);font-size:13px;">当前模式：</span>
+                <span id="currentModeLabel" style="color:var(--accent);font-weight:600;font-size:14px;">🏃 马拉松模式</span>
               </div>
-          
-              <div id="ultraSettings" style="display:none; margin-top:12px;">
-                <div class="row">
-                  <label>时间限制（秒）</label>
-                  <input id="cfgUltraTime" type="number" min="60" max="300" value="120">
+              <div id="modeSettingsContent">
+                <div id="marathonSettings" class="mode-settings-panel">
+                  <h5>🏃 马拉松模式设置</h5>
+                  <div class="row">
+                    <label>每级所需行数</label>
+                    <input id="cfgLinesPerLevel" type="number" min="1" max="30" step="1" value="10">
+                    <span class="range-hint">1-30 <span class="range-rec">推荐10</span></span>
+                  </div>
+                  <div class="row">
+                    <label>最高等级</label>
+                    <input id="cfgMaxLevel" type="number" min="10" max="30" step="1" value="20">
+                    <span class="range-hint">10-30 <span class="range-rec">推荐20</span></span>
+                  </div>
+                  <div class="row">
+                    <label>起始级别</label>
+                    <input id="cfgMarathonStartLevel" type="number" min="1" max="20" step="1" value="1">
+                    <span class="range-hint">1-20 <span class="range-rec">推荐1</span></span>
+                  </div>
+                </div>
+
+                <div id="sprintSettings" class="mode-settings-panel">
+                  <h5>⚡ 40行竞速设置</h5>
+                  <div class="row">
+                    <label>目标行数</label>
+                    <input id="cfgSprintLines" type="number" min="10" max="100" step="10" value="40">
+                    <span class="range-hint">10-100 <span class="range-rec">推荐40</span></span>
+                  </div>
+                  <div class="row">
+                    <label>初始级别</label>
+                    <select id="cfgSprintLevel">
+                      <option value="1" selected>级别1（慢速）</option>
+                      <option value="5">级别5（中速）</option>
+                      <option value="10">级别10（快速）</option>
+                      <option value="15">级别15（极速）</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="ultraSettings" class="mode-settings-panel">
+                  <h5>⏱️ 限时打分设置</h5>
+                  <div class="row">
+                    <label>时间限制（秒）</label>
+                    <input id="cfgUltraTime" type="number" min="60" max="300" value="120">
+                    <span class="range-hint">60-300 <span class="range-rec">推荐120</span></span>
+                  </div>
+                </div>
+
+                <div id="cheeseSettingsPanel" class="mode-settings-panel">
+                  <h5>⛏️ 挖掘模式设置</h5>
+                  <div class="row">
+                    <label>垃圾行数量</label>
+                    <input id="cfgCheeseLines" type="number" min="5" max="18" value="10">
+                    <span class="range-hint">5-18 <span class="range-rec">推荐10</span></span>
+                  </div>
+                  <div>
+                    <label style="color:var(--muted);font-size:13px;">难度等级</label>
+                    <div class="difficulty-selector" id="cheeseDifficulty">
+                      <div class="difficulty-btn selected" data-diff="easy">
+                        <span class="diff-label">简单</span>
+                        <span class="diff-desc">每行1-2空洞·通道对齐</span>
+                      </div>
+                      <div class="difficulty-btn" data-diff="medium">
+                        <span class="diff-label">中等</span>
+                        <span class="diff-desc">30%实心行·随机空洞</span>
+                      </div>
+                      <div class="difficulty-btn" data-diff="hard">
+                        <span class="diff-label">困难</span>
+                        <span class="diff-desc">55%实心行·障碍块·垃圾上升</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="masterSettings" class="mode-settings-panel">
+                  <h5>👑 大师模式设置</h5>
+                  <div class="row">
+                    <label>锁定延迟（ms）</label>
+                    <input id="cfgMasterLockDelay" type="number" min="50" max="500" step="50" value="200">
+                    <span class="range-hint">50-500 <span class="range-rec">推荐200</span></span>
+                  </div>
+                  <div class="row">
+                    <label>重力模式</label>
+                    <select id="cfgMasterGravity">
+                      <option value="20g" selected>20G（瞬间落地）</option>
+                      <option value="10g">10G（极快下落）</option>
+                      <option value="5g">5G（快速下落）</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="practiceSettings" class="mode-settings-panel">
+                  <h5>📚 练习模式设置</h5>
+                  <div class="practice-options">
+                    <label class="practice-option active">
+                      <input type="checkbox" id="cfgPracticeGrid" checked> 显示网格线
+                    </label>
+                    <label class="practice-option active">
+                      <input type="checkbox" id="cfgPracticeGhost" checked> 显示阴影
+                    </label>
+                    <label class="practice-option active">
+                      <input type="checkbox" id="cfgPracticeInfinite" checked> 无限时间
+                    </label>
+                    <label class="practice-option active">
+                      <input type="checkbox" id="cfgPracticeNoGameOver" checked> 无失败机制
+                    </label>
+                  </div>
+                  <div class="row">
+                    <label>方块下落速度（ms）</label>
+                    <input id="cfgPracticeGravity" type="number" min="50" max="2000" step="50" value="800">
+                    <span class="range-hint">50-2000 <span class="range-rec">推荐800</span></span>
+                  </div>
+                  <div class="row">
+                    <label>锁定延迟（ms）</label>
+                    <input id="cfgPracticeLockDelay" type="number" min="200" max="5000" step="100" value="1500">
+                    <span class="range-hint">200-5000 <span class="range-rec">推荐1500</span></span>
+                  </div>
+                </div>
+
+                <div id="noModeSettings" class="mode-settings-panel" style="display:block;">
+                  <p style="color:var(--muted);text-align:center;padding:20px;">请先在"游戏模式"标签中选择一个模式</p>
                 </div>
               </div>
             </div>
@@ -1714,18 +1978,22 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
                 <div class="row">
                   <label>列数（宽度）</label>
                   <input id="cfgCols" type="number" min="6" max="20" step="1" value="10">
+                  <span class="range-hint">6-20 <span class="range-rec">推荐10</span></span>
                 </div>
                 <div class="row">
                   <label>行数（高度）</label>
                   <input id="cfgRows" type="number" min="12" max="40" step="1" value="20">
+                  <span class="range-hint">12-40 <span class="range-rec">推荐20</span></span>
                 </div>
                 <div class="row">
                   <label>预览数量</label>
                   <input id="cfgPreview" type="number" min="1" max="6" step="1" value="5">
+                  <span class="range-hint">1-6 <span class="range-rec">推荐5</span></span>
                 </div>
                 <div class="row">
                   <label>起始级别</label>
                   <input id="cfgStartLevel" type="number" min="1" max="20" step="1" value="1">
+                  <span class="range-hint">1-20 <span class="range-rec">推荐1</span></span>
                 </div>
                 <div class="row">
                   <label>显示阴影（Ghost）</label>
@@ -1734,14 +2002,17 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
                 <div class="row">
                   <label>锁延迟（ms）</label>
                   <input id="cfgLockDelay" type="number" min="200" max="2000" step="50" value="1500">
+                  <span class="range-hint">200-2000 <span class="range-rec">推荐1500</span></span>
                 </div>
                 <div class="row">
                   <label>DAS 延迟（ms）</label>
                   <input id="cfgDAS" type="number" min="0" max="300" step="10" value="120">
+                  <span class="range-hint">0-300 <span class="range-rec">推荐120</span></span>
                 </div>
                 <div class="row">
                   <label>ARR 速度（ms）</label>
                   <input id="cfgARR" type="number" min="0" max="100" step="5" value="20">
+                  <span class="range-hint">0-100 <span class="range-rec">推荐20</span></span>
                 </div>
                 <div class="row">
                   <label>方块配色</label>
@@ -1896,6 +2167,8 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   <div class="key-indicator hard" data-key="hard">⤓</div>
   <div class="key-indicator hold" data-key="hold">H</div>
 </div>
+
+<div class="timer-beep-indicator" id="timerBeepIndicator"></div>
           
 <div class="leaderboard-overlay" id="leaderboardOverlay">
   <div class="leaderboard-modal">
@@ -1934,6 +2207,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
       <button class="leaderboard-tab" data-mode="ultra">限时打分</button>
       <button class="leaderboard-tab" data-mode="cheese">挖掘模式</button>
       <button class="leaderboard-tab" data-mode="master">大师模式</button>
+      <button class="leaderboard-tab" data-mode="practice">练习模式</button>
     </div>
               
     <div class="leaderboard-list">
@@ -2024,7 +2298,20 @@ class StorageManager {
       musicVolume: 30,
       gameMode: 'marathon',
       cheeseLines: 10,
-      ultraTime: 120
+      ultraTime: 120,
+      linesPerLevel: 10,
+      maxLevel: 20,
+      sprintLines: 40,
+      masterLockDelay: 200,
+      masterGravityMode: '20g',
+      practiceGrid: true,
+      practiceGhost: true,
+      practiceInfinite: true,
+      practiceNoGameOver: true,
+      practiceGravity: 800,
+      practiceLockDelay: 1500,
+      cheeseDifficulty: 'easy',
+      marathonStartLevel: 1
     });
   }
         
@@ -2079,7 +2366,8 @@ class StorageManager {
       sprint: [],
       ultra: [],
       cheese: [],
-      master: []
+      master: [],
+      practice: []
     });
   }
         
@@ -2112,7 +2400,8 @@ clearLeaderboard(mode = null) {
             sprint: [],
             ultra: [],
             cheese: [],
-            master: []
+            master: [],
+            practice: []
         });
     }
 }
@@ -2194,7 +2483,10 @@ function showGameOverStats(message, isVictory, rank) {
   const playTime = Date.now() - sessionStats.startTime;
 
   if (isVictory) {
-    gameoverTitle.textContent = '🎉 ' + (message || '恭喜完成！');
+    let titleMsg = '🎉 ' + (message || '恭喜完成！');
+    if (gameMode === 'sprint') titleMsg = '🎉 ' + sprintTargetLines + '行完成！';
+    if (gameMode === 'cheese') titleMsg = '🎉 垃圾行清理完成！';
+    gameoverTitle.textContent = titleMsg;
     gameoverModal.classList.add('victory');
     gameoverSubtitle.textContent = '太棒了！你做到了！';
   } else {
@@ -2206,9 +2498,21 @@ function showGameOverStats(message, isVictory, rank) {
   goScore.textContent = score.toLocaleString();
   goLines.textContent = lines;
   goLevel.textContent = level;
-  goTime.textContent = formatTime(playTime).split('.')[0];
+  goTime.textContent = (gameMode === 'sprint' || gameMode === 'cheese') ? formatTime(gameTimer) : formatTime(playTime).split('.')[0];
   goTetrises.textContent = sessionStats.tetrises;
   goMaxCombo.textContent = sessionStats.maxCombo;
+
+  const scoreLabel = document.querySelector('.gameover-stat-card.highlight .gameover-stat-label');
+  const timeLabel = document.querySelectorAll('.gameover-stat-card .gameover-stat-label')[3];
+  if (scoreLabel) {
+    if (gameMode === 'sprint' || gameMode === 'cheese') scoreLabel.textContent = '最终得分';
+    else scoreLabel.textContent = '最终得分';
+  }
+  if (timeLabel) {
+    if (gameMode === 'sprint') timeLabel.textContent = '完成用时';
+    else if (gameMode === 'cheese') timeLabel.textContent = '完成用时';
+    else timeLabel.textContent = '游戏时长';
+  }
 
   if (rank && rank <= 10) {
     gameoverRank.style.display = 'block';
@@ -2773,6 +3077,28 @@ const cfgSkin = document.getElementById('cfgSkin');
 const cfgVibration = document.getElementById('cfgVibration');
 const cfgCheeseLines = document.getElementById('cfgCheeseLines');
 const cfgUltraTime = document.getElementById('cfgUltraTime');
+const cfgLinesPerLevel = document.getElementById('cfgLinesPerLevel');
+const cfgMaxLevel = document.getElementById('cfgMaxLevel');
+const cfgSprintLines = document.getElementById('cfgSprintLines');
+const cfgSprintLevel = document.getElementById('cfgSprintLevel');
+const cfgMasterLockDelay = document.getElementById('cfgMasterLockDelay');
+const cfgMasterGravity = document.getElementById('cfgMasterGravity');
+const cfgPracticeGrid = document.getElementById('cfgPracticeGrid');
+const cfgPracticeGhost = document.getElementById('cfgPracticeGhost');
+const cfgPracticeInfinite = document.getElementById('cfgPracticeInfinite');
+const cfgPracticeNoGameOver = document.getElementById('cfgPracticeNoGameOver');
+const cfgPracticeGravity = document.getElementById('cfgPracticeGravity');
+const cfgPracticeLockDelay = document.getElementById('cfgPracticeLockDelay');
+const cfgMarathonStartLevel = document.getElementById('cfgMarathonStartLevel');
+const cheeseDifficultyEl = document.getElementById('cheeseDifficulty');
+const modeRulesEl = document.getElementById('modeRules');
+const timerBeepIndicator = document.getElementById('timerBeepIndicator');
+const marathonSettingsEl = document.getElementById('marathonSettings');
+const sprintSettingsEl = document.getElementById('sprintSettings');
+const cheeseSettingsPanelEl = document.getElementById('cheeseSettingsPanel');
+const masterSettingsEl = document.getElementById('masterSettings');
+const practiceSettingsEl = document.getElementById('practiceSettings');
+const ultraSettingsEl = document.getElementById('ultraSettings');
 const mobileControlsEl = document.getElementById('mobileControls');
 const mobileLeftEl = document.getElementById('mobileLeft');
 const mobileRightEl = document.getElementById('mobileRight');
@@ -2808,14 +3134,75 @@ const SPAWN_CONSUME_WINDOW = 220;
 const HARD_DROP_ANIM_SPEED = 3;
 const SOFT_DROP_SPEED = 50;
 const ANIM_LERP_FACTOR = 0.35;
-const MAX_LEVEL = 20;
-const LINES_PER_LEVEL = 10;
+const DEFAULT_MAX_LEVEL = 20;
+const DEFAULT_LINES_PER_LEVEL = 10;
 const ALL_CLEAR_BONUS_MULTIPLIER = 10000;
 const B2B_MULTIPLIER = 1.5;
 const COMBO_BONUS_PER = 50;
 const LEADERBOARD_MAX_ENTRIES = 20;
 const PROGRESS_SAVE_INTERVAL = 30000;
 const PROGRESS_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+const PARAM_RANGES = {
+  cfgCols: { min: 6, max: 20, rec: 10, name: '列数' },
+  cfgRows: { min: 12, max: 40, rec: 20, name: '行数' },
+  cfgPreview: { min: 1, max: 6, rec: 5, name: '预览数量' },
+  cfgStartLevel: { min: 1, max: 20, rec: 1, name: '起始级别' },
+  cfgLockDelay: { min: 200, max: 2000, rec: 1500, name: '锁延迟' },
+  cfgDAS: { min: 0, max: 300, rec: 120, name: 'DAS延迟' },
+  cfgARR: { min: 0, max: 100, rec: 20, name: 'ARR速度' },
+  cfgLinesPerLevel: { min: 1, max: 30, rec: 10, name: '每级所需行数' },
+  cfgMaxLevel: { min: 10, max: 30, rec: 20, name: '最高等级' },
+  cfgMarathonStartLevel: { min: 1, max: 20, rec: 1, name: '起始级别' },
+  cfgSprintLines: { min: 10, max: 100, rec: 40, name: '目标行数' },
+  cfgUltraTime: { min: 60, max: 300, rec: 120, name: '时间限制' },
+  cfgCheeseLines: { min: 5, max: 18, rec: 10, name: '垃圾行数量' },
+  cfgMasterLockDelay: { min: 50, max: 500, rec: 200, name: '锁定延迟' },
+  cfgPracticeGravity: { min: 50, max: 2000, rec: 800, name: '下落速度' },
+  cfgPracticeLockDelay: { min: 200, max: 5000, rec: 1500, name: '锁定延迟' }
+};
+
+const paramToastEl = document.getElementById('paramToast');
+let paramToastTimer = null;
+
+function showParamToast(msg) {
+  if (!paramToastEl) return;
+  paramToastEl.textContent = msg;
+  paramToastEl.classList.add('show');
+  clearTimeout(paramToastTimer);
+  paramToastTimer = setTimeout(() => paramToastEl.classList.remove('show'), 2500);
+}
+
+function validateNumberInput(input) {
+  const range = PARAM_RANGES[input.id];
+  if (!range) return;
+  const val = parseInt(input.value, 10);
+  if (isNaN(val)) {
+    input.value = range.rec;
+    showParamToast(`"${range.name}" 需输入数字，已恢复推荐值 ${range.rec}`);
+    input.classList.add('input-error');
+    setTimeout(() => input.classList.remove('input-error'), 500);
+    return;
+  }
+  if (val < range.min) {
+    input.value = range.min;
+    showParamToast(`"${range.name}" 最小值为 ${range.min}，已自动修正`);
+    input.classList.add('input-error');
+    setTimeout(() => input.classList.remove('input-error'), 500);
+  } else if (val > range.max) {
+    input.value = range.max;
+    showParamToast(`"${range.name}" 最大值为 ${range.max}，已自动修正`);
+    input.classList.add('input-error');
+    setTimeout(() => input.classList.remove('input-error'), 500);
+  }
+}
+
+document.querySelectorAll('input[type="number"]').forEach(input => {
+  if (PARAM_RANGES[input.id]) {
+    input.addEventListener('blur', () => validateNumberInput(input));
+    input.addEventListener('change', () => validateNumberInput(input));
+  }
+});
 let COLS = 10, ROWS = 20;
 let BLOCK = 30;
 let board = createMatrix(COLS, ROWS);
@@ -2874,6 +3261,21 @@ let timerRunning = false;
 let ultraTimeLimit = 120;
 let cheeseLines = 10;
 let initialCheeseLines = 10;
+let cheeseDifficulty = 'easy';
+let cheeseRiseTimer = 0;
+const CHEESE_RISE_INTERVAL = 15000;
+let sprintTargetLines = 40;
+let masterLockDelay = 200;
+let masterGravityMode = '20g';
+let practiceGridEnabled = true;
+let practiceGhostEnabled = true;
+let practiceInfiniteTime = true;
+let practiceNoGameOver = true;
+let practiceGravity = 800;
+let practiceLockDelay = 1500;
+let customLinesPerLevel = 10;
+let customMaxLevel = 20;
+let lastUltraBeepSecond = -1;
 let historyStates = [];
 let historyIndex = -1;
 const MAX_HISTORY = 50;
@@ -3175,8 +3577,23 @@ function clearLines() {
     return;
   }
   const fullRows = [];
+  const pureGRows = [];
   for (let y = 0; y < ROWS; y++) {
-    if (board[y].every(v => v !== 0)) fullRows.push(y);
+    if (board[y].every(v => v !== 0)) {
+      if (gameMode === 'cheese' && board[y].every(v => v === 'G')) {
+        pureGRows.push(y);
+      } else {
+        fullRows.push(y);
+      }
+    }
+  }
+  if (gameMode === 'cheese' && fullRows.length > 0 && pureGRows.length > 0) {
+    const fullRowSet = new Set(fullRows);
+    const adjacentGRows = pureGRows.filter(y =>
+      fullRowSet.has(y - 1) || fullRowSet.has(y + 1)
+    );
+    fullRows.push(...adjacentGRows);
+    fullRows.sort((a, b) => a - b);
   }
   const cleared = fullRows.length;
   if (cleared > 0) {
@@ -3537,8 +3954,20 @@ function spawn() {
     if (collide(board, piece)) {
       piece.y -= 1;
       if (collide(board, piece)) {
-        endGame();
-        return;
+        if (gameMode === 'practice' && practiceNoGameOver) {
+          for (let cy = 0; cy < 4 && cy < ROWS; cy++) {
+            for (let cx = 0; cx < COLS; cx++) {
+              if (board[cy][cx]) board[cy][cx] = 0;
+            }
+          }
+          piece.y = 0;
+          if (collide(board, piece)) {
+            piece.y = -1;
+          }
+        } else {
+          endGame();
+          return;
+        }
       }
     }
     lowestY = piece.y;
@@ -3592,8 +4021,10 @@ function newPiece(type) {
 function updateLevelByLines(){
     if(gameMode === 'sprint' || gameMode === 'ultra' || gameMode === 'cheese' || gameMode === 'practice') return;
 
-    const computed = startLevel + Math.floor(lines / LINES_PER_LEVEL);
-    const newLevel = Math.min(MAX_LEVEL, Math.max(1, computed));
+    const effectiveLinesPerLevel = (gameMode === 'marathon') ? customLinesPerLevel : DEFAULT_LINES_PER_LEVEL;
+    const effectiveMaxLevel = (gameMode === 'marathon') ? customMaxLevel : DEFAULT_MAX_LEVEL;
+    const computed = startLevel + Math.floor(lines / effectiveLinesPerLevel);
+    const newLevel = Math.min(effectiveMaxLevel, Math.max(1, computed));
     if(newLevel !== level){
         const oldLevel = level;
         level = newLevel;
@@ -3803,23 +4234,26 @@ function draw() {
   ctx.fillStyle = '#0b0f23';
   ctx.fillRect(0, 0, cvs.width, cvs.height);
 
-  ctx.strokeStyle = '#1b2248';
-  ctx.lineWidth = 1;
+  const showGrid = (gameMode === 'practice' && practiceGridEnabled) || gameMode !== 'practice';
+  if (showGrid) {
+    ctx.strokeStyle = '#1b2248';
+    ctx.lineWidth = 1;
 
-  for (let x = 0; x <= COLS; x++) {
-    const px = Math.floor(x * BLOCK) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(px, 0);
-    ctx.lineTo(px, ROWS * BLOCK);
-    ctx.stroke();
-  }
+    for (let x = 0; x <= COLS; x++) {
+      const px = Math.floor(x * BLOCK) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, ROWS * BLOCK);
+      ctx.stroke();
+    }
 
-  for (let y = 0; y <= ROWS; y++) {
-    const py = Math.floor(y * BLOCK) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0, py);
-    ctx.lineTo(COLS * BLOCK, py);
-    ctx.stroke();
+    for (let y = 0; y <= ROWS; y++) {
+      const py = Math.floor(y * BLOCK) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, py);
+      ctx.lineTo(COLS * BLOCK, py);
+      ctx.stroke();
+    }
   }
 
   for (let y = 0; y < ROWS; y++) {
@@ -4119,9 +4553,35 @@ function drawMini(c, type){
 
   if (piece && !hardDropping) {
     if (gameMode === 'master') {
-      const gy = ghostY();
-      if (gy > piece.y) {
-        piece.y = gy;
+      if (masterGravityMode === '20g') {
+        const gy = ghostY();
+        if (gy > piece.y) {
+          piece.y = gy;
+        }
+      } else if (masterGravityMode === '10g') {
+        dropTimer += dt;
+        const masterSpeed = 2;
+        while (dropTimer >= masterSpeed) {
+          dropTimer -= masterSpeed;
+          piece.y += 1;
+          if (collide(board, piece)) {
+            piece.y -= 1;
+            dropTimer = 0;
+            break;
+          }
+        }
+      } else if (masterGravityMode === '5g') {
+        dropTimer += dt;
+        const masterSpeed = 20;
+        while (dropTimer >= masterSpeed) {
+          dropTimer -= masterSpeed;
+          piece.y += 1;
+          if (collide(board, piece)) {
+            piece.y -= 1;
+            dropTimer = 0;
+            break;
+          }
+        }
       }
       dropTimer = 0;
     } else {
@@ -4249,7 +4709,15 @@ function drawMini(c, type){
   level = startLevel;
   if(gameMode === 'master') {
     gravity = 0;
-    lockDelay = 200;
+    lockDelay = masterLockDelay;
+  } else if(gameMode === 'practice') {
+    gravity = practiceGravity;
+    lockDelay = practiceLockDelay;
+  } else if(gameMode === 'sprint') {
+    level = parseInt(cfgSprintLevel.value) || 1;
+    startLevel = level;
+    gravity = levelSpeed(level);
+    lockDelay = parseInt(cfgLockDelay.value);
   } else {
     gravity = levelSpeed(level);
     lockDelay = parseInt(cfgLockDelay.value);
@@ -4265,6 +4733,7 @@ function drawMini(c, type){
   tSpinType = null;
   gameTimer = 0;
   timerRunning = false;
+  lastUltraBeepSecond = -1;
   lockWarningTimer = 0;
   showLockWarning = false;
   lockMoveResets = 0;
@@ -4336,8 +4805,18 @@ function hold() {
     if (collide(board, piece)) {
       piece.y -= 1;
       if (collide(board, piece)) {
-        endGame();
-        return;
+        if (gameMode === 'practice' && practiceNoGameOver) {
+          for (let cy = 0; cy < 4 && cy < ROWS; cy++) {
+            for (let cx = 0; cx < COLS; cx++) {
+              if (board[cy][cx]) board[cy][cx] = 0;
+            }
+          }
+          piece.y = 0;
+          if (collide(board, piece)) piece.y = -1;
+        } else {
+          endGame();
+          return;
+        }
       }
     }
     lowestY = piece.y;
@@ -4719,6 +5198,8 @@ btnPauseRestart.addEventListener('click', () => {
 btnPauseSettings.addEventListener('click', () => {
   hidePauseMenu();
   showSettingsOverlay(true);
+  const modeSettingsTab = document.querySelector('.tab-btn[data-tab="modeSettings"]');
+  if (modeSettingsTab) modeSettingsTab.click();
 });
 btnGameoverRestart.addEventListener('click', () => {
   hideGameOverStats();
@@ -4770,10 +5251,8 @@ cfgMusicVolume.addEventListener('input', (e) => {
       document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       gameMode = card.dataset.mode;
-      document.getElementById('cheeseSettings').style.display =
-        gameMode === 'cheese' ? 'block' : 'none';
-      document.getElementById('ultraSettings').style.display =
-        gameMode === 'ultra' ? 'block' : 'none';
+      updateModeSettingsVisibility();
+      updateModeRules();
     });
   });
   function showSettingsOverlay(v, title) {
@@ -4822,18 +5301,38 @@ cfgMusicVolume.addEventListener('input', (e) => {
     COLS = clampInt(cfgCols.value,6,20);
     ROWS = clampInt(cfgRows.value,12,40);
     previewCount = clampInt(cfgPreview.value,1,6);
-    ghostEnabled = cfgGhost.value==='on';
+    ghostEnabled = gameMode === 'practice' ? cfgPracticeGhost.checked : (cfgGhost.value==='on');
     lockDelay = clampInt(cfgLockDelay.value,200,2000);
     DAS = clampInt(cfgDAS.value, 0, 300);
     ARR = clampInt(cfgARR.value, 0, 100);
     applySkin(cfgSkin.value);
     vibrationEnabled = cfgVibration.value === 'on';
-    startLevel = clampInt(cfgStartLevel.value,1,20);
+    if (gameMode === 'marathon' && cfgMarathonStartLevel) {
+      startLevel = clampInt(cfgMarathonStartLevel.value, 1, 20);
+    } else if (gameMode === 'sprint') {
+      startLevel = parseInt(cfgSprintLevel.value) || 1;
+    } else {
+      startLevel = clampInt(cfgStartLevel.value, 1, 20);
+    }
     level = startLevel;
     gravity = levelSpeed(level);
     cheeseLines = clampInt(cfgCheeseLines.value, 5, 18);
     initialCheeseLines = cheeseLines;
     ultraTimeLimit = clampInt(cfgUltraTime.value, 60, 300);
+    customLinesPerLevel = clampInt(cfgLinesPerLevel.value, 1, 30);
+    customMaxLevel = clampInt(cfgMaxLevel.value, 10, 30);
+    sprintTargetLines = clampInt(cfgSprintLines.value, 10, 100);
+    masterLockDelay = clampInt(cfgMasterLockDelay.value, 50, 500);
+    masterGravityMode = cfgMasterGravity.value;
+    practiceGridEnabled = cfgPracticeGrid.checked;
+    practiceGhostEnabled = cfgPracticeGhost.checked;
+    practiceInfiniteTime = cfgPracticeInfinite.checked;
+    practiceNoGameOver = cfgPracticeNoGameOver.checked;
+    practiceGravity = clampInt(cfgPracticeGravity.value, 50, 2000);
+    practiceLockDelay = clampInt(cfgPracticeLockDelay.value, 200, 5000);
+    const selectedDiff = cheeseDifficultyEl ? cheeseDifficultyEl.querySelector('.difficulty-btn.selected') : null;
+    cheeseDifficulty = selectedDiff ? selectedDiff.dataset.diff : 'easy';
+    lastUltraBeepSecond = -1;
     saveCurrentSettings();
     if (audioSystem) {
       audioSystem.setSFXVolume(parseInt(cfgSFXVolume.value) / 100);
@@ -5012,6 +5511,7 @@ function togglePause(){
 }
 function endGame(message, isVictory = false) {
   if (gameOver) return;
+  if (gameMode === 'practice' && practiceNoGameOver && !isVictory) return;
 
   gameOver = true;
   timerRunning = false;
@@ -5054,6 +5554,13 @@ function endGame(message, isVictory = false) {
   if (gameMode === 'sprint' || gameMode === 'cheese') {
     timerDisplay.className = 'timer-display';
     timerDisplay.textContent = formatTime(gameTimer);
+    if (gameMode === 'cheese' && cheeseDifficulty === 'hard' && running && !paused) {
+      cheeseRiseTimer += dt;
+      if (cheeseRiseTimer >= CHEESE_RISE_INTERVAL) {
+        cheeseRiseTimer -= CHEESE_RISE_INTERVAL;
+        riseCheeseLine();
+      }
+    }
     return;
   }
 
@@ -5065,11 +5572,31 @@ function endGame(message, isVictory = false) {
 
     if (safeRemaining < 10000) {
       timerDisplay.className = 'timer-display danger';
+      const currentSecond = Math.ceil(safeRemaining / 1000);
+      if (currentSecond !== lastUltraBeepSecond && currentSecond > 0) {
+        lastUltraBeepSecond = currentSecond;
+        if (audioSystem) {
+          audioSystem.playSound('countdown', 1.5);
+        }
+        vibrate(30);
+        if (timerBeepIndicator) {
+          timerBeepIndicator.textContent = currentSecond;
+          timerBeepIndicator.classList.add('flash');
+          setTimeout(() => {
+            if (timerBeepIndicator) timerBeepIndicator.classList.remove('flash');
+          }, 300);
+        }
+      }
     } else if (safeRemaining < 30000) {
       timerDisplay.className = 'timer-display warning';
     } else {
       timerDisplay.className = 'timer-display';
     }
+  }
+
+  if (gameMode === 'practice' && !practiceInfiniteTime) {
+    timerDisplay.className = 'timer-display';
+    timerDisplay.textContent = formatTime(gameTimer);
   }
 }
 const pad = n => String(n).padStart(2, '0');
@@ -5085,6 +5612,9 @@ function formatTime(ms) {
     if(gameMode === 'sprint' || gameMode === 'ultra' || gameMode === 'cheese') {
       timerContainer.style.display = 'block';
       timerDisplay.className = 'timer-display';
+    } else if(gameMode === 'practice' && !practiceInfiniteTime) {
+      timerContainer.style.display = 'block';
+      timerDisplay.className = 'timer-display';
     } else {
       timerContainer.style.display = 'none';
     }
@@ -5098,18 +5628,200 @@ function formatTime(ms) {
     } else {
       undoControls.classList.remove('visible');
     }
+    updateModeRules();
   }
+
+function updateModeSettingsVisibility() {
+  const panels = [marathonSettingsEl, sprintSettingsEl, cheeseSettingsPanelEl, masterSettingsEl, practiceSettingsEl, ultraSettingsEl];
+  panels.forEach(p => { if(p) p.classList.remove('visible'); });
+  const noModeEl = document.getElementById('noModeSettings');
+  const currentModeLabel = document.getElementById('currentModeLabel');
+
+  const modePanelMap = {
+    marathon: marathonSettingsEl,
+    sprint: sprintSettingsEl,
+    ultra: ultraSettingsEl,
+    cheese: cheeseSettingsPanelEl,
+    master: masterSettingsEl,
+    practice: practiceSettingsEl
+  };
+
+  const modeNames = {
+    marathon: '🏃 马拉松模式',
+    sprint: '⚡ 40行竞速',
+    ultra: '⏱️ 限时打分',
+    cheese: '⛏️ 挖掘模式',
+    master: '👑 大师模式',
+    practice: '📚 练习模式'
+  };
+
+  if (currentModeLabel) {
+    currentModeLabel.textContent = modeNames[gameMode] || '未选择';
+  }
+
+  const targetPanel = modePanelMap[gameMode];
+  if (targetPanel) {
+    targetPanel.classList.add('visible');
+    if (noModeEl) noModeEl.style.display = 'none';
+  } else {
+    if (noModeEl) noModeEl.style.display = 'block';
+  }
+}
+
+  function updateModeRules() {
+    if(!modeRulesEl) return;
+    const rules = {
+      marathon: `<h5>🏃 马拉松模式规则</h5>
+        <ul>
+          <li>经典俄罗斯方块规则，消除行数获得分数</li>
+          <li>每消除 <strong>${customLinesPerLevel}</strong> 行升一级，最高 <strong>${customMaxLevel}</strong> 级</li>
+          <li>升级后方块下落速度加快</li>
+        </ul>
+        <table class="score-table">
+          <tr><th>消除行数</th><th>基础分</th></tr>
+          <tr><td>1行 (Single)</td><td>100 × 等级</td></tr>
+          <tr><td>2行 (Double)</td><td>300 × 等级</td></tr>
+          <tr><td>3行 (Triple)</td><td>500 × 等级</td></tr>
+          <tr><td>4行 (Tetris)</td><td>800 × 等级</td></tr>
+        </table>
+        <ul>
+          <li>T-Spin Mini: 100~400 × 等级</li>
+          <li>T-Spin: 400~1600 × 等级</li>
+          <li>连续消除(Combo): 每次额外 +50 × 连击数</li>
+          <li>Back-to-Back (B2B): 连续特殊消除 ×1.5</li>
+          <li>全清(All Clear): +10000 × 等级</li>
+        </ul>`,
+      sprint: `<h5>⚡ 40行竞速规则</h5>
+        <ul>
+          <li>目标：以最快速度消除 <strong>${sprintTargetLines}</strong> 行</li>
+          <li>初始级别：<strong>${cfgSprintLevel.value || 1}</strong></li>
+          <li>计时精确到毫秒，完成后记录用时</li>
+          <li>排行榜按用时从短到长排列</li>
+          <li>级别不会随行数自动提升</li>
+        </ul>`,
+      ultra: `<h5>⏱️ 限时打分规则</h5>
+        <ul>
+          <li>时间限制：<strong>${ultraTimeLimit}</strong> 秒</li>
+          <li>在限定时间内获取尽可能高的分数</li>
+          <li>最后10秒有音效和视觉倒计时提示</li>
+          <li>最后30秒计时器变为警告色</li>
+        </ul>
+        <table class="score-table">
+          <tr><th>消除行数</th><th>基础分</th></tr>
+          <tr><td>1行</td><td>100 × 等级</td></tr>
+          <tr><td>2行</td><td>300 × 等级</td></tr>
+          <tr><td>3行</td><td>500 × 等级</td></tr>
+          <tr><td>4行 (Tetris)</td><td>800 × 等级</td></tr>
+        </table>
+        <ul>
+          <li>T-Spin / Tetris 连续触发 B2B ×1.5 加成</li>
+          <li>Combo 连击每次额外 +50 × 连击数</li>
+          <li>全清(All Clear): +10000 × 等级</li>
+        </ul>`,
+      cheese: `<h5>⛏️ 挖掘模式规则</h5>
+        <ul>
+          <li>游戏开始时已预填充 <strong>${cheeseLines}</strong> 行垃圾行</li>
+          <li>难度：<strong>${cheeseDifficulty === 'easy' ? '简单' : cheeseDifficulty === 'medium' ? '中等' : '困难'}</strong></li>
+          <li>目标：清除所有垃圾行</li>
+          <li>排行榜按用时从短到长排列</li>
+        </ul>
+        <ul>
+          <li>简单：每行1-2个空洞，空洞倾向于对齐形成通道</li>
+          <li>中等：30%行无空洞（实心行），空洞随机分布</li>
+          <li>困难：55%实心行+障碍块，且每15秒垃圾行从底部上升</li>
+        </ul>`,
+      master: `<h5>👑 大师模式规则</h5>
+        <ul>
+          <li>重力：<strong>${masterGravityMode === '20g' ? '20G（瞬间落地）' : masterGravityMode === '10g' ? '10G（极快）' : '5G（快速）'}</strong></li>
+          <li>锁定延迟：<strong>${masterLockDelay}ms</strong>（极短）</li>
+          <li>支持 SRS 旋转系统和扩展踢墙数据</li>
+          <li>支持 T-Spin 精确判定</li>
+          <li>高难度起步，无明显难度提升梯度</li>
+          <li>考验快速反应和高级操作技巧</li>
+        </ul>`,
+      practice: `<h5>📚 练习模式规则</h5>
+        <ul>
+          <li>支持撤销(Ctrl+Z)和重做(Ctrl+Y)</li>
+          <li>网格线：${practiceGridEnabled ? '开启' : '关闭'}</li>
+          <li>阴影(Ghost)：${practiceGhostEnabled ? '开启' : '关闭'}</li>
+          <li>无限时间：${practiceInfiniteTime ? '开启' : '关闭'}</li>
+          <li>无失败机制：${practiceNoGameOver ? '开启' : '关闭'}</li>
+          <li>下落速度：${practiceGravity}ms</li>
+          <li>锁定延迟：${practiceLockDelay}ms</li>
+          <li>方块堆满时自动清理顶部，不会游戏结束</li>
+        </ul>`
+    };
+    if(rules[gameMode]) {
+      modeRulesEl.innerHTML = rules[gameMode];
+      modeRulesEl.classList.add('visible');
+    } else {
+      modeRulesEl.classList.remove('visible');
+    }
+  }
+
   function initCheeseMode() {
     const startRow = ROWS - cheeseLines;
+    let lastHolePos = -1;
     for(let y = startRow; y < ROWS; y++) {
-      const holePos = Math.floor(Math.random() * COLS);
-      for(let x = 0; x < COLS; x++) {
-        if(x !== holePos) {
-          board[y][x] = 'G';
+      if(cheeseDifficulty === 'easy') {
+        const holePos = Math.random() < 0.6 && lastHolePos >= 0
+          ? lastHolePos + Math.floor(Math.random() * 3) - 1
+          : Math.floor(Math.random() * COLS);
+        const clampedHole = Math.max(0, Math.min(COLS - 1, holePos));
+        const holeCount = Math.random() < 0.3 ? 2 : 1;
+        const holes = new Set([clampedHole]);
+        if (holeCount === 2) {
+          const secondHole = clampedHole + (Math.random() < 0.5 ? 1 : -1);
+          holes.add(Math.max(0, Math.min(COLS - 1, secondHole)));
+        }
+        for(let x = 0; x < COLS; x++) {
+          if(!holes.has(x)) {
+            board[y][x] = 'G';
+          }
+        }
+        lastHolePos = clampedHole;
+      } else if(cheeseDifficulty === 'medium') {
+        const hasHole = Math.random() > 0.3;
+        if(hasHole) {
+          const holePos = Math.floor(Math.random() * COLS);
+          for(let x = 0; x < COLS; x++) {
+            if(x !== holePos) {
+              board[y][x] = 'G';
+            }
+          }
+        } else {
+          for(let x = 0; x < COLS; x++) {
+            board[y][x] = 'G';
+          }
+        }
+      } else if(cheeseDifficulty === 'hard') {
+        const hasHole = Math.random() > 0.55;
+        if(hasHole) {
+          const holePos = Math.floor(Math.random() * COLS);
+          for(let x = 0; x < COLS; x++) {
+            if(x !== holePos) {
+              board[y][x] = 'G';
+            }
+          }
+          if(Math.random() < 0.6 && y > startRow) {
+            const obstacleCount = 1 + Math.floor(Math.random() * 2);
+            for(let i = 0; i < obstacleCount; i++) {
+              const ox = Math.floor(Math.random() * COLS);
+              if(ox !== holePos) {
+                board[y][ox] = 'G';
+              }
+            }
+          }
+        } else {
+          for(let x = 0; x < COLS; x++) {
+            board[y][x] = 'G';
+          }
         }
       }
     }
+    initialCheeseLines = countCheeseLines();
     updateCheeseProgress();
+    cheeseRiseTimer = 0;
   }
   function countCheeseLines() {
     let count = 0;
@@ -5126,8 +5838,29 @@ function formatTime(ms) {
     const progress = Math.max(0, (initialCheeseLines - remaining) / initialCheeseLines * 100);
     cheeseProgress.style.width = progress + '%';
   }
+  function riseCheeseLine() {
+    if (gameMode !== 'cheese' || cheeseDifficulty !== 'hard') return;
+    const hasHole = Math.random() > 0.5;
+    const newRow = new Array(COLS).fill('G');
+    if (hasHole) {
+      const holePos = Math.floor(Math.random() * COLS);
+      newRow[holePos] = 0;
+    }
+    board.shift();
+    board.push(newRow);
+    if (piece) {
+      piece.y -= 1;
+      if (piece.y < 0) piece.y = 0;
+      if (collide(board, piece)) {
+        piece.y += 1;
+      }
+    }
+    initialCheeseLines = countCheeseLines();
+    updateCheeseProgress();
+    if (audioSystem) audioSystem.playSound('hold');
+  }
   function checkModeCompletion() {
-  if (gameMode === 'sprint' && lines >= 40) {
+  if (gameMode === 'sprint' && lines >= sprintTargetLines) {
     endGame('完成！', true);
   } else if (gameMode === 'cheese' && countCheeseLines() === 0) {
     endGame('清理完成！', true);
@@ -5553,7 +6286,6 @@ function renderLeaderboard(mode) {
   } else {
     scoreHeader.textContent = '分数';
   }
-
   if (entries.length === 0) {
     leaderboardContent.innerHTML = '<div class="leaderboard-empty">暂无记录，快来创造历史！</div>';
     return;
@@ -5596,8 +6328,6 @@ function formatDate(isoString) {
 }
 
 function saveGameResult() {
-  if (gameMode === 'practice') return;
-
   const playTime = Date.now() - sessionStats.startTime;
 
   storageManager.updateStatistics({
@@ -5624,7 +6354,8 @@ function saveGameResult() {
 }
 
 function saveCurrentProgress() {
-  if (!running || gameOver || gameMode === 'practice') return;
+  if (!running || gameOver) return;
+  if (gameMode === 'practice' && practiceNoGameOver) return;
 
   const progress = {
     board: cloneMatrix(board),
@@ -5699,7 +6430,15 @@ function restoreGameProgress(progress) {
     piece = null;
   }
 
-  gravity = (gameMode === 'master') ? 0 : levelSpeed(level);
+  gravity = (gameMode === 'master') ? 0 : (gameMode === 'practice') ? practiceGravity : levelSpeed(level);
+
+  if (gameMode === 'master') {
+    lockDelay = masterLockDelay;
+  } else if (gameMode === 'practice') {
+    lockDelay = practiceLockDelay;
+  }
+
+  ghostEnabled = (gameMode === 'practice') ? practiceGhostEnabled : (cfgGhost.value === 'on');
 
   lockTimer = 0;
   lockWarningTimer = 0;
@@ -5771,7 +6510,21 @@ function saveCurrentSettings() {
     musicVolume: parseInt(cfgMusicVolume.value),
     gameMode: gameMode,
     cheeseLines: parseInt(cfgCheeseLines.value),
-    ultraTime: parseInt(cfgUltraTime.value)
+    ultraTime: parseInt(cfgUltraTime.value),
+    linesPerLevel: customLinesPerLevel,
+    maxLevel: customMaxLevel,
+    sprintLines: sprintTargetLines,
+    sprintLevel: parseInt(cfgSprintLevel.value) || 1,
+    masterLockDelay: masterLockDelay,
+    masterGravityMode: masterGravityMode,
+    practiceGrid: practiceGridEnabled,
+    practiceGhost: practiceGhostEnabled,
+    practiceInfinite: practiceInfiniteTime,
+    practiceNoGameOver: practiceNoGameOver,
+    practiceGravity: practiceGravity,
+    practiceLockDelay: practiceLockDelay,
+    cheeseDifficulty: cheeseDifficulty,
+    marathonStartLevel: parseInt(cfgMarathonStartLevel ? cfgMarathonStartLevel.value : 1)
   };
 
   if (storageManager) storageManager.saveSettings(settings);
@@ -5795,16 +6548,45 @@ function loadSavedSettings() {
   cfgMusicVolume.value = settings.musicVolume !== undefined ? settings.musicVolume : 30;
   cfgCheeseLines.value = settings.cheeseLines || 10;
   cfgUltraTime.value = settings.ultraTime || 120;
+  customLinesPerLevel = settings.linesPerLevel || 10;
+  cfgLinesPerLevel.value = customLinesPerLevel;
+  customMaxLevel = settings.maxLevel || 20;
+  cfgMaxLevel.value = customMaxLevel;
+  sprintTargetLines = settings.sprintLines || 40;
+  cfgSprintLines.value = sprintTargetLines;
+  if (cfgSprintLevel) cfgSprintLevel.value = settings.sprintLevel || 1;
+  masterLockDelay = settings.masterLockDelay || 200;
+  cfgMasterLockDelay.value = masterLockDelay;
+  masterGravityMode = settings.masterGravityMode || '20g';
+  cfgMasterGravity.value = masterGravityMode;
+  practiceGridEnabled = settings.practiceGrid !== false;
+  cfgPracticeGrid.checked = practiceGridEnabled;
+  practiceGhostEnabled = settings.practiceGhost !== false;
+  cfgPracticeGhost.checked = practiceGhostEnabled;
+  practiceInfiniteTime = settings.practiceInfinite !== false;
+  cfgPracticeInfinite.checked = practiceInfiniteTime;
+  practiceNoGameOver = settings.practiceNoGameOver !== false;
+  cfgPracticeNoGameOver.checked = practiceNoGameOver;
+  practiceGravity = settings.practiceGravity || 800;
+  cfgPracticeGravity.value = practiceGravity;
+  practiceLockDelay = settings.practiceLockDelay || 1500;
+  cfgPracticeLockDelay.value = practiceLockDelay;
+  cheeseDifficulty = settings.cheeseDifficulty || 'easy';
+  if (cheeseDifficultyEl) {
+    cheeseDifficultyEl.querySelectorAll('.difficulty-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.diff === cheeseDifficulty);
+    });
+  }
+  if (cfgMarathonStartLevel) {
+    cfgMarathonStartLevel.value = settings.marathonStartLevel || 1;
+  }
 
   if (settings.gameMode) {
     gameMode = settings.gameMode;
     document.querySelectorAll('.mode-card').forEach(card => {
       card.classList.toggle('selected', card.dataset.mode === gameMode);
     });
-    document.getElementById('cheeseSettings').style.display =
-      gameMode === 'cheese' ? 'block' : 'none';
-    document.getElementById('ultraSettings').style.display =
-      gameMode === 'ultra' ? 'block' : 'none';
+    updateModeSettingsVisibility();
   }
 
   if (audioSystem) {
@@ -6076,8 +6858,65 @@ function showResumePrompt(progress) {
   buildPreviewCanvases();
   buildKeybindUI();
   initGamepadListeners();
+
+  if (cheeseDifficultyEl) {
+    cheeseDifficultyEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.difficulty-btn');
+      if (!btn) return;
+      cheeseDifficultyEl.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      cheeseDifficulty = btn.dataset.diff;
+    });
+  }
+
+  document.querySelectorAll('.practice-option').forEach(opt => {
+    opt.addEventListener('change', () => {
+      const cb = opt.querySelector('input[type="checkbox"]');
+      if (cb) {
+        opt.classList.toggle('active', cb.checked);
+      }
+      if (running && gameMode === 'practice') {
+        practiceGridEnabled = cfgPracticeGrid.checked;
+        practiceGhostEnabled = cfgPracticeGhost.checked;
+        practiceInfiniteTime = cfgPracticeInfinite.checked;
+        practiceNoGameOver = cfgPracticeNoGameOver.checked;
+        ghostEnabled = practiceGhostEnabled;
+        updateModeDisplay();
+      }
+    });
+  });
+
+  function addLiveUpdateListener(el, event, callback) {
+    if (el) el.addEventListener(event, callback);
+  }
+
+  addLiveUpdateListener(cfgPracticeGravity, 'change', () => {
+    if (running && gameMode === 'practice') {
+      practiceGravity = clampInt(cfgPracticeGravity.value, 50, 2000);
+      gravity = practiceGravity;
+    }
+  });
+  addLiveUpdateListener(cfgPracticeLockDelay, 'change', () => {
+    if (running && gameMode === 'practice') {
+      practiceLockDelay = clampInt(cfgPracticeLockDelay.value, 200, 5000);
+      lockDelay = practiceLockDelay;
+    }
+  });
+  addLiveUpdateListener(cfgMasterLockDelay, 'change', () => {
+    if (running && gameMode === 'master') {
+      masterLockDelay = clampInt(cfgMasterLockDelay.value, 50, 500);
+      lockDelay = masterLockDelay;
+    }
+  });
+  addLiveUpdateListener(cfgMasterGravity, 'change', () => {
+    if (running && gameMode === 'master') {
+      masterGravityMode = cfgMasterGravity.value;
+    }
+  });
+
   resize();
   updateModeDisplay();
+  updateModeSettingsVisibility();
   const savedProgress = loadSavedProgress();
   if (savedProgress) {
     showResumePrompt(savedProgress);

@@ -3940,6 +3940,7 @@ function spawn() {
   holdLocked = false;
   if (holdBoxEl) holdBoxEl.classList.remove('locked');
 
+  dropTimer = 0;
   lockTimer = 0;
   lockWarningTimer = 0;
   showLockWarning = false;
@@ -4186,6 +4187,7 @@ function lockPiece(){
     audioSystem.playSound('lock');
     merge(board, piece);
     piece = null;
+    dropTimer = 0;
     clearLines();
     lockTimer = 0;
     lockWarningTimer = 0;
@@ -4535,7 +4537,7 @@ function drawMini(c, type){
   updateTimer(dt);
 
   if (gameMode === 'ultra' && gameTimer >= ultraTimeLimit * 1000) {
-    endGame('时间到！');
+    endGame('时间到！', true);
     return;
   }
 
@@ -4583,7 +4585,6 @@ function drawMini(c, type){
           }
         }
       }
-      dropTimer = 0;
     } else {
       dropTimer += dt;
       while (dropTimer >= gravity) {
@@ -4600,7 +4601,11 @@ function drawMini(c, type){
 
   if (piece && !hardDropping) {
     const grounded = isGrounded(piece);
-    const denom = Math.max(1, gravity);
+    let effectiveGravity = gravity;
+    if (gameMode === 'master') {
+      effectiveGravity = masterGravityMode === '20g' ? 1 : masterGravityMode === '10g' ? 2 : 20;
+    }
+    const denom = Math.max(1, effectiveGravity);
     const frac = grounded ? 0 : Math.min(0.999, dropTimer / denom);
     const targetY = piece.y + frac;
 
@@ -4788,6 +4793,7 @@ function hold() {
   const currentType = piece.type;
   const applySpawnSafety = () => {
     if (!piece) return;
+    dropTimer = 0;
     lockTimer = 0;
     lockWarningTimer = 0;
     showLockWarning = false;
@@ -5302,7 +5308,6 @@ cfgMusicVolume.addEventListener('input', (e) => {
     ROWS = clampInt(cfgRows.value,12,40);
     previewCount = clampInt(cfgPreview.value,1,6);
     ghostEnabled = gameMode === 'practice' ? cfgPracticeGhost.checked : (cfgGhost.value==='on');
-    lockDelay = clampInt(cfgLockDelay.value,200,2000);
     DAS = clampInt(cfgDAS.value, 0, 300);
     ARR = clampInt(cfgARR.value, 0, 100);
     applySkin(cfgSkin.value);
@@ -5315,7 +5320,6 @@ cfgMusicVolume.addEventListener('input', (e) => {
       startLevel = clampInt(cfgStartLevel.value, 1, 20);
     }
     level = startLevel;
-    gravity = levelSpeed(level);
     cheeseLines = clampInt(cfgCheeseLines.value, 5, 18);
     initialCheeseLines = cheeseLines;
     ultraTimeLimit = clampInt(cfgUltraTime.value, 60, 300);
@@ -5840,6 +5844,7 @@ function updateModeSettingsVisibility() {
   }
   function riseCheeseLine() {
     if (gameMode !== 'cheese' || cheeseDifficulty !== 'hard') return;
+    if (hardDropping || gameOverAnimating) return;
     const hasHole = Math.random() > 0.5;
     const newRow = new Array(COLS).fill('G');
     if (hasHole) {
@@ -5853,6 +5858,18 @@ function updateModeSettingsVisibility() {
       if (piece.y < 0) piece.y = 0;
       if (collide(board, piece)) {
         piece.y += 1;
+        if (collide(board, piece)) {
+          if (gameMode === 'practice' && practiceNoGameOver) {
+            for (let cy = 0; cy < 4 && cy < ROWS; cy++) {
+              for (let cx = 0; cx < COLS; cx++) {
+                if (board[cy][cx]) board[cy][cx] = 0;
+              }
+            }
+          } else {
+            endGame();
+            return;
+          }
+        }
       }
     }
     initialCheeseLines = countCheeseLines();
@@ -5943,6 +5960,7 @@ function updateModeSettingsVisibility() {
   } else {
     piece = null;
   }
+  dropTimer = 0;
   lockTimer = 0;
   lockWarningTimer = 0;
   showLockWarning = false;
@@ -6436,10 +6454,13 @@ function restoreGameProgress(progress) {
     lockDelay = masterLockDelay;
   } else if (gameMode === 'practice') {
     lockDelay = practiceLockDelay;
+  } else {
+    lockDelay = clampInt(cfgLockDelay.value, 200, 2000);
   }
 
   ghostEnabled = (gameMode === 'practice') ? practiceGhostEnabled : (cfgGhost.value === 'on');
 
+  dropTimer = 0;
   lockTimer = 0;
   lockWarningTimer = 0;
   showLockWarning = false;

@@ -1639,11 +1639,15 @@
     }
 
     // ==================== 随机做题 ====================
+    function isUnrecognizedQuestion(q) {
+        return q.type === 'subjective' || !q.answer;
+    }
+
     function generateQuizOrder(shuffle) {
         const normalIdx = [];
         const unrecIdx = [];
         state.questions.forEach((q, i) => {
-            if (q.type === 'subjective') unrecIdx.push(i);
+            if (isUnrecognizedQuestion(q)) unrecIdx.push(i);
             else normalIdx.push(i);
         });
         if (shuffle) {
@@ -1722,21 +1726,61 @@
 
     function toggleShuffle(enabled) {
         state.shuffleEnabled = enabled;
-        state.quizOrder = generateQuizOrder(enabled);
 
-        // 保存旧的选项映射，再生成新的，然后重新映射用户答案
-        const oldShuffledOptions = state.shuffledOptions;
-        state.shuffledOptions = generateShuffledOptions(enabled);
-        remapUserAnswers(oldShuffledOptions);
+        // 分类：已答/未答 × 正常/未识别
+        const answeredNormal = [];
+        const answeredUnrec = [];
+        const unansweredNormal = [];
+        const unansweredUnrec = [];
 
-        // 跳到第一道未答题
-        const firstUnanswered = state.quizStatus.findIndex(s => s === 'unanswered');
-        if (firstUnanswered >= 0) {
-            const posInOrder = state.quizOrder.indexOf(firstUnanswered);
-            if (posInOrder >= 0) state.quizIndex = posInOrder;
-        } else {
-            state.quizIndex = 0;
+        state.quizOrder.forEach(realIdx => {
+            const isAnswered = state.quizStatus[realIdx] !== 'unanswered';
+            const isUnrec = isUnrecognizedQuestion(state.questions[realIdx]);
+            if (isAnswered && !isUnrec) answeredNormal.push(realIdx);
+            else if (isAnswered && isUnrec) answeredUnrec.push(realIdx);
+            else if (!isAnswered && !isUnrec) unansweredNormal.push(realIdx);
+            else unansweredUnrec.push(realIdx);
+        });
+
+        if (enabled) {
+            shuffleArray(unansweredNormal);
+            shuffleArray(unansweredUnrec);
         }
+
+        // 重建 quizOrder：正常题在前（已答保持相对顺序 + 未答），未识别题在后（已答保持相对顺序 + 未答）
+        state.quizOrder = [
+            ...answeredNormal,
+            ...unansweredNormal,
+            ...answeredUnrec,
+            ...unansweredUnrec
+        ];
+
+        // 已答题保持原有选项映射，未答题重新生成
+        const oldShuffledOptions = state.shuffledOptions;
+        state.shuffledOptions = state.questions.map((q, realIdx) => {
+            if (state.quizStatus[realIdx] !== 'unanswered') {
+                return oldShuffledOptions[realIdx];
+            }
+            if (!q.options || q.options.length === 0) return [];
+            const indices = q.options.map((_, i) => i);
+            if (enabled) {
+                shuffleArray(indices);
+            }
+            return indices.map((origIdx, newPos) => ({
+                origIdx,
+                label: LABELS[newPos] || String(newPos + 1),
+                content: q.options[origIdx].content,
+                origLabel: q.options[origIdx].label
+            }));
+        });
+
+        // 已答题选项未变，无需重映射用户答案
+
+        // 跳到第一道未答题（按 quizOrder 顺序查找）
+        const firstUnansweredPos = state.quizOrder.findIndex(
+            realIdx => state.quizStatus[realIdx] === 'unanswered'
+        );
+        state.quizIndex = firstUnansweredPos >= 0 ? firstUnansweredPos : 0;
 
         renderQuizView();
         renderAnswerSheet();
@@ -2871,12 +2915,11 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         }
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         document.getElementById('shuffleToggle').checked = state.shuffleEnabled;
-        // 跳到第一道未答题
-        const firstUnanswered = state.quizStatus.findIndex(s => s === 'unanswered');
-        if (firstUnanswered >= 0) {
-            const posInOrder = state.quizOrder.indexOf(firstUnanswered);
-            if (posInOrder >= 0) state.quizIndex = posInOrder;
-        }
+        // 跳到第一道未答题（按 quizOrder 顺序查找）
+        const firstUnansweredPos = state.quizOrder.findIndex(
+            realIdx => state.quizStatus[realIdx] === 'unanswered'
+        );
+        if (firstUnansweredPos >= 0) state.quizIndex = firstUnansweredPos;
         closeHistoryDropdown();
         renderParsePreview();
         updateStats();

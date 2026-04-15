@@ -44,6 +44,7 @@
             color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         /* ================= 语义化布局 ================= */
@@ -293,11 +294,12 @@
             margin-bottom: 12px;
             line-height: 1.7;
             white-space: pre-wrap;
+            word-break: break-word;
         }
 
         .q-blank {
             display: inline-block;
-            min-width: 60px;
+            min-width: 40px;
             border-bottom: 1.5px solid var(--text);
             margin: 0 4px;
             text-align: center;
@@ -321,6 +323,7 @@
             transition: all 0.15s;
             font-size: 0.9rem;
             line-height: 1.6;
+            min-width: 0;
         }
 
         .opt-label {
@@ -341,6 +344,8 @@
         .opt-text {
             flex: 1;
             padding-top: 2px;
+            min-width: 0;
+            word-break: break-word;
         }
 
         .opt-check {
@@ -444,6 +449,9 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            overflow-x: hidden;
+            word-break: break-word;
+            min-width: 0;
         }
 
         .quiz-main.card {
@@ -494,6 +502,7 @@
             margin-bottom: 24px;
             line-height: 1.7;
             white-space: pre-wrap;
+            word-break: break-word;
         }
 
         /* 刷题选项 */
@@ -515,6 +524,7 @@
             transition: all 0.2s;
             background: #fff;
             user-select: none;
+            min-width: 0;
         }
 
         .quiz-option:hover {
@@ -580,13 +590,17 @@
             padding-top: 20px;
             border-top: 1px solid var(--border);
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .quiz-result-tip {
-            padding: 8px 16px;
+            padding: 8px 12px;
             border-radius: var(--radius);
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            word-break: break-word;
+            text-align: center;
+            line-height: 1.5;
         }
 
         /* 答题卡 */
@@ -892,15 +906,111 @@
 
         @media (max-width: 600px) {
             main {
-                padding: 12px;
+                padding: 10px;
             }
 
             .quiz-content {
-                padding: 20px;
+                padding: 16px;
+            }
+
+            .quiz-main.card {
+                max-height: none;
+            }
+
+            .quiz-stem {
+                font-size: 1rem;
+            }
+
+            .quiz-option {
+                padding: 10px 12px;
+            }
+
+            .quiz-actions {
+                flex-direction: column;
+                gap: 10px;
+                padding-top: 16px;
+            }
+
+            .quiz-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .quiz-result-tip {
+                width: 100%;
+                font-size: 0.8rem;
             }
 
             .answer-sheet {
                 grid-template-columns: repeat(6, 1fr);
+            }
+
+            .site-header {
+                padding: 12px 16px;
+            }
+
+            .site-header h1 {
+                font-size: 1.15rem;
+            }
+
+            .site-header .subtitle {
+                font-size: 0.75rem;
+            }
+
+            .mode-tabs {
+                width: 100%;
+            }
+
+            .mode-tab {
+                flex: 1;
+                padding: 7px 10px;
+                text-align: center;
+            }
+
+            .card-header {
+                padding: 12px 14px;
+            }
+
+            .card-body {
+                padding: 14px;
+            }
+
+            .input-card textarea {
+                min-height: 200px;
+            }
+
+            .q-blank {
+                min-width: 30px;
+            }
+
+            .opt-label {
+                width: 22px;
+                height: 22px;
+                font-size: 0.75rem;
+            }
+
+            .quiz-progress {
+                font-size: 0.85rem;
+                flex-wrap: wrap;
+            }
+
+            .quiz-type-hint {
+                font-size: 0.75rem;
+            }
+
+            .stats-bar {
+                font-size: 0.75rem;
+                gap: 10px;
+            }
+
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .toast {
+                max-width: 100%;
             }
         }
 

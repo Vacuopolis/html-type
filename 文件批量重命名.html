@@ -636,6 +636,9 @@ const sanitize = (s) => {
   x = x.replace(/[\u0000-\u001f\u007f]/g, '');
   x = x.replace(/[\\/:*?"<>|]/g, ' ');
   x = x.replace(/\s+/g, ' ').trim().replace(/[. ]+$/g, '');
+  // 检查 Windows 保留文件名
+  const reserved = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\.|$)/i;
+  if (reserved.test(x)) x = x + '_';
   return x || 'untitled';
 };
 
@@ -712,6 +715,7 @@ fileInput.addEventListener('change', (e) => {
 ['dragover', 'dragenter'].forEach(evt => {
   dropZone.addEventListener(evt, (e) => {
     e.preventDefault();
+    if (dragIdx !== null) return; 
     dropZone.classList.add('dragover');
   });
 });
@@ -721,6 +725,7 @@ fileInput.addEventListener('change', (e) => {
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   e.stopPropagation();
+  if (dragIdx !== null) return; 
   const dt = e.dataTransfer;
   if (dt && dt.files && dt.files.length) addFiles(Array.from(dt.files));
 });
@@ -792,9 +797,9 @@ function renderFiles() {
             <div class="file-name">${escapeHtml(f.name)}</div>
             <div class="file-size">${formatBytes(f.size)}</div>
           </div>
-          <button type="button" class="move-btn" onclick="moveFile(${i}, -1)" title="上移" draggable="false">▲</button>
-          <button type="button" class="move-btn" onclick="moveFile(${i}, 1)" title="下移" draggable="false">▼</button>
-          <button type="button" class="remove-btn" onclick="removeFile(${i})" draggable="false">✕</button>
+          <button type="button" class="move-btn" data-action="up" data-idx="${i}" title="上移" draggable="false">▲</button>
+          <button type="button" class="move-btn" data-action="down" data-idx="${i}" title="下移" draggable="false">▼</button>
+          <button type="button" class="remove-btn" data-action="remove" data-idx="${i}" draggable="false">✕</button>
         </div>
       `;
     }).join('');
@@ -823,48 +828,84 @@ function moveFile(i, dir) {
   if (target < 0 || target >= files.length) return;
   const [moved] = files.splice(i, 1);
   files.splice(target, 0, moved);
+  // 同步 originalOrder：找到 moved 在 originalOrder 中的位置，
+  // 以及 target 位置处的文件在 originalOrder 中的位置，将 moved 移到其前面/后面
   const oi = originalOrder.indexOf(moved);
   if (oi !== -1) {
     originalOrder.splice(oi, 1);
-    const ot = Math.min(target, originalOrder.length);
-    originalOrder.splice(ot, 0, moved);
+    const targetFile = files[target];
+    const ti = targetFile ? originalOrder.indexOf(targetFile) : originalOrder.length;
+    if (ti !== -1) {
+      const insertPos = dir < 0 ? ti : ti + 1;
+      originalOrder.splice(Math.min(insertPos, originalOrder.length), 0, moved);
+    } else {
+      originalOrder.push(moved);
+    }
   }
   renderFiles();
   updatePreview();
 }
 
-// ===== 拖拽排序 =====
+// ===== 拖拽排序（事件委托） =====
 let dragIdx = null;
+
+// 只初始化一次事件委托
+let dragSortInited = false;
 function initDragSort() {
-  fileList.querySelectorAll('.file-item').forEach(item => {
-    item.addEventListener('dragstart', (e) => {
-      dragIdx = +item.dataset.idx;
-      item.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    item.addEventListener('dragend', () => {
-      item.classList.remove('dragging');
-      dragIdx = null;
-    });
-    item.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    });
-    item.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const toIdx = +item.dataset.idx;
-      if (dragIdx !== null && dragIdx !== toIdx) {
-        const [moved] = files.splice(dragIdx, 1);
-        files.splice(toIdx, 0, moved);
-        const oi = originalOrder.indexOf(moved);
-        if (oi !== -1) {
-          originalOrder.splice(oi, 1);
-          originalOrder.splice(Math.min(toIdx, originalOrder.length), 0, moved);
+  if (dragSortInited) return;
+  dragSortInited = true;
+
+  fileList.addEventListener('dragstart', (e) => {
+    const item = e.target.closest('.file-item');
+    if (!item) return;
+    dragIdx = +item.dataset.idx;
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  fileList.addEventListener('dragend', (e) => {
+    const item = e.target.closest('.file-item');
+    if (item) item.classList.remove('dragging');
+    dragIdx = null;
+  });
+  // 按钮点击委托
+  fileList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const idx = +btn.dataset.idx;
+    if (action === 'remove') removeFile(idx);
+    else if (action === 'up') moveFile(idx, -1);
+    else if (action === 'down') moveFile(idx, 1);
+  });
+  fileList.addEventListener('dragover', (e) => {
+    const item = e.target.closest('.file-item');
+    if (!item) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  });
+  fileList.addEventListener('drop', (e) => {
+    const item = e.target.closest('.file-item');
+    if (!item) return;
+    e.preventDefault();
+    const toIdx = +item.dataset.idx;
+    if (dragIdx !== null && dragIdx !== toIdx) {
+      const [moved] = files.splice(dragIdx, 1);
+      files.splice(toIdx, 0, moved);
+      // 同步 originalOrder：将 moved 移到 toIdx 位置文件在 originalOrder 中的相邻位置
+      const oi = originalOrder.indexOf(moved);
+      if (oi !== -1) {
+        originalOrder.splice(oi, 1);
+        const anchorFile = files[toIdx];
+        const ai = anchorFile ? originalOrder.indexOf(anchorFile) : -1;
+        if (ai !== -1) {
+          originalOrder.splice(ai, 0, moved);
+        } else {
+          originalOrder.push(moved);
         }
-        renderFiles();
-        updatePreview();
       }
-    });
+      renderFiles();
+      updatePreview();
+    }
   });
 }
 
@@ -906,6 +947,7 @@ function updatePreview() {
 
   const result = [];
   const usedNames = new Set();
+  const usedKey = (n) => n.toLowerCase();
   let total = 0;
 
   for (let k = 0; k < idxs.length; k++) {
@@ -930,22 +972,22 @@ function updatePreview() {
     }
 
     if (autoNum) {
-      base += sep + padNum(start + k, width);
+      base += sep + padNum(start + i, width);
     }
 
     let newName = base + extFinal;
 
-    if (usedNames.has(newName)) {
+    if (usedNames.has(usedKey(newName))) {
       if (conflict === 'error') {
         result.push({ file, oldName: file.name, newName, ok: false, err: `重名: ${newName}` });
         continue;
       } else {
         let n = 1;
-        while (usedNames.has(`${base}(${n})${extFinal}`)) n++;
+        while (usedNames.has(usedKey(`${base}(${n})${extFinal}`))) n++;
         newName = `${base}(${n})${extFinal}`;
       }
     }
-    usedNames.add(newName);
+    usedNames.add(usedKey(newName));
     result.push({ file, oldName: file.name, newName, ok: true, err: '' });
   }
 
@@ -1001,6 +1043,7 @@ $('btnClear').addEventListener('click', () => {
   generated = [];
   orderMode = 'picked';
   reverseMatch = false;
+  namesInput.value = '';
   clearUrls();
   renderFiles();
   updatePreview();
@@ -1045,18 +1088,33 @@ $('btnSwap').addEventListener('click', () => {
 
 // ===== 实时预览事件 =====
 namesInput.addEventListener('input', updatePreview);
-['renameMode', 'conflictMode', 'startIndex', 'padWidth', 'separator', 'keepExt', 'lowerExt', 'trimLines', 'skipEmpty', 'autoNumber'].forEach(id => {
-  $(id).addEventListener('input', updatePreview);
+// select 和 checkbox 只绑定 change 事件（避免双重触发），text/number 只绑定 input 事件
+['renameMode', 'conflictMode'].forEach(id => {
   $(id).addEventListener('change', updatePreview);
 });
+['startIndex', 'padWidth'].forEach(id => {
+  $(id).addEventListener('input', updatePreview);
+});
+['keepExt', 'lowerExt', 'trimLines', 'skipEmpty', 'autoNumber'].forEach(id => {
+  $(id).addEventListener('change', updatePreview);
+});
+$('separator').addEventListener('change', updatePreview);
 
 $('startIndex').addEventListener('blur', () => {
   const v = parseInt($('startIndex').value);
-  $('startIndex').value = isNaN(v) || v < 0 ? 1 : v;
+  const corrected = isNaN(v) || v < 0 ? 1 : v;
+  if (corrected !== parseInt($('startIndex').value)) {
+    $('startIndex').value = corrected;
+    updatePreview();
+  }
 });
 $('padWidth').addEventListener('blur', () => {
   const v = parseInt($('padWidth').value);
-  $('padWidth').value = isNaN(v) || v < 0 ? 0 : v;
+  const corrected = isNaN(v) || v < 0 ? 0 : v;
+  if (corrected !== parseInt($('padWidth').value)) {
+    $('padWidth').value = corrected;
+    updatePreview();
+  }
 });
 
 $('separator').addEventListener('input', () => {

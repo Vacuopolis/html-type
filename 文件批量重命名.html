@@ -33,6 +33,7 @@
       padding: 16px 20px;
       border-bottom: 1px solid rgba(255,255,255,.08);
       background: rgba(11,18,32,.9);
+      -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
@@ -119,6 +120,10 @@
     border-color: rgba(255,255,255,.4);
     background: rgba(255,255,255,.03);
     }
+    .drop-zone:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    }
     .drop-zone.dragover {
     border-color: var(--accent);
     background: rgba(0,210,255,.08);
@@ -128,7 +133,10 @@
     .drop-zone .sub-text { font-size: 12px; color: var(--muted); margin-top: 4px; }
     input[type="file"] {
       position: absolute;
-      inset: 0;             
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       opacity: 0;      
@@ -169,6 +177,8 @@
     button.secondary { background: rgba(255,255,255,.08); }
     button.danger { background: linear-gradient(180deg, rgba(255,77,79,.85), rgba(255,77,79,.6)); }
     button.success { background: linear-gradient(180deg, rgba(35,194,107,.85), rgba(35,194,107,.6)); }
+    button.active { outline: 2px solid var(--accent); outline-offset: -2px; }
+    button.reversed { background: linear-gradient(180deg, rgba(245,165,36,.85), rgba(245,165,36,.6)); }
 
     /* File List */
     .file-list {
@@ -244,8 +254,23 @@
       padding: 4px 8px;
       font-size: 14px;
       opacity: .6;
+      cursor: pointer;
     }
     .remove-btn:hover { opacity: 1; background: transparent; }
+    .move-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 2px 6px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      line-height: 1;
+    }
+    .move-btn:hover { color: var(--accent); }
+    .move-btn span { display: block; }
 
     /* Text Area & Form */
     textarea {
@@ -387,7 +412,10 @@
     /* Progress Overlay */
     .progress-overlay {
       position: fixed;
-      inset: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       background: rgba(0,0,0,.85);
       display: flex;
       flex-direction: column;
@@ -451,7 +479,7 @@
         <span class="badge" id="fileCount">0 个</span>
       </div>
       <div class="card-body">
-        <label class="drop-zone" id="dropZone">
+        <label class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="选择或拖拽文件上传">
           <div class="upload-icon">📤</div>
           <div class="main-text">拖拽文件到这里 或 点击选择</div>
           <div class="sub-text">支持任意类型文件，可多选</div>
@@ -459,9 +487,9 @@
         </label>
 
         <div class="btn-row">
-          <button class="danger" id="btnClear" disabled>🗑️ 清空</button>
-          <button class="secondary" id="btnSortName" disabled>🔤 按名称排序</button>
-          <button class="secondary" id="btnSortTime" disabled>🕐 按添加顺序</button>
+          <button type="button" class="danger" id="btnClear" disabled>🗑️ 清空</button>
+          <button type="button" class="secondary" id="btnSortName" disabled>🔤 按名称排序</button>
+          <button type="button" class="secondary" id="btnSortTime" disabled>🕐 按添加顺序</button>
         </div>
 
         <div class="file-list">
@@ -483,7 +511,7 @@
         <span class="badge" id="lineCount">0 行</span>
       </div>
       <div class="card-body">
-        <textarea id="namesInput" placeholder="每行输入一个新名字（不含扩展名）&#10;例如：&#10;这是第一个图&#10;这是第二个图&#10;这是第三个图"></textarea>
+        <textarea id="namesInput" placeholder="每行输入一个新名字（不含扩展名）&#10;例如：&#10;张三&#10;李四&#10;王五"></textarea>
 
         <div class="form-grid">
           <div class="field">
@@ -515,7 +543,7 @@
           </div>
           <div class="field">
             <label>&nbsp;</label>
-            <button class="secondary" id="btnSwap" style="width:100%" disabled>🔄 反向匹配</button>
+            <button type="button" class="secondary" id="btnSwap" style="width:100%" disabled>🔄 反向匹配</button>
           </div>
           <div class="field full">
             <label>选项</label>
@@ -548,8 +576,8 @@
       </div>
       <div class="card-body">
         <div class="btn-row">
-          <button class="success" id="btnDownloadZip" disabled>📦 下载 ZIP</button>
-          <button class="secondary" id="btnDownloadCSV" disabled>📋 下载对照表</button>
+          <button type="button" class="success" id="btnDownloadZip" disabled>📦 下载 ZIP</button>
+          <button type="button" class="secondary" id="btnDownloadCSV" disabled>📋 下载对照表</button>
         </div>
 
         <div class="file-list">
@@ -597,6 +625,12 @@ const stripExt = (name) => {
   return i > 0 ? name.slice(0, i) : name;
 };
 
+const escapeHtml = (s) => {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+};
+
 const sanitize = (s) => {
   let x = (s ?? '').toString();
   x = x.replace(/[\u0000-\u001f\u007f]/g, '');
@@ -613,7 +647,7 @@ const csvEscape = (v) => {
 };
 
 const getFileIcon = (name) => {
-  const ext = name.split('.').pop().toLowerCase();
+  const ext = getExt(name).replace(/^\./, '').toLowerCase();
   const icons = {
     jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', bmp:'🖼️', svg:'🖼️',
     pdf:'📄', doc:'📝', docx:'📝', txt:'📃', xls:'📊', xlsx:'📊', csv:'📊',
@@ -624,10 +658,24 @@ const getFileIcon = (name) => {
   return icons[ext] || '📄';
 };
 
+
 const isImage = (file) => /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
+
+const naturalCompare = (a, b) => {
+  const ax = [], bx = [];
+  a.replace(/(\d+)|(\D+)/g, (_, $1, $2) => { ax.push([$1 || Infinity, $2 || '']); return ''; });
+  b.replace(/(\d+)|(\D+)/g, (_, $1, $2) => { bx.push([$1 || Infinity, $2 || '']); return ''; });
+  while (ax.length && bx.length) {
+    const an = ax.shift(), bn = bx.shift();
+    const nn = (an[0] - bn[0]) || an[1].localeCompare(bn[1], 'zh-CN');
+    if (nn) return nn;
+  }
+  return ax.length - bx.length;
+};
 
 // ===== 状态 =====
 let files = [];
+let originalOrder = [];
 let orderMode = 'picked';
 let reverseMatch = false;
 let generated = [];
@@ -641,14 +689,18 @@ const fileList = $('fileList');
 const previewList = $('previewList');
 const namesInput = $('namesInput');
 
+
 // ===== 事件：导入 =====
 function resetFileInputValue() {
   fileInput.value = '';
 }
 
-dropZone.addEventListener('pointerdown', resetFileInputValue, { passive: true });
 dropZone.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') resetFileInputValue();
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    resetFileInputValue();
+    fileInput.click();
+  }
 });
 
 fileInput.addEventListener('change', (e) => {
@@ -668,6 +720,7 @@ fileInput.addEventListener('change', (e) => {
 });
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
+  e.stopPropagation();
   const dt = e.dataTransfer;
   if (dt && dt.files && dt.files.length) addFiles(Array.from(dt.files));
 });
@@ -689,7 +742,12 @@ function addFiles(newFiles) {
     return;
   }
 
-  files = files.concat(toAdd);
+  originalOrder = originalOrder.concat(toAdd);
+  if (orderMode === 'picked') {
+    files = [...originalOrder];
+  } else {
+    files = files.concat(toAdd);
+  }
   applyOrder();
   renderFiles();
   updatePreview();
@@ -697,7 +755,11 @@ function addFiles(newFiles) {
 }
 
 function applyOrder() {
-  if (orderMode === 'name') files.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+  if (orderMode === 'name') {
+    files.sort((a, b) => naturalCompare(a.name, b.name));
+  } else if (orderMode === 'picked') {
+    files = [...originalOrder];
+  }
 }
 
 function getObjectUrl(file) {
@@ -710,14 +772,15 @@ function clearUrls() {
   urlCache.clear();
 } 
 
+
 // ===== 渲染左侧文件列表 =====
 function renderFiles() {
-  let total = 0;
+  const total = files.reduce((s, f) => s + (f.size || 0), 0);
+
   if (files.length === 0) {
     fileList.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted)">暂无文件</div>';
   } else {
     fileList.innerHTML = files.map((f, i) => {
-      total += f.size || 0;
       const thumb = isImage(f) 
         ? `<img class="file-thumb" src="${getObjectUrl(f)}" alt="">` 
         : `<span class="file-icon">${getFileIcon(f.name)}</span>`;
@@ -726,10 +789,12 @@ function renderFiles() {
           <span class="file-index">${i + 1}</span>
           ${thumb}
           <div class="file-info">
-            <div class="file-name">${f.name}</div>
+            <div class="file-name">${escapeHtml(f.name)}</div>
             <div class="file-size">${formatBytes(f.size)}</div>
           </div>
-          <button class="remove-btn" onclick="removeFile(${i})">✕</button>
+          <button type="button" class="move-btn" onclick="moveFile(${i}, -1)" title="上移" draggable="false">▲</button>
+          <button type="button" class="move-btn" onclick="moveFile(${i}, 1)" title="下移" draggable="false">▼</button>
+          <button type="button" class="remove-btn" onclick="removeFile(${i})" draggable="false">✕</button>
         </div>
       `;
     }).join('');
@@ -738,10 +803,32 @@ function renderFiles() {
   $('fileCount').textContent = `${files.length} 个`;
   $('totalSize').textContent = formatBytes(total);
   updateButtons();
+  updateSortButtonStates();
 }
 
 function removeFile(i) {
-  files.splice(i, 1);
+  const removed = files.splice(i, 1)[0];
+  if (removed && urlCache.has(removed)) {
+    URL.revokeObjectURL(urlCache.get(removed));
+    urlCache.delete(removed);
+  }
+  const oi = originalOrder.indexOf(removed);
+  if (oi !== -1) originalOrder.splice(oi, 1);
+  renderFiles();
+  updatePreview();
+}
+
+function moveFile(i, dir) {
+  const target = i + dir;
+  if (target < 0 || target >= files.length) return;
+  const [moved] = files.splice(i, 1);
+  files.splice(target, 0, moved);
+  const oi = originalOrder.indexOf(moved);
+  if (oi !== -1) {
+    originalOrder.splice(oi, 1);
+    const ot = Math.min(target, originalOrder.length);
+    originalOrder.splice(ot, 0, moved);
+  }
   renderFiles();
   updatePreview();
 }
@@ -753,18 +840,27 @@ function initDragSort() {
     item.addEventListener('dragstart', (e) => {
       dragIdx = +item.dataset.idx;
       item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
     });
     item.addEventListener('dragend', () => {
       item.classList.remove('dragging');
       dragIdx = null;
     });
-    item.addEventListener('dragover', (e) => e.preventDefault());
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
     item.addEventListener('drop', (e) => {
       e.preventDefault();
       const toIdx = +item.dataset.idx;
       if (dragIdx !== null && dragIdx !== toIdx) {
         const [moved] = files.splice(dragIdx, 1);
         files.splice(toIdx, 0, moved);
+        const oi = originalOrder.indexOf(moved);
+        if (oi !== -1) {
+          originalOrder.splice(oi, 1);
+          originalOrder.splice(Math.min(toIdx, originalOrder.length), 0, moved);
+        }
         renderFiles();
         updatePreview();
       }
@@ -797,8 +893,8 @@ function updatePreview() {
   }
 
   const mode = $('renameMode').value;
-  const start = parseInt($('startIndex').value) || 1;
-  const width = parseInt($('padWidth').value) || 0;
+  const start = Math.max(0, parseInt($('startIndex').value) || 1);
+  const width = Math.max(0, parseInt($('padWidth').value) || 0);
   const sep = $('separator').value;
   const keepExt = $('keepExt').checked;
   const lowerExt = $('lowerExt').checked;
@@ -809,7 +905,7 @@ function updatePreview() {
   if (reverseMatch) idxs.reverse();
 
   const result = [];
-  const usedNames = new Map();
+  const usedNames = new Set();
   let total = 0;
 
   for (let k = 0; k < idxs.length; k++) {
@@ -839,19 +935,17 @@ function updatePreview() {
 
     let newName = base + extFinal;
 
-    // 冲突处理
     if (usedNames.has(newName)) {
       if (conflict === 'error') {
         result.push({ file, oldName: file.name, newName, ok: false, err: `重名: ${newName}` });
         continue;
       } else {
-        let n = usedNames.get(newName) + 1;
+        let n = 1;
         while (usedNames.has(`${base}(${n})${extFinal}`)) n++;
-        usedNames.set(newName, n);
         newName = `${base}(${n})${extFinal}`;
       }
     }
-    usedNames.set(newName, 1);
+    usedNames.add(newName);
     result.push({ file, oldName: file.name, newName, ok: true, err: '' });
   }
 
@@ -875,9 +969,9 @@ function renderPreview(total) {
         <span class="file-index">${i + 1}</span>
         <span class="file-icon">${getFileIcon(g.newName)}</span>
         <div class="preview-info">
-          <div class="new-name">${g.newName}</div>
-          <div class="old-name">原: ${g.oldName}</div>
-          ${g.err ? `<div class="error-msg">${g.err}</div>` : ''}
+          <div class="new-name">${escapeHtml(g.newName)}</div>
+          <div class="old-name">原: ${escapeHtml(g.oldName)}</div>
+          ${g.err ? `<div class="error-msg">${escapeHtml(g.err)}</div>` : ''}
         </div>
       </div>
     `).join('');
@@ -895,14 +989,23 @@ function updateButtons() {
   $('btnSwap').disabled = !has;
 }
 
+function updateSortButtonStates() {
+  $('btnSortName').classList.toggle('active', orderMode === 'name');
+  $('btnSortTime').classList.toggle('active', orderMode === 'picked' && files.length > 0);
+}
+
 // ===== 控制按钮 =====
 $('btnClear').addEventListener('click', () => {
   files = [];
+  originalOrder = [];
   generated = [];
+  orderMode = 'picked';
   reverseMatch = false;
   clearUrls();
   renderFiles();
   updatePreview();
+  updateSwapButtonState();
+  updateSortButtonStates();
   showToast('已清空');
 });
 
@@ -916,13 +1019,26 @@ $('btnSortName').addEventListener('click', () => {
 
 $('btnSortTime').addEventListener('click', () => {
   orderMode = 'picked';
+  applyOrder();
   renderFiles();
   updatePreview();
   showToast('已按添加顺序');
 });
 
+function updateSwapButtonState() {
+  const btn = $('btnSwap');
+  if (reverseMatch) {
+    btn.classList.add('reversed');
+    btn.textContent = '🔄 反向匹配 (已启用)';
+  } else {
+    btn.classList.remove('reversed');
+    btn.textContent = '🔄 反向匹配';
+  }
+}
+
 $('btnSwap').addEventListener('click', () => {
   reverseMatch = !reverseMatch;
+  updateSwapButtonState();
   updatePreview();
   showToast(reverseMatch ? '已启用反向匹配' : '已恢复正向匹配');
 });
@@ -934,26 +1050,39 @@ namesInput.addEventListener('input', updatePreview);
   $(id).addEventListener('change', updatePreview);
 });
 
+$('startIndex').addEventListener('blur', () => {
+  const v = parseInt($('startIndex').value);
+  $('startIndex').value = isNaN(v) || v < 0 ? 1 : v;
+});
+$('padWidth').addEventListener('blur', () => {
+  const v = parseInt($('padWidth').value);
+  $('padWidth').value = isNaN(v) || v < 0 ? 0 : v;
+});
+
+$('separator').addEventListener('input', () => {
+  const el = $('separator');
+  el.value = el.value.replace(/[\\/:*?"<>|]/g, '');
+  updatePreview();
+});
+
 // ===== 下载 ZIP =====
 $('btnDownloadZip').addEventListener('click', async () => {
   const okItems = generated.filter(x => x.ok);
   if (!okItems.length) return;
-  if (typeof JSZip === 'undefined') {
-    showToast('JSZip 未加载', 'error');
-    return;
-  }
-  
+  if (typeof JSZip === 'undefined') { showToast('JSZip 未加载', 'error'); return; }
+
   $('btnDownloadZip').disabled = true;
   showProgress(true);
+
   $('progressText').textContent = '打包中…';
   $('progressFill').style.width = '0%';
-  $('progressDetail').textContent = `0/${okItems.length}`;
-  
+  $('progressDetail').textContent = `0 / ${okItems.length}`;
+
   try {
-    const includeCSV = confirm('是否在 ZIP 中包含对照表 CSV？\n\n点击"确定"包含，"取消"不包含');
-    const blob = await generateZipBlobSafe(okItems, includeCSV);
+    const blob = await generateZipBlobSafe(okItems);
+
     downloadBlobSafe(blob, `batch_renamed_${Date.now()}.zip`);
-    showToast(`已下载${okItems.length}个文件`);
+    showToast(`已下载 ${okItems.length} 个文件`);
   } catch (e) {
     console.error(e);
     showToast('打包失败：文件过大或浏览器内存不足（建议减少文件数量/改用电脑）', 'error');
@@ -966,83 +1095,59 @@ $('btnDownloadZip').addEventListener('click', async () => {
 $('btnDownloadCSV').addEventListener('click', () => {
   if (!generated.length) return;
   const csv = ['index,oldName,newName,status,error'].concat(
-    generated.map((it, i) => [
-      i + 1,
-      csvEscape(it.oldName),
-      csvEscape(it.newName),
-      it.ok ? 'OK' : 'ERR',
-      csvEscape(it.err)
-    ].join(','))
+    generated.map((it, i) => [i + 1, csvEscape(it.oldName), csvEscape(it.newName), it.ok ? 'OK' : 'ERR', csvEscape(it.err)].join(','))
   ).join('\n');
-  const csvWithBOM = '\uFEFF' + csv;
-  downloadBlob(new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8' }), `rename_map_${Date.now()}.csv`);
+  downloadBlobSafe(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), `rename_map_${Date.now()}.csv`);
 });
 
-function downloadBlob(blob, name) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-
-async function generateZipBlobSafe(okItems, includeCSV = true) {
+async function generateZipBlobSafe(okItems) {
   try {
     return await generateZipBlob(okItems, {
       compression: 'DEFLATE',
       compressionOptions: { level: 1 },
-    }, includeCSV);
+    });
   } catch (e) {
     console.warn('[zip] DEFLATE failed, fallback to STORE', e);
     return await generateZipBlob(okItems, {
       compression: 'STORE',
       compressionOptions: undefined,
-    }, includeCSV);
+    });
   }
 }
 
-async function generateZipBlob(okItems, zipOptions, includeCSV = true) {
+async function generateZipBlob(okItems, zipOptions) {
   if (typeof JSZip === 'undefined') throw new Error('JSZip 未加载');
+
   const zip = new JSZip();
   const folder = zip.folder('重命名后的文件');
-  
+
   for (const item of okItems) {
     folder.file(item.newName, item.file, {
-      binary: true,
       createFolders: true,
     });
   }
-  
-  if (includeCSV) {
-    const csv = ['index,oldName,newName,sizeBytes'].concat(
-      okItems.map((it, idx) => [
-        idx + 1,
-        csvEscape(it.oldName),
-        csvEscape(it.newName),
-        it.file.size
-      ].join(','))
-    ).join('\n');
-    // 添加 UTF-8 BOM
-    const csvWithBOM = '\uFEFF' + csv;
-    folder.file('_rename_map.csv', csvWithBOM);
-  }
-  
-  const blob = await zip.generateAsync({
-    type: 'blob',
-    streamFiles: true,
-    compression: zipOptions.compression,
-    compressionOptions: zipOptions.compressionOptions,
-  }, (metadata) => {
-    const pct = Number(metadata.percent) || 0;
-    $('progressFill').style.width = pct.toFixed(2) + '%';
-    $('progressDetail').textContent = metadata.currentFile
-      ? `处理中：${metadata.currentFile}`
-      : `处理中…${pct.toFixed(0)}%`;
-  });
-  
+
+  const csv = ['index,oldName,newName,sizeBytes'].concat(
+    okItems.map((it, idx) => [idx + 1, csvEscape(it.oldName), csvEscape(it.newName), it.file.size].join(','))
+  ).join('\n');
+  folder.file('_rename_map.csv', '\uFEFF' + csv);
+
+  const blob = await zip.generateAsync(
+    {
+      type: 'blob',
+      streamFiles: true,
+      compression: zipOptions.compression,
+      compressionOptions: zipOptions.compressionOptions,
+    },
+    (metadata) => {
+      const pct = Number(metadata.percent) || 0;
+      $('progressFill').style.width = pct.toFixed(2) + '%';
+      $('progressDetail').textContent = metadata.currentFile
+        ? `处理中：${metadata.currentFile}`
+        : `处理中… ${pct.toFixed(0)}%`;
+    }
+  );
+
   return blob;
 }
 
@@ -1061,24 +1166,26 @@ function downloadBlobSafe(blob, name) {
 }
 
 // ===== Toast =====
+let toastTimer = null;
 function showToast(msg, type = 'success') {
   const t = $('toast');
+  if (toastTimer) clearTimeout(toastTimer);
   t.textContent = msg;
   t.className = 'toast show' + (type !== 'success' ? ' ' + type : '');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => {
+    t.classList.remove('show');
+    toastTimer = null;
+  }, 3000);
 }
 
 // ===== Progress =====
 function showProgress(show) {
   $('progressOverlay').classList.toggle('show', show);
 }
-function updateProgress(pct, cur, total) {
-  $('progressFill').style.width = pct + '%';
-  $('progressDetail').textContent = `${cur} / ${total}`;
-}
 
 // 初始化
 updateButtons();
+updateSwapButtonState();
 </script>
 </body>
 </html>

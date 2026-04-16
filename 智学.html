@@ -968,6 +968,427 @@
             to { opacity: 1; }
         }
 
+        /* ================= AI 助手浮动按钮 ================= */
+        .ai-fab {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            z-index: 200;
+            transition: all 0.25s;
+            animation: aiFabPulse 2.5s ease-in-out infinite;
+        }
+
+        .ai-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55);
+        }
+
+        .ai-fab.active {
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            animation: none;
+        }
+
+        @keyframes aiFabPulse {
+            0%, 100% { box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45); }
+            50% { box-shadow: 0 4px 24px rgba(99, 102, 241, 0.7); }
+        }
+
+        /* ================= AI 助手面板 ================= */
+        .ai-panel {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 400px;
+            height: 100vh;
+            background: var(--card-bg);
+            box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ai-panel.open {
+            right: 0;
+        }
+
+        .ai-panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 299;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .ai-panel-overlay.open {
+            display: block;
+        }
+
+        .ai-panel-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .ai-panel-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-panel-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+        }
+
+        .ai-panel-close:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .ai-panel-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-panel-action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .ai-panel-action-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .ai-panel-action-btn[title]::after {
+            font-size: 0.7rem;
+        }
+
+        .ai-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .ai-panel-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .ai-panel-body::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 2px;
+        }
+
+        /* 题目信息卡 */
+        .ai-qinfo {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .ai-qinfo-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ai-qinfo p {
+            margin: 2px 0;
+            color: var(--text);
+        }
+
+        .ai-qinfo .label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .ai-qinfo .correct-tag {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .ai-qinfo .wrong-tag {
+            color: var(--error);
+            font-weight: 600;
+        }
+
+        /* 聊天气泡 */
+        .ai-chat {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .ai-msg {
+            display: flex;
+            gap: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .ai-msg.bot {
+            align-self: flex-start;
+        }
+
+        .ai-msg.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .ai-msg-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+        }
+
+        .ai-msg.bot .ai-msg-avatar {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+        }
+
+        .ai-msg.user .ai-msg-avatar {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .ai-msg-bubble {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            word-break: break-word;
+        }
+
+        .ai-msg.bot .ai-msg-bubble {
+            background: #f1f5f9;
+            color: var(--text);
+            border-top-left-radius: 4px;
+        }
+
+        .ai-msg.user .ai-msg-bubble {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border-top-right-radius: 4px;
+        }
+
+        .ai-msg-bubble h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 8px 0 4px;
+        }
+
+        .ai-msg-bubble h4:first-child {
+            margin-top: 0;
+        }
+
+        .ai-msg-bubble ul, .ai-msg-bubble ol {
+            padding-left: 18px;
+            margin: 4px 0;
+        }
+
+        .ai-msg-bubble li {
+            margin: 2px 0;
+        }
+
+        .ai-msg-bubble strong {
+            font-weight: 600;
+        }
+
+        .ai-msg-bubble p {
+            margin: 4px 0;
+        }
+
+        .ai-msg-bubble code {
+            background: rgba(0,0,0,0.06);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.82rem;
+        }
+
+        /* 加载动画 */
+        .ai-loading {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 0;
+        }
+
+        .ai-loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+            animation: aiLoadingBounce 1.2s ease-in-out infinite;
+        }
+
+        .ai-loading-dot:nth-child(2) { animation-delay: 0.15s; }
+        .ai-loading-dot:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes aiLoadingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+
+        /* 快捷操作 */
+        .ai-quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ai-quick-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: #fff;
+            color: var(--text);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .ai-quick-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* 输入区 */
+        .ai-panel-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            background: #fafbfc;
+            flex-shrink: 0;
+        }
+
+        .ai-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .ai-input-row textarea {
+            flex: 1;
+            resize: none;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            font-family: inherit;
+            line-height: 1.5;
+            max-height: 100px;
+            min-height: 38px;
+            transition: border-color 0.2s;
+        }
+
+        .ai-input-row textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+        }
+
+        .ai-send-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .ai-send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+        }
+
+        .ai-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 错误提示 */
+        .ai-error-msg {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: var(--error);
+        }
+
+        .ai-error-msg .retry-link {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: underline;
+            margin-left: 6px;
+        }
+
         /* ================= 响应式 ================= */
         @media (max-width: 1024px) {
             .quiz-layout {
@@ -1008,6 +1429,19 @@
         }
 
         @media (max-width: 600px) {
+            .ai-panel {
+                width: 100%;
+                right: -100%;
+            }
+
+            .ai-fab {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 1.3rem;
+            }
+
             main {
                 padding: 10px;
             }
@@ -1259,6 +1693,43 @@
 <!-- Toast 容器 -->
 <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
+<!-- AI 助手浮动按钮 -->
+<button class="ai-fab" id="aiFab" onclick="toggleAIPanel()" title="AI 助手" aria-label="打开AI助手" style="display:none;">
+    🤖
+</button>
+
+<!-- AI 助手遮罩层 -->
+<div class="ai-panel-overlay" id="aiPanelOverlay" onclick="toggleAIPanel()"></div>
+
+<!-- AI 助手面板 -->
+<div class="ai-panel" id="aiPanel">
+    <div class="ai-panel-header">
+        <h3>🤖 AI 解题助手</h3>
+        <div class="ai-panel-actions">
+            <button class="ai-panel-action-btn" onclick="newAIChat()" title="开始新聊天" aria-label="开始新聊天">➕</button>
+            <button class="ai-panel-close" onclick="toggleAIPanel()" aria-label="关闭">✕</button>
+        </div>
+    </div>
+    <div class="ai-panel-body" id="aiPanelBody">
+        <div class="ai-qinfo" id="aiQInfo" style="display:none;">
+            <div class="ai-qinfo-title">📋 当前题目</div>
+            <div id="aiQInfoContent"></div>
+        </div>
+        <div class="ai-chat" id="aiChat"></div>
+    </div>
+    <div class="ai-panel-footer">
+        <div class="ai-quick-actions" id="aiQuickActions" style="margin-bottom: 8px; display: none;">
+            <button class="ai-quick-btn" onclick="aiQuickAsk('explain')">💡 解析本题</button>
+            <button class="ai-quick-btn" onclick="aiQuickAsk('why_wrong')">❓ 为什么错了</button>
+            <button class="ai-quick-btn" onclick="aiQuickAsk('knowledge')">📚 相关知识点</button>
+        </div>
+        <div class="ai-input-row">
+            <textarea id="aiInput" rows="1" placeholder="输入你的问题…" onkeydown="handleAIKeydown(event)" oninput="autoResizeAIInput(this)"></textarea>
+            <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()" title="发送">➤</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==================== 全局状态 ====================
     const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -1312,6 +1783,8 @@
         state.quizIndex = 0;
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
+        aiState.chatCache = {};
+        aiState.currentChatKey = null;
 
         renderParsePreview();
         updateStats();
@@ -1321,6 +1794,10 @@
         let msg = `成功解析 ${questions.length} 道试题`;
         if (noAnswer > 0) msg += `（${noAnswer} 题未识别答案）`;
         showToast(msg, noAnswer > 0 ? 'info' : 'success');
+
+        // 显示AI助手按钮
+        const aiFab = document.getElementById('aiFab');
+        if (aiFab) aiFab.style.display = 'flex';
     }
 
     function doParse(text) {
@@ -1570,6 +2047,14 @@
             renderQuizView();
             renderAnswerSheet();
         }
+
+        // AI助手按钮可见性：两个模式都可见
+        const aiFab = document.getElementById('aiFab');
+        if (aiFab) aiFab.style.display = state.questions.length > 0 ? 'flex' : 'none';
+        // 如果切换到解析模式且AI面板打开，关闭面板
+        if (mode === 'parse' && aiState.panelOpen) {
+            toggleAIPanel();
+        }
     }
 
     // ==================== 解析模式渲染 ====================
@@ -1784,6 +2269,7 @@
 
         renderQuizView();
         renderAnswerSheet();
+        updateAIQuestionInfo();
         if (state.currentMode === 'parse') {
             renderParsePreview();
         }
@@ -1928,6 +2414,7 @@
 
         state.userAnswers[realIdx] = myAns;
         renderQuizView();
+        updateAIQuestionInfo();
     }
 
     function submitAnswer() {
@@ -1950,6 +2437,7 @@
         saveCurrentProgress();
         renderQuizView();
         renderAnswerSheet();
+        updateAIQuestionInfo();
 
         showToast(
             isCorrect ? '回答正确！' : `回答错误，正确答案: ${shuffledAnswer}`,
@@ -1962,6 +2450,7 @@
             state.quizIndex--;
             renderQuizView();
             renderAnswerSheet();
+            onAIQuestionChange();
         }
     }
 
@@ -1970,6 +2459,7 @@
             state.quizIndex++;
             renderQuizView();
             renderAnswerSheet();
+            onAIQuestionChange();
         }
     }
 
@@ -1977,6 +2467,7 @@
         state.quizIndex = quizIdx;
         renderQuizView();
         renderAnswerSheet();
+        onAIQuestionChange();
         requestAnimationFrame(() => {
             const contentArea = document.getElementById('quizContentArea');
             if (contentArea) contentArea.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1995,8 +2486,13 @@
         state.quizIndex = 0;
         state.quizOrder = [];
         state.shuffledOptions = [];
+        aiState.chatCache = {};
+        aiState.currentChatKey = null;
         renderParsePreview();
         updateStats();
+        const aiFab = document.getElementById('aiFab');
+        if (aiFab) aiFab.style.display = 'none';
+        if (aiState.panelOpen) toggleAIPanel();
         showToast('已清空所有内容', 'info');
     }
 
@@ -2507,7 +3003,7 @@ B.要建设什么样的社会的重大问题
 C.要建设什么样的国家的重大问题
 D.要走什么样的道路的问题
 11.“道不可坐论，德不能空谈”，强调了践行核心价值观要（ D ）。
-‏  A.修德      B.明辨      C.勤学      D.笃行
+A.修德      B.明辨      C.勤学      D.笃行
 
 12.先秦时期就提出了“和而不同”“和合中庸”“政通人和”“天人合一”“协和万邦”等丰富多彩、意蕴深远的（ A ）理念。
 A.重和谐      B.重伦理      C.重诚信      D.重爱国
@@ -2837,6 +3333,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             quizStatus: questions.map(() => 'unanswered'),
             shuffledOptions: JSON.parse(JSON.stringify(state.shuffledOptions)),
             shuffleEnabled: state.shuffleEnabled,
+            aiChatCache: {},
         };
         state._activeHistoryTime = record.time;
         state.historyRecords.unshift(record);
@@ -2906,7 +3403,6 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         state.userAnswers = JSON.parse(JSON.stringify(record.userAnswers || record.questions.map(() => [])));
         state.quizStatus = JSON.parse(JSON.stringify(record.quizStatus || record.questions.map(() => 'unanswered')));
         state.quizIndex = 0;
-        // 恢复随机选项映射：优先用历史记录中的，否则重新生成
         if (record.shuffledOptions && record.shuffledOptions.length > 0) {
             state.shuffledOptions = JSON.parse(JSON.stringify(record.shuffledOptions));
             state.shuffleEnabled = !!record.shuffleEnabled;
@@ -2915,7 +3411,8 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         }
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         document.getElementById('shuffleToggle').checked = state.shuffleEnabled;
-        // 跳到第一道未答题（按 quizOrder 顺序查找）
+        aiState.chatCache = JSON.parse(JSON.stringify(record.aiChatCache || {}));
+        aiState.currentChatKey = null;
         const firstUnansweredPos = state.quizOrder.findIndex(
             realIdx => state.quizStatus[realIdx] === 'unanswered'
         );
@@ -2925,6 +3422,8 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         updateStats();
         switchMode('quiz');
         showToast(`继续答题（已答 ${state.quizStatus.filter(s => s !== 'unanswered').length}/${state.questions.length}）`, 'info');
+        const aiFab = document.getElementById('aiFab');
+        if (aiFab) aiFab.style.display = 'flex';
     }
 
     function resetHistoryProgress(index) {
@@ -2933,7 +3432,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         if (!record) return;
         record.userAnswers = record.questions.map(() => []);
         record.quizStatus = record.questions.map(() => 'unanswered');
-        // 重新生成选项随机映射
+        record.aiChatCache = {};
         const tempQuestions = state.questions;
         state.questions = record.questions;
         record.shuffledOptions = generateShuffledOptions(!!record.shuffleEnabled);
@@ -2961,6 +3460,8 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         state.quizIndex = 0;
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
+        aiState.chatCache = {};
+        aiState.currentChatKey = null;
         closeHistoryDropdown();
         renderParsePreview();
         updateStats();
@@ -2969,6 +3470,9 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             renderAnswerSheet();
         }
         showToast(`已加载历史记录（${record.count} 题）`, 'success');
+        const aiFab2 = document.getElementById('aiFab');
+        if (aiFab2) aiFab2.style.display = 'flex';
+        updateAIQuestionInfo();
     }
 
     /** 保存当前答题进度到对应的历史记录 */
@@ -2984,6 +3488,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             record.quizStatus = JSON.parse(JSON.stringify(state.quizStatus));
             record.shuffledOptions = JSON.parse(JSON.stringify(state.shuffledOptions));
             record.shuffleEnabled = state.shuffleEnabled;
+            record.aiChatCache = JSON.parse(JSON.stringify(aiState.chatCache));
             saveHistoryToStorage();
         }
     }
@@ -3054,6 +3559,476 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
     // ==================== 初始化 ====================
     loadHistoryFromStorage();
     renderHistory();
+
+    // ==================== AI 助手功能 ====================
+    const DEEPSEEK_API_KEY = 'sk-d673f71ee11b452282b10f93545c378c';
+    const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+
+    const aiState = {
+        panelOpen: false,
+        isStreaming: false,
+        chatCache: {},   // { [realIdx]: [{ role, content }, ...] } 按题目索引缓存对话
+        currentChatKey: null,  // 当前对话对应的 realIdx
+        abortCtrl: null,  // 用于中断请求
+    };
+
+    function getCurrentChatMessages() {
+        if (aiState.currentChatKey === null) return [];
+        if (!aiState.chatCache[aiState.currentChatKey]) {
+            aiState.chatCache[aiState.currentChatKey] = [];
+        }
+        return aiState.chatCache[aiState.currentChatKey];
+    }
+
+    function setCurrentChatMessages(msgs) {
+        if (aiState.currentChatKey === null) return;
+        aiState.chatCache[aiState.currentChatKey] = msgs;
+    }
+
+    function toggleAIPanel() {
+        aiState.panelOpen = !aiState.panelOpen;
+        const panel = document.getElementById('aiPanel');
+        const overlay = document.getElementById('aiPanelOverlay');
+        const fab = document.getElementById('aiFab');
+
+        if (aiState.panelOpen) {
+            panel.classList.add('open');
+            overlay.classList.add('open');
+            fab.classList.add('active');
+            if (state.currentMode === 'quiz' && state.questions.length > 0) {
+                const realIdx = getRealIndex(state.quizIndex);
+                if (aiState.currentChatKey !== realIdx) {
+                    aiState.currentChatKey = realIdx;
+                    renderAIChatFromCache();
+                }
+            }
+            updateAIQuestionInfo();
+        } else {
+            panel.classList.remove('open');
+            overlay.classList.remove('open');
+            fab.classList.remove('active');
+        }
+    }
+
+    /** 更新AI面板中的题目信息卡 */
+    function updateAIQuestionInfo() {
+        const qInfo = document.getElementById('aiQInfo');
+        const qInfoContent = document.getElementById('aiQInfoContent');
+        const quickActions = document.getElementById('aiQuickActions');
+
+        if (state.currentMode !== 'quiz' || state.questions.length === 0) {
+            qInfo.style.display = 'none';
+            quickActions.style.display = 'none';
+            qInfoContent.innerHTML = '';
+            return;
+        }
+
+        const realIdx = getRealIndex(state.quizIndex);
+        const q = state.questions[realIdx];
+        const status = state.quizStatus[realIdx];
+        const myAns = state.userAnswers[realIdx];
+        const shuffled = state.shuffledOptions[realIdx] || [];
+        const shuffledAnswer = getShuffledAnswer(realIdx);
+        const isSubmitted = status !== 'unanswered';
+
+        let html = `<p><span class="label">题目：</span>${escapeHtml(q.text)}</p>`;
+
+        if (shuffled.length > 0) {
+            html += '<p><span class="label">选项：</span>';
+            html += shuffled.map(o => `${o.label}. ${escapeHtml(o.content)}`).join('　');
+            html += '</p>';
+        }
+
+        if (isSubmitted) {
+            html += `<p><span class="label">正确答案：</span><span class="correct-tag">${shuffledAnswer || '未知'}</span></p>`;
+            if (myAns.length > 0) {
+                const isCorrect = status === 'correct';
+                html += `<p><span class="label">你的答案：</span><span class="${isCorrect ? 'correct-tag' : 'wrong-tag'}">${myAns.sort().join('')}</span>`;
+                if (!isCorrect) {
+                    html += ' <span class="wrong-tag">（错误）</span>';
+                }
+                html += '</p>';
+            }
+        } else if (myAns.length > 0) {
+            html += `<p><span class="label">当前选择：</span>${myAns.sort().join('')}（未提交）</p>`;
+        }
+
+        qInfo.style.display = 'block';
+        qInfoContent.innerHTML = html;
+        quickActions.style.display = isSubmitted ? 'flex' : 'flex';
+    }
+
+    /** 获取当前题目的上下文信息（用于API请求） */
+    function getAIContext() {
+        if (state.currentMode !== 'quiz' || state.questions.length === 0) return '';
+
+        const realIdx = getRealIndex(state.quizIndex);
+        const q = state.questions[realIdx];
+        const status = state.quizStatus[realIdx];
+        const myAns = state.userAnswers[realIdx];
+        const shuffled = state.shuffledOptions[realIdx] || [];
+        const shuffledAnswer = getShuffledAnswer(realIdx);
+        const isSubmitted = status !== 'unanswered';
+
+        let ctx = `【题目】${q.text}\n`;
+        if (shuffled.length > 0) {
+            ctx += `【选项】\n`;
+            shuffled.forEach(o => {
+                ctx += `  ${o.label}. ${o.content}\n`;
+            });
+        }
+        if (isSubmitted && shuffledAnswer) {
+            ctx += `【正确答案】${shuffledAnswer}\n`;
+        }
+        if (isSubmitted && myAns.length > 0) {
+            ctx += `【用户答案】${myAns.sort().join('')}\n`;
+            if (status === 'incorrect') {
+                ctx += `【答题结果】用户回答错误\n`;
+            } else if (status === 'correct') {
+                ctx += `【答题结果】用户回答正确\n`;
+            }
+        } else if (myAns.length > 0) {
+            ctx += `【用户当前选择】${myAns.sort().join('')}（尚未提交）\n`;
+        }
+
+        return ctx;
+    }
+
+    /** 构建系统提示词 */
+    function buildSystemPrompt() {
+        return `你是一个专业的学习助手，专门帮助大学生理解和分析考试题目。请用简洁、清晰、有条理的中文回答。
+
+要求：
+1. 解释要准确，逻辑清晰
+2. 先说明正确答案及其理由，再分析用户选项错误的原因
+3. 适当补充相关的知识点，帮助举一反三
+4. 如果是多选题，要逐一分析每个选项
+5. 回答格式使用简单的文本，可适当使用序号和加粗标记`;
+    }
+
+    /** 快捷提问 */
+    function aiQuickAsk(type) {
+        if (state.currentMode !== 'quiz' || state.questions.length === 0) {
+            showToast('请先在刷题模式中打开题目', 'warning');
+            return;
+        }
+
+        const realIdx = getRealIndex(state.quizIndex);
+        const q = state.questions[realIdx];
+        const status = state.quizStatus[realIdx];
+        const myAns = state.userAnswers[realIdx];
+        const shuffledAnswer = getShuffledAnswer(realIdx);
+        const isSubmitted = status !== 'unanswered';
+
+        let prompt = '';
+        switch (type) {
+            case 'explain':
+                if (isSubmitted && status === 'incorrect') {
+                    prompt = `请详细解析这道题：\n${getAIContext()}\n请重点解释为什么正确答案是${shuffledAnswer}，以及用户选择的${myAns.sort().join('')}为什么是错误的。`;
+                } else if (isSubmitted && status === 'correct') {
+                    prompt = `请解析这道题：\n${getAIContext()}\n用户已答对，请简要确认解析并补充相关知识。`;
+                } else {
+                    prompt = `请帮我分析这道题的解题思路：\n${getAIContext()}\n请注意：用户尚未提交答案，请不要直接给出正确答案，而是引导分析。`;
+                }
+                break;
+            case 'why_wrong':
+                if (isSubmitted && status === 'incorrect') {
+                    prompt = `我选择了${myAns.sort().join('')}，但正确答案是${shuffledAnswer}。请详细分析：\n${getAIContext()}\n1. 为什么我选的选项是错误的？\n2. 正确答案为什么是对的？\n3. 这道题容易在哪些地方出错？`;
+                } else {
+                    prompt = `请分析这道题常见的易错点：\n${getAIContext()}`;
+                }
+                break;
+            case 'knowledge':
+                prompt = `请围绕这道题补充相关知识点：\n${getAIContext()}\n请归纳核心知识点，帮助我举一反三。`;
+                break;
+        }
+
+        if (prompt) {
+            sendAIMessage(prompt);
+        }
+    }
+
+    /** 发送消息到DeepSeek API */
+    async function sendAIMessage(overrideText) {
+        const input = document.getElementById('aiInput');
+        const sendBtn = document.getElementById('aiSendBtn');
+        const userText = overrideText || (input ? input.value.trim() : '');
+
+        if (!userText) return;
+        if (aiState.isStreaming) return;
+
+        if (!overrideText) {
+            input.value = '';
+            autoResizeAIInput(input);
+        }
+
+        const contextInfo = getAIContext();
+        const contextMsg = contextInfo ? `当前题目信息：\n${contextInfo}\n---` : '';
+
+        appendAIMessage('user', userText);
+
+        const apiMessages = [
+            { role: 'system', content: buildSystemPrompt() }
+        ];
+
+        if (contextMsg) {
+            apiMessages.push({ role: 'system', content: contextMsg });
+        }
+
+        const currentMessages = getCurrentChatMessages();
+        const recentHistory = currentMessages.slice(-20);
+        apiMessages.push(...recentHistory);
+
+        apiMessages.push({ role: 'user', content: userText });
+        currentMessages.push({ role: 'user', content: userText });
+        setCurrentChatMessages(currentMessages);
+
+        // 显示加载动画
+        const loadingEl = showAILoading();
+        sendBtn.disabled = true;
+        aiState.isStreaming = true;
+
+        try {
+            aiState.abortCtrl = new AbortController();
+
+            const response = await fetch(DEEPSEEK_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: apiMessages,
+                    stream: true,
+                    max_tokens: 2048,
+                    temperature: 0.7
+                }),
+                signal: aiState.abortCtrl.signal
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `API请求失败 (${response.status})`);
+            }
+
+            // 移除加载动画，创建流式消息气泡
+            removeAILoading(loadingEl);
+            const msgEl = appendAIMessage('bot', '', true);
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = '';
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed === 'data: [DONE]') continue;
+                    if (!trimmed.startsWith('data: ')) continue;
+
+                    try {
+                        const json = JSON.parse(trimmed.slice(6));
+                        const delta = json.choices?.[0]?.delta?.content;
+                        if (delta) {
+                            fullContent += delta;
+                            msgEl.innerHTML = renderAIMarkdown(fullContent);
+                            scrollToAIBottom();
+                        }
+                    } catch (e) {
+                        // 忽略解析错误
+                    }
+                }
+            }
+
+            const currentMessages2 = getCurrentChatMessages();
+            currentMessages2.push({ role: 'assistant', content: fullContent });
+            setCurrentChatMessages(currentMessages2);
+            msgEl.innerHTML = renderAIMarkdown(fullContent);
+
+        } catch (err) {
+            removeAILoading(loadingEl);
+            if (err.name === 'AbortError') {
+                appendAIMessage('bot', '⏹ 请求已取消');
+            } else {
+                appendAIError(err.message);
+            }
+        } finally {
+            aiState.isStreaming = false;
+            aiState.abortCtrl = null;
+            sendBtn.disabled = false;
+        }
+    }
+
+    /** 添加聊天消息 */
+    function appendAIMessage(role, content, returnEl = false) {
+        const chat = document.getElementById('aiChat');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `ai-msg ${role === 'user' ? 'user' : 'bot'}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'ai-msg-avatar';
+        avatar.textContent = role === 'user' ? '👤' : '🤖';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-msg-bubble';
+
+        if (role === 'bot' && content) {
+            bubble.innerHTML = renderAIMarkdown(content);
+        } else {
+            bubble.textContent = content;
+        }
+
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        chat.appendChild(msgDiv);
+        scrollToAIBottom();
+
+        return returnEl ? bubble : null;
+    }
+
+    /** 显示错误消息 */
+    function appendAIError(errMsg) {
+        const chat = document.getElementById('aiChat');
+        const errDiv = document.createElement('div');
+        errDiv.className = 'ai-error-msg';
+        errDiv.innerHTML = `❌ ${escapeHtml(errMsg)}<span class="retry-link" onclick="retryLastAIMessage()">重试</span>`;
+        chat.appendChild(errDiv);
+        scrollToAIBottom();
+    }
+
+    /** 重试上次消息 */
+    function retryLastAIMessage() {
+        const chat = document.getElementById('aiChat');
+        const errEl = chat.querySelector('.ai-error-msg:last-of-type');
+        if (errEl) errEl.remove();
+
+        const currentMessages = getCurrentChatMessages();
+        if (currentMessages.length > 0) {
+            const lastUser = [...currentMessages].reverse().find(m => m.role === 'user');
+            if (lastUser) {
+                const idx = currentMessages.lastIndexOf(lastUser);
+                currentMessages.splice(idx, 1);
+                setCurrentChatMessages(currentMessages);
+                sendAIMessage(lastUser.content);
+            }
+        }
+    }
+
+    /** 显示加载动画 */
+    function showAILoading() {
+        const chat = document.getElementById('aiChat');
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'ai-msg bot';
+        loadingDiv.id = 'aiLoadingMsg';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'ai-msg-avatar';
+        avatar.textContent = '🤖';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-msg-bubble';
+        bubble.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div></div>';
+
+        loadingDiv.appendChild(avatar);
+        loadingDiv.appendChild(bubble);
+        chat.appendChild(loadingDiv);
+        scrollToAIBottom();
+        return loadingDiv;
+    }
+
+    /** 移除加载动画 */
+    function removeAILoading(el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+
+    /** 简易Markdown渲染 */
+    function renderAIMarkdown(text) {
+        let html = escapeHtml(text);
+        // 加粗 **text**
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // 标题 #### text
+        html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+        html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>');
+        html = html.replace(/^##\s+(.+)$/gm, '<h4>$1</h4>');
+        // 无序列表 - item
+        html = html.replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>');
+        // 有序列表 1. item
+        html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+        // 包裹连续li为ul
+        html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+        // 换行
+        html = html.replace(/\n/g, '<br>');
+        // 清理多余br
+        html = html.replace(/<br><ul>/g, '<ul>');
+        html = html.replace(/<\/ul><br>/g, '</ul>');
+        html = html.replace(/<br><h4>/g, '<h4>');
+        html = html.replace(/<\/h4><br>/g, '</h4>');
+        return html;
+    }
+
+    /** 滚动到底部 */
+    function scrollToAIBottom() {
+        const body = document.getElementById('aiPanelBody');
+        if (body) {
+            requestAnimationFrame(() => {
+                body.scrollTop = body.scrollHeight;
+            });
+        }
+    }
+
+    /** 输入框回车发送 */
+    function handleAIKeydown(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendAIMessage();
+        }
+    }
+
+    /** 输入框自适应高度 */
+    function autoResizeAIInput(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+    }
+
+    /** 切换题目时更新AI面板信息并切换对话缓存 */
+    function onAIQuestionChange() {
+        if (!aiState.panelOpen) return;
+        const realIdx = getRealIndex(state.quizIndex);
+        aiState.currentChatKey = realIdx;
+        renderAIChatFromCache();
+        updateAIQuestionInfo();
+    }
+
+    function renderAIChatFromCache() {
+        const chat = document.getElementById('aiChat');
+        chat.innerHTML = '';
+        const msgs = getCurrentChatMessages();
+        msgs.forEach(m => {
+            appendAIMessage(m.role, m.content);
+        });
+        scrollToAIBottom();
+    }
+
+    /** 开始新聊天 */
+    function newAIChat() {
+        if (aiState.isStreaming && aiState.abortCtrl) {
+            aiState.abortCtrl.abort();
+        }
+        setCurrentChatMessages([]);
+        aiState.isStreaming = false;
+        aiState.abortCtrl = null;
+        document.getElementById('aiChat').innerHTML = '';
+        document.getElementById('aiSendBtn').disabled = false;
+        showToast('已开始新聊天');
+    }
 </script>
 </body>
 </html>

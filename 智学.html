@@ -1262,6 +1262,15 @@
             font-size: 0.82rem;
         }
 
+        .ai-msg-bubble em {
+            font-style: italic;
+        }
+
+        .ai-msg-bubble del {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
         /* 加载动画 */
         .ai-loading {
             display: flex;
@@ -3872,7 +3881,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
                         if (delta) {
                             fullContent += delta;
                             msgEl.innerHTML = renderAIMarkdown(fullContent);
-                            scrollToAIBottom();
+                            scrollToAIBottom(false);
                         }
                     } catch (e) {
                         // 忽略解析错误
@@ -3921,7 +3930,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         msgDiv.appendChild(avatar);
         msgDiv.appendChild(bubble);
         chat.appendChild(msgDiv);
-        scrollToAIBottom();
+        scrollToAIBottom(true);
 
         return returnEl ? bubble : null;
     }
@@ -3933,7 +3942,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         errDiv.className = 'ai-error-msg';
         errDiv.innerHTML = `❌ ${escapeHtml(errMsg)}<span class="retry-link" onclick="retryLastAIMessage()">重试</span>`;
         chat.appendChild(errDiv);
-        scrollToAIBottom();
+        scrollToAIBottom(true);
     }
 
     /** 重试上次消息 */
@@ -3972,7 +3981,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         loadingDiv.appendChild(avatar);
         loadingDiv.appendChild(bubble);
         chat.appendChild(loadingDiv);
-        scrollToAIBottom();
+        scrollToAIBottom(true);
         return loadingDiv;
     }
 
@@ -3981,21 +3990,34 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         if (el && el.parentNode) el.parentNode.removeChild(el);
     }
 
-    /** 简易Markdown渲染 */
+    /** Markdown渲染（支持流式不完整标记） */
     function renderAIMarkdown(text) {
         let html = escapeHtml(text);
+
+        // 行内代码 `code`（优先处理，内部不再解析其他markdown）
+        html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+
         // 加粗 **text**
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        // 标题 #### text
+        // 斜体 *text*（避免与加粗冲突，只匹配单个*且非列表行首）
+        html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+        // 删除线 ~~text~~
+        html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+        // 标题
         html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
         html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>');
         html = html.replace(/^##\s+(.+)$/gm, '<h4>$1</h4>');
-        // 无序列表 - item
-        html = html.replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>');
-        // 有序列表 1. item
+        html = html.replace(/^#\s+(.+)$/gm, '<h4>$1</h4>');
+
+        // 无序列表
+        html = html.replace(/^[-]\s+(.+)$/gm, '<li>$1</li>');
+        html = html.replace(/^[*]\s+(.+)$/gm, '<li>$1</li>');
+        // 有序列表
         html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
         // 包裹连续li为ul
         html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+
         // 换行
         html = html.replace(/\n/g, '<br>');
         // 清理多余br
@@ -4003,13 +4025,42 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         html = html.replace(/<\/ul><br>/g, '</ul>');
         html = html.replace(/<br><h4>/g, '<h4>');
         html = html.replace(/<\/h4><br>/g, '</h4>');
+
+        // 流式输出时：处理未闭合的 ** 标记
+        // 计算未配对的 ** 数量（2个为一对）
+        const remainingBold = html.match(/\*\*/g);
+        if (remainingBold && remainingBold.length % 2 !== 0) {
+            // 有未闭合的 **，替换最后一个为 <strong> 并在末尾闭合
+            const lastIdx = html.lastIndexOf('**');
+            html = html.substring(0, lastIdx) + '<strong>' + html.substring(lastIdx + 2);
+            html += '</strong>';
+        }
+
+        // 处理未闭合的单 * 斜体（排除行首列表 * ）
+        // 简单做法：如果还有残留的单 * 且不在行首，临时处理
+        const remainingItalic = html.match(/(?<!\*)\*(?!\*)/g);
+        if (remainingItalic && remainingItalic.length % 2 !== 0) {
+            // 找最后一个未配对的 *
+            const matches = [...html.matchAll(/(?<!\*)\*(?!\*)/g)];
+            if (matches.length > 0) {
+                const lastMatch = matches[matches.length - 1];
+                const idx = lastMatch.index;
+                // 排除行首的 *（列表符号已转换为 <li>）
+                html = html.substring(0, idx) + '<em>' + html.substring(idx + 1);
+                html += '</em>';
+            }
+        }
+
         return html;
     }
 
-    /** 滚动到底部 */
-    function scrollToAIBottom() {
+    /** 滚动到底部（仅当用户已接近底部时才自动跟随） */
+    function scrollToAIBottom(force) {
         const body = document.getElementById('aiPanelBody');
-        if (body) {
+        if (!body) return;
+        // 判断用户是否在底部附近（距离底部 100px 以内视为"在底部"）
+        const isNearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 100;
+        if (force || isNearBottom) {
             requestAnimationFrame(() => {
                 body.scrollTop = body.scrollHeight;
             });
@@ -4046,7 +4097,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         msgs.forEach(m => {
             appendAIMessage(m.role, m.content);
         });
-        scrollToAIBottom();
+        scrollToAIBottom(true);
     }
 
     /** 开始新聊天 */

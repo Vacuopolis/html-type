@@ -1295,6 +1295,14 @@
             30% { transform: translateY(-8px); }
         }
 
+        /* 快捷键提示 */
+        .shortcut-hint {
+            font-size: 0.7em;
+            opacity: 0.65;
+            margin-left: 4px;
+            font-weight: 400;
+        }
+
         /* 快捷操作 */
         .ai-quick-actions {
             display: flex;
@@ -1491,6 +1499,10 @@
                 grid-template-columns: repeat(6, 1fr);
             }
 
+            .shortcut-hint {
+                display: none;
+            }
+
             .site-header {
                 padding: 12px 16px;
             }
@@ -1602,8 +1614,8 @@
     </div>
     <nav class="header-nav" aria-label="功能模式切换">
         <div class="mode-tabs">
-            <button class="mode-tab active" onclick="switchMode('parse')" aria-pressed="true">📄 解析模式</button>
-            <button class="mode-tab" onclick="switchMode('quiz')" aria-pressed="false">✍️ 刷题模式</button>
+            <button class="mode-tab active" onclick="switchMode('parse')" aria-pressed="true">📄 解析模式<span class="shortcut-hint"> Ctrl+P</span></button>
+            <button class="mode-tab" onclick="switchMode('quiz')" aria-pressed="false">✍️ 刷题模式<span class="shortcut-hint"> Ctrl+Q</span></button>
         </div>
         <button class="history-tab" onclick="toggleHistory()" aria-label="历史记录">
             📚 历史记录
@@ -1635,7 +1647,7 @@
                     placeholder="请在此粘贴包含题目、选项和答案的文本内容...&#10;&#10;支持格式示例：&#10;1.新时代，是（ D ），在新的历史条件下...&#10;  A.选项一    B.选项二&#10;  C.选项三    D.选项四&#10;&#10;也支持答案独立标注：&#10;正确答案：D&#10;答案：BC&#10;&#10;支持题型：单选、多选"
                     aria-label="试题文本输入"></textarea>
                 <div class="controls" style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="parseQuestions()">🔍 解析试题</button>
+                    <button class="btn btn-primary" onclick="parseQuestions()">🔍 解析试题<span class="shortcut-hint"> Ctrl+Enter</span></button>
                     <button class="btn btn-outline" onclick="loadExample()">📄 加载示例</button>
                     <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空</button>
                 </div>
@@ -1703,7 +1715,7 @@
 <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
 <!-- AI 助手浮动按钮 -->
-<button class="ai-fab" id="aiFab" onclick="toggleAIPanel()" title="AI 助手" aria-label="打开AI助手" style="display:none;">
+<button class="ai-fab" id="aiFab" onclick="toggleAIPanel()" title="AI 助手 (Ctrl+I)" aria-label="打开AI助手" style="display:none;">
     🤖
 </button>
 
@@ -1728,8 +1740,8 @@
     </div>
     <div class="ai-panel-footer">
         <div class="ai-quick-actions" id="aiQuickActions" style="margin-bottom: 8px; display: none;">
-            <button class="ai-quick-btn" onclick="aiQuickAsk('explain')">💡 解析本题</button>
-            <button class="ai-quick-btn" onclick="aiQuickAsk('why_wrong')">❓ 为什么错了</button>
+            <button class="ai-quick-btn" onclick="aiQuickAsk('explain')">💡 解析本题<span class="shortcut-hint"> Ctrl+E</span></button>
+            <button class="ai-quick-btn" onclick="aiQuickAsk('why_wrong')">❓ 为什么错了<span class="shortcut-hint"> Alt+W</span></button>
             <button class="ai-quick-btn" onclick="aiQuickAsk('knowledge')">📚 相关知识点</button>
         </div>
         <div class="ai-input-row">
@@ -2363,16 +2375,20 @@
                 </div>`;
             });
             html += '</div>';
+            if (!isSubmitted) {
+                const optKeys = shuffled.map(o => o.label).join(' ');
+                html += `<div class="shortcut-hint" style="text-align:right;font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">按 ${optKeys} 键可快速选择</div>`;
+            }
         } else {
             html += '<div style="color: var(--text-secondary); margin-bottom: 20px;">（未识别题型，请自行核对思路）</div>';
         }
 
         // 操作区
         html += '<div class="quiz-actions">';
-        html += `<button class="btn btn-outline" onclick="prevQuestion()" ${state.quizIndex === 0 ? 'disabled' : ''}>← 上一题</button>`;
+        html += `<button class="btn btn-outline" onclick="prevQuestion()" ${state.quizIndex === 0 ? 'disabled' : ''} title="快捷键: ←">← 上一题<span class="shortcut-hint"> (←)</span></button>`;
 
         if (!isSubmitted && q.type !== 'subjective') {
-            html += '<button class="btn btn-primary" onclick="submitAnswer()">提交作答</button>';
+            html += '<button class="btn btn-primary" onclick="submitAnswer()" title="快捷键: Enter">提交作答<span class="shortcut-hint"> (Enter)</span></button>';
         } else if (isSubmitted) {
             const isCorrect = status === 'correct';
             const tipColor = isCorrect ? 'var(--success)' : 'var(--error)';
@@ -2383,7 +2399,7 @@
             html += '<div style="color: var(--text-secondary); font-size: 0.9rem;">未识别题型无标准答案</div>';
         }
 
-        html += `<button class="btn btn-outline" onclick="nextQuestion()" ${state.quizIndex === state.questions.length - 1 ? 'disabled' : ''}>下一题 →</button>`;
+        html += `<button class="btn btn-outline" onclick="nextQuestion()" ${state.quizIndex === state.questions.length - 1 ? 'disabled' : ''} title="快捷键: →">下一题 →<span class="shortcut-hint"> (→)</span></button>`;
         html += '</div>';
 
         document.getElementById('quizContentArea').innerHTML = html;
@@ -4112,6 +4128,106 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         document.getElementById('aiSendBtn').disabled = false;
         showToast('已开始新聊天');
     }
+
+    // ==================== 键盘快捷键 ====================
+    document.addEventListener('keydown', function(e) {
+        // 如果焦点在输入框/文本域中，仅允许极少数全局快捷键
+        const tag = document.activeElement.tagName;
+        const inInput = tag === 'TEXTAREA' || tag === 'INPUT' || document.activeElement.isContentEditable;
+
+        // --- 全局快捷键（任何模式下均生效） ---
+
+        // Ctrl+Q: 切换到刷题模式
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'q') {
+            e.preventDefault();
+            if (state.currentMode !== 'quiz') switchMode('quiz');
+            return;
+        }
+        // Ctrl+P: 切换到解析模式
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
+            e.preventDefault();
+            if (state.currentMode !== 'parse') switchMode('parse');
+            return;
+        }
+        // Ctrl+I: 打开/关闭 AI 助手面板
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'i') {
+            e.preventDefault();
+            toggleAIPanel();
+            return;
+        }
+        // Esc: 关闭 AI 面板（如果打开的话）
+        if (e.key === 'Escape' && aiState.panelOpen) {
+            e.preventDefault();
+            toggleAIPanel();
+            return;
+        }
+
+        // --- 解析模式快捷键 ---
+        if (state.currentMode === 'parse' && !inInput) {
+            // Ctrl+Enter: 解析试题
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                parseQuestions();
+                return;
+            }
+        }
+
+        // --- 以下快捷键仅在刷题模式下且不在输入框中时生效 ---
+        if (state.currentMode !== 'quiz' || state.questions.length === 0 || inInput) return;
+
+        const realIdx = getRealIndex(state.quizIndex);
+        const q = state.questions[realIdx];
+        const isSubmitted = state.quizStatus[realIdx] === 'correct' || state.quizStatus[realIdx] === 'incorrect';
+
+        // ← 上一题
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevQuestion();
+            return;
+        }
+        // → 下一题
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            nextQuestion();
+            return;
+        }
+        // Enter: 提交答案（未提交时）
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (!isSubmitted && q.type !== 'subjective') {
+                submitAnswer();
+            }
+            return;
+        }
+        // Ctrl+E: AI 解析本题
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'e') {
+            e.preventDefault();
+            if (!aiState.panelOpen) toggleAIPanel();
+            aiQuickAsk('explain');
+            return;
+        }
+        // Alt+W: AI 为什么错了
+        if (e.altKey && !e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'w') {
+            e.preventDefault();
+            if (!aiState.panelOpen) toggleAIPanel();
+            aiQuickAsk('why_wrong');
+            return;
+        }
+        // A/B/C/D: 选择对应选项（未提交时）
+        if (!isSubmitted) {
+            const shuffled = state.shuffledOptions[realIdx];
+            if (shuffled && shuffled.length > 0) {
+                const keyUpper = e.key.toUpperCase();
+                const optLabels = shuffled.map(o => o.label);
+                if (optLabels.includes(keyUpper)) {
+                    e.preventDefault();
+                    selectOption(keyUpper);
+                    return;
+                }
+            }
+        }
+    });
+
 </script>
 </body>
 </html>

@@ -2142,6 +2142,29 @@
         return [...normalIdx, ...unrecIdx];
     }
 
+    /** 继续答题时构建题目顺序：已答正常题 + 未答正常题 + 已答未识别 + 未答未识别
+     *  不重新打乱已答题顺序，未答题如果开启随机则打乱
+     */
+    function buildContinueQuizOrder() {
+        const answeredNormal = [];
+        const unansweredNormal = [];
+        const answeredUnrec = [];
+        const unansweredUnrec = [];
+        state.questions.forEach((q, i) => {
+            const isAnswered = state.quizStatus[i] !== 'unanswered';
+            const isUnrec = isUnrecognizedQuestion(q);
+            if (isAnswered && !isUnrec) answeredNormal.push(i);
+            else if (!isAnswered && !isUnrec) unansweredNormal.push(i);
+            else if (isAnswered && isUnrec) answeredUnrec.push(i);
+            else unansweredUnrec.push(i);
+        });
+        if (state.shuffleEnabled) {
+            shuffleArray(unansweredNormal);
+            shuffleArray(unansweredUnrec);
+        }
+        return [...answeredNormal, ...unansweredNormal, ...answeredUnrec, ...unansweredUnrec];
+    }
+
     function shuffleArray(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -2273,6 +2296,7 @@
         if (state.currentMode === 'parse') {
             renderParsePreview();
         }
+        saveCurrentProgress();
         const modeDesc = enabled ? '已开启随机模式' : '已切换为顺序做题';
         showToast(modeDesc, 'info');
     }
@@ -3290,8 +3314,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
 三、简答题
 1.我国社会主义法律的本质？
 2.全面依法治国的基本要求？
-3.中国特色社会主义法治道路“特”在哪儿？
-`;
+3.中国特色社会主义法治道路“特”在哪儿？`;
         document.getElementById('inputText').value = example;
         autoResizeTextarea();
         showToast('已加载示例文本，点击"解析试题"查看效果', 'info');
@@ -3333,6 +3356,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             quizStatus: questions.map(() => 'unanswered'),
             shuffledOptions: JSON.parse(JSON.stringify(state.shuffledOptions)),
             shuffleEnabled: state.shuffleEnabled,
+            quizOrder: JSON.parse(JSON.stringify(state.quizOrder)),
             aiChatCache: {},
         };
         state._activeHistoryTime = record.time;
@@ -3409,7 +3433,11 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         } else {
             state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
         }
-        state.quizOrder = generateQuizOrder(state.shuffleEnabled);
+        if (record.quizOrder && record.quizOrder.length > 0) {
+            state.quizOrder = JSON.parse(JSON.stringify(record.quizOrder));
+        } else {
+            state.quizOrder = buildContinueQuizOrder();
+        }
         document.getElementById('shuffleToggle').checked = state.shuffleEnabled;
         aiState.chatCache = JSON.parse(JSON.stringify(record.aiChatCache || {}));
         aiState.currentChatKey = null;
@@ -3436,6 +3464,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         const tempQuestions = state.questions;
         state.questions = record.questions;
         record.shuffledOptions = generateShuffledOptions(!!record.shuffleEnabled);
+        record.quizOrder = generateQuizOrder(!!record.shuffleEnabled);
         state.questions = tempQuestions;
         saveHistoryToStorage();
         renderHistory();
@@ -3458,8 +3487,10 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         state.userAnswers = state.questions.map(() => []);
         state.quizStatus = state.questions.map(() => 'unanswered');
         state.quizIndex = 0;
+        state.shuffleEnabled = !!record.shuffleEnabled;
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
+        document.getElementById('shuffleToggle').checked = state.shuffleEnabled;
         aiState.chatCache = {};
         aiState.currentChatKey = null;
         closeHistoryDropdown();
@@ -3488,6 +3519,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             record.quizStatus = JSON.parse(JSON.stringify(state.quizStatus));
             record.shuffledOptions = JSON.parse(JSON.stringify(state.shuffledOptions));
             record.shuffleEnabled = state.shuffleEnabled;
+            record.quizOrder = JSON.parse(JSON.stringify(state.quizOrder));
             record.aiChatCache = JSON.parse(JSON.stringify(aiState.chatCache));
             saveHistoryToStorage();
         }

@@ -3779,6 +3779,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         chatCache: {},   // { [realIdx]: [{ role, content }, ...] } 按题目索引缓存对话
         currentChatKey: null,  // 当前对话对应的 realIdx
         abortCtrl: null,  // 用于中断请求
+        userScrolledUp: false,  // 用户是否主动上滚（流式输出时）
     };
 
     function getCurrentChatMessages() {
@@ -3997,6 +3998,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         const loadingEl = showAILoading();
         sendBtn.disabled = true;
         aiState.isStreaming = true;
+        aiState.userScrolledUp = false;  // 开始新的流式输出时重置滚动状态
 
         try {
             aiState.abortCtrl = new AbortController();
@@ -4223,18 +4225,41 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         return html;
     }
 
-    /** 滚动到底部（仅当用户已接近底部时才自动跟随） */
+    /** 滚动到底部（仅当用户未主动上滚时才自动跟随） */
     function scrollToAIBottom(force) {
         const body = document.getElementById('aiPanelBody');
         if (!body) return;
-        // 判断用户是否在底部附近（距离底部 100px 以内视为"在底部"）
-        const isNearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 100;
-        if (force || isNearBottom) {
+        if (force || !aiState.userScrolledUp) {
             requestAnimationFrame(() => {
                 body.scrollTop = body.scrollHeight;
             });
         }
     }
+
+    /** 监听AI面板滚动，判断用户是否主动上滚或滚回底部 */
+    (function setupAIScrollListener() {
+        const body = document.getElementById('aiPanelBody');
+        if (!body) return;
+        let lastScrollTop = body.scrollTop;
+        body.addEventListener('scroll', () => {
+            if (!aiState.isStreaming) {
+                lastScrollTop = body.scrollTop;
+                return;
+            }
+            const delta = body.scrollTop - lastScrollTop;
+            lastScrollTop = body.scrollTop;
+            if (delta < 0) {
+                // 用户向上滚动（任意距离），立即停止自动跟随
+                aiState.userScrolledUp = true;
+            } else if (delta > 0) {
+                // 用户向下滚动，检查是否已到达底部附近
+                const isNearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
+                if (isNearBottom) {
+                    aiState.userScrolledUp = false;  // 滚回底部，恢复自动跟随
+                }
+            }
+        }, { passive: true });
+    })();
 
     /** 输入框回车发送 */
     function handleAIKeydown(e) {

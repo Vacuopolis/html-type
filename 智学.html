@@ -3768,8 +3768,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
     renderHistory();
 
     // ==================== AI 助手功能 ====================
-    const DEEPSEEK_API_KEY = 'sk-d673f71ee11b452282b10f93545c378c';
-    const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+    const API_PROXY_URL = 'https://zhixue-proxy.3256639070.workers.dev/api/chat';
 
     const aiState = {
         panelOpen: false,
@@ -4001,11 +4000,10 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         try {
             aiState.abortCtrl = new AbortController();
 
-            const response = await fetch(DEEPSEEK_API_URL, {
+            const response = await fetch(API_PROXY_URL, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     model: 'deepseek-chat',

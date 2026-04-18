@@ -4225,14 +4225,17 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         return html;
     }
 
+    let aiAutoScrolling = false;  // 标记程序触发的自动滚动
+
     /** 滚动到底部（仅当用户未主动上滚时才自动跟随） */
     function scrollToAIBottom(force) {
         const body = document.getElementById('aiPanelBody');
         if (!body) return;
         if (force || !aiState.userScrolledUp) {
-            requestAnimationFrame(() => {
-                body.scrollTop = body.scrollHeight;
-            });
+            aiAutoScrolling = true;
+            body.scrollTop = body.scrollHeight;
+            // 滚动完成后短暂保持标记，防止 scroll 事件误判
+            setTimeout(() => { aiAutoScrolling = false; }, 50);
         }
     }
 
@@ -4242,7 +4245,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         if (!body) return;
         let lastScrollTop = body.scrollTop;
         body.addEventListener('scroll', () => {
-            if (!aiState.isStreaming) {
+            if (!aiState.isStreaming || aiAutoScrolling) {
                 lastScrollTop = body.scrollTop;
                 return;
             }

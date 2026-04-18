@@ -219,6 +219,7 @@
         /* 主容器 */
         main {
             max-width: 1400px;
+            width: 100%;
             margin: 0 auto;
             padding: 20px;
             flex: 1;
@@ -461,7 +462,9 @@
             flex: 1;
             padding-top: 2px;
             min-width: 0;
+            max-width: 100%;
             word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .opt-check {
@@ -548,17 +551,22 @@
             display: flex;
             gap: 20px;
             height: 100%;
+            width: 100%;
+            overflow: hidden;
         }
 
         .quiz-main {
-            flex: 1;
-            min-width: 0;
+            flex-grow: 1;
+            flex-shrink: 0;
+            flex-basis: 0%;
             min-height: 0;
+            overflow: hidden;
         }
 
         .quiz-sidebar {
             width: 240px;
             flex-shrink: 0;
+            flex-grow: 0;
             min-height: 0;
         }
 
@@ -569,12 +577,16 @@
         .quiz-content {
             padding: 32px;
             flex: 1;
+            width: 100%;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
             overflow-x: hidden;
             word-break: break-word;
+            overflow-wrap: break-word;
             min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .quiz-main.card {
@@ -626,6 +638,9 @@
             line-height: 1.7;
             white-space: pre-wrap;
             word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         /* 刷题选项 */
@@ -648,6 +663,10 @@
             background: #fff;
             user-select: none;
             min-width: 0;
+            max-width: 100%;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            overflow: hidden;
         }
 
         .quiz-option:hover {
@@ -1428,6 +1447,10 @@
                 height: auto;
             }
 
+            .quiz-main {
+                max-width: 100%;
+            }
+
             .quiz-sidebar {
                 width: 100%;
             }
@@ -1511,6 +1534,10 @@
 
             .quiz-content {
                 padding: 16px;
+            }
+
+            .quiz-main {
+                max-width: 100%;
             }
 
             .quiz-main.card {

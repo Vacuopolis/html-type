@@ -43,8 +43,10 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         /* ================= 语义化布局 ================= */
@@ -219,6 +221,9 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
         }
 
         .hidden {
@@ -230,6 +235,7 @@
             display: grid;
             grid-template-columns: 1fr 1.4fr;
             gap: 20px;
+            height: 100%;
         }
 
         /* 通用卡片 */
@@ -240,6 +246,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         .card-header {
@@ -273,7 +280,8 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-y: auto;
+            min-height: 0;
         }
 
         /* 文本输入区 */
@@ -539,16 +547,23 @@
         .quiz-layout {
             display: flex;
             gap: 20px;
+            height: 100%;
         }
 
         .quiz-main {
             flex: 1;
             min-width: 0;
+            min-height: 0;
         }
 
         .quiz-sidebar {
             width: 240px;
             flex-shrink: 0;
+            min-height: 0;
+        }
+
+        .quiz-sidebar .card {
+            height: 100%;
         }
 
         .quiz-content {
@@ -563,7 +578,7 @@
         }
 
         .quiz-main.card {
-            max-height: calc(100vh - 120px);
+            height: 100%;
         }
 
         .quiz-progress {
@@ -1410,10 +1425,20 @@
         @media (max-width: 1024px) {
             .quiz-layout {
                 flex-direction: column;
+                height: auto;
             }
 
             .quiz-sidebar {
                 width: 100%;
+            }
+
+            .quiz-main.card {
+                height: auto;
+            }
+
+            .quiz-sidebar .card {
+                max-height: 40vh;
+                height: auto;
             }
 
             .answer-sheet {
@@ -1422,8 +1447,25 @@
         }
 
         @media (max-width: 900px) {
+            body {
+                height: auto;
+                overflow-y: auto;
+                display: block;
+            }
+
+            main {
+                flex: none;
+                overflow-y: visible;
+            }
+
             .parse-layout {
                 grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .parse-layout .card {
+                max-height: 70vh;
+                height: auto;
             }
 
             .site-header {
@@ -1446,21 +1488,25 @@
         }
 
         @media (max-width: 600px) {
-            .ai-panel {
-                width: 100%;
-                right: -100%;
-            }
-
-            .ai-fab {
-                bottom: 20px;
-                right: 20px;
-                width: 50px;
-                height: 50px;
-                font-size: 1.3rem;
+            body {
+                height: auto;
+                overflow-y: auto;
+                display: block;
             }
 
             main {
                 padding: 10px;
+                flex: none;
+                overflow-y: visible;
+            }
+
+            .parse-layout {
+                height: auto;
+            }
+
+            .parse-layout .card {
+                max-height: 70vh;
+                height: auto;
             }
 
             .quiz-content {
@@ -1469,6 +1515,12 @@
 
             .quiz-main.card {
                 max-height: none;
+                height: auto;
+            }
+
+            .quiz-sidebar .card {
+                max-height: 50vh;
+                height: auto;
             }
 
             .quiz-stem {
@@ -3024,7 +3076,7 @@ A.人生观      B.法治素质      C.核心价值观      D.思想道德素质
 3.（ B ）是社会主义核心价值观的根本特性。
 A.先进性      B.人民性      C.真实性      D.实践性
 4.（ D ）反映了人们对美好社会的期望和憧憬，是衡量现代社会是否高度发展、充满活力、和谐有序的重要标志。
-  A.富强、民主、文明、和谐
+A.富强、民主、文明、和谐
 B.爱国、敬业、诚信、友善
 C.爱岗、敬业、公平、正义
 D.自由、平等、公正、法治

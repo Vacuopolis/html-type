@@ -355,6 +355,7 @@
             border-radius: var(--radius);
             overflow: hidden;
             transition: box-shadow 0.2s;
+            flex-shrink: 0;
         }
 
         .question-card:hover {
@@ -1723,7 +1724,7 @@
             </div>
             <div class="card-body">
                 <textarea id="inputText"
-                    placeholder="请在此粘贴包含题目、选项和答案的文本内容...&#10;&#10;支持格式示例：&#10;1.新时代，是（ D ），在新的历史条件下...&#10;  A.选项一    B.选项二&#10;  C.选项三    D.选项四&#10;&#10;也支持答案独立标注：&#10;正确答案：D&#10;答案：BC&#10;&#10;支持题型：单选、多选"
+                    placeholder="请在此粘贴包含题目、选项和答案的文本内容...&#10;&#10;支持格式示例：&#10;1.新时代，是（ D ），在新的历史条件下...&#10;  A.选项一    B.选项二&#10;  C.选项三    D.选项四&#10;&#10;也支持更多选项：&#10;  A.选项一  B.选项二  C.选项三  D.选项四  E.选项五  F.选项六...&#10;&#10;也支持答案独立标注：&#10;正确答案：D&#10;答案：BC&#10;&#10;支持题型：单选、多选"
                     aria-label="试题文本输入"></textarea>
                 <div class="controls" style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="parseQuestions()">🔍 解析试题<span class="shortcut-hint"> Ctrl+Enter</span></button>
@@ -1832,7 +1833,7 @@
 
 <script>
     // ==================== 全局状态 ====================
-    const LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     const state = {
         questions: [],           // 解析后的题库
@@ -1844,7 +1845,7 @@
         shuffleEnabled: false,   // 是否启用随机做题
         quizOrder: [],           // 刷题顺序数组，正常题在前、未识别题在后
         shuffledOptions: [],     // 每题的选项随机映射: shuffledOptions[realIdx] = [{origIdx, label, content}]
-                                  // origIdx: 在原始options中的索引, label: 显示的标签(A/B/C/D)
+                                  // origIdx: 在原始options中的索引, label: 显示的标签(A/B/C/D/E/F/...)
         // 历史
         historyRecords: [],
         _activeHistoryTime: null,  // 当前加载的历史记录时间标识
@@ -1959,6 +1960,17 @@
                 continue;
             }
 
+            // 尝试提取单独的选项（跨行选项，如只有 C. xxx D. yyy 的行）
+            const singleOpts = tryExtractSingleOptions(line);
+            if (singleOpts.length > 0 && currentQ) {
+                for (const opt of singleOpts) {
+                    if (!currentQ.options.some(o => o.label === opt.label)) {
+                        currentQ.options.push(opt);
+                    }
+                }
+                continue;
+            }
+
             // 附加到当前题干
             if (currentQ && currentQ.options.length === 0) {
                 currentQ.text += ' ' + line;
@@ -2020,28 +2032,29 @@
     }
 
     function findFirstOptionIndex(text) {
-        const regex = /\s([A-Da-d])\s*[.、．)\]】]\s*/g;
+        // 寻找选项 A 的起始位置
+        // 需要确保 A 不是一个单词的一部分（如 "A." 或 "A、" 而非 "CAR."）
+        const regex = /(?:^|\s)([Aa])\s*[.、．)\]】]\s*/g;
         let match;
         while ((match = regex.exec(text)) !== null) {
-            const label = match[1].toUpperCase();
-            if (label === 'A') {
-                const after = text.substring(match.index + match[0].length);
-                if (/\s([A-Da-d])\s*[.、．)\]】]\s*/.test(after)) {
-                    return match.index;
-                }
+            // 验证 A 后面还有其他选项（B、C 等）
+            const after = text.substring(match.index + match[0].length);
+            if (/\s+[B-Zb-z]\s*[.、．)\]】]\s*/.test(after)) {
+                // 返回选项区域的起始位置（包含 A 前面的空格，便于 qText 截断）
+                return match.index;
             }
         }
         return -1;
     }
 
     function tryExtractEmbeddedAnswer(text) {
-        const regex = /[（(]\s*([A-Da-d]{1,4})\s*[）)]/g;
+        const regex = /[（(]\s*([A-Za-z]{1,8})\s*[）)]/g;
         let lastMatch = null;
         let lastAnswer = null;
         let m;
         while ((m = regex.exec(text)) !== null) {
             const candidate = m[1].toUpperCase();
-            if (/^[A-D]+$/.test(candidate)) {
+            if (/^[A-Z]+$/.test(candidate)) {
                 lastMatch = m[0];
                 lastAnswer = candidate.split('').sort().join('');
             }
@@ -2051,16 +2064,16 @@
 
     function tryExtractStandaloneAnswer(line) {
         const patterns = [
-            /(?:正确答案|参考答案|标准答案|答案)[：:]\s*([A-Da-d]{1,4})(?:\s|$)/,
-            /[（(]\s*(?:正确答案|参考答案|标准答案|答案)[：:]\s*([A-Da-d]{1,4})\s*[）)]/,
-            /【答案】\s*([A-Da-d]{1,4})/,
-            /答案[是为]\s*[:：]?\s*([A-Da-d]{1,4})(?:\s|[,，。.]|$)/
+            /(?:正确答案|参考答案|标准答案|答案)[：:]\s*([A-Za-z]{1,8})(?:\s|$)/,
+            /[（(]\s*(?:正确答案|参考答案|标准答案|答案)[：:]\s*([A-Za-z]{1,8})\s*[）)]/,
+            /【答案】\s*([A-Za-z]{1,8})/,
+            /答案[是为]\s*[:：]?\s*([A-Za-z]{1,8})(?:\s|[,，。.]|$)/
         ];
         for (const pattern of patterns) {
             const m = line.match(pattern);
             if (m) {
                 const ans = m[1].toUpperCase();
-                if (/^[A-D]+$/.test(ans)) {
+                if (/^[A-Z]+$/.test(ans)) {
                     return ans.split('').sort().join('');
                 }
             }
@@ -2077,17 +2090,70 @@
     }
 
     function tryExtractOptions(text) {
-        const options = [];
-        const regex = /([A-Da-d])\s*[.、．)\]】]\s*([\s\S]+?)(?=\s+[A-Da-d]\s*[.、．)\]】]\s*|$)/g;
+        const regex = /([A-Za-z])\s*[.、．)\]】]\s*([\s\S]+?)(?=\s+[A-Za-z]\s*[.、．)\]】]\s*|$)/g;
         let m;
+        const raw = [];
         while ((m = regex.exec(text)) !== null) {
             const label = m[1].toUpperCase();
             const content = m[2].trim();
-            if (content && /^[A-D]$/.test(label)) {
-                options.push({ label, content });
+            if (content && /^[A-Z]$/.test(label)) {
+                raw.push({ label, content });
             }
         }
-        return options;
+        if (raw.length === 0) return [];
+
+        // 验证选项标签的合理性：
+        // 1. 标签应全部是大写字母 A-Z
+        // 2. 标签应构成连续或接近连续的序列（允许从非 A 开始，适配跨行选项）
+        // 3. 过滤掉误匹配（如 "e.g."、"i.e." 等孤立的英文缩写）
+        const labels = raw.map(o => o.label);
+
+        // 计算标签是否在一个合理的字母范围内
+        const minLabel = labels[0];
+        const maxLabel = labels[labels.length - 1];
+        const minCode = minLabel.charCodeAt(0);
+        const maxCode = maxLabel.charCodeAt(0);
+
+        // 标签范围不能太大（最多 8 个选项，即 A-H）
+        if (maxCode - minCode > 7) return [];
+        // 标签必须是递增序列
+        if (!labels.every((l, i) => i === 0 || l.charCodeAt(0) > labels[i - 1].charCodeAt(0))) return [];
+        // 至少有 2 个选项才认为是有效选项行（避免误匹配单个字母）
+        if (raw.length < 2) {
+            // 但如果只有一个选项，且标签在 A-H 范围内，也接受（可能是跨行的最后一个选项）
+            if (raw.length === 1 && minCode >= 65 && minCode <= 72) return raw;
+            return [];
+        }
+
+        return raw;
+    }
+
+    /** 提取跨行的单个/多个选项（如 "C.开天辟地、敢为人先    D.承前启后、继往开来"）
+     *  与 tryExtractOptions 不同，此函数不要求选项从 A 开始
+     */
+    function tryExtractSingleOptions(line) {
+        const regex = /([A-Z])\s*[.、．)\]】]\s*([\s\S]+?)(?=\s+[A-Z]\s*[.、．)\]】]\s*|$)/g;
+        const raw = [];
+        let m;
+        while ((m = regex.exec(line)) !== null) {
+            const label = m[1];
+            const content = m[2].trim();
+            if (content && /^[A-Z]$/.test(label)) {
+                raw.push({ label, content });
+            }
+        }
+        if (raw.length === 0) return [];
+
+        // 验证标签是递增且在合理范围内
+        const labels = raw.map(o => o.label);
+        const minCode = labels[0].charCodeAt(0);
+        const maxCode = labels[labels.length - 1].charCodeAt(0);
+        if (maxCode - minCode > 7) return [];
+        if (!labels.every((l, i) => i === 0 || l.charCodeAt(0) > labels[i - 1].charCodeAt(0))) return [];
+        // 标签必须从 B 开始或之后（A 开头的情况已由 tryExtractOptions 处理）
+        if (minCode < 66) return [];
+        // 至少有 1 个选项
+        return raw;
     }
 
     function finalizeQuestion(q) {
@@ -2098,7 +2164,14 @@
             seen[opt.label] = true;
             return true;
         });
-        q.text = q.text.replace(/\s+/g, ' ').trim();
+        // 清理文本：移除不可见控制字符，压缩空白
+        q.text = q.text.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF\u00AD]/g, '')
+                        .replace(/\s+/g, ' ').trim();
+        // 清理选项内容
+        q.options.forEach(opt => {
+            opt.content = opt.content.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF\u00AD]/g, '')
+                                     .replace(/\s+/g, ' ').trim();
+        });
 
         // 判断题型
         if (q.options.length === 0) {
@@ -2203,7 +2276,8 @@
     }
 
     function formatStem(text) {
-        return text.replace(/（\s*）/, '<span class="q-blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+        // 将空括号（全角和半角）替换为填空下划线
+        return text.replace(/[（(]\s*[）)]/g, '<span class="q-blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>');
     }
 
     function updateStats() {
@@ -2455,7 +2529,7 @@
             });
             html += '</div>';
             if (!isSubmitted) {
-                html += `<div class="shortcut-hint" style="text-align:right;font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">按 1 2 3 4 键可快速选择 A B C D</div>`;
+                html += `<div class="shortcut-hint" style="text-align:right;font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">按 ${shuffled.slice(0, 9).map((_, i) => `${i+1}`).join(' ')} 键可快速选择 ${shuffled.slice(0, 9).map(o => o.label).join(' ')}</div>`;
             }
         } else {
             html += '<div style="color: var(--text-secondary); margin-bottom: 20px;">（未识别题型，请自行核对思路）</div>';
@@ -4292,15 +4366,14 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             aiQuickAsk('why_wrong');
             return;
         }
-        // 1/2/3/4: 选择对应选项 A/B/C/D（未提交时）
+        // 数字键 1-9: 选择对应选项 A-I（未提交时，根据当前题目实际选项数动态映射）
         if (!isSubmitted) {
             const shuffled = state.shuffledOptions[realIdx];
             if (shuffled && shuffled.length > 0) {
-                const numMap = { '1': 'A', '2': 'B', '3': 'C', '4': 'D' };
-                const mappedLabel = numMap[e.key];
-                if (mappedLabel) {
-                    const optLabels = shuffled.map(o => o.label);
-                    if (optLabels.includes(mappedLabel)) {
+                const num = parseInt(e.key);
+                if (num >= 1 && num <= shuffled.length) {
+                    const mappedLabel = shuffled[num - 1].label;
+                    if (mappedLabel) {
                         e.preventDefault();
                         selectOption(mappedLabel);
                         return;

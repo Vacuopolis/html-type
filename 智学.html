@@ -2070,10 +2070,13 @@
         _activeHistoryTime: null,  // 当前加载的历史记录时间标识
     };
 
-    // ==================== 粘贴自动解析 ====================
+    // ==================== 粘贴提示 ====================
     const inputText = document.getElementById('inputText');
     inputText.addEventListener('paste', () => {
-        setTimeout(parseQuestions, 150);
+        setTimeout(() => {
+            autoResizeTextarea();
+            showToast('已粘贴文本，点击"解析试题"按钮开始解析', 'info');
+        }, 150);
     });
 
     // textarea 自适应高度
@@ -2084,6 +2087,58 @@
     inputText.addEventListener('input', autoResizeTextarea);
 
     // ==================== 核心解析算法 ====================
+    /** 标准化题目文本用于去重比较（去除空白、标点差异） */
+    function normalizeText(text) {
+        return text.replace(/[\s\u00A0\u3000]+/g, '')
+                   .replace(/[（(]/g, '(')
+                   .replace(/[）)]/g, ')')
+                   .replace(/[，,]/g, ',')
+                   .replace(/[。.．]/g, '.')
+                   .replace(/[？?]/g, '?')
+                   .replace(/[！!]/g, '!')
+                   .replace(/[：:]/g, ':')
+                   .replace(/[；;]/g, ';')
+                   .replace(/["""]/g, '"')
+                   .replace(/[''']/g, "'")
+                   .toLowerCase();
+    }
+
+    /** 生成题目的唯一指纹（题干+选项内容） */
+    function questionFingerprint(q) {
+        const stemNorm = normalizeText(q.text);
+        const optsNorm = (q.options || [])
+            .map(o => normalizeText(o.label + '.' + o.content))
+            .sort()
+            .join('|');
+        return stemNorm + '||' + optsNorm;
+    }
+
+    /** 对解析结果去重，合并完全相同的题目 */
+    function deduplicateQuestions(questions) {
+        const seen = new Map(); // fingerprint -> index in result
+        const result = [];
+        let dupCount = 0;
+
+        for (const q of questions) {
+            const fp = questionFingerprint(q);
+            if (seen.has(fp)) {
+                // 合并：如果已有题目没答案而新题有答案，则补充答案
+                const existingIdx = seen.get(fp);
+                const existing = result[existingIdx];
+                if (!existing.answer && q.answer) {
+                    existing.answer = q.answer;
+                    existing.type = q.type;
+                }
+                dupCount++;
+            } else {
+                seen.set(fp, result.length);
+                result.push({ ...q });
+            }
+        }
+
+        return { questions: result, dupCount };
+    }
+
     function parseQuestions() {
         const text = document.getElementById('inputText').value.trim();
         if (!text) {
@@ -2091,11 +2146,17 @@
             return;
         }
 
-        const questions = doParse(text);
-        if (questions.length === 0) {
+        const rawQuestions = doParse(text);
+        if (rawQuestions.length === 0) {
             showToast('未能识别出有效的试题，请检查文本格式', 'error');
             return;
         }
+
+        // 去重合并
+        const { questions, dupCount } = deduplicateQuestions(rawQuestions);
+
+        // 重新编号（合并后序号可能不连续）
+        questions.forEach((q, i) => { q.number = i + 1; });
 
         state.questions = questions;
         state.userAnswers = questions.map(() => []);
@@ -2112,8 +2173,9 @@
 
         const noAnswer = questions.filter(q => !q.answer).length;
         let msg = `成功解析 ${questions.length} 道试题`;
+        if (dupCount > 0) msg += `（已合并 ${dupCount} 道重复题）`;
         if (noAnswer > 0) msg += `（${noAnswer} 题未识别答案）`;
-        showToast(msg, noAnswer > 0 ? 'info' : 'success');
+        showToast(msg, (dupCount > 0 || noAnswer > 0) ? 'info' : 'success');
 
         // 显示AI助手按钮
         const aiFab = document.getElementById('aiFab');

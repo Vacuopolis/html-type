@@ -1441,6 +1441,194 @@
             margin-left: 6px;
         }
 
+        /* ================= 错题回顾弹窗 ================= */
+        .wrong-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: wrongModalFadeIn 0.2s ease;
+        }
+
+        @keyframes wrongModalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .wrong-modal {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 680px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            animation: wrongModalSlideIn 0.25s ease;
+        }
+
+        @keyframes wrongModalSlideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .wrong-modal-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fafbfc;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .wrong-modal-header h2 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wrong-modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .wrong-modal-empty {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px 20px;
+            font-size: 0.9rem;
+        }
+
+        .wrong-q-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 14px;
+            position: relative;
+            transition: box-shadow 0.2s;
+        }
+
+        .wrong-q-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .wrong-q-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .wrong-q-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .wrong-q-num {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--error);
+            background: var(--error-bg);
+            padding: 2px 10px;
+            border-radius: 10px;
+        }
+
+        .wrong-q-type {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .wrong-q-text {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .wrong-q-options {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .wrong-q-opt {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .wrong-q-opt.is-correct {
+            background: var(--success-bg);
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .wrong-q-opt.is-user-wrong {
+            background: var(--error-bg);
+            color: var(--error);
+            font-weight: 500;
+        }
+
+        .wrong-q-answer {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            background: #fff;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .wrong-q-answer b {
+            color: var(--success);
+        }
+
+        .wrong-q-answer .user-ans {
+            color: var(--error);
+            font-weight: 500;
+        }
+
+        .wrong-q-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .wrong-modal-footer {
+            padding: 14px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: #fafbfc;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        }
+
+        .wrong-modal-footer .footer-info {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .wrong-modal-footer .footer-actions {
+            display: flex;
+            gap: 8px;
+        }
+
         /* ================= 响应式 ================= */
         @media (max-width: 1024px) {
             .quiz-layout {
@@ -1667,6 +1855,34 @@
             .toast {
                 max-width: 100%;
             }
+
+            .wrong-modal {
+                width: 96%;
+                max-height: 90vh;
+            }
+
+            .wrong-modal-body {
+                padding: 14px 16px;
+            }
+
+            .wrong-modal-header,
+            .wrong-modal-footer {
+                padding: 12px 16px;
+            }
+
+            .wrong-modal-footer {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .wrong-modal-footer .footer-info {
+                text-align: center;
+            }
+
+            .wrong-modal-footer .footer-actions {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         /* 全局滚动条 */
@@ -1790,6 +2006,9 @@
         </aside>
     </section>
 </main>
+
+<!-- 错题回顾弹窗容器 -->
+<div id="wrongModalContainer"></div>
 
 <!-- Toast 容器 -->
 <div class="toast-container" id="toastContainer" aria-live="polite"></div>
@@ -2585,13 +2804,19 @@
 
         // 评分面板：仅统计客观题（排除主观题）
         const objectiveCount = state.questions.filter(q => q.type !== 'subjective').length;
+        const wrongInCurrent = state.quizStatus.filter(s => s === 'incorrect').length;
         if (objectiveCount > 0 && answeredCount === objectiveCount) {
             const pct = Math.round((correctCount / objectiveCount) * 100);
             const panelCls = pct >= 80 ? 'good' : (pct >= 60 ? 'mid' : 'bad');
+            let wrongBtnHtml = '';
+            if (wrongInCurrent > 0) {
+                wrongBtnHtml = `<button class="btn btn-sm btn-outline" onclick="viewCurrentWrongQuestions()" style="margin-top:10px;width:100%;color:var(--error);border-color:var(--error-border);font-size:0.8rem;padding:6px 12px;">❌ 查看错题 (${wrongInCurrent})</button>`;
+            }
             document.getElementById('scorePanel').innerHTML = `
                 <div class="score-panel ${panelCls}">
                     <div class="score-num">${correctCount} / ${objectiveCount}</div>
                     <div class="score-detail">正确率 ${pct}%</div>
+                    ${wrongBtnHtml}
                 </div>`;
         } else {
             document.getElementById('scorePanel').innerHTML = '';
@@ -3588,6 +3813,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
                     </button>
                     ${answered > 0 ? `<button class="btn btn-sm btn-outline" onclick="resetHistoryProgress(${i})" style="padding:4px 12px;font-size:0.8rem;">🔄 进度清零</button>` : ''}
                     <button class="btn btn-sm btn-outline" onclick="loadHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">📄 仅加载题目</button>
+                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;color:var(--error);border-color:var(--error-border);">❌ 查看错题</button>` : ''}
                 </div>
             </div>`;
         });
@@ -4340,6 +4566,16 @@ ${getAIContext()}
 
     // ==================== 键盘快捷键 ====================
     document.addEventListener('keydown', function(e) {
+        // Escape: 关闭错题弹窗
+        if (e.key === 'Escape') {
+            const wrongModal = document.getElementById('wrongModalContainer');
+            if (wrongModal && wrongModal.innerHTML.trim()) {
+                closeWrongModal();
+                e.preventDefault();
+                return;
+            }
+        }
+
         // 如果焦点在输入框/文本域中，仅允许极少数全局快捷键
         const tag = document.activeElement.tagName;
         const inInput = tag === 'TEXTAREA' || tag === 'INPUT' || document.activeElement.isContentEditable;
@@ -4438,6 +4674,402 @@ ${getAIContext()}
             }
         }
     });
+
+    // ==================== 错题回顾 ====================
+    /** 将一道题还原为可粘贴到解析模式的文本 */
+    function questionToText(q, answer) {
+        let text = `${q.number}. ${q.text}`;
+        if (q.options && q.options.length > 0) {
+            q.options.forEach(opt => {
+                text += `\n  ${opt.label}. ${opt.content}`;
+            });
+        }
+        if (answer) {
+            text += `\n正确答案：${answer}`;
+        }
+        return text;
+    }
+
+    /** 将一道题还原为可粘贴到解析模式的文本（使用原始label） */
+    function questionToOriginalText(q, userAnswer, correctAnswer) {
+        let text = `${q.number}. ${q.text}`;
+        if (q.options && q.options.length > 0) {
+            q.options.forEach(opt => {
+                text += `\n  ${opt.label}. ${opt.content}`;
+            });
+        }
+        if (correctAnswer) {
+            text += `\n正确答案：${correctAnswer}`;
+        }
+        return text;
+    }
+
+    /** 从随机映射的答案还原为原始答案 */
+    function getOriginalAnswer(realIdx, shuffledAns, record) {
+        if (!shuffledAns || !record.shuffledOptions || !record.shuffledOptions[realIdx]) return shuffledAns;
+        const mapping = record.shuffledOptions[realIdx];
+        if (!mapping || mapping.length === 0) return shuffledAns;
+        let origAns = '';
+        for (const ch of shuffledAns) {
+            const entry = mapping.find(m => m.label === ch);
+            if (entry) origAns += entry.origLabel;
+            else origAns += ch;
+        }
+        return origAns.split('').sort().join('');
+    }
+
+    /** 获取历史记录中的错题列表 */
+    function getWrongQuestions(record) {
+        const wrongList = [];
+        if (!record.quizStatus || !record.questions) return wrongList;
+        record.questions.forEach((q, realIdx) => {
+            if (record.quizStatus[realIdx] === 'incorrect') {
+                const userShuffledAns = (record.userAnswers[realIdx] || []).join('');
+                const correctShuffledAns = getShuffledAnswerFromRecord(record, realIdx);
+                const userOrigAns = getOriginalAnswer(realIdx, userShuffledAns, record);
+                const correctOrigAns = getOriginalAnswer(realIdx, correctShuffledAns, record);
+                wrongList.push({
+                    realIdx,
+                    question: q,
+                    userAnswer: userOrigAns,
+                    correctAnswer: correctOrigAns,
+                    originalText: questionToOriginalText(q, userOrigAns, correctOrigAns)
+                });
+            }
+        });
+        return wrongList;
+    }
+
+    /** 从历史记录中获取某题的正确答案（shuffled label） */
+    function getShuffledAnswerFromRecord(record, realIdx) {
+        const q = record.questions[realIdx];
+        if (!q || !q.answer) return '';
+        const origAnswer = q.answer;
+        const mapping = record.shuffledOptions ? record.shuffledOptions[realIdx] : null;
+        if (!mapping || mapping.length === 0) return origAnswer;
+        let shuffled = '';
+        for (const ch of origAnswer) {
+            const entry = mapping.find(m => m.origLabel === ch);
+            if (entry) shuffled += entry.label;
+            else shuffled += ch;
+        }
+        return shuffled;
+    }
+
+    /** 打开错题回顾弹窗 */
+    function viewWrongQuestions(index) {
+        const record = state.historyRecords[index];
+        if (!record) return;
+        const wrongList = getWrongQuestions(record);
+
+        if (wrongList.length === 0) {
+            showToast('该记录中没有错题', 'info');
+            return;
+        }
+
+        let cardsHtml = '';
+        wrongList.forEach((item, wi) => {
+            const q = item.question;
+            let optsHtml = '';
+            if (q.options && q.options.length > 0) {
+                q.options.forEach(opt => {
+                    const isCorrectOpt = item.correctAnswer.includes(opt.label);
+                    const isUserWrongOpt = item.userAnswer.includes(opt.label) && !item.correctAnswer.includes(opt.label);
+                    let cls = 'wrong-q-opt';
+                    if (isCorrectOpt) cls += ' is-correct';
+                    if (isUserWrongOpt) cls += ' is-user-wrong';
+                    let icon = '';
+                    if (isCorrectOpt) icon = ' ✓';
+                    if (isUserWrongOpt) icon = ' ✗';
+                    optsHtml += `<div class="${cls}">${opt.label}. ${escapeHtml(opt.content)}${icon}</div>`;
+                });
+            }
+
+            cardsHtml += `<div class="wrong-q-card">
+                <div class="wrong-q-header">
+                    <span class="wrong-q-num">第 ${q.number} 题</span>
+                    <span class="wrong-q-type">${q.type === 'multi' ? '多选' : '单选'}</span>
+                </div>
+                <div class="wrong-q-text">${escapeHtml(q.text)}</div>
+                ${optsHtml ? `<div class="wrong-q-options">${optsHtml}</div>` : ''}
+                <div class="wrong-q-answer">
+                    你的答案: <span class="user-ans">${item.userAnswer || '未作答'}</span>
+                    &nbsp;|&nbsp; 正确答案: <b>${item.correctAnswer}</b>
+                </div>
+                <div class="wrong-q-actions">
+                    <button class="btn btn-sm btn-outline" onclick="copySingleWrongQuestion(${index}, ${item.realIdx})" style="padding:3px 10px;font-size:0.78rem;">📋 复制此题</button>
+                </div>
+            </div>`;
+        });
+
+        const totalCount = record.questions.filter(q => q.type !== 'subjective').length;
+        const wrongCount = wrongList.length;
+        const correctCount = totalCount - wrongCount;
+
+        const modalHtml = `<div class="wrong-modal-overlay" onclick="closeWrongModal(event)">
+            <div class="wrong-modal" onclick="event.stopPropagation()">
+                <div class="wrong-modal-header">
+                    <h2>❌ 错题回顾 <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);">（${wrongCount} 道错题 / 共 ${totalCount} 题）</span></h2>
+                    <button class="btn btn-sm btn-outline" onclick="closeWrongModal()" style="padding:4px 10px;font-size:0.85rem;">✕</button>
+                </div>
+                <div class="wrong-modal-body">
+                    ${cardsHtml}
+                </div>
+                <div class="wrong-modal-footer">
+                    <div class="footer-info">正确 ${correctCount} 题 / 错误 ${wrongCount} 题 / 正确率 ${totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0}%</div>
+                    <div class="footer-actions">
+                        <button class="btn btn-sm btn-outline" onclick="copyAllWrongQuestions(${index})" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
+                        <button class="btn btn-sm btn-primary" onclick="loadWrongQuestionsToParse(${index})" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        document.getElementById('wrongModalContainer').innerHTML = modalHtml;
+    }
+
+    /** 关闭错题弹窗 */
+    function closeWrongModal(event) {
+        if (event && event.target !== event.currentTarget) return;
+        document.getElementById('wrongModalContainer').innerHTML = '';
+    }
+
+    /** 复制单道错题文本 */
+    function copySingleWrongQuestion(historyIndex, realIdx) {
+        const record = state.historyRecords[historyIndex];
+        if (!record) return;
+        const wrongList = getWrongQuestions(record);
+        const item = wrongList.find(w => w.realIdx === realIdx);
+        if (!item) return;
+        const text = item.originalText;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('已复制该错题文本', 'success');
+        }).catch(() => {
+            fallbackCopy(text);
+            showToast('已复制该错题文本', 'success');
+        });
+    }
+
+    /** 复制全部错题文本 */
+    function copyAllWrongQuestions(historyIndex) {
+        const record = state.historyRecords[historyIndex];
+        if (!record) return;
+        const wrongList = getWrongQuestions(record);
+        if (wrongList.length === 0) {
+            showToast('没有错题可复制', 'info');
+            return;
+        }
+        const allText = wrongList.map(item => item.originalText).join('\n\n');
+        navigator.clipboard.writeText(allText).then(() => {
+            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
+        }).catch(() => {
+            fallbackCopy(allText);
+            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
+        });
+    }
+
+    /** 将错题加载到解析模式 */
+    function loadWrongQuestionsToParse(historyIndex) {
+        const record = state.historyRecords[historyIndex];
+        if (!record) return;
+        const wrongList = getWrongQuestions(record);
+        if (wrongList.length === 0) {
+            showToast('没有错题可加载', 'info');
+            return;
+        }
+        const allText = wrongList.map(item => item.originalText).join('\n\n');
+        document.getElementById('inputText').value = allText;
+        autoResizeTextarea();
+        closeWrongModal();
+        closeHistoryDropdown();
+        switchMode('parse');
+        showToast(`已将 ${wrongList.length} 道错题载入解析模式，点击"解析试题"即可重新解析`, 'info');
+    }
+
+    /** 查看当前会话的错题（不依赖历史记录索引） */
+    function viewCurrentWrongQuestions() {
+        if (state.questions.length === 0) {
+            showToast('题库为空', 'info');
+            return;
+        }
+        const wrongList = [];
+        state.questions.forEach((q, realIdx) => {
+            if (state.quizStatus[realIdx] === 'incorrect') {
+                const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
+                const correctShuffledAns = getShuffledAnswer(realIdx);
+                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);
+                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns);
+                wrongList.push({
+                    realIdx,
+                    question: q,
+                    userAnswer: userOrigAns,
+                    correctAnswer: correctOrigAns,
+                    originalText: questionToOriginalText(q, userOrigAns, correctOrigAns)
+                });
+            }
+        });
+
+        if (wrongList.length === 0) {
+            showToast('当前没有错题', 'info');
+            return;
+        }
+
+        renderWrongModal(wrongList);
+    }
+
+    /** 从shuffled label映射回原始label */
+    function mapShuffledToOrigLabel(realIdx, shuffledAns) {
+        if (!shuffledAns) return '';
+        const mapping = state.shuffledOptions[realIdx];
+        if (!mapping || mapping.length === 0) return shuffledAns;
+        let orig = '';
+        for (const ch of shuffledAns) {
+            const entry = mapping.find(m => m.label === ch);
+            if (entry) orig += entry.origLabel;
+            else orig += ch;
+        }
+        return orig.split('').sort().join('');
+    }
+
+    /** 渲染错题弹窗（通用） */
+    function renderWrongModal(wrongList) {
+        let cardsHtml = '';
+        wrongList.forEach((item) => {
+            const q = item.question;
+            let optsHtml = '';
+            if (q.options && q.options.length > 0) {
+                q.options.forEach(opt => {
+                    const isCorrectOpt = item.correctAnswer.includes(opt.label);
+                    const isUserWrongOpt = item.userAnswer.includes(opt.label) && !item.correctAnswer.includes(opt.label);
+                    let cls = 'wrong-q-opt';
+                    if (isCorrectOpt) cls += ' is-correct';
+                    if (isUserWrongOpt) cls += ' is-user-wrong';
+                    let icon = '';
+                    if (isCorrectOpt) icon = ' ✓';
+                    if (isUserWrongOpt) icon = ' ✗';
+                    optsHtml += `<div class="${cls}">${opt.label}. ${escapeHtml(opt.content)}${icon}</div>`;
+                });
+            }
+
+            cardsHtml += `<div class="wrong-q-card">
+                <div class="wrong-q-header">
+                    <span class="wrong-q-num">第 ${q.number} 题</span>
+                    <span class="wrong-q-type">${q.type === 'multi' ? '多选' : '单选'}</span>
+                </div>
+                <div class="wrong-q-text">${escapeHtml(q.text)}</div>
+                ${optsHtml ? `<div class="wrong-q-options">${optsHtml}</div>` : ''}
+                <div class="wrong-q-answer">
+                    你的答案: <span class="user-ans">${item.userAnswer || '未作答'}</span>
+                    &nbsp;|&nbsp; 正确答案: <b>${item.correctAnswer}</b>
+                </div>
+                <div class="wrong-q-actions">
+                    <button class="btn btn-sm btn-outline" onclick="copyWrongItemText(${item.realIdx})" style="padding:3px 10px;font-size:0.78rem;">📋 复制此题</button>
+                </div>
+            </div>`;
+        });
+
+        const objectiveTotal = state.questions.filter(q => q.type !== 'subjective').length;
+        const wrongCount = wrongList.length;
+        const correctCount = objectiveTotal - wrongCount;
+
+        const modalHtml = `<div class="wrong-modal-overlay" onclick="closeWrongModal(event)">
+            <div class="wrong-modal" onclick="event.stopPropagation()">
+                <div class="wrong-modal-header">
+                    <h2>❌ 错题回顾 <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);">（${wrongCount} 道错题 / 共 ${objectiveTotal} 题）</span></h2>
+                    <button class="btn btn-sm btn-outline" onclick="closeWrongModal()" style="padding:4px 10px;font-size:0.85rem;">✕</button>
+                </div>
+                <div class="wrong-modal-body">
+                    ${cardsHtml}
+                </div>
+                <div class="wrong-modal-footer">
+                    <div class="footer-info">正确 ${correctCount} 题 / 错误 ${wrongCount} 题 / 正确率 ${objectiveTotal > 0 ? Math.round((correctCount / objectiveTotal) * 100) : 0}%</div>
+                    <div class="footer-actions">
+                        <button class="btn btn-sm btn-outline" onclick="copyAllCurrentWrongQuestions()" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
+                        <button class="btn btn-sm btn-primary" onclick="loadCurrentWrongQuestionsToParse()" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        document.getElementById('wrongModalContainer').innerHTML = modalHtml;
+    }
+
+    /** 复制当前会话单道错题 */
+    function copyWrongItemText(realIdx) {
+        const q = state.questions[realIdx];
+        if (!q) return;
+        const correctShuffledAns = getShuffledAnswer(realIdx);
+        const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns);
+        const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
+        const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);
+        const text = questionToOriginalText(q, userOrigAns, correctOrigAns);
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('已复制该错题文本', 'success');
+        }).catch(() => {
+            fallbackCopy(text);
+            showToast('已复制该错题文本', 'success');
+        });
+    }
+
+    /** 复制当前会话全部错题 */
+    function copyAllCurrentWrongQuestions() {
+        const wrongList = [];
+        state.questions.forEach((q, realIdx) => {
+            if (state.quizStatus[realIdx] === 'incorrect') {
+                const correctShuffledAns = getShuffledAnswer(realIdx);
+                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns);
+                const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
+                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);
+                wrongList.push(questionToOriginalText(q, userOrigAns, correctOrigAns));
+            }
+        });
+        if (wrongList.length === 0) {
+            showToast('没有错题可复制', 'info');
+            return;
+        }
+        const allText = wrongList.join('\n\n');
+        navigator.clipboard.writeText(allText).then(() => {
+            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
+        }).catch(() => {
+            fallbackCopy(allText);
+            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
+        });
+    }
+
+    /** 将当前会话错题加载到解析模式 */
+    function loadCurrentWrongQuestionsToParse() {
+        const wrongList = [];
+        state.questions.forEach((q, realIdx) => {
+            if (state.quizStatus[realIdx] === 'incorrect') {
+                const correctShuffledAns = getShuffledAnswer(realIdx);
+                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns);
+                const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
+                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);
+                wrongList.push(questionToOriginalText(q, userOrigAns, correctOrigAns));
+            }
+        });
+        if (wrongList.length === 0) {
+            showToast('没有错题可加载', 'info');
+            return;
+        }
+        const allText = wrongList.join('\n\n');
+        document.getElementById('inputText').value = allText;
+        autoResizeTextarea();
+        closeWrongModal();
+        switchMode('parse');
+        showToast(`已将 ${wrongList.length} 道错题载入解析模式，点击"解析试题"即可重新解析`, 'info');
+    }
+
+    /** 剪贴板降级方案 */
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;left:-9999px;';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
 
 </script>
 </body>

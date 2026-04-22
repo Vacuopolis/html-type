@@ -3985,6 +3985,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             record.quizOrder = JSON.parse(JSON.stringify(state.quizOrder));
             record.aiChatCache = JSON.parse(JSON.stringify(aiState.chatCache));
             saveHistoryToStorage();
+            renderHistory();
         }
     }
 

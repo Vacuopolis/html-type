@@ -794,31 +794,54 @@
 
         /* 评分面板 */
         .score-panel {
-            margin-top: 16px;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 14px 16px;
             border-radius: var(--radius);
-            text-align: center;
+            margin-bottom: 12px;
+            gap: 8px;
             animation: fadeIn 0.3s ease;
         }
 
         .score-panel.good {
-            background: var(--success-bg);
-            border: 1px solid var(--success-border);
+            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            border: 1.5px solid var(--success-border);
         }
 
         .score-panel.mid {
-            background: var(--warning-bg);
-            border: 1px solid #fcd34d;
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border: 1.5px solid #fcd34d;
         }
 
         .score-panel.bad {
-            background: var(--error-bg);
-            border: 1px solid var(--error-border);
+            background: linear-gradient(135deg, #fef2f2, #fff1f2);
+            border: 1.5px solid var(--error-border);
+        }
+
+        .score-panel .score-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-panel .score-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .score-panel .score-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
         }
 
         .score-num {
-            font-size: 2rem;
+            font-size: 1.1rem;
             font-weight: 800;
+            line-height: 1.2;
+            white-space: nowrap;
         }
 
         .score-panel.good .score-num {
@@ -834,9 +857,78 @@
         }
 
         .score-detail {
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
-            margin-top: 4px;
+        }
+
+        .score-panel .score-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .score-panel .score-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 6px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            width: 100%;
+            color: var(--text-secondary);
+        }
+
+        .score-panel .score-action-btn:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+            border-color: rgba(99, 102, 241, 0.4);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .score-panel .score-action-btn:active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(139, 92, 246, 0.22));
+            border-color: var(--primary);
+            transform: translateY(0);
+        }
+
+        .score-panel .score-action-btn.btn-danger {
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--error);
+        }
+
+        .score-panel .score-action-btn.btn-danger:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.12));
+            border-color: rgba(239, 68, 68, 0.5);
+            color: var(--error);
+        }
+
+        .score-panel .score-action-btn.btn-danger:active {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(220, 38, 38, 0.22));
+            border-color: var(--error);
+        }
+
+        .score-panel .score-action-btn.btn-warn {
+            border-color: rgba(245, 158, 11, 0.3);
+            color: var(--warning);
+        }
+
+        .score-panel .score-action-btn.btn-warn:hover {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.12));
+            border-color: rgba(245, 158, 11, 0.5);
+            color: var(--warning);
+        }
+
+        .score-panel .score-action-btn.btn-warn:active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(251, 191, 36, 0.22));
+            border-color: var(--warning);
         }
 
         /* ================= 按钮 ================= */
@@ -850,60 +942,130 @@
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             font-family: inherit;
             white-space: nowrap;
         }
 
         .btn-primary {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
             color: #fff;
         }
 
         .btn-primary:hover {
-            background: var(--primary-hover);
+            filter: brightness(1.1);
             transform: translateY(-1px);
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-primary:active {
+            filter: brightness(0.95);
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
         }
 
         .btn-success {
-            background: var(--success);
+            background: linear-gradient(135deg, var(--success), #059669);
             color: #fff;
         }
 
         .btn-success:hover {
-            opacity: 0.9;
+            filter: brightness(1.1);
             transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-success:active {
+            filter: brightness(0.95);
+            transform: translateY(0);
         }
 
         .btn-outline {
             background: transparent;
             color: var(--text-secondary);
             border: 1.5px solid var(--border);
+            transition: all 0.2s ease;
         }
 
         .btn-outline:hover {
-            border-color: var(--primary);
+            border-color: rgba(99, 102, 241, 0.5);
             color: var(--primary);
-            background: var(--primary-bg);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+            transform: translateY(-1px);
+        }
+
+        .btn-outline:active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(139, 92, 246, 0.22));
+            transform: translateY(0);
+        }
+
+        .btn-outline.btn-outline-error {
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--error);
+        }
+
+        .btn-outline.btn-outline-error:hover {
+            border-color: rgba(239, 68, 68, 0.5);
+            color: var(--error);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.12));
+            transform: translateY(-1px);
+        }
+
+        .btn-outline.btn-outline-error:active {
+            border-color: var(--error);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(220, 38, 38, 0.22));
+            transform: translateY(0);
+        }
+
+        .btn-outline.btn-outline-warn {
+            border-color: rgba(245, 158, 11, 0.3);
+            color: var(--warning);
+        }
+
+        .btn-outline.btn-outline-warn:hover {
+            border-color: rgba(245, 158, 11, 0.5);
+            color: var(--warning);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.12));
+            transform: translateY(-1px);
+        }
+
+        .btn-outline.btn-outline-warn:active {
+            border-color: var(--warning);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(251, 191, 36, 0.22));
+            transform: translateY(0);
         }
 
         .btn-danger {
-            background: var(--error);
+            background: linear-gradient(135deg, var(--error), #dc2626);
             color: #fff;
         }
 
         .btn-danger:hover {
-            opacity: 0.9;
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-danger:active {
+            filter: brightness(0.95);
+            transform: translateY(0);
         }
 
         .btn-warn {
-            background: var(--warning);
+            background: linear-gradient(135deg, var(--warning), #d97706);
             color: #fff;
         }
 
         .btn-warn:hover {
-            opacity: 0.9;
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-warn:active {
+            filter: brightness(0.95);
+            transform: translateY(0);
         }
 
         .btn-sm {
@@ -911,10 +1073,16 @@
             font-size: 0.8125rem;
         }
 
+        .btn:active {
+            transform: translateY(0) !important;
+        }
+
         .btn:disabled {
             opacity: 0.45;
             cursor: not-allowed;
             transform: none !important;
+            filter: none !important;
+            box-shadow: none !important;
         }
 
 
@@ -1045,7 +1213,7 @@
             position: fixed;
             top: 0;
             right: -420px;
-            width: 400px;
+            width: min(400px, 90vw);
             height: 100vh;
             background: var(--card-bg);
             box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
@@ -1767,6 +1935,10 @@
                 grid-template-columns: repeat(6, 1fr);
             }
 
+            .score-panel .score-info {
+                justify-content: center;
+            }
+
             .shortcut-hint {
                 display: none;
             }
@@ -1804,10 +1976,16 @@
             }
 
             .history-dropdown {
-                right: 6px;
-                left: 6px;
-                width: auto;
-                max-height: calc(100vh - 130px);
+                right: 0;
+                left: 0;
+                width: 100%;
+                max-height: calc(100vh - 100%);
+                max-height: calc(100dvh - 100%);
+                border-radius: 0;
+            }
+
+            .history-dropdown .hd-body {
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
             }
 
             .card-header {
@@ -1883,6 +2061,94 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            /* AI 面板移动端适配 */
+            .ai-panel {
+                width: 100vw;
+                right: -100vw;
+            }
+
+            .ai-panel.open {
+                right: 0;
+            }
+
+            .ai-panel-header {
+                padding: 12px 14px;
+            }
+
+            .ai-panel-body {
+                padding: 12px;
+            }
+
+            .ai-panel-footer {
+                padding: 10px 12px;
+            }
+
+            .ai-quick-actions {
+                flex-wrap: wrap;
+            }
+
+            /* 错题重做横幅移动端 */
+            .wrong-redo-banner {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .wrong-redo-banner .banner-info {
+                font-size: 0.8rem;
+            }
+
+            .wrong-redo-banner .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* 历史记录项移动端 */
+            .history-item .h-info {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+        }
+
+        /* ================= 错题重做模式 ================= */
+        .wrong-redo-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #fef2f2, #fff1f2);
+            border: 1.5px solid var(--error-border);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            gap: 10px;
+            animation: fadeIn 0.3s ease;
+            flex-wrap: wrap;
+        }
+
+        .wrong-redo-banner .banner-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--error);
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .wrong-redo-banner .banner-info .redo-icon {
+            font-size: 1.1rem;
+        }
+
+        .wrong-redo-banner .banner-count {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .wrong-redo-banner .btn {
+            flex-shrink: 0;
         }
 
         /* 全局滚动条 */
@@ -1995,12 +2261,12 @@
                             🔀 随机答题
                         </label>
                     </div>
+                    <div id="scorePanel"></div>
                     <div class="answer-sheet" id="answerSheet">
                         <div class="empty-state" style="grid-column: 1 / -1; min-height: 80px; padding: 16px;">
                             <p>暂无题目</p>
                         </div>
                     </div>
-                    <div id="scorePanel"></div>
                 </div>
             </div>
         </aside>
@@ -2068,6 +2334,9 @@
         // 历史
         historyRecords: [],
         _activeHistoryTime: null,  // 当前加载的历史记录时间标识
+        // 错题重做
+        wrongRedoMode: false,       // 是否处于错题重做模式
+        savedFullQuizOrder: [],     // 进入重做模式前保存的完整quizOrder
     };
 
     // ==================== 粘贴提示 ====================
@@ -2164,6 +2433,8 @@
         state.quizIndex = 0;
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
+        state.wrongRedoMode = false;
+        state.savedFullQuizOrder = [];
         aiState.chatCache = {};
         aiState.currentChatKey = null;
 
@@ -2478,6 +2749,11 @@
             }
         }
 
+        // 切换到解析模式时退出错题重做模式
+        if (mode === 'parse' && state.wrongRedoMode) {
+            exitWrongRedoMode();
+        }
+
         state.currentMode = mode;
         document.querySelectorAll('.mode-tab').forEach(tab => {
             const isParse = tab.textContent.includes('解析');
@@ -2745,6 +3021,19 @@
         );
         state.quizIndex = firstUnansweredPos >= 0 ? firstUnansweredPos : 0;
 
+        // 如果在错题重做模式，同步更新 savedFullQuizOrder 中未答题的顺序
+        if (state.wrongRedoMode && state.savedFullQuizOrder.length > 0) {
+            // 对 savedFullQuizOrder 中未答题也重新打乱
+            const fullAnswered = [];
+            const fullUnanswered = [];
+            state.savedFullQuizOrder.forEach(realIdx => {
+                if (state.quizStatus[realIdx] !== 'unanswered') fullAnswered.push(realIdx);
+                else fullUnanswered.push(realIdx);
+            });
+            if (enabled) shuffleArray(fullUnanswered);
+            state.savedFullQuizOrder = [...fullAnswered, ...fullUnanswered];
+        }
+
         renderQuizView();
         renderAnswerSheet();
         updateAIQuestionInfo();
@@ -2772,8 +3061,19 @@
         const shuffledAnswer = getShuffledAnswer(realIdx);
 
         let typeHint = q.type === 'multi' ? '<span class="quiz-type-hint multi">多选题</span>' : q.type === 'subjective' ? '<span class="quiz-type-hint unrecognized">未识别题型</span>' : '<span class="quiz-type-hint single">单选题</span>';
-        let progressText = `第 ${state.quizIndex + 1} / ${state.questions.length} 题`;
-        let html = `<div class="quiz-progress">${progressText} ${typeHint}</div>`;
+        let progressText = `第 ${state.quizIndex + 1} / ${state.quizOrder.length} 题`;
+        let html = '';
+        // 错题重做模式横幅
+        if (state.wrongRedoMode) {
+            html += `<div class="wrong-redo-banner">
+                <div class="banner-info">
+                    <span class="redo-icon">🔄</span> 错题重做模式
+                    <span class="banner-count">（共 ${state.quizOrder.length} 道错题）</span>
+                </div>
+                <button class="btn btn-sm btn-outline" onclick="exitWrongRedoMode()" style="padding:4px 12px;font-size:0.8rem;">返回全部题目</button>
+            </div>`;
+        }
+        html += `<div class="quiz-progress">${progressText} ${typeHint}</div>`;
         html += `<div class="quiz-stem">${formatStem(escapeHtml(q.text))}</div>`;
 
         // 选项区域 - 使用 shuffledOptions
@@ -2832,7 +3132,7 @@
             html += '<div style="color: var(--text-secondary); font-size: 0.9rem;">未识别题型无标准答案</div>';
         }
 
-        html += `<button class="btn btn-outline" onclick="nextQuestion()" ${state.quizIndex === state.questions.length - 1 ? 'disabled' : ''} title="快捷键: →">下一题 →<span class="shortcut-hint"> (→)</span></button>`;
+        html += `<button class="btn btn-outline" onclick="nextQuestion()" ${state.quizIndex >= state.quizOrder.length - 1 ? 'disabled' : ''} title="快捷键: →">下一题 →<span class="shortcut-hint"> (→)</span></button>`;
         html += '</div>';
 
         document.getElementById('quizContentArea').innerHTML = html;
@@ -2854,6 +3154,8 @@
             html += `<div class="sheet-item ${cls}" onclick="jumpToQuestion(${displayPos})" title="第${q.number}题">${displayPos + 1}</div>`;
         });
 
+        const wrongInCurrent = state.quizStatus.filter(s => s === 'incorrect').length;
+
         document.getElementById('answerSheet').innerHTML = html;
 
         // 正确率
@@ -2866,19 +3168,47 @@
 
         // 评分面板：仅统计客观题（排除主观题）
         const objectiveCount = state.questions.filter(q => q.type !== 'subjective').length;
-        const wrongInCurrent = state.quizStatus.filter(s => s === 'incorrect').length;
-        if (objectiveCount > 0 && answeredCount === objectiveCount) {
+        if (objectiveCount > 0 && answeredCount === objectiveCount && !state.wrongRedoMode) {
             const pct = Math.round((correctCount / objectiveCount) * 100);
             const panelCls = pct >= 80 ? 'good' : (pct >= 60 ? 'mid' : 'bad');
-            let wrongBtnHtml = '';
+            const icon = pct >= 80 ? '🎉' : (pct >= 60 ? '📝' : '📚');
+            let actionHtml = '';
             if (wrongInCurrent > 0) {
-                wrongBtnHtml = `<button class="btn btn-sm btn-outline" onclick="viewCurrentWrongQuestions()" style="margin-top:10px;width:100%;color:var(--error);border-color:var(--error-border);font-size:0.8rem;padding:6px 12px;">❌ 查看错题 (${wrongInCurrent})</button>`;
+                actionHtml = `<div class="score-actions">
+                    <button class="score-action-btn btn-danger" onclick="viewCurrentWrongQuestions()">❌ 查看错题</button>
+                    <button class="score-action-btn btn-warn" onclick="redoWrongQuestions()">🔄 错题重做 (${wrongInCurrent})</button>
+                </div>`;
             }
             document.getElementById('scorePanel').innerHTML = `
                 <div class="score-panel ${panelCls}">
-                    <div class="score-num">${correctCount} / ${objectiveCount}</div>
-                    <div class="score-detail">正确率 ${pct}%</div>
-                    ${wrongBtnHtml}
+                    <div class="score-info">
+                        <div class="score-text">
+                            <div class="score-num">${correctCount} / ${objectiveCount}　正确率 ${pct}%</div>
+                            <div class="score-detail">${pct >= 80 ? '表现优秀！' : (pct >= 60 ? '继续加油！' : '需要多练习！')}</div>
+                        </div>
+                    </div>
+                    ${actionHtml}
+                </div>`;
+        } else if (state.wrongRedoMode && answeredCount === state.quizOrder.length) {
+            // 错题重做模式下的评分面板
+            const redoPct = Math.round((correctCount / answeredCount) * 100);
+            const panelCls = redoPct >= 80 ? 'good' : (redoPct >= 60 ? 'mid' : 'bad');
+            const stillWrong = answeredCount - correctCount;
+            const icon = stillWrong === 0 ? '🎉' : '🔄';
+            const resultMsg = stillWrong === 0 ? '全部正确！' : `仍有 ${stillWrong} 道错题`;
+            document.getElementById('scorePanel').innerHTML = `
+                <div class="score-panel ${panelCls}">
+                    <div class="score-info">
+                        <div class="score-text">
+                            <div class="score-num">${correctCount} / ${answeredCount}　重做正确率 ${redoPct}%</div>
+                            <div class="score-detail">${resultMsg}</div>
+                        </div>
+                    </div>
+                    <div class="score-actions">
+                        ${stillWrong > 0 ? `<button class="score-action-btn btn-danger" onclick="viewCurrentWrongQuestions()">❌ 查看错题</button>
+                        <button class="score-action-btn btn-warn" onclick="redoWrongQuestions()">🔄 再次重做 (${stillWrong})</button>` : ''}
+                        <button class="score-action-btn" onclick="exitWrongRedoMode()">↩ 返回全部</button>
+                    </div>
                 </div>`;
         } else {
             document.getElementById('scorePanel').innerHTML = '';
@@ -2943,7 +3273,7 @@
     }
 
     function nextQuestion() {
-        if (state.quizIndex < state.questions.length - 1) {
+        if (state.quizIndex < state.quizOrder.length - 1) {
             state.quizIndex++;
             renderQuizView();
             renderAnswerSheet();
@@ -2963,6 +3293,125 @@
         });
     }
 
+    // ==================== 错题重做 ====================
+    /** 进入错题重做模式：仅保留错题，重置其作答状态 */
+    function redoWrongQuestions() {
+        closeWrongModal();
+        if (state.questions.length === 0) {
+            showToast('题库为空', 'info');
+            return;
+        }
+
+        // 收集所有错题的 realIdx
+        const wrongIndices = [];
+        state.questions.forEach((q, realIdx) => {
+            if (state.quizStatus[realIdx] === 'incorrect') {
+                wrongIndices.push(realIdx);
+            }
+        });
+
+        if (wrongIndices.length === 0) {
+            showToast('当前没有错题，无需重做', 'info');
+            return;
+        }
+
+        // 保存当前完整的 quizOrder
+        state.savedFullQuizOrder = [...state.quizOrder];
+        state.wrongRedoMode = true;
+
+        // 重置错题的作答状态
+        wrongIndices.forEach(realIdx => {
+            state.userAnswers[realIdx] = [];
+            state.quizStatus[realIdx] = 'unanswered';
+            // 为错题重新生成随机选项映射（如果开启了随机）
+            if (state.shuffleEnabled) {
+                const q = state.questions[realIdx];
+                if (q.options && q.options.length > 0) {
+                    const indices = q.options.map((_, i) => i);
+                    shuffleArray(indices);
+                    state.shuffledOptions[realIdx] = indices.map((origIdx, newPos) => ({
+                        origIdx,
+                        label: LABELS[newPos] || String(newPos + 1),
+                        content: q.options[origIdx].content,
+                        origLabel: q.options[origIdx].label
+                    }));
+                }
+            }
+        });
+
+        // 设置 quizOrder 仅包含错题
+        state.quizOrder = [...wrongIndices];
+        state.quizIndex = 0;
+
+        // 如果在解析模式，切换到刷题模式
+        if (state.currentMode === 'parse') {
+            switchMode('quiz');
+        }
+
+        renderQuizView();
+        renderAnswerSheet();
+        updateAIQuestionInfo();
+        saveCurrentProgress();
+
+        showToast(`已进入错题重做模式（${wrongIndices.length} 道错题）`, 'info');
+    }
+
+    /** 从历史记录进入错题重做模式 */
+    function redoWrongFromHistory(index) {
+        closeWrongModal();
+        const record = state.historyRecords[index];
+        if (!record) return;
+
+        // 检查是否有错题
+        const wrongIndices = [];
+        if (record.quizStatus) {
+            record.quizStatus.forEach((s, realIdx) => {
+                if (s === 'incorrect') wrongIndices.push(realIdx);
+            });
+        }
+
+        if (wrongIndices.length === 0) {
+            showToast('该记录中没有错题', 'info');
+            return;
+        }
+
+        // 先加载该历史记录（继续答题模式）
+        continueHistory(index);
+
+        // 稍后进入错题重做模式（continueHistory 会 switchMode，需要在之后执行）
+        setTimeout(() => {
+            redoWrongQuestions();
+        }, 50);
+    }
+
+    /** 退出错题重做模式，恢复全部题目 */
+    function exitWrongRedoMode() {
+        if (!state.wrongRedoMode) return;
+
+        state.wrongRedoMode = false;
+
+        // 恢复完整的 quizOrder
+        if (state.savedFullQuizOrder.length > 0) {
+            state.quizOrder = [...state.savedFullQuizOrder];
+        } else {
+            state.quizOrder = generateQuizOrder(state.shuffleEnabled);
+        }
+        state.savedFullQuizOrder = [];
+
+        // 跳转到第一道未答题
+        const firstUnansweredPos = state.quizOrder.findIndex(
+            realIdx => state.quizStatus[realIdx] === 'unanswered'
+        );
+        state.quizIndex = firstUnansweredPos >= 0 ? firstUnansweredPos : 0;
+
+        renderQuizView();
+        renderAnswerSheet();
+        updateAIQuestionInfo();
+        saveCurrentProgress();
+
+        showToast('已退出错题重做模式', 'info');
+    }
+
     // ==================== 清空 ====================
     function clearAll() {
         if (state.questions.length > 0 && !confirm('确定要清空输入区和所有解析记录吗？')) return;
@@ -2974,6 +3423,8 @@
         state.quizIndex = 0;
         state.quizOrder = [];
         state.shuffledOptions = [];
+        state.wrongRedoMode = false;
+        state.savedFullQuizOrder = [];
         aiState.chatCache = {};
         aiState.currentChatKey = null;
         renderParsePreview();
@@ -3861,7 +4312,7 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
                         <span class="h-count">${r.count} 题</span>
                         ${isComplete ? `<span style="color:${progressColor};font-weight:600;font-size:0.8125rem;">${correct}/${objectiveTotal}</span>` : ''}
                     </div>
-                    <button class="btn btn-sm btn-outline" onclick="deleteHistory(${i})" style="color:var(--error);border-color:var(--error-border);padding:3px 8px;font-size:0.75rem;">✕</button>
+                    <button class="btn btn-sm btn-outline btn-outline-error" onclick="deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">✕</button>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                     <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
@@ -3875,7 +4326,8 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
                     </button>
                     ${answered > 0 ? `<button class="btn btn-sm btn-outline" onclick="resetHistoryProgress(${i})" style="padding:4px 12px;font-size:0.8rem;">🔄 进度清零</button>` : ''}
                     <button class="btn btn-sm btn-outline" onclick="loadHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">📄 仅加载题目</button>
-                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;color:var(--error);border-color:var(--error-border);">❌ 查看错题</button>` : ''}
+                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;">❌ 查看错题</button>` : ''}
+                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-warn" onclick="redoWrongFromHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">🔄 重做错题</button>` : ''}
                 </div>
             </div>`;
         });
@@ -3890,6 +4342,8 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         state.userAnswers = JSON.parse(JSON.stringify(record.userAnswers || record.questions.map(() => [])));
         state.quizStatus = JSON.parse(JSON.stringify(record.quizStatus || record.questions.map(() => 'unanswered')));
         state.quizIndex = 0;
+        state.wrongRedoMode = false;
+        state.savedFullQuizOrder = [];
         if (record.shuffledOptions && record.shuffledOptions.length > 0) {
             state.shuffledOptions = JSON.parse(JSON.stringify(record.shuffledOptions));
             state.shuffleEnabled = !!record.shuffleEnabled;
@@ -3950,6 +4404,8 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         state.userAnswers = state.questions.map(() => []);
         state.quizStatus = state.questions.map(() => 'unanswered');
         state.quizIndex = 0;
+        state.wrongRedoMode = false;
+        state.savedFullQuizOrder = [];
         state.shuffleEnabled = !!record.shuffleEnabled;
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
@@ -3957,13 +4413,27 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
         aiState.chatCache = {};
         aiState.currentChatKey = null;
         closeHistoryDropdown();
+
+        // 将题目还原为文本并填入输入框
+        const allText = state.questions.map(q => {
+            let text = `${q.number}. ${q.text}`;
+            if (q.options && q.options.length > 0) {
+                q.options.forEach(opt => {
+                    text += `\n  ${opt.label}. ${opt.content}`;
+                });
+            }
+            if (q.answer) {
+                text += `\n正确答案：${q.answer}`;
+            }
+            return text;
+        }).join('\n\n');
+        document.getElementById('inputText').value = allText;
+        autoResizeTextarea();
+
         renderParsePreview();
         updateStats();
-        if (state.currentMode === 'quiz') {
-            renderQuizView();
-            renderAnswerSheet();
-        }
-        showToast(`已加载历史记录（${record.count} 题）`, 'success');
+        switchMode('parse');
+        showToast(`已加载历史记录（${record.count} 题），可在解析模式中查看`, 'success');
         const aiFab2 = document.getElementById('aiFab');
         if (aiFab2) aiFab2.style.display = 'flex';
         updateAIQuestionInfo();
@@ -3982,7 +4452,12 @@ A.权力由法定     B.有权必有责     C.用权受监督     D.违法受追
             record.quizStatus = JSON.parse(JSON.stringify(state.quizStatus));
             record.shuffledOptions = JSON.parse(JSON.stringify(state.shuffledOptions));
             record.shuffleEnabled = state.shuffleEnabled;
-            record.quizOrder = JSON.parse(JSON.stringify(state.quizOrder));
+            // 保存完整的 quizOrder（重做模式下使用 savedFullQuizOrder）
+            record.quizOrder = JSON.parse(JSON.stringify(
+                state.wrongRedoMode && state.savedFullQuizOrder.length > 0
+                    ? state.savedFullQuizOrder
+                    : state.quizOrder
+            ));
             record.aiChatCache = JSON.parse(JSON.stringify(aiState.chatCache));
             saveHistoryToStorage();
             renderHistory();
@@ -4883,6 +5358,7 @@ ${getAIContext()}
                     <div class="footer-actions">
                         <button class="btn btn-sm btn-outline" onclick="copyAllWrongQuestions(${index})" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
                         <button class="btn btn-sm btn-primary" onclick="loadWrongQuestionsToParse(${index})" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
+                        <button class="btn btn-sm btn-warn" onclick="redoWrongFromHistory(${index})" style="padding:4px 12px;font-size:0.8rem;">🔄 重做这些错题</button>
                     </div>
                 </div>
             </div>
@@ -5049,6 +5525,7 @@ ${getAIContext()}
                     <div class="footer-actions">
                         <button class="btn btn-sm btn-outline" onclick="copyAllCurrentWrongQuestions()" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
                         <button class="btn btn-sm btn-primary" onclick="loadCurrentWrongQuestionsToParse()" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
+                        <button class="btn btn-sm btn-warn" onclick="closeWrongModal();redoWrongQuestions()" style="padding:4px 12px;font-size:0.8rem;">🔄 重做这些错题</button>
                     </div>
                 </div>
             </div>

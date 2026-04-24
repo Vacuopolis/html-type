@@ -892,6 +892,27 @@
             border: 2px solid #f009c9;
             animation: xrayGlow 1s ease-in-out infinite;
         }
+        /* ========== 快速翻开预览样式 ========== */
+        .cell.chord-preview {
+            border: 2px solid rgba(33, 150, 243, 0.9) !important;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.5), inset 0 0 8px rgba(33, 150, 243, 0.2) !important;
+            background: linear-gradient(145deg, rgba(33, 150, 243, 0.25), rgba(100, 181, 246, 0.2)) !important;
+            z-index: 8;
+            animation: chordPreviewPulse 1.2s ease-in-out infinite;
+        }
+        .cell.chord-preview-source {
+            border: 2px solid rgba(33, 150, 243, 0.6) !important;
+            box-shadow: 0 0 8px rgba(33, 150, 243, 0.3) !important;
+        }
+        @keyframes chordPreviewPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(33, 150, 243, 0.5), inset 0 0 8px rgba(33, 150, 243, 0.2); }
+            50% { box-shadow: 0 0 18px rgba(33, 150, 243, 0.7), inset 0 0 12px rgba(33, 150, 243, 0.3); }
+        }
+        body.dark .cell.chord-preview {
+            border: 2px solid rgba(100, 181, 246, 0.9) !important;
+            box-shadow: 0 0 10px rgba(100, 181, 246, 0.5), inset 0 0 8px rgba(100, 181, 246, 0.2) !important;
+            background: linear-gradient(145deg, rgba(100, 181, 246, 0.25), rgba(33, 150, 243, 0.2)) !important;
+        }
         /* ========== 数字颜色 ========== */
         .num-1 { color: #1976d2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         .num-2 { color: #388e3c; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
@@ -2760,6 +2781,18 @@
             }
             return changed;
         },
+        // ========== 对数组合数 C(n, k) ==========
+        logComb(n, k) {
+            if (k < 0 || k > n) return -Infinity;
+            if (k === 0 || k === n) return 0;
+            if (k > n - k) k = n - k;
+            let result = 0;
+            for (let i = 0; i < k; i++) {
+                result += Math.log(n - i) - Math.log(i + 1);
+            }
+            return result;
+        },
+        // ========== Tank Solver: 精确枚举 + 组合加权 ==========
         isCSPConsistent(assignment, constraints) {
             for (const con of constraints) {
                 let sum = 0;
@@ -2805,6 +2838,7 @@
         performCSPReasoning(revealed, flagged, board, constraints, rows, cols, totalMines, key, forEachNeighbor) {
             const frontierSet = Solver.getFrontierSet(revealed, flagged, board, rows, cols, key, forEachNeighbor);
             if (frontierSet.size === 0) return false;
+            // 并查集: 按约束图的连通性将前沿格划分为独立分量
             const parent = new Map();
             for (const k of frontierSet) parent.set(k, k);
             const find = (k) => {
@@ -2826,12 +2860,13 @@
                 if (!groupMap.has(root)) groupMap.set(root, []);
                 groupMap.get(root).push(k);
             }
-            let otherUnrevealed = 0;
+            // 计算外部非前沿格数量
+            let outerCells = 0;
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const k = key(r, c);
                     if (!revealed.has(k) && !flagged.has(k) && !frontierSet.has(k)) {
-                        otherUnrevealed++;
+                        outerCells++;
                     }
                 }
             }
@@ -2853,18 +2888,46 @@
                     }
                 }
                 const otherFrontierSize = frontierSet.size - group.length;
-                const minGroupMines = Math.max(0, remainingMines - otherFrontierSize - otherUnrevealed);
+                const minGroupMines = Math.max(0, remainingMines - otherFrontierSize - outerCells);
                 const maxGroupMines = Math.min(group.length, remainingMines);
                 if (minGroupMines > maxGroupMines) return 'contradiction';
                 const solutions = [];
                 Solver.enumerateCSPGroup(group, groupConstraints, 0, new Map(), solutions, 20000, minGroupMines, maxGroupMines);
                 if (solutions.length === 0) return 'contradiction';
-                for (const cellKey of group) {
-                    let mineCount = 0;
-                    for (const sol of solutions) {
-                        if (sol.get(cellKey) === 1) mineCount++;
+                // 组合加权概率计算
+                // 对每个方案, 权重 = C(outerCells, remainingMines - minesInGroup)
+                const cellMineLogWeight = new Map();
+                let totalLogWeight = -Infinity;
+                for (const cellKey of group) cellMineLogWeight.set(cellKey, -Infinity);
+                for (const sol of solutions) {
+                    let minesInGroup = 0;
+                    for (const [, v] of sol) minesInGroup += v;
+                    const outerMines = remainingMines - minesInGroup;
+                    const logW = Solver.logComb(outerCells, outerMines);
+                    // 累加到 totalLogWeight (log-sum-exp)
+                    if (totalLogWeight === -Infinity) {
+                        totalLogWeight = logW;
+                    } else {
+                        const maxL = Math.max(totalLogWeight, logW);
+                        totalLogWeight = maxL + Math.log(Math.exp(totalLogWeight - maxL) + Math.exp(logW - maxL));
                     }
-                    if (mineCount === 0) {
+                    for (const cellKey of group) {
+                        if (sol.get(cellKey) === 1) {
+                            const cur = cellMineLogWeight.get(cellKey);
+                            if (cur === -Infinity) {
+                                cellMineLogWeight.set(cellKey, logW);
+                            } else {
+                                const maxL = Math.max(cur, logW);
+                                cellMineLogWeight.set(cellKey, maxL + Math.log(Math.exp(cur - maxL) + Math.exp(logW - maxL)));
+                            }
+                        }
+                    }
+                }
+                // 判定: 加权概率为0 → 安全, 加权概率为1 → 雷
+                for (const cellKey of group) {
+                    const mineLogW = cellMineLogWeight.get(cellKey);
+                    if (mineLogW === -Infinity) {
+                        // 概率为0 → 必安全
                         const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
                         if (board[nr][nc] === -1) return false;
                         if (!revealed.has(cellKey)) {
@@ -2872,7 +2935,8 @@
                             if (board[nr][nc] === 0) Solver.bfsExpandZero(nr, nc, board, revealed, key, forEachNeighbor);
                             anyChanged = true;
                         }
-                    } else if (mineCount === solutions.length) {
+                    } else if (Math.abs(mineLogW - totalLogWeight) < 1e-9) {
+                        // 概率为1 → 必雷
                         const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
                         if (board[nr][nc] !== -1) return false;
                         if (!flagged.has(cellKey)) {
@@ -2897,109 +2961,22 @@
             }
             return frontierSet;
         },
-        performSingleCellBacktrack(revealed, flagged, board, rows, cols, totalMines, key, forEachNeighbor) {
-            const frontierSet = Solver.getFrontierSet(revealed, flagged, board, rows, cols, key, forEachNeighbor);
-            if (frontierSet.size === 0) return false;
-            let anyChanged = false;
-            for (const cellKey of frontierSet) {
-                const nr = Math.floor(cellKey / cols), nc = cellKey % cols;
-                const testRevealed1 = new Set(revealed);
-                const testFlagged1 = new Set(flagged);
-                testRevealed1.add(cellKey);
-                if (board[nr][nc] === 0) {
-                    Solver.bfsExpandZero(nr, nc, board, testRevealed1, key, forEachNeighbor);
-                }
-                const safeContradiction = Solver.checkContradiction(testRevealed1, testFlagged1, board, rows, cols, totalMines, key, forEachNeighbor);
-                const testRevealed2 = new Set(revealed);
-                const testFlagged2 = new Set(flagged);
-                testFlagged2.add(cellKey);
-                const mineContradiction = Solver.checkContradiction(testRevealed2, testFlagged2, board, rows, cols, totalMines, key, forEachNeighbor);
-                if (safeContradiction && !mineContradiction) {
-                    if (board[nr][nc] !== -1) return false;
-                    if (!flagged.has(cellKey)) {
-                        flagged.add(cellKey);
-                        anyChanged = true;
-                    }
-                } else if (mineContradiction && !safeContradiction) {
-                    if (board[nr][nc] === -1) return false;
-                    if (!revealed.has(cellKey)) {
-                        revealed.add(cellKey);
-                        if (board[nr][nc] === 0) Solver.bfsExpandZero(nr, nc, board, revealed, key, forEachNeighbor);
-                        anyChanged = true;
-                    }
-                }
-            }
-            return anyChanged;
-        },
-        performCoupledBacktrack(revealed, flagged, board, rows, cols, totalMines, key, forEachNeighbor) {
-            const frontierSet = Solver.getFrontierSet(revealed, flagged, board, rows, cols, key, forEachNeighbor);
-            if (frontierSet.size < 2) return false;
-            const frontierArr = [...frontierSet];
-            let anyChanged = false;
-            for (let i = 0; i < frontierArr.length && !anyChanged; i++) {
-                for (let j = i + 1; j < frontierArr.length && !anyChanged; j++) {
-                    const k1 = frontierArr[i], k2 = frontierArr[j];
-                    const r1 = Math.floor(k1 / cols), c1 = k1 % cols;
-                    const r2 = Math.floor(k2 / cols), c2 = k2 % cols;
-                    const assignments = [[0, 0], [0, 1], [1, 0], [1, 1]];
-                    let validCount = 0;
-                    let lastValid = null;
-                    for (const [v1, v2] of assignments) {
-                        const tRev = new Set(revealed);
-                        const tFlag = new Set(flagged);
-                        if (v1 === 0) {
-                            tRev.add(k1);
-                            if (board[r1][c1] === 0) {
-                                Solver.bfsExpandZero(r1, c1, board, tRev, key, forEachNeighbor);
-                            }
-                        } else {
-                            tFlag.add(k1);
-                        }
-                        if (v2 === 0) {
-                            tRev.add(k2);
-                            if (board[r2][c2] === 0) {
-                                Solver.bfsExpandZero(r2, c2, board, tRev, key, forEachNeighbor);
-                            }
-                        } else {
-                            tFlag.add(k2);
-                        }
-                        if (!Solver.checkContradiction(tRev, tFlag, board, rows, cols, totalMines, key, forEachNeighbor)) {
-                            validCount++;
-                            lastValid = [v1, v2];
-                        }
-                    }
-                    if (validCount === 1) {
-                        const [v1, v2] = lastValid;
-                        if (v1 === 1) {
-                            if (board[r1][c1] !== -1) return false;
-                            if (!flagged.has(k1)) { flagged.add(k1); anyChanged = true; }
-                        } else {
-                            if (board[r1][c1] === -1) return false;
-                            if (!revealed.has(k1)) { revealed.add(k1); if (board[r1][c1] === 0) Solver.bfsExpandZero(r1, c1, board, revealed, key, forEachNeighbor); anyChanged = true; }
-                        }
-                        if (v2 === 1) {
-                            if (board[r2][c2] !== -1) return false;
-                            if (!flagged.has(k2)) { flagged.add(k2); anyChanged = true; }
-                        } else {
-                            if (board[r2][c2] === -1) return false;
-                            if (!revealed.has(k2)) { revealed.add(k2); if (board[r2][c2] === 0) Solver.bfsExpandZero(r2, c2, board, revealed, key, forEachNeighbor); anyChanged = true; }
-                        }
-                    }
-                }
-            }
-            return anyChanged;
-        },
+        // ========== 逻辑可解性检查（层1基础推理 → 层2子集差分 → 层4全局雷数 → 层3 Tank Solver） ==========
         canSolveLogically(board, rows, cols, startRow, startCol, totalMines, forEachNeighbor) {
             const revealed = new Set();
             const flagged = new Set();
             const key = (r, c) => r * cols + c;
+            const startTime = Date.now();
+            const solverTimeout = 500; // 单次求解500ms超时
             Solver.bfsExpandZero(startRow, startCol, board, revealed, key, forEachNeighbor);
             let changed = true;
             let iterations = 0;
             const maxIterations = rows * cols * 4;
             while (changed && iterations < maxIterations) {
+                if (Date.now() - startTime > solverTimeout) return false;
                 changed = false;
                 iterations++;
+                // 层1: 基础推理
                 const constraints = Solver.buildConstraints(board, revealed, flagged, rows, cols, key, forEachNeighbor);
                 for (const con of constraints) {
                     if (con.remaining < 0 || con.remaining > con.unrevealed.length) return false;
@@ -3024,26 +3001,23 @@
                         }
                     }
                 }
+                // 层2: 子集差分推理
                 if (!changed && constraints.length > 1) {
                     const diffResult = Solver.performConstraintDiff(constraints, board, revealed, flagged, rows, cols, key, forEachNeighbor);
                     if (diffResult === 'contradiction') return false;
                     changed = diffResult;
                 }
+                // 层4: 全局雷数推理
                 if (!changed) {
                     const globalResult = Solver.globalMineReasoning(revealed, flagged, board, rows, cols, totalMines, key, forEachNeighbor);
                     if (globalResult === 'contradiction') return false;
                     changed = globalResult;
                 }
+                // 层3: Tank Solver（精确枚举 + 组合加权）
                 if (!changed) {
                     const cspResult = Solver.performCSPReasoning(revealed, flagged, board, constraints, rows, cols, totalMines, key, forEachNeighbor);
                     if (cspResult === 'contradiction') return false;
                     changed = cspResult;
-                }
-                if (!changed) {
-                    changed = Solver.performSingleCellBacktrack(revealed, flagged, board, rows, cols, totalMines, key, forEachNeighbor);
-                }
-                if (!changed) {
-                    changed = Solver.performCoupledBacktrack(revealed, flagged, board, rows, cols, totalMines, key, forEachNeighbor);
                 }
             }
             for (let r = 0; r < rows; r++) {
@@ -3061,27 +3035,11 @@
             Solver.bfsExpandZero(startRow, startCol, board, revealed, key, forEachNeighbor);
             let changed = true;
             let iterations = 0;
-            const maxIter = rows * cols * 2;
+            const maxIter = rows * cols * 4;
             while (changed && iterations < maxIter) {
                 changed = false;
                 iterations++;
-                const constraints = [];
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        if (!revealed.has(key(r, c)) || board[r][c] <= 0) continue;
-                        const unrevealed = [];
-                        let flaggedCount = 0;
-                        forEachNeighbor(r, c, (nr, nc) => {
-                            const nk = key(nr, nc);
-                            if (flagged.has(nk)) flaggedCount++;
-                            else if (!revealed.has(nk)) unrevealed.push(nk);
-                        });
-                        if (unrevealed.length === 0) continue;
-                        const remaining = board[r][c] - flaggedCount;
-                        if (remaining < 0 || remaining > unrevealed.length) continue;
-                        constraints.push({ unrevealed, remaining });
-                    }
-                }
+                const constraints = Solver.buildConstraints(board, revealed, flagged, rows, cols, key, forEachNeighbor);
                 for (const con of constraints) {
                     if (con.remaining === 0) {
                         for (const nk of con.unrevealed) {
@@ -3102,43 +3060,19 @@
                     }
                 }
                 if (!changed && constraints.length > 1) {
-                    for (let i = 0; i < constraints.length && !changed; i++) {
-                        for (let j = i + 1; j < constraints.length && !changed; j++) {
-                            const c1 = constraints[i], c2 = constraints[j];
-                            const set1 = new Set(c1.unrevealed);
-                            const set2 = new Set(c2.unrevealed);
-                            let is1Sub2 = true, is2Sub1 = true;
-                            for (const k of set1) if (!set2.has(k)) is1Sub2 = false;
-                            for (const k of set2) if (!set1.has(k)) is2Sub1 = false;
-                            if (is1Sub2 && !is2Sub1) {
-                                const diff = c2.unrevealed.filter(k => !set1.has(k));
-                                const diffRem = c2.remaining - c1.remaining;
-                                if (diffRem === 0) {
-                                    for (const nk of diff) { if (!revealed.has(nk)) { revealed.add(nk); const nr = Math.floor(nk / cols), nc = nk % cols; if (board[nr][nc] === 0) Solver.bfsExpandZero(nr, nc, board, revealed, key, forEachNeighbor); changed = true; } }
-                                } else if (diffRem === diff.length) {
-                                    for (const nk of diff) { if (!flagged.has(nk)) { flagged.add(nk); changed = true; } }
-                                }
-                            } else if (is2Sub1 && !is1Sub2) {
-                                const diff = c1.unrevealed.filter(k => !set2.has(k));
-                                const diffRem = c1.remaining - c2.remaining;
-                                if (diffRem === 0) {
-                                    for (const nk of diff) { if (!revealed.has(nk)) { revealed.add(nk); const nr = Math.floor(nk / cols), nc = nk % cols; if (board[nr][nc] === 0) Solver.bfsExpandZero(nr, nc, board, revealed, key, forEachNeighbor); changed = true; } }
-                                } else if (diffRem === diff.length) {
-                                    for (const nk of diff) { if (!flagged.has(nk)) { flagged.add(nk); changed = true; } }
-                                }
-                            }
-                        }
-                    }
+                    const diffResult = Solver.performConstraintDiff(constraints, board, revealed, flagged, rows, cols, key, forEachNeighbor);
+                    if (diffResult === 'contradiction') break;
+                    changed = diffResult;
                 }
                 if (!changed) {
-                    const remainingMines = totalMines - flagged.size;
-                    let totalUnrevealed = 0;
-                    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) totalUnrevealed++; }
-                    if (remainingMines === 0 && totalUnrevealed > 0) {
-                        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) { revealed.add(k); if (board[r][c] === 0) Solver.bfsExpandZero(r, c, board, revealed, key, forEachNeighbor); changed = true; } }
-                    } else if (remainingMines > 0 && remainingMines === totalUnrevealed) {
-                        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const k = key(r, c); if (!revealed.has(k) && !flagged.has(k)) { flagged.add(k); changed = true; } }
-                    }
+                    const globalResult = Solver.globalMineReasoning(revealed, flagged, board, rows, cols, totalMines, key, forEachNeighbor);
+                    if (globalResult === 'contradiction') break;
+                    changed = globalResult;
+                }
+                if (!changed) {
+                    const cspResult = Solver.performCSPReasoning(revealed, flagged, board, constraints, rows, cols, totalMines, key, forEachNeighbor);
+                    if (cspResult === 'contradiction') break;
+                    changed = cspResult;
                 }
             }
             let revealedNonMines = 0;
@@ -3170,6 +3104,8 @@
         generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol, forEachNeighbor) {
             const board = Array(rows).fill().map(() => Array(cols).fill(0));
             const safeZone = Solver.createSafeZone(excludeRow, excludeCol, rows, cols);
+            const safeZoneSize = safeZone.size;
+            if (totalMines > rows * cols - safeZoneSize) return null; // 校验：雷数不能超过可用格数
             const candidates = [];
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
@@ -4594,7 +4530,7 @@ decompressBoardData(compressed) {
                         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         this.sounds = {
                             reveal: this.createSound(200, 0.1, 'sine'),
-                            flag: this.createSound(400, 0.1, 'square'),
+                            flag: this.createSound(400, 0.1, 'triangle'),
                             explosion: this.createSound(100, 0.3, 'sawtooth'),
                             win: this.createSound(800, 0.5, 'sine'),
                             click: this.createSound(600, 0.05, 'sine'),
@@ -4925,6 +4861,10 @@ decompressBoardData(compressed) {
 
                 // 渲染游戏板
                 renderBoard() {
+                    // 清除快速翻开预览状态
+                    this._chordPreviewCells = null;
+                    this._chordPreviewSource = null;
+
                     const boardElement = document.getElementById('game-board');
                     if (!boardElement) return;
 
@@ -5040,7 +4980,10 @@ decompressBoardData(compressed) {
                     this._delegatedMouseEnter = (e) => {
                         const cell = e.target.closest('.cell');
                         if (!cell) return;
-                        this._hoveredCell = { row: parseInt(cell.dataset.row), col: parseInt(cell.dataset.col) };
+                        const row = parseInt(cell.dataset.row);
+                        const col = parseInt(cell.dataset.col);
+                        this._hoveredCell = { row, col };
+                        this._showChordPreview(row, col);
                     };
 
                     this._delegatedMouseLeave = (e) => {
@@ -5050,6 +4993,10 @@ decompressBoardData(compressed) {
                         const col = parseInt(cell.dataset.col);
                         if (this._hoveredCell && this._hoveredCell.row === row && this._hoveredCell.col === col) {
                             this._hoveredCell = null;
+                        }
+                        // 仅在离开的格子是预览源时才隐藏，避免误清除新格子的预览
+                        if (this._chordPreviewSource && this._chordPreviewSource[0] === row && this._chordPreviewSource[1] === col) {
+                            this._hideChordPreview();
                         }
                     };
 
@@ -5124,6 +5071,67 @@ decompressBoardData(compressed) {
                     boardElement.addEventListener('mouseleave', this._delegatedMouseLeave, true);
 
                     this._boardDelegationSetup = true;
+                }
+
+                // 显示快速翻开预览：当悬停在已揭开的数字格子上且满足翻开条件时，高亮将被揭开的周围格子
+                _showChordPreview(row, col) {
+                    this._hideChordPreview();
+                    if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
+                    if (!this.revealed[row] || !this.revealed[row][col]) return;
+                    if (!this.board[row] || this.board[row][col] <= 0) return;
+
+                    const numValue = this.board[row][col];
+                    let flagCount = 0;
+                    const previewCells = [];
+
+                    this.forEachNeighbor(row, col, (nr, nc) => {
+                        if (this.flags[nr][nc]) flagCount++;
+                        if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
+                            previewCells.push([nr, nc]);
+                        }
+                    });
+
+                    // 只有当标记数等于数字时才显示预览（快速翻开条件满足）
+                    if (flagCount !== numValue || previewCells.length === 0) return;
+
+                    const sourceCell = this.getCell(row, col);
+                    if (sourceCell) sourceCell.classList.add('chord-preview-source');
+
+                    previewCells.forEach(([nr, nc]) => {
+                        const cell = this.getCell(nr, nc);
+                        if (cell) cell.classList.add('chord-preview');
+                    });
+
+                    this._chordPreviewCells = previewCells;
+                    this._chordPreviewSource = [row, col];
+                }
+
+                // 隐藏快速翻开预览
+                _hideChordPreview() {
+                    if (this._chordPreviewCells) {
+                        this._chordPreviewCells.forEach(([nr, nc]) => {
+                            const cell = this.getCell(nr, nc);
+                            if (cell) cell.classList.remove('chord-preview');
+                        });
+                        this._chordPreviewCells = null;
+                    }
+                    if (this._chordPreviewSource) {
+                        const [r, c] = this._chordPreviewSource;
+                        const cell = this.getCell(r, c);
+                        if (cell) cell.classList.remove('chord-preview-source');
+                        this._chordPreviewSource = null;
+                    }
+                }
+
+                // 刷新快速翻开预览（操作后延迟重新检查悬停格子）
+                _refreshChordPreview() {
+                    if (!this._hoveredCell) return;
+                    const { row, col } = this._hoveredCell;
+                    requestAnimationFrame(() => {
+                        if (this._hoveredCell && this._hoveredCell.row === row && this._hoveredCell.col === col) {
+                            this._showChordPreview(row, col);
+                        }
+                    });
                 }
 
 
@@ -5721,6 +5729,10 @@ updateMinimapBatch(cells) {
 
                     this.updateDisplay();
                     this.showFloatingMessage(`🚩 自动标记完成！标记了${autoFlaggedCount}个地雷`);
+                    // 自动标记后检查胜利条件
+                    if (autoFlaggedCount > 0) {
+                        this.checkWin();
+                    }
                 }
 
 _createFloatingElement(options) {
@@ -6313,6 +6325,9 @@ resumeGameFromSave() {
 handleNumberCellClick(row, col) {
     if (this._checkTutorialGuard(row, col, 'double_click')) return;
 
+    // 隐藏快速翻开预览
+    this._hideChordPreview();
+
     // 游戏状态检查：游戏不可交互时直接返回，不记录任何统计
     if (this.gameState.gameOver || (this.gameState.paused && !this.gameState.survivalItems.timeStop.active) || this.gameState.autoSolving) {
         return;
@@ -6374,11 +6389,20 @@ handleNumberCellClick(row, col) {
     }
 }
 
-// ========== 异步生成可解棋盘（增强求解器 + 双策略生成） ==========
+// ========== 异步生成可解棋盘（首次点击动态生成 + Tank Solver验证） ==========
 generateBoardAsync(excludeRow, excludeCol, callback) {
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
     const totalMines = this.gameState.totalMines;
+
+    // 校验：雷数不能超过可用格数
+    const safeZone = MinesweeperSolver.createSafeZone(excludeRow, excludeCol, rows, cols);
+    if (totalMines > rows * cols - safeZone.size) {
+        console.error('雷数过多，无法保证安全区无雷');
+        const board = this.generateRandomBoardSync(excludeRow, excludeCol);
+        callback(board);
+        return;
+    }
 
     const workerCount = 4;
     let activeWorkers = 0;
@@ -6386,7 +6410,7 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
     const workers = [];
 
     const updateProgress = () => {
-        this.showFloatingMessage(`正在生成可解布局...`);
+        this.showFloatingMessage(`正在生成可解棋盘...`);
     };
     updateProgress();
 
@@ -6411,7 +6435,7 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
                 worker.terminate();
                 activeWorkers--;
                 if (activeWorkers === 0 && !success) {
-                    console.warn('增强求解器未能生成完全可解棋盘，使用保底策略');
+                    console.warn('未能生成完全可解棋盘，使用尽力而为策略');
                     this.fallbackGenerateBoard(excludeRow, excludeCol, callback);
                 }
             }
@@ -6427,137 +6451,46 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
         };
 
         worker.postMessage({
-            rows, cols, totalMines, excludeRow, excludeCol,
-            maxAttempts: 50
+            rows, cols, totalMines, excludeRow, excludeCol
         });
     }
 }
 
-// ========== 创建Worker（增强求解器 + 双策略生成） ==========
+// ========== 创建Worker（首次点击动态生成：随机布雷 + Tank Solver验证） ==========
 createSolvableBoardWorker() {
     const solverCode = MinesweeperSolverFactory.toString();
     const workerCode = `
         const Solver = (${solverCode})();
         const forEachNeighbor = (r, c, rows, cols, cb) => Solver.forEachNeighbor(r, c, rows, cols, cb);
 
+        // 核心生成算法：随机布雷 + Tank Solver验证
         const generateSolvableBoard = (rows, cols, totalMines, excludeRow, excludeCol) => {
             const fn = (r, c, cb) => forEachNeighbor(r, c, rows, cols, cb);
-            const safeZone = Solver.createSafeZone(excludeRow, excludeCol, rows, cols);
-            const totalNonMines = rows * cols - totalMines;
-            const isLargeBoard = rows * cols > 300;
+            const deadline = Date.now() + 15000; // 15秒超时
+            const maxAttempts = 3000;
+            let lastBoard = null;
 
-            for (let attempt = 0; attempt < (isLargeBoard ? 80 : 150); attempt++) {
+            for (let attempt = 0; attempt < maxAttempts && Date.now() < deadline; attempt++) {
                 const board = Solver.generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol, fn);
+                if (!board) continue; // 生成失败（雷数超限）
+                lastBoard = board;
                 if (Solver.canSolveLogically(board, rows, cols, excludeRow, excludeCol, totalMines, fn)) {
                     return { board, solvable: true };
                 }
             }
 
-            let bestBoard = null;
-            let bestScore = -1;
-            const maxRestarts = isLargeBoard ? 12 : 8;
-
-            for (let restart = 0; restart < maxRestarts; restart++) {
-                let currentBoard = Solver.generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol, fn);
-                let currentScore = Solver.solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines, fn);
-
-                if (currentScore === totalNonMines) {
-                    if (Solver.canSolveLogically(currentBoard, rows, cols, excludeRow, excludeCol, totalMines, fn)) {
-                        return { board: currentBoard, solvable: true };
-                    }
-                }
-
-                if (currentScore > bestScore) {
-                    bestScore = currentScore;
-                    bestBoard = currentBoard.map(row => [...row]);
-                }
-
-                let noImproveCount = 0;
-                const maxNoImprove = isLargeBoard ? 120 : 80;
-                const maxSteps = isLargeBoard ? 3000 : 2000;
-
-                for (let step = 0; step < maxSteps && noImproveCount < maxNoImprove; step++) {
-                    const minePositions = [];
-                    const nonMinePositions = [];
-                    for (let r = 0; r < rows; r++) {
-                        for (let c = 0; c < cols; c++) {
-                            if (currentBoard[r][c] === -1) minePositions.push([r, c]);
-                            else if (!safeZone.has(r * cols + c)) nonMinePositions.push([r, c]);
-                        }
-                    }
-                    if (minePositions.length === 0 || nonMinePositions.length === 0) break;
-
-                    const mIdx = Math.floor(Math.random() * minePositions.length);
-                    const nIdx = Math.floor(Math.random() * nonMinePositions.length);
-                    const [mr, mc] = minePositions[mIdx];
-                    const [nr, nc] = nonMinePositions[nIdx];
-
-                    currentBoard[mr][mc] = 0;
-                    currentBoard[nr][nc] = -1;
-                    Solver.recalculateNumbers(currentBoard, rows, cols, fn);
-
-                    const newScore = Solver.solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines, fn);
-
-                    if (newScore >= currentScore) {
-                        currentScore = newScore;
-                        noImproveCount = 0;
-                        if (currentScore > bestScore) {
-                            bestScore = currentScore;
-                            bestBoard = currentBoard.map(row => [...row]);
-                        }
-                        if (currentScore === totalNonMines) {
-                            if (Solver.canSolveLogically(currentBoard, rows, cols, excludeRow, excludeCol, totalMines, fn)) {
-                                return { board: currentBoard, solvable: true };
-                            }
-                        }
-                    } else {
-                        currentBoard[nr][nc] = 0;
-                        currentBoard[mr][mc] = -1;
-                        Solver.recalculateNumbers(currentBoard, rows, cols, fn);
-                        noImproveCount++;
-                    }
-                }
-
-                if (bestScore === totalNonMines && bestBoard) {
-                    Solver.recalculateNumbers(bestBoard, rows, cols, fn);
-                    if (Solver.canSolveLogically(bestBoard, rows, cols, excludeRow, excludeCol, totalMines, fn)) {
-                        return { board: bestBoard, solvable: true };
-                    }
-                }
-            }
-
-            for (let attempt = 0; attempt < (isLargeBoard ? 60 : 100); attempt++) {
-                const freshBoard = Solver.generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol, fn);
-                if (Solver.canSolveLogically(freshBoard, rows, cols, excludeRow, excludeCol, totalMines, fn)) {
-                    return { board: freshBoard, solvable: true };
-                }
-            }
-
-            if (bestBoard) {
-                Solver.recalculateNumbers(bestBoard, rows, cols, fn);
-                if (Solver.canSolveLogically(bestBoard, rows, cols, excludeRow, excludeCol, totalMines, fn)) {
-                    return { board: bestBoard, solvable: true };
-                }
-                return { board: bestBoard, solvable: false };
-            }
-
-            const board = Solver.generateRandomBoard(rows, cols, totalMines, excludeRow, excludeCol, fn);
-            return { board, solvable: false };
+            // 兜底：返回最后一次生成的棋盘
+            return { board: lastBoard, solvable: false };
         };
 
         self.addEventListener('message', (e) => {
-            const { rows, cols, totalMines, excludeRow, excludeCol, maxAttempts } = e.data;
-            const actualMax = Math.min(maxAttempts, 50);
-            for (let attempt = 0; attempt < actualMax; attempt++) {
-                self.postMessage({ type: 'progress', attemptsMade: attempt + 1 });
-                const result = generateSolvableBoard(rows, cols, totalMines, excludeRow, excludeCol);
-                if (result.solvable) {
-                    self.postMessage({ type: 'success', board: result.board });
-                    return;
-                }
+            const { rows, cols, totalMines, excludeRow, excludeCol } = e.data;
+            const result = generateSolvableBoard(rows, cols, totalMines, excludeRow, excludeCol);
+            if (result.solvable) {
+                self.postMessage({ type: 'success', board: result.board });
+            } else {
+                self.postMessage({ type: 'failure', board: result.board });
             }
-            const lastResult = generateSolvableBoard(rows, cols, totalMines, excludeRow, excludeCol);
-            self.postMessage({ type: 'failure', board: lastResult.board });
         });
     `;
 
@@ -6571,6 +6504,9 @@ generateRandomBoardSync(excludeRow, excludeCol) {
 
 performOpenAction(row, col) {
     if (this._checkTutorialGuard(row, col, 'open')) return;
+
+    // 隐藏快速翻开预览
+    this._hideChordPreview();
 
     if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
         this.gameState.gameData.ineffectiveMoves++;
@@ -6602,7 +6538,7 @@ performOpenAction(row, col) {
             }
             return;
         } else {
-            this.showFloatingMessage(`正在生成可解布局...`);
+            this.showFloatingMessage(`正在生成可解棋盘...`);
             this.generateBoardAsync(row, col, (board) => {
                 this.board = board;
                 if (this.gameState.mode === 'survival') {
@@ -6626,10 +6562,16 @@ performOpenAction(row, col) {
     if (this.tutorialState.active) {
         this.checkTutorialAction('open', row, col);
     }
+
+    // 刷新快速翻开预览
+    this._refreshChordPreview();
 }
 
 performFlagAction(row, col) {
     if (this._checkTutorialGuard(row, col, 'flag')) return;
+
+    // 隐藏快速翻开预览（标记操作可能改变翻开条件）
+    this._hideChordPreview();
 
     // --- 检查是否为无效操作 ---
     // 如果格子已被揭开，则操作无效
@@ -6671,6 +6613,14 @@ performFlagAction(row, col) {
     if (this.tutorialState.active) {
         this.checkTutorialAction('flag', row, col);
     }
+
+    // 插旗后检查胜利条件
+    if (this.flags[row][col]) {
+        this.checkWin();
+    }
+
+    // 刷新快速翻开预览
+    this._refreshChordPreview();
 }
                 
 
@@ -7036,6 +6986,10 @@ _applyBatchRevealWithAnimation(batchCells) {
                         targetClass += ' special';
                     }
 
+                    // 保留快速翻开预览样式类
+                    if (cell.classList.contains('chord-preview')) targetClass += ' chord-preview';
+                    if (cell.classList.contains('chord-preview-source')) targetClass += ' chord-preview-source';
+
                     if (cell.className !== targetClass) {
                         cell.className = targetClass;
                     }
@@ -7133,6 +7087,7 @@ _applyBatchRevealWithAnimation(batchCells) {
 }
 
                 checkWin() {
+                    if (this.gameState.gameOver) return;
                     const totalSafe = this.gameState.rows * this.gameState.cols - this.gameState.totalMines;
                     const revealedCount = this._revealedCount !== undefined ? this._revealedCount : this.countRevealed();
 
@@ -7224,6 +7179,38 @@ gameOver(won) {
     }
 
     if (won) {
+        // 胜利时自动为所有未插旗的雷插旗（包括标记为问号的雷），移除错误旗帜，揭开剩余安全格
+        for (let r = 0; r < this.gameState.rows; r++) {
+            for (let c = 0; c < this.gameState.cols; c++) {
+                if (this.board[r][c] === -1 && !this.flags[r][c]) {
+                    // 雷：自动插旗
+                    if (this.questions[r][c]) {
+                        this.questions[r][c] = false;
+                    }
+                    this.flags[r][c] = true;
+                    this.gameState.minesLeft--;
+                    this.updateCellAndMinimap(r, c);
+                } else if (this.board[r][c] !== -1 && this.flags[r][c]) {
+                    // 非雷格子的错误旗帜：移除并揭开
+                    this.flags[r][c] = false;
+                    this.gameState.minesLeft++;
+                    if (this.questions[r][c]) {
+                        this.questions[r][c] = false;
+                    }
+                    this.revealed[r][c] = true;
+                    this.updateCellAndMinimap(r, c);
+                } else if (this.board[r][c] !== -1 && !this.revealed[r][c]) {
+                    // 剩余未揭开的安全格：自动揭开
+                    if (this.questions[r][c]) {
+                        this.questions[r][c] = false;
+                    }
+                    this.revealed[r][c] = true;
+                    this.updateCellAndMinimap(r, c);
+                }
+            }
+        }
+        this.updateDisplay();
+
         this.stats.gamesWon++;
         this.stats.consecutiveWins++;
         this.stats.maxConsecutiveWins = Math.max(this.stats.maxConsecutiveWins, this.stats.consecutiveWins);
@@ -8335,7 +8322,10 @@ performAutoSolveStep() {
                         this.lastAutoSolvePosition = { row: nr, col: nc };
                     }
                 }
-                if(actionTaken) this.updateDisplay();
+                if(actionTaken) {
+                    this.updateDisplay();
+                    this.checkWin();
+                }
             }
         }
     }
@@ -8494,6 +8484,7 @@ performProbabilisticMove() {
                     this.updateCellAndMinimap(r, c);
                     this.updateDisplay();
                     this.playSound('flag');
+                    this.checkWin();
                     return { actionTaken: true, row: r, col: c };
                 }
                 if (probability === 0) {
@@ -8515,7 +8506,7 @@ performProbabilisticMove() {
     return { actionTaken: false };
 }
 
-                // 完整的逻辑可解性检查（增强版：基础推理 + 子集推理 + 全局雷数 + CSP枚举）
+                // 完整的逻辑可解性检查（层1基础推理 → 层2子集差分 → 层4全局雷数 → 层3 Tank Solver）
 canSolveLogically(startRow, startCol) {
     return MinesweeperSolver.canSolveLogically(this.board, this.gameState.rows, this.gameState.cols, startRow, startCol, this.gameState.totalMines, this._solverForEachNeighbor());
 }
@@ -8541,14 +8532,6 @@ canSolveLogically(startRow, startCol) {
 
                 checkContradictionMain(testRevealed, testFlagged, originalBoard, rows, cols, totalMines, key) {
                     return this.checkContradiction(testRevealed, testFlagged, originalBoard, rows, cols, totalMines, key);
-                }
-
-                performSingleCellBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, bfsExpand) {
-                    return MinesweeperSolver.performSingleCellBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, this._solverForEachNeighbor());
-                }
-
-                performCoupledBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, bfsExpand) {
-                    return MinesweeperSolver.performCoupledBacktrack(revealed, flagged, originalBoard, rows, cols, totalMines, key, this._solverForEachNeighbor());
                 }
 
                 // 游戏控制功能
@@ -8663,15 +8646,19 @@ undo() {
 }
 
 fallbackGenerateBoard(excludeRow, excludeCol, callback) {
-    console.warn('使用保底生成（爬山算法 + 可解性验证）');
+    console.warn('使用保底生成策略（随机 + Tank Solver验证）');
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
     const totalMines = this.gameState.totalMines;
-    const totalNonMines = rows * cols - totalMines;
     const fn = this._solverForEachNeighbor();
+    const deadline = Date.now() + 10000; // 10秒超时
+    const maxAttempts = 500;
+    let lastBoard = null;
 
-    for (let attempt = 0; attempt < 100; attempt++) {
+    for (let attempt = 0; attempt < maxAttempts && Date.now() < deadline; attempt++) {
         const board = this.generateRandomBoardSync(excludeRow, excludeCol);
+        if (!board) continue;
+        lastBoard = board;
         this.board = board;
         if (this.canSolveLogically(excludeRow, excludeCol)) {
             callback(board);
@@ -8679,134 +8666,35 @@ fallbackGenerateBoard(excludeRow, excludeCol, callback) {
         }
     }
 
-    let bestBoard = null;
-    let bestScore = -1;
-    const safeZone = MinesweeperSolver.createSafeZone(excludeRow, excludeCol, rows, cols);
-
-    for (let restart = 0; restart < 5; restart++) {
-        let currentBoard = this.generateRandomBoardSync(excludeRow, excludeCol);
-        let currentScore = MinesweeperSolver.solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines, fn);
-
-        if (currentScore === totalNonMines) {
-            this.board = currentBoard;
-            if (this.canSolveLogically(excludeRow, excludeCol)) {
-                callback(currentBoard);
-                return;
+    // 所有尝试均失败：返回最后一次生成的棋盘（尽力而为，不降低雷数）
+    console.warn('保底生成未能找到可解棋盘，返回尽力而为棋盘（可能需要猜测）');
+    if (lastBoard) {
+        this.board = lastBoard;
+    } else {
+        // 最后的兜底：强制生成（即使雷数超限也尝试）
+        const fn = this._solverForEachNeighbor();
+        const rows = this.gameState.rows;
+        const cols = this.gameState.cols;
+        const brd = Array(rows).fill().map(() => Array(cols).fill(0));
+        const safeZone = MinesweeperSolver.createSafeZone(excludeRow, excludeCol, rows, cols);
+        const candidates = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!safeZone.has(r * cols + c)) candidates.push([r, c]);
             }
         }
-
-        if (currentScore > bestScore) {
-            bestScore = currentScore;
-            bestBoard = currentBoard.map(row => [...row]);
+        for (let i = candidates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
         }
-
-        let noImproveCount = 0;
-        const maxNoImprove = 60;
-
-        for (let step = 0; step < 1500 && noImproveCount < maxNoImprove; step++) {
-            const minePositions = [];
-            const nonMinePositions = [];
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (currentBoard[r][c] === -1) minePositions.push([r, c]);
-                    else if (!safeZone.has(r * cols + c)) nonMinePositions.push([r, c]);
-                }
-            }
-            if (minePositions.length === 0 || nonMinePositions.length === 0) break;
-
-            const mIdx = Math.floor(Math.random() * minePositions.length);
-            const nIdx = Math.floor(Math.random() * nonMinePositions.length);
-            const [mr, mc] = minePositions[mIdx];
-            const [nr, nc] = nonMinePositions[nIdx];
-
-            currentBoard[mr][mc] = 0;
-            currentBoard[nr][nc] = -1;
-            MinesweeperSolver.recalculateNumbers(currentBoard, rows, cols, fn);
-
-            const newScore = MinesweeperSolver.solveAndScore(currentBoard, rows, cols, excludeRow, excludeCol, totalMines, fn);
-
-            if (newScore > currentScore) {
-                currentScore = newScore;
-                noImproveCount = 0;
-
-                if (currentScore > bestScore) {
-                    bestScore = currentScore;
-                    bestBoard = currentBoard.map(row => [...row]);
-                }
-
-                if (currentScore === totalNonMines) {
-                    this.board = currentBoard;
-                    if (this.canSolveLogically(excludeRow, excludeCol)) {
-                        callback(currentBoard);
-                        return;
-                    }
-                }
-            } else {
-                currentBoard[nr][nc] = 0;
-                currentBoard[mr][mc] = -1;
-                MinesweeperSolver.recalculateNumbers(currentBoard, rows, cols, fn);
-                noImproveCount++;
-            }
+        for (let i = 0; i < totalMines && i < candidates.length; i++) {
+            brd[candidates[i][0]][candidates[i][1]] = -1;
         }
+        MinesweeperSolver.recalculateNumbers(brd, rows, cols, fn);
+        this.board = brd;
     }
-
-    if (bestBoard) {
-        MinesweeperSolver.recalculateNumbers(bestBoard, rows, cols, fn);
-        this.board = bestBoard;
-        if (this.canSolveLogically(excludeRow, excludeCol)) {
-            callback(bestBoard);
-            return;
-        }
-    }
-
-    console.error('保底生成未能找到可解棋盘，使用降级策略：逐步减少雷数');
-    let reducedMines = totalMines - 1;
-    const minMines = Math.max(1, Math.floor(totalMines * 0.7));
-    while (reducedMines >= minMines) {
-        for (let attempt = 0; attempt < 30; attempt++) {
-            const board = this.generateRandomBoardSync(excludeRow, excludeCol);
-            let mineCount = 0;
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (board[r][c] === -1) mineCount++;
-                }
-            }
-            if (mineCount > reducedMines) {
-                const mineCells = [];
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        if (board[r][c] === -1) mineCells.push([r, c]);
-                    }
-                }
-                for (let i = mineCells.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [mineCells[i], mineCells[j]] = [mineCells[j], mineCells[i]];
-                }
-                const toRemove = mineCount - reducedMines;
-                for (let i = 0; i < toRemove && i < mineCells.length; i++) {
-                    const [r, c] = mineCells[i];
-                    board[r][c] = 0;
-                }
-                MinesweeperSolver.recalculateNumbers(board, rows, cols, fn);
-            }
-            this.board = board;
-            if (this.canSolveLogically(excludeRow, excludeCol)) {
-                this.gameState.totalMines = reducedMines;
-                this.gameState.minesLeft = reducedMines;
-                this.updateDisplay();
-                this.showFloatingMessage(`⚠️ 已调整雷数为 ${reducedMines} 以确保棋盘可解`);
-                callback(board);
-                return;
-            }
-        }
-        reducedMines--;
-    }
-
-    console.error('所有策略均失败，使用随机棋盘（可能需要猜测）');
-    const board = this.generateRandomBoardSync(excludeRow, excludeCol);
-    this.board = board;
     this.showFloatingMessage('⚠️ 未能生成可解棋盘，可能需要猜测');
-    callback(board);
+    callback(this.board);
 }
 
 countAdjacentMines(row, col, board = null) {
@@ -8827,18 +8715,8 @@ verifyAndReportSolvability(startRow, startCol, retryCount = 0) {
     if (solvable) {
         this.showFloatingMessage('✅ 可解棋盘生成成功!');
         return true;
-    } else if (retryCount < 3) {
-        this.showFloatingMessage(`⚠️ 棋盘不可解，正在重新生成... (${retryCount + 1}/3)`);
-        this.generateBoardAsync(startRow, startCol, (board) => {
-            this.board = board;
-            if (this.gameState.mode === 'survival') {
-                this.addSpecialCells();
-            }
-            this.verifyAndReportSolvability(startRow, startCol, retryCount + 1);
-        });
-        return false;
     } else {
-        this.showFloatingMessage('⚠️ 多次尝试后仍无法生成完全可解棋盘，建议使用提示功能辅助');
+        this.showFloatingMessage('⚠️ 未能生成完全可解棋盘，可能需要猜测');
         return false;
     }
 }

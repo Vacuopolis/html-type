@@ -3481,18 +3481,51 @@
 
     // ==================== 加载示例 ====================
 
-    // 带超时和禁缓存的 fetch 封装
-    async function smartFetch(url, timeoutMs = 12000) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-            const resp = await fetch(url, { signal: controller.signal, cache: 'no-store' });
-            clearTimeout(timer);
-            return resp;
-        } catch (e) {
-            clearTimeout(timer);
-            throw e;
+    // 带超时、禁缓存、自动重试的 fetch 封装
+    const API_BASE = 'https://zhixue-examples.vacuopolis.deno.net';
+
+    async function smartFetch(path, timeoutMs = 12000, retries = 1) {
+        const url = `${API_BASE}${path}${path.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const resp = await fetch(url, { signal: controller.signal, cache: 'no-store', mode: 'cors' });
+                clearTimeout(timer);
+                return resp;
+            } catch (e) {
+                clearTimeout(timer);
+                if (attempt < retries) {
+                    // 等待一小段时间后重试
+                    await new Promise(r => setTimeout(r, 1500));
+                    continue;
+                }
+                // 最后一次尝试：用 XHR 降级（某些环境下 fetch 被 CSP 阻断但 XHR 可用）
+                try {
+                    const xhrResult = await xhrFetch(url, timeoutMs);
+                    return xhrResult;
+                } catch (xhrErr) {
+                    throw e;
+                }
+            }
         }
+    }
+
+    // XHR 降级方案
+    function xhrFetch(url, timeoutMs) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.timeout = timeoutMs;
+            xhr.open('GET', url, true);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.withCredentials = false;
+            xhr.onload = () => {
+                resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: () => JSON.parse(xhr.responseText) });
+            };
+            xhr.onerror = () => reject(new Error('XHR 也失败'));
+            xhr.ontimeout = () => reject(new Error('XHR 超时'));
+            xhr.send();
+        });
     }
 
     // 页面加载时拉取示例列表
@@ -3500,7 +3533,7 @@
         const select = document.getElementById('exampleSelect');
         select.innerHTML = '<option value="">加载中...</option>';
         try {
-            const resp = await smartFetch('https://zhixue-examples.vacuopolis.deno.net/api/examples');
+            const resp = await smartFetch('/api/examples');
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             select.innerHTML = '';
@@ -3534,7 +3567,7 @@
         const originalText = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = '⏳ 加载中...'; }
         try {
-            const resp = await smartFetch(`https://zhixue-examples.vacuopolis.deno.net/api/example?index=${idx}`);
+            const resp = await smartFetch(`/api/example?index=${idx}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             if (!data.text) throw new Error('返回内容为空');

@@ -2245,14 +2245,14 @@
                 <textarea id="inputText"
                     placeholder="请在此粘贴包含题目、选项和答案的文本内容...&#10;&#10;支持格式示例：&#10;1.新时代，是（ D ），在新的历史条件下...&#10;  A.选项一    B.选项二&#10;  C.选项三    D.选项四&#10;&#10;也支持更多选项：&#10;  A.选项一  B.选项二  C.选项三  D.选项四  E.选项五  F.选项六...&#10;&#10;也支持答案独立标注：&#10;正确答案：D&#10;答案：BC&#10;&#10;支持题型：单选、多选"
                     aria-label="试题文本输入"></textarea>
-                <div class="controls" style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="controls" style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                     <button class="btn btn-primary" onclick="parseQuestions()">🔍 解析试题<span class="shortcut-hint"> Ctrl+Enter</span></button>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <select id="exampleSelect" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.875rem; background: var(--card-bg); color: var(--text); cursor: pointer; min-width: 160px;" aria-label="选择示例题库">
+                    <div style="display: inline-flex; gap: 0; align-items: center; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--card-bg);">
+                        <select id="exampleSelect" style="padding: 8px 12px; border: none; font-size: 0.875rem; background: transparent; color: var(--text); cursor: pointer; min-width: 140px; outline: none;" aria-label="选择示例题库">
                             <option value="">加载中...</option>
                         </select>
-                        <button class="btn btn-outline" onclick="loadExample()">📄 加载示例</button>
-                        <button class="btn btn-outline" onclick="fetchExampleList()" title="重新获取示例列表" style="padding: 8px 10px;">🔄</button>
+                        <button class="btn btn-outline" onclick="loadExample()" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0;">📄 加载</button>
+                        <button class="btn btn-outline" onclick="fetchExampleList()" title="重新获取示例列表" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0; padding: 8px 10px;">🔄</button>
                     </div>
                     <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空</button>
                 </div>

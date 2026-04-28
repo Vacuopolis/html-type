@@ -2679,7 +2679,8 @@
         if (/^[一二三四五六七八九十百]+[、．.]/.test(line)) return true;
         if (/^(单选题|多选题|判断题|填空题|简答题|论述题|综合题)/.test(line)) return true;
         if (/^《.*》/.test(line) && line.length < 40) return true;
-        if (/^(绪论|前言|导言|第[一二三四五六七八九十百\d]+[章节篇部])/.test(line)) return true;
+        if (/^(绪论|前言|导言|第[一二三四五六七八九十百\d]+[章节篇部部分单元编模块])/.test(line)) return true;
+        if (/^[（(]\s*共?\s*\d+\s*题?\s*[）)]/.test(line)) return true;
         return false;
     }
 
@@ -3514,9 +3515,13 @@
         const originalText = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = '⏳ 加载中...'; }
         try {
-            const resp = await fetch(`https://zhixue-examples.vacuopolis.deno.net/api/example?index=${idx}`);
-            if (!resp.ok) throw new Error('请求失败');
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 15000);
+            const resp = await fetch(`https://zhixue-examples.vacuopolis.deno.net/api/example?index=${idx}`, { signal: controller.signal });
+            clearTimeout(timer);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
+            if (!data.text) throw new Error('返回内容为空');
             document.getElementById('inputText').value = data.text;
             autoResizeTextarea();
             const name = select.options[select.selectedIndex].textContent;
@@ -3537,6 +3542,7 @@
             document.getElementById('inputText').value = fallback;
             autoResizeTextarea();
             showToast('已加载本地示例（完整示例需在线访问）', 'info');
+            console.warn('加载示例失败:', e.message || e);
         } finally {
             if (btn) { btn.disabled = false; btn.textContent = originalText; }
         }

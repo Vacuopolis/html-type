@@ -3481,51 +3481,26 @@
 
     // ==================== 加载示例 ====================
 
-    // 带超时、禁缓存、自动重试的 fetch 封装
-    const API_BASE = 'https://zhixue-examples.vacuopolis.deno.net';
-
-    async function smartFetch(path, timeoutMs = 12000, retries = 1) {
-        const url = `${API_BASE}${path}${path.includes('?') ? '&' : '?'}_t=${Date.now()}`;
-        for (let attempt = 0; attempt <= retries; attempt++) {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
-            try {
-                const resp = await fetch(url, { signal: controller.signal, cache: 'no-store', mode: 'cors' });
-                clearTimeout(timer);
-                return resp;
-            } catch (e) {
-                clearTimeout(timer);
-                if (attempt < retries) {
-                    // 等待一小段时间后重试
-                    await new Promise(r => setTimeout(r, 1500));
-                    continue;
-                }
-                // 最后一次尝试：用 XHR 降级（某些环境下 fetch 被 CSP 阻断但 XHR 可用）
-                try {
-                    const xhrResult = await xhrFetch(url, timeoutMs);
-                    return xhrResult;
-                } catch (xhrErr) {
-                    throw e;
-                }
-            }
-        }
+    // 检测当前页面是否被 CSP 限制（great-site.net 等免费主机会阻止对外请求）
+    function isRestrictedHost() {
+        try {
+            const host = location.hostname || '';
+            return host.includes('great-site.net');
+        } catch { return false; }
     }
 
-    // XHR 降级方案
-    function xhrFetch(url, timeoutMs) {
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.timeout = timeoutMs;
-            xhr.open('GET', url, true);
-            xhr.setRequestHeader('Accept', 'application/json');
-            xhr.withCredentials = false;
-            xhr.onload = () => {
-                resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: () => JSON.parse(xhr.responseText) });
-            };
-            xhr.onerror = () => reject(new Error('XHR 也失败'));
-            xhr.ontimeout = () => reject(new Error('XHR 超时'));
-            xhr.send();
-        });
+    // 带超时和禁缓存的 fetch 封装
+    async function smartFetch(url, timeoutMs = 12000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const resp = await fetch(url, { signal: controller.signal, cache: 'no-store', mode: 'cors' });
+            clearTimeout(timer);
+            return resp;
+        } catch (e) {
+            clearTimeout(timer);
+            throw e;
+        }
     }
 
     // 页面加载时拉取示例列表
@@ -3533,7 +3508,7 @@
         const select = document.getElementById('exampleSelect');
         select.innerHTML = '<option value="">加载中...</option>';
         try {
-            const resp = await smartFetch('/api/examples');
+            const resp = await smartFetch('https://zhixue-examples.vacuopolis.deno.net/api/examples');
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             select.innerHTML = '';
@@ -3552,8 +3527,22 @@
             // 本地 fallback
             select.innerHTML = '<option value="0">思想道德与法治</option>';
             const reason = e.name === 'AbortError' ? '请求超时' : (e.message || '网络错误');
-            showToast(`示例列表获取失败(${reason})，仅显示本地示例`, 'error');
+            showToast(`获取失败(${reason})，仅本地示例`, 'error');
+            if (isRestrictedHost()) {
+                showNetworkWarning();
+            }
         }
+    }
+
+    // 显示网络受限警告（针对 great-site.net 等）
+    function showNetworkWarning() {
+        let banner = document.getElementById('networkWarning');
+        if (banner) return; // 已显示则不重复
+        banner = document.createElement('div');
+        banner.id = 'networkWarning';
+        banner.style.cssText = 'margin-top:10px;padding:12px 16px;background:var(--danger);color:#fff;border-radius:var(--radius);font-size:0.875rem;line-height:1.6;';
+        banner.innerHTML = '当前站点限制了对外请求，示例题库和AI功能不可用。<br>请换用以下地址访问：<br><a href="https://vacuopolis.github.io/%E6%99%BA%E5%AD%A6.html" target="_blank" style="color:#fff;font-weight:700;text-decoration:underline;">GitHub Pages 版</a>　<a href="https://vacuopolis.netlify.app/%E6%99%BA%E5%AD%A6.html" target="_blank" style="color:#fff;font-weight:700;text-decoration:underline;">Netlify 版</a>';
+        document.getElementById('exampleSelect').closest('.controls').appendChild(banner);
     }
 
     async function loadExample() {
@@ -3567,7 +3556,7 @@
         const originalText = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = '⏳ 加载中...'; }
         try {
-            const resp = await smartFetch(`/api/example?index=${idx}`);
+            const resp = await smartFetch(`https://zhixue-examples.vacuopolis.deno.net/api/example?index=${idx}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             if (!data.text) throw new Error('返回内容为空');

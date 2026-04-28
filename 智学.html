@@ -3481,13 +3481,27 @@
 
     // ==================== 加载示例 ====================
 
+    // 带超时和禁缓存的 fetch 封装
+    async function smartFetch(url, timeoutMs = 12000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const resp = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+            clearTimeout(timer);
+            return resp;
+        } catch (e) {
+            clearTimeout(timer);
+            throw e;
+        }
+    }
+
     // 页面加载时拉取示例列表
     async function fetchExampleList() {
         const select = document.getElementById('exampleSelect');
         select.innerHTML = '<option value="">加载中...</option>';
         try {
-            const resp = await fetch('https://zhixue-examples.vacuopolis.deno.net/api/examples');
-            if (!resp.ok) throw new Error('请求失败');
+            const resp = await smartFetch('https://zhixue-examples.vacuopolis.deno.net/api/examples');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             select.innerHTML = '';
             if (data.examples && data.examples.length > 0) {
@@ -3504,7 +3518,8 @@
         } catch (e) {
             // 本地 fallback
             select.innerHTML = '<option value="0">思想道德与法治</option>';
-            showToast('示例列表获取失败，仅显示本地示例', 'error');
+            const reason = e.name === 'AbortError' ? '请求超时' : (e.message || '网络错误');
+            showToast(`示例列表获取失败(${reason})，仅显示本地示例`, 'error');
         }
     }
 
@@ -3519,10 +3534,7 @@
         const originalText = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = '⏳ 加载中...'; }
         try {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 15000);
-            const resp = await fetch(`https://zhixue-examples.vacuopolis.deno.net/api/example?index=${idx}`, { signal: controller.signal });
-            clearTimeout(timer);
+            const resp = await smartFetch(`https://zhixue-examples.vacuopolis.deno.net/api/example?index=${idx}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             if (!data.text) throw new Error('返回内容为空');
@@ -3546,7 +3558,8 @@
             document.getElementById('inputText').value = fallback;
             autoResizeTextarea();
             showToast('已加载本地示例（完整示例需在线访问）', 'info');
-            console.warn('加载示例失败:', e.message || e);
+            const reason = e.name === 'AbortError' ? '请求超时' : (e.message || '网络错误');
+            console.warn('加载示例失败:', reason);
         } finally {
             if (btn) { btn.disabled = false; btn.textContent = originalText; }
         }

@@ -2252,6 +2252,7 @@
                             <option value="">加载中...</option>
                         </select>
                         <button class="btn btn-outline" onclick="loadExample()">📄 加载示例</button>
+                        <button class="btn btn-outline" onclick="fetchExampleList()" title="重新获取示例列表" style="padding: 8px 10px;">🔄</button>
                     </div>
                     <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空</button>
                 </div>
@@ -3483,6 +3484,7 @@
     // 页面加载时拉取示例列表
     async function fetchExampleList() {
         const select = document.getElementById('exampleSelect');
+        select.innerHTML = '<option value="">加载中...</option>';
         try {
             const resp = await fetch('https://zhixue-examples.vacuopolis.deno.net/api/examples');
             if (!resp.ok) throw new Error('请求失败');
@@ -3495,12 +3497,14 @@
                     opt.textContent = ex.name;
                     select.appendChild(opt);
                 });
+                showToast(`已获取 ${data.examples.length} 个示例题库`, 'info');
             } else {
                 select.innerHTML = '<option value="">暂无示例</option>';
             }
         } catch (e) {
             // 本地 fallback
             select.innerHTML = '<option value="0">思想道德与法治</option>';
+            showToast('示例列表获取失败，仅显示本地示例', 'error');
         }
     }
 

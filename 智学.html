@@ -888,52 +888,35 @@
             font-family: inherit;
             width: 100%;
             color: var(--text-secondary);
+            --sa-c1: 99,102,241; --sa-c2: 139,92,246;
         }
 
         .score-panel .score-action-btn:hover {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
-            border-color: rgba(99, 102, 241, 0.4);
+            background: linear-gradient(135deg, rgba(var(--sa-c1), 0.12), rgba(var(--sa-c2), 0.12));
+            border-color: rgba(var(--sa-c1), 0.4);
             color: var(--primary);
             transform: translateY(-1px);
         }
 
         .score-panel .score-action-btn:active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(139, 92, 246, 0.22));
+            background: linear-gradient(135deg, rgba(var(--sa-c1), 0.22), rgba(var(--sa-c2), 0.22));
             border-color: var(--primary);
             transform: translateY(0);
         }
 
         .score-panel .score-action-btn.btn-danger {
-            border-color: rgba(239, 68, 68, 0.3);
-            color: var(--error);
+            border-color: rgba(239, 68, 68, 0.3); color: var(--error);
+            --sa-c1: 239,68,68; --sa-c2: 220,38,38;
         }
-
-        .score-panel .score-action-btn.btn-danger:hover {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.12));
-            border-color: rgba(239, 68, 68, 0.5);
-            color: var(--error);
-        }
-
-        .score-panel .score-action-btn.btn-danger:active {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(220, 38, 38, 0.22));
-            border-color: var(--error);
-        }
+        .score-panel .score-action-btn.btn-danger:hover { border-color: rgba(239,68,68,0.5); color: var(--error); }
+        .score-panel .score-action-btn.btn-danger:active { border-color: var(--error); }
 
         .score-panel .score-action-btn.btn-warn {
-            border-color: rgba(245, 158, 11, 0.3);
-            color: var(--warning);
+            border-color: rgba(245, 158, 11, 0.3); color: var(--warning);
+            --sa-c1: 245,158,11; --sa-c2: 251,191,36;
         }
-
-        .score-panel .score-action-btn.btn-warn:hover {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.12));
-            border-color: rgba(245, 158, 11, 0.5);
-            color: var(--warning);
-        }
-
-        .score-panel .score-action-btn.btn-warn:active {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(251, 191, 36, 0.22));
-            border-color: var(--warning);
-        }
+        .score-panel .score-action-btn.btn-warn:hover { border-color: rgba(245,158,11,0.5); color: var(--warning); }
+        .score-panel .score-action-btn.btn-warn:active { border-color: var(--warning); }
 
         /* ================= 按钮 ================= */
         .btn {
@@ -951,126 +934,55 @@
             white-space: nowrap;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), #7c3aed);
-            color: #fff;
-        }
+        /* 实色按钮通用 hover/active 行为（通过 --btn-shadow 控制阴影颜色） */
+        .btn-primary { background: linear-gradient(135deg, var(--primary), #7c3aed); color: #fff; --btn-shadow: 99,102,241; }
+        .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: #fff; --btn-shadow: 16,185,129; }
+        .btn-danger  { background: linear-gradient(135deg, var(--error), #dc2626); color: #fff; --btn-shadow: 239,68,68; }
+        .btn-warn    { background: linear-gradient(135deg, var(--warning), #d97706); color: #fff; --btn-shadow: 245,158,11; }
 
-        .btn-primary:hover {
+        .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warn:hover {
             filter: brightness(1.1);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+            box-shadow: 0 4px 12px rgba(var(--btn-shadow), 0.35);
         }
-
-        .btn-primary:active {
-            filter: brightness(0.95);
-            transform: translateY(0);
-            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success), #059669);
-            color: #fff;
-        }
-
-        .btn-success:hover {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
-        }
-
-        .btn-success:active {
+        .btn-primary:active, .btn-success:active, .btn-danger:active, .btn-warn:active {
             filter: brightness(0.95);
             transform: translateY(0);
         }
+        .btn-primary:active { box-shadow: 0 2px 6px rgba(var(--btn-shadow), 0.2); }
 
         .btn-outline {
             background: transparent;
             color: var(--text-secondary);
             border: 1.5px solid var(--border);
-            transition: all 0.2s ease;
+            --outline-c1: 99,102,241; --outline-c2: 139,92,246;
         }
 
         .btn-outline:hover {
-            border-color: rgba(99, 102, 241, 0.5);
+            border-color: rgba(var(--outline-c1), 0.5);
             color: var(--primary);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+            background: linear-gradient(135deg, rgba(var(--outline-c1), 0.12), rgba(var(--outline-c2), 0.12));
             transform: translateY(-1px);
         }
-
         .btn-outline:active {
             border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(139, 92, 246, 0.22));
+            background: linear-gradient(135deg, rgba(var(--outline-c1), 0.22), rgba(var(--outline-c2), 0.22));
             transform: translateY(0);
         }
 
         .btn-outline.btn-outline-error {
-            border-color: rgba(239, 68, 68, 0.3);
-            color: var(--error);
+            border-color: rgba(239, 68, 68, 0.3); color: var(--error);
+            --outline-c1: 239,68,68; --outline-c2: 220,38,38;
         }
-
-        .btn-outline.btn-outline-error:hover {
-            border-color: rgba(239, 68, 68, 0.5);
-            color: var(--error);
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.12));
-            transform: translateY(-1px);
-        }
-
-        .btn-outline.btn-outline-error:active {
-            border-color: var(--error);
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(220, 38, 38, 0.22));
-            transform: translateY(0);
-        }
+        .btn-outline.btn-outline-error:hover { border-color: rgba(239,68,68,0.5); color: var(--error); }
+        .btn-outline.btn-outline-error:active { border-color: var(--error); }
 
         .btn-outline.btn-outline-warn {
-            border-color: rgba(245, 158, 11, 0.3);
-            color: var(--warning);
+            border-color: rgba(245, 158, 11, 0.3); color: var(--warning);
+            --outline-c1: 245,158,11; --outline-c2: 251,191,36;
         }
-
-        .btn-outline.btn-outline-warn:hover {
-            border-color: rgba(245, 158, 11, 0.5);
-            color: var(--warning);
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.12));
-            transform: translateY(-1px);
-        }
-
-        .btn-outline.btn-outline-warn:active {
-            border-color: var(--warning);
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(251, 191, 36, 0.22));
-            transform: translateY(0);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--error), #dc2626);
-            color: #fff;
-        }
-
-        .btn-danger:hover {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
-        }
-
-        .btn-danger:active {
-            filter: brightness(0.95);
-            transform: translateY(0);
-        }
-
-        .btn-warn {
-            background: linear-gradient(135deg, var(--warning), #d97706);
-            color: #fff;
-        }
-
-        .btn-warn:hover {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
-        }
-
-        .btn-warn:active {
-            filter: brightness(0.95);
-            transform: translateY(0);
-        }
+        .btn-outline.btn-outline-warn:hover { border-color: rgba(245,158,11,0.5); color: var(--warning); }
+        .btn-outline.btn-outline-warn:active { border-color: var(--warning); }
 
         .btn-sm {
             padding: 6px 14px;
@@ -2205,7 +2117,6 @@
             border-radius: var(--radius);
             margin-bottom: 12px;
             gap: 10px;
-            animation: fadeIn 0.3s ease;
             flex-wrap: wrap;
         }
 
@@ -2736,6 +2647,22 @@
         return false;
     }
 
+    /** 选项标签验证：检查递增性、范围合理性，返回验证后的选项或空数组
+     *  @param {Array} raw - 原始提取的选项 [{label, content}, ...]
+     *  @param {number} minStartCode - 最小起始字母的 charCode（65=A, 66=B），低于此值则拒绝
+     *  @param {number} minCount - 最少需要的选项数量
+     */
+    function _validateAndFilterOptions(raw, minStartCode, minCount) {
+        if (raw.length === 0 || raw.length < minCount) return [];
+        const labels = raw.map(o => o.label);
+        const minCode = labels[0].charCodeAt(0);
+        const maxCode = labels[labels.length - 1].charCodeAt(0);
+        if (maxCode - minCode > 7) return [];
+        if (!labels.every((l, i) => i === 0 || l.charCodeAt(0) > labels[i - 1].charCodeAt(0))) return [];
+        if (minCode < minStartCode) return [];
+        return raw;
+    }
+
     function tryExtractOptions(text) {
         const regex = /([A-Za-z])\s*[.、．)\]】]\s*([\s\S]+?)(?=\s+[A-Za-z]\s*[.、．)\]】]\s*|$)/g;
         let m;
@@ -2749,30 +2676,11 @@
         }
         if (raw.length === 0) return [];
 
-        // 验证选项标签的合理性：
-        // 1. 标签应全部是大写字母 A-Z
-        // 2. 标签应构成连续或接近连续的序列（允许从非 A 开始，适配跨行选项）
-        // 3. 过滤掉误匹配（如 "e.g."、"i.e." 等孤立的英文缩写）
+        // 验证：至少2个选项（但单选项在A-H范围内也可接受），起始从A
         const labels = raw.map(o => o.label);
-
-        // 计算标签是否在一个合理的字母范围内
-        const minLabel = labels[0];
-        const maxLabel = labels[labels.length - 1];
-        const minCode = minLabel.charCodeAt(0);
-        const maxCode = maxLabel.charCodeAt(0);
-
-        // 标签范围不能太大（最多 8 个选项，即 A-H）
-        if (maxCode - minCode > 7) return [];
-        // 标签必须是递增序列
-        if (!labels.every((l, i) => i === 0 || l.charCodeAt(0) > labels[i - 1].charCodeAt(0))) return [];
-        // 至少有 2 个选项才认为是有效选项行（避免误匹配单个字母）
-        if (raw.length < 2) {
-            // 但如果只有一个选项，且标签在 A-H 范围内，也接受（可能是跨行的最后一个选项）
-            if (raw.length === 1 && minCode >= 65 && minCode <= 72) return raw;
-            return [];
-        }
-
-        return raw;
+        const minCode = labels[0].charCodeAt(0);
+        const minCount = (raw.length === 1 && minCode >= 65 && minCode <= 72) ? 1 : 2;
+        return _validateAndFilterOptions(raw, 65, minCount);
     }
 
     /** 提取跨行的单个/多个选项（如 "C.开天辟地、敢为人先    D.承前启后、继往开来"）
@@ -2789,18 +2697,8 @@
                 raw.push({ label, content });
             }
         }
-        if (raw.length === 0) return [];
-
-        // 验证标签是递增且在合理范围内
-        const labels = raw.map(o => o.label);
-        const minCode = labels[0].charCodeAt(0);
-        const maxCode = labels[labels.length - 1].charCodeAt(0);
-        if (maxCode - minCode > 7) return [];
-        if (!labels.every((l, i) => i === 0 || l.charCodeAt(0) > labels[i - 1].charCodeAt(0))) return [];
-        // 标签必须从 B 开始或之后（A 开头的情况已由 tryExtractOptions 处理）
-        if (minCode < 66) return [];
-        // 至少有 1 个选项
-        return raw;
+        // 标签必须从 B 开始或之后（A 开头的情况已由 tryExtractOptions 处理），至少1个选项
+        return _validateAndFilterOptions(raw, 66, 1);
     }
 
     function finalizeQuestion(q) {
@@ -2998,34 +2896,39 @@
         }
     }
 
-    /** 为每道题生成选项随机映射
-     *  返回数组: shuffledOptions[realIdx] = [{origIdx, label, content}, ...]
-     *  - origIdx: 该选项在原始q.options中的索引
-     *  - label:   显示给用户的新标签(A/B/C/D)
-     *  - content: 选项文本内容
-     */
-    function generateShuffledOptions(shuffleOptions) {
-        return state.questions.map(q => {
-            if (!q.options || q.options.length === 0) return [];
-            const indices = q.options.map((_, i) => i);
-            if (shuffleOptions) {
-                shuffleArray(indices);
-            }
-            return indices.map((origIdx, newPos) => ({
-                origIdx,
-                label: LABELS[newPos] || String(newPos + 1),
-                content: q.options[origIdx].content,
-                origLabel: q.options[origIdx].label   // 原始标签，用于判断正确性
-            }));
-        });
+    /** 为单道题构建选项随机映射（内部辅助函数） */
+    function _buildShuffledOptionMapping(q, shuffleOptions) {
+        if (!q.options || q.options.length === 0) return [];
+        const indices = q.options.map((_, i) => i);
+        if (shuffleOptions) {
+            shuffleArray(indices);
+        }
+        return indices.map((origIdx, newPos) => ({
+            origIdx,
+            label: LABELS[newPos] || String(newPos + 1),
+            content: q.options[origIdx].content,
+            origLabel: q.options[origIdx].label   // 原始标签，用于判断正确性
+        }));
     }
 
-    /** 根据选项随机映射，将原始答案转换为随机后的答案标签 */
-    function getShuffledAnswer(realIdx) {
-        const q = state.questions[realIdx];
-        const shuffled = state.shuffledOptions[realIdx];
-        if (!q || !q.answer || !shuffled || shuffled.length === 0) return q ? q.answer : '';
-        // 找到原始答案中每个字母对应的origIdx，再在shuffled中找到对应的新label
+    /** 为每道题生成选项随机映射
+     *  返回数组: shuffledOptions[realIdx] = [{origIdx, label, content}, ...]
+     */
+    function generateShuffledOptions(shuffleOptions) {
+        return state.questions.map(q => _buildShuffledOptionMapping(q, shuffleOptions));
+    }
+
+    /** 根据选项随机映射，将原始答案转换为随机后的答案标签
+     *  @param {number} realIdx - 题目索引
+     *  @param {Object} [record] - 可选的历史记录对象，不传则使用 state 中的数据
+     */
+    function getShuffledAnswer(realIdx, record) {
+        const questions = record ? record.questions : state.questions;
+        const shuffledOpts = record ? (record.shuffledOptions || []) : state.shuffledOptions;
+        const q = questions[realIdx];
+        const shuffled = shuffledOpts[realIdx];
+        if (!q || !q.answer) return record ? '' : (q ? q.answer : '');
+        if (!shuffled || shuffled.length === 0) return q.answer;
         const result = [];
         for (const ch of q.answer) {
             const entry = shuffled.find(s => s.origLabel === ch);
@@ -3089,24 +2992,16 @@
             ...unansweredUnrec
         ];
 
+
         // 已答题保持原有选项映射，未答题重新生成
         const oldShuffledOptions = state.shuffledOptions;
         state.shuffledOptions = state.questions.map((q, realIdx) => {
             if (state.quizStatus[realIdx] !== 'unanswered') {
                 return oldShuffledOptions[realIdx];
             }
-            if (!q.options || q.options.length === 0) return [];
-            const indices = q.options.map((_, i) => i);
-            if (enabled) {
-                shuffleArray(indices);
-            }
-            return indices.map((origIdx, newPos) => ({
-                origIdx,
-                label: LABELS[newPos] || String(newPos + 1),
-                content: q.options[origIdx].content,
-                origLabel: q.options[origIdx].label
-            }));
+            return _buildShuffledOptionMapping(q, enabled);
         });
+
 
         // 已答题选项未变，无需重映射用户答案
 
@@ -3433,17 +3328,7 @@
             state.quizStatus[realIdx] = 'unanswered';
             // 为错题重新生成随机选项映射（如果开启了随机）
             if (state.shuffleEnabled) {
-                const q = state.questions[realIdx];
-                if (q.options && q.options.length > 0) {
-                    const indices = q.options.map((_, i) => i);
-                    shuffleArray(indices);
-                    state.shuffledOptions[realIdx] = indices.map((origIdx, newPos) => ({
-                        origIdx,
-                        label: LABELS[newPos] || String(newPos + 1),
-                        content: q.options[origIdx].content,
-                        origLabel: q.options[origIdx].label
-                    }));
-                }
+                state.shuffledOptions[realIdx] = _buildShuffledOptionMapping(state.questions[realIdx], true);
             }
         });
 
@@ -4752,20 +4637,6 @@
     });
 
     // ==================== 错题回顾 ====================
-    /** 将一道题还原为可粘贴到解析模式的文本 */
-    function questionToText(q, answer) {
-        let text = `${q.number}. ${q.text}`;
-        if (q.options && q.options.length > 0) {
-            q.options.forEach(opt => {
-                text += `\n  ${opt.label}. ${opt.content}`;
-            });
-        }
-        if (answer) {
-            text += `\n正确答案：${answer}`;
-        }
-        return text;
-    }
-
     /** 将一道题还原为可粘贴到解析模式的文本（使用原始label） */
     function questionToOriginalText(q, userAnswer, correctAnswer) {
         let text = `${q.number}. ${q.text}`;
@@ -4780,18 +4651,24 @@
         return text;
     }
 
-    /** 从随机映射的答案还原为原始答案 */
-    function getOriginalAnswer(realIdx, shuffledAns, record) {
-        if (!shuffledAns || !record.shuffledOptions || !record.shuffledOptions[realIdx]) return shuffledAns;
-        const mapping = record.shuffledOptions[realIdx];
+    /** 从shuffled label映射回原始label（统一函数）
+     *  @param {number} realIdx - 题目索引
+     *  @param {string} shuffledAns - 随机后的答案标签
+     *  @param {Array} [mapping] - 可选的映射数组，不传则使用 state.shuffledOptions
+     */
+    function mapShuffledToOrigLabel(realIdx, shuffledAns, mapping) {
+        if (!shuffledAns) return '';
+        if (mapping === undefined) {
+            mapping = state.shuffledOptions[realIdx];
+        }
         if (!mapping || mapping.length === 0) return shuffledAns;
-        let origAns = '';
+        let orig = '';
         for (const ch of shuffledAns) {
             const entry = mapping.find(m => m.label === ch);
-            if (entry) origAns += entry.origLabel;
-            else origAns += ch;
+            if (entry) orig += entry.origLabel;
+            else orig += ch;
         }
-        return origAns.split('').sort().join('');
+        return orig.split('').sort().join('');
     }
 
     /** 获取历史记录中的错题列表 */
@@ -4801,9 +4678,9 @@
         record.questions.forEach((q, realIdx) => {
             if (record.quizStatus[realIdx] === 'incorrect') {
                 const userShuffledAns = (record.userAnswers[realIdx] || []).join('');
-                const correctShuffledAns = getShuffledAnswerFromRecord(record, realIdx);
-                const userOrigAns = getOriginalAnswer(realIdx, userShuffledAns, record);
-                const correctOrigAns = getOriginalAnswer(realIdx, correctShuffledAns, record);
+                const correctShuffledAns = getShuffledAnswer(realIdx, record);
+                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns, record.shuffledOptions[realIdx]);
+                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns, record.shuffledOptions[realIdx]);
                 wrongList.push({
                     realIdx,
                     question: q,
@@ -4816,154 +4693,34 @@
         return wrongList;
     }
 
-    /** 从历史记录中获取某题的正确答案（shuffled label） */
-    function getShuffledAnswerFromRecord(record, realIdx) {
-        const q = record.questions[realIdx];
-        if (!q || !q.answer) return '';
-        const origAnswer = q.answer;
-        const mapping = record.shuffledOptions ? record.shuffledOptions[realIdx] : null;
-        if (!mapping || mapping.length === 0) return origAnswer;
-        let shuffled = '';
-        for (const ch of origAnswer) {
-            const entry = mapping.find(m => m.origLabel === ch);
-            if (entry) shuffled += entry.label;
-            else shuffled += ch;
-        }
-        return shuffled;
+    // ====== 错题弹窗统一数据 ======
+    let _wrongModalState = { wrongList: [], source: 'current', historyIndex: -1 };
+
+    /** 通用剪贴板复制辅助 */
+    function _copyText(text, successMsg) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(successMsg, 'success');
+        }).catch(() => {
+            fallbackCopy(text);
+            showToast(successMsg, 'success');
+        });
     }
 
-    /** 打开错题回顾弹窗 */
+    /** 打开错题回顾弹窗（历史记录来源） */
     function viewWrongQuestions(index) {
         const record = state.historyRecords[index];
         if (!record) return;
         const wrongList = getWrongQuestions(record);
-
         if (wrongList.length === 0) {
             showToast('该记录中没有错题', 'info');
             return;
         }
-
-        let cardsHtml = '';
-        wrongList.forEach((item, wi) => {
-            const q = item.question;
-            let optsHtml = '';
-            if (q.options && q.options.length > 0) {
-                q.options.forEach(opt => {
-                    const isCorrectOpt = item.correctAnswer.includes(opt.label);
-                    const isUserWrongOpt = item.userAnswer.includes(opt.label) && !item.correctAnswer.includes(opt.label);
-                    let cls = 'wrong-q-opt';
-                    if (isCorrectOpt) cls += ' is-correct';
-                    if (isUserWrongOpt) cls += ' is-user-wrong';
-                    let icon = '';
-                    if (isCorrectOpt) icon = ' ✓';
-                    if (isUserWrongOpt) icon = ' ✗';
-                    optsHtml += `<div class="${cls}">${opt.label}. ${escapeHtml(opt.content)}${icon}</div>`;
-                });
-            }
-
-            cardsHtml += `<div class="wrong-q-card">
-                <div class="wrong-q-header">
-                    <span class="wrong-q-num">第 ${q.number} 题</span>
-                    <span class="wrong-q-type">${q.type === 'multi' ? '多选' : '单选'}</span>
-                </div>
-                <div class="wrong-q-text">${escapeHtml(q.text)}</div>
-                ${optsHtml ? `<div class="wrong-q-options">${optsHtml}</div>` : ''}
-                <div class="wrong-q-answer">
-                    你的答案: <span class="user-ans">${item.userAnswer || '未作答'}</span>
-                    &nbsp;|&nbsp; 正确答案: <b>${item.correctAnswer}</b>
-                </div>
-                <div class="wrong-q-actions">
-                    <button class="btn btn-sm btn-outline" onclick="copySingleWrongQuestion(${index}, ${item.realIdx})" style="padding:3px 10px;font-size:0.78rem;">📋 复制此题</button>
-                </div>
-            </div>`;
-        });
-
         const totalCount = record.questions.filter(q => q.type !== 'subjective').length;
-        const wrongCount = wrongList.length;
-        const correctCount = totalCount - wrongCount;
-
-        const modalHtml = `<div class="wrong-modal-overlay" onclick="closeWrongModal(event)">
-            <div class="wrong-modal" onclick="event.stopPropagation()">
-                <div class="wrong-modal-header">
-                    <h2>❌ 错题回顾 <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);">（${wrongCount} 道错题 / 共 ${totalCount} 题）</span></h2>
-                    <button class="btn btn-sm btn-outline" onclick="closeWrongModal()" style="padding:4px 10px;font-size:0.85rem;">✕</button>
-                </div>
-                <div class="wrong-modal-body">
-                    ${cardsHtml}
-                </div>
-                <div class="wrong-modal-footer">
-                    <div class="footer-info">正确 ${correctCount} 题 / 错误 ${wrongCount} 题 / 正确率 ${totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0}%</div>
-                    <div class="footer-actions">
-                        <button class="btn btn-sm btn-outline" onclick="copyAllWrongQuestions(${index})" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
-                        <button class="btn btn-sm btn-primary" onclick="loadWrongQuestionsToParse(${index})" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
-                        <button class="btn btn-sm btn-warn" onclick="redoWrongFromHistory(${index})" style="padding:4px 12px;font-size:0.8rem;">🔄 重做这些错题</button>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-
-        document.getElementById('wrongModalContainer').innerHTML = modalHtml;
+        _wrongModalState = { wrongList, source: 'history', historyIndex: index };
+        _renderWrongModal(wrongList, totalCount);
     }
 
-    /** 关闭错题弹窗 */
-    function closeWrongModal(event) {
-        if (event && event.target !== event.currentTarget) return;
-        document.getElementById('wrongModalContainer').innerHTML = '';
-    }
-
-    /** 复制单道错题文本 */
-    function copySingleWrongQuestion(historyIndex, realIdx) {
-        const record = state.historyRecords[historyIndex];
-        if (!record) return;
-        const wrongList = getWrongQuestions(record);
-        const item = wrongList.find(w => w.realIdx === realIdx);
-        if (!item) return;
-        const text = item.originalText;
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('已复制该错题文本', 'success');
-        }).catch(() => {
-            fallbackCopy(text);
-            showToast('已复制该错题文本', 'success');
-        });
-    }
-
-    /** 复制全部错题文本 */
-    function copyAllWrongQuestions(historyIndex) {
-        const record = state.historyRecords[historyIndex];
-        if (!record) return;
-        const wrongList = getWrongQuestions(record);
-        if (wrongList.length === 0) {
-            showToast('没有错题可复制', 'info');
-            return;
-        }
-        const allText = wrongList.map(item => item.originalText).join('\n\n');
-        navigator.clipboard.writeText(allText).then(() => {
-            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
-        }).catch(() => {
-            fallbackCopy(allText);
-            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
-        });
-    }
-
-    /** 将错题加载到解析模式 */
-    function loadWrongQuestionsToParse(historyIndex) {
-        const record = state.historyRecords[historyIndex];
-        if (!record) return;
-        const wrongList = getWrongQuestions(record);
-        if (wrongList.length === 0) {
-            showToast('没有错题可加载', 'info');
-            return;
-        }
-        const allText = wrongList.map(item => item.originalText).join('\n\n');
-        document.getElementById('inputText').value = allText;
-        autoResizeTextarea();
-        closeWrongModal();
-        closeHistoryDropdown();
-        switchMode('parse');
-        showToast(`已将 ${wrongList.length} 道错题载入解析模式，点击"解析试题"即可重新解析`, 'info');
-    }
-
-    /** 查看当前会话的错题（不依赖历史记录索引） */
+    /** 查看当前会话的错题 */
     function viewCurrentWrongQuestions() {
         if (state.questions.length === 0) {
             showToast('题库为空', 'info');
@@ -4990,26 +4747,17 @@
             showToast('当前没有错题', 'info');
             return;
         }
-
-        renderWrongModal(wrongList);
+        const totalCount = state.questions.filter(q => q.type !== 'subjective').length;
+        _wrongModalState = { wrongList, source: 'current', historyIndex: -1 };
+        _renderWrongModal(wrongList, totalCount);
     }
 
-    /** 从shuffled label映射回原始label */
-    function mapShuffledToOrigLabel(realIdx, shuffledAns) {
-        if (!shuffledAns) return '';
-        const mapping = state.shuffledOptions[realIdx];
-        if (!mapping || mapping.length === 0) return shuffledAns;
-        let orig = '';
-        for (const ch of shuffledAns) {
-            const entry = mapping.find(m => m.label === ch);
-            if (entry) orig += entry.origLabel;
-            else orig += ch;
-        }
-        return orig.split('').sort().join('');
-    }
+    /** 渲染错题弹窗 */
+    function _renderWrongModal(wrongList, totalCount) {
+        const isHistory = _wrongModalState.source === 'history';
+        const wrongCount = wrongList.length;
+        const correctCount = totalCount - wrongCount;
 
-    /** 渲染错题弹窗（通用） */
-    function renderWrongModal(wrongList) {
         let cardsHtml = '';
         wrongList.forEach((item) => {
             const q = item.question;
@@ -5040,30 +4788,31 @@
                     &nbsp;|&nbsp; 正确答案: <b>${item.correctAnswer}</b>
                 </div>
                 <div class="wrong-q-actions">
-                    <button class="btn btn-sm btn-outline" onclick="copyWrongItemText(${item.realIdx})" style="padding:3px 10px;font-size:0.78rem;">📋 复制此题</button>
+                    <button class="btn btn-sm btn-outline" onclick="copyWrongItem(${item.realIdx})" style="padding:3px 10px;font-size:0.78rem;">📋 复制此题</button>
                 </div>
             </div>`;
         });
 
-        const objectiveTotal = state.questions.filter(q => q.type !== 'subjective').length;
-        const wrongCount = wrongList.length;
-        const correctCount = objectiveTotal - wrongCount;
+        // 底部操作按钮根据来源不同
+        const redoAction = isHistory
+            ? `redoWrongFromHistory(${_wrongModalState.historyIndex})`
+            : `closeWrongModal();redoWrongQuestions()`;
 
         const modalHtml = `<div class="wrong-modal-overlay" onclick="closeWrongModal(event)">
             <div class="wrong-modal" onclick="event.stopPropagation()">
                 <div class="wrong-modal-header">
-                    <h2>❌ 错题回顾 <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);">（${wrongCount} 道错题 / 共 ${objectiveTotal} 题）</span></h2>
+                    <h2>❌ 错题回顾 <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);">（${wrongCount} 道错题 / 共 ${totalCount} 题）</span></h2>
                     <button class="btn btn-sm btn-outline" onclick="closeWrongModal()" style="padding:4px 10px;font-size:0.85rem;">✕</button>
                 </div>
                 <div class="wrong-modal-body">
                     ${cardsHtml}
                 </div>
                 <div class="wrong-modal-footer">
-                    <div class="footer-info">正确 ${correctCount} 题 / 错误 ${wrongCount} 题 / 正确率 ${objectiveTotal > 0 ? Math.round((correctCount / objectiveTotal) * 100) : 0}%</div>
+                    <div class="footer-info">正确 ${correctCount} 题 / 错误 ${wrongCount} 题 / 正确率 ${totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0}%</div>
                     <div class="footer-actions">
-                        <button class="btn btn-sm btn-outline" onclick="copyAllCurrentWrongQuestions()" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
-                        <button class="btn btn-sm btn-primary" onclick="loadCurrentWrongQuestionsToParse()" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
-                        <button class="btn btn-sm btn-warn" onclick="closeWrongModal();redoWrongQuestions()" style="padding:4px 12px;font-size:0.8rem;">🔄 重做这些错题</button>
+                        <button class="btn btn-sm btn-outline" onclick="copyAllWrongItems()" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
+                        <button class="btn btn-sm btn-primary" onclick="loadWrongToParse()" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
+                        <button class="btn btn-sm btn-warn" onclick="${redoAction}" style="padding:4px 12px;font-size:0.8rem;">🔄 重做这些错题</button>
                     </div>
                 </div>
             </div>
@@ -5072,71 +4821,51 @@
         document.getElementById('wrongModalContainer').innerHTML = modalHtml;
     }
 
-    /** 复制当前会话单道错题 */
-    function copyWrongItemText(realIdx) {
-        const q = state.questions[realIdx];
-        if (!q) return;
-        const correctShuffledAns = getShuffledAnswer(realIdx);
-        const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns);
-        const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
-        const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);
-        const text = questionToOriginalText(q, userOrigAns, correctOrigAns);
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('已复制该错题文本', 'success');
-        }).catch(() => {
-            fallbackCopy(text);
-            showToast('已复制该错题文本', 'success');
-        });
+    /** 关闭错题弹窗 */
+    function closeWrongModal(event) {
+        if (event && event.target !== event.currentTarget) return;
+        document.getElementById('wrongModalContainer').innerHTML = '';
     }
 
-    /** 复制当前会话全部错题 */
-    function copyAllCurrentWrongQuestions() {
-        const wrongList = [];
-        state.questions.forEach((q, realIdx) => {
-            if (state.quizStatus[realIdx] === 'incorrect') {
-                const correctShuffledAns = getShuffledAnswer(realIdx);
-                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns);
-                const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
-                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);
-                wrongList.push(questionToOriginalText(q, userOrigAns, correctOrigAns));
-            }
-        });
-        if (wrongList.length === 0) {
+    /** 复制单道错题文本 */
+    function copyWrongItem(realIdx) {
+        const item = _wrongModalState.wrongList.find(w => w.realIdx === realIdx);
+        if (!item) return;
+        _copyText(item.originalText, '已复制该错题文本');
+    }
+
+    /** 复制全部错题文本 */
+    function copyAllWrongItems() {
+        const texts = _wrongModalState.wrongList.map(item => item.originalText);
+        if (texts.length === 0) {
             showToast('没有错题可复制', 'info');
             return;
         }
-        const allText = wrongList.join('\n\n');
-        navigator.clipboard.writeText(allText).then(() => {
-            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
-        }).catch(() => {
-            fallbackCopy(allText);
-            showToast(`已复制 ${wrongList.length} 道错题文本`, 'success');
-        });
+        _copyText(texts.join('\n\n'), `已复制 ${texts.length} 道错题文本`);
     }
 
-    /** 将当前会话错题加载到解析模式 */
-    function loadCurrentWrongQuestionsToParse() {
-        const wrongList = [];
-        state.questions.forEach((q, realIdx) => {
-            if (state.quizStatus[realIdx] === 'incorrect') {
-                const correctShuffledAns = getShuffledAnswer(realIdx);
-                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns);
-                const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
-                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);
-                wrongList.push(questionToOriginalText(q, userOrigAns, correctOrigAns));
-            }
-        });
-        if (wrongList.length === 0) {
+    /** 将错题加载到解析模式 */
+    function loadWrongToParse() {
+        const texts = _wrongModalState.wrongList.map(item => item.originalText);
+        if (texts.length === 0) {
             showToast('没有错题可加载', 'info');
             return;
         }
-        const allText = wrongList.join('\n\n');
-        document.getElementById('inputText').value = allText;
+        document.getElementById('inputText').value = texts.join('\n\n');
         autoResizeTextarea();
         closeWrongModal();
+        if (_wrongModalState.source === 'history') closeHistoryDropdown();
         switchMode('parse');
-        showToast(`已将 ${wrongList.length} 道错题载入解析模式，点击"解析试题"即可重新解析`, 'info');
+        showToast(`已将 ${texts.length} 道错题载入解析模式，点击"解析试题"即可重新解析`, 'info');
     }
+
+    // 保留旧函数名作为兼容（历史记录按钮 onclick 引用）
+    function copySingleWrongQuestion(historyIndex, realIdx) { copyWrongItem(realIdx); }
+    function copyAllWrongQuestions(historyIndex) { copyAllWrongItems(); }
+    function loadWrongQuestionsToParse(historyIndex) { loadWrongToParse(); }
+    function copyWrongItemText(realIdx) { copyWrongItem(realIdx); }
+    function copyAllCurrentWrongQuestions() { copyAllWrongItems(); }
+    function loadCurrentWrongQuestionsToParse() { loadWrongToParse(); }
 
     /** 剪贴板降级方案 */
     function fallbackCopy(text) {

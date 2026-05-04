@@ -1435,7 +1435,17 @@
             white-space: pre-wrap;
             max-height: 200px;
             overflow-y: auto;
+            overflow-x: hidden;
             background: rgba(0,0,0,0.02);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        .ai-thinking-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .ai-thinking-content::-webkit-scrollbar-thumb {
+            background: #c1c7d0;
+            border-radius: 2px;
         }
         .ai-answer-placeholder {
             color: var(--text-secondary);
@@ -1445,6 +1455,25 @@
         @keyframes aiPulse {
             0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
+        }
+
+        /* 思考模式开关 */
+        .ai-thinking-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.8);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .ai-thinking-toggle input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: #818cf8;
+            cursor: pointer;
+            vertical-align: middle;
         }
 
         .ai-msg-bubble {
@@ -1515,24 +1544,37 @@
         .ai-loading {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 0;
+            gap: 5px;
+            padding: 4px 0;
         }
 
         .ai-loading-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #94a3b8;
-            animation: aiLoadingBounce 1.2s ease-in-out infinite;
+            background: var(--primary);
+            opacity: 0.4;
+            animation: aiLoadingBounce 1.4s ease-in-out infinite;
         }
 
-        .ai-loading-dot:nth-child(2) { animation-delay: 0.15s; }
-        .ai-loading-dot:nth-child(3) { animation-delay: 0.3s; }
+        .ai-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .ai-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        .ai-loading-text {
+            margin-left: 6px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            animation: aiLoadingPulse 1.5s ease-in-out infinite;
+        }
 
         @keyframes aiLoadingBounce {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-8px); }
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        @keyframes aiLoadingPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
 
         /* 快捷键提示 */
@@ -2335,6 +2377,10 @@
     <div class="ai-panel-header">
         <h3>🤖 AI 解题助手</h3>
         <div class="ai-panel-actions">
+            <label class="ai-thinking-toggle" title="开启后AI会先展示思考过程再回答（速度较慢）">
+                <input type="checkbox" id="aiThinkingToggle" onchange="toggleAIThinking(this.checked)">
+                💭思考
+            </label>
             <button class="ai-panel-action-btn" onclick="newAIChat()" title="开始新聊天" aria-label="开始新聊天">➕</button>
             <button class="ai-panel-close" onclick="toggleAIPanel()" aria-label="关闭">✕</button>
         </div>
@@ -3890,6 +3936,7 @@
 
     // ==================== AI 助手功能 ====================
     const API_PROXY_URL = 'https://polisvacuo.qzz.io/api/chat';
+    const AI_THINKING_KEY = 'zhixue_ai_thinking'; // localStorage 键名
 
     const aiState = {
         panelOpen: false,
@@ -3898,7 +3945,18 @@
         currentChatKey: null,  // 当前对话对应的 realIdx
         abortCtrl: null,  // 用于中断请求
         userScrolledUp: false,  // 用户是否主动上滚（流式输出时）
+        thinkingEnabled: localStorage.getItem(AI_THINKING_KEY) === 'true',  // 是否开启思考模式
     };
+
+    // 初始化思考开关状态
+    const thinkingToggle = document.getElementById('aiThinkingToggle');
+    if (thinkingToggle) thinkingToggle.checked = aiState.thinkingEnabled;
+
+    function toggleAIThinking(enabled) {
+        aiState.thinkingEnabled = enabled;
+        localStorage.setItem(AI_THINKING_KEY, enabled ? 'true' : 'false');
+        showToast(enabled ? '已开启深度思考模式' : '已关闭深度思考模式', 'info');
+    }
 
     function getCurrentChatMessages() {
         if (aiState.currentChatKey === null) return [];
@@ -4165,7 +4223,8 @@
                     messages: apiMessages,
                     stream: true,
                     max_tokens: 2048,
-                    temperature: 0.7
+                    temperature: 0.7,
+                    ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
                 }),
                 signal: aiState.abortCtrl.signal
             });
@@ -4175,14 +4234,73 @@
                 throw new Error(errData.error?.message || `API请求失败 (${response.status})`);
             }
 
-            // 移除加载动画，创建流式消息气泡
+            // 移除独立的加载动画，创建流式消息气泡（内含思考中提示）
             removeAILoading(loadingEl);
             const msgEl = appendAIMessage('bot', '', true);
+            // 先显示"思考中…"提示，直到有实际内容到达
+            msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">思考中…</span></div>';
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
-            let fullContent = '';
+            let fullContent = '';       // API 实际累积的全部内容
+            let reasoningContent = '';  // API 实际累积的全部思考内容
+            let firstContentArrived = false;
             let buffer = '';
+            let streamDone = false;
+
+            // ====== 打字机动画：匀速输出，消除 API 吐字间隙的卡顿感 ======
+            let displayedContent = '';       // 当前已渲染显示的内容
+            let displayedReasoning = '';     // 当前已渲染显示的思考内容
+            let typewriterTimer = null;
+            const TYPE_SPEED = 30;          // 每次打字间隔(ms)，越小越快
+            const CHARS_PER_TICK = 3;       // 每次打字推进字符数
+
+            function renderDisplayedContent() {
+                if (!msgEl || !msgEl.parentNode) return;
+                const wasThinkingOpen = msgEl.querySelector('.ai-thinking-block')?.open ?? (firstContentArrived ? false : true);
+                let html = '';
+                if (displayedReasoning) {
+                    html += buildThinkingHTML(displayedReasoning, !firstContentArrived);
+                }
+                if (firstContentArrived) {
+                    html += renderAIMarkdown(displayedContent);
+                } else if (displayedReasoning) {
+                    html += '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">思考中…</span></div>';
+                }
+                msgEl.innerHTML = html;
+                const thinkBlock = msgEl.querySelector('.ai-thinking-block');
+                if (thinkBlock && wasThinkingOpen) thinkBlock.open = true;
+                scrollToAIBottom(false);
+            }
+
+            function typewriterTick() {
+                let changed = false;
+                // 推进思考内容
+                if (displayedReasoning.length < reasoningContent.length) {
+                    const nextLen = Math.min(displayedReasoning.length + CHARS_PER_TICK, reasoningContent.length);
+                    displayedReasoning = reasoningContent.slice(0, nextLen);
+                    changed = true;
+                }
+                // 推进正文内容
+                if (firstContentArrived && displayedContent.length < fullContent.length) {
+                    const nextLen = Math.min(displayedContent.length + CHARS_PER_TICK, fullContent.length);
+                    displayedContent = fullContent.slice(0, nextLen);
+                    changed = true;
+                }
+                if (changed) {
+                    renderDisplayedContent();
+                }
+                // 还有内容没打完，或者流还没结束，继续定时器
+                if (!streamDone || displayedContent.length < fullContent.length || displayedReasoning.length < reasoningContent.length) {
+                    typewriterTimer = setTimeout(typewriterTick, TYPE_SPEED);
+                } else {
+                    // 全部完成，渲染最终内容
+                    typewriterTimer = null;
+                }
+            }
+
+            // 启动打字机
+            typewriterTimer = setTimeout(typewriterTick, TYPE_SPEED);
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -4201,11 +4319,18 @@
                         const json = JSON.parse(trimmed.slice(6));
                         const choice = json.choices?.[0];
                         const contentDelta = choice?.delta?.content;
+                        const reasoningDelta = choice?.delta?.reasoning_content;
+
+                        // 只累积数据，打字机定时器会匀速取出渲染
+                        if (reasoningDelta) {
+                            reasoningContent += reasoningDelta;
+                        }
 
                         if (contentDelta) {
+                            if (!firstContentArrived) {
+                                firstContentArrived = true;
+                            }
                             fullContent += contentDelta;
-                            msgEl.innerHTML = renderAIMarkdown(fullContent);
-                            scrollToAIBottom(false);
                         }
                     } catch (e) {
                         // 忽略解析错误
@@ -4213,12 +4338,34 @@
                 }
             }
 
+            // 流结束，标记完成（打字机继续把剩余内容打完）
+            streamDone = true;
+
+            // 等待打字机动画全部打完
+            await new Promise(resolve => {
+                function checkDone() {
+                    if (displayedContent.length >= fullContent.length && displayedReasoning.length >= reasoningContent.length) {
+                        resolve();
+                    } else {
+                        setTimeout(checkDone, 30);
+                    }
+                }
+                checkDone();
+            });
+
             const currentMessages2 = getCurrentChatMessages();
             currentMessages2.push({ role: 'assistant', content: fullContent });
             setCurrentChatMessages(currentMessages2);
-            msgEl.innerHTML = renderAIMarkdown(fullContent);
+
+            let finalHtml = '';
+            if (reasoningContent) {
+                finalHtml += buildThinkingHTML(reasoningContent, false);
+            }
+            finalHtml += renderAIMarkdown(fullContent);
+            msgEl.innerHTML = finalHtml;
 
         } catch (err) {
+            if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
             removeAILoading(loadingEl);
             if (err.name === 'AbortError') {
                 appendAIMessage('bot', '⏹ 请求已取消');
@@ -4226,6 +4373,7 @@
                 appendAIError(err.message);
             }
         } finally {
+            if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
             aiState.isStreaming = false;
             aiState.abortCtrl = null;
             sendBtn.disabled = false;
@@ -4300,7 +4448,7 @@
 
         const bubble = document.createElement('div');
         bubble.className = 'ai-msg-bubble';
-        bubble.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div></div>';
+        bubble.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">思考中…</span></div>';
 
         loadingDiv.appendChild(avatar);
         loadingDiv.appendChild(bubble);

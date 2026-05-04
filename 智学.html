@@ -3998,7 +3998,9 @@
         const shuffledAnswer = getShuffledAnswer(realIdx);
         const isSubmitted = status !== 'unanswered';
 
+        const typeLabel = q.type === 'multi' ? '多选题' : '单选题';
         let ctx = `【题目】${q.text}\n`;
+        ctx += `【题型】${typeLabel}\n`;
         if (shuffled.length > 0) {
             ctx += `【选项】\n`;
             shuffled.forEach(o => {
@@ -4047,70 +4049,66 @@
         const shuffledAnswer = getShuffledAnswer(realIdx);
         const isSubmitted = status !== 'unanswered';
 
-        let prompt = '';
+        let displayPrompt = '';
+        let hiddenContext = '';
         switch (type) {
             case 'explain':
                 if (isSubmitted && status === 'incorrect') {
-                    prompt = `请详细解析这道题：
-${getAIContext()}
-用户错误选择了：${myAns.sort().join('')}，正确答案为：${shuffledAnswer}。
+                    displayPrompt = '帮我详细解析这道题';
+                    hiddenContext = `用户错误选择了${myAns.sort().join('')}，正确答案为${shuffledAnswer}。
 请按以下结构输出：
-1. **错误归因**：先剖析用户选择${myAns.sort().join('')}的具体原因（是概念混淆？还是审题失误？）
+1. **错误归因**：先剖析用户选择${myAns.sort().join('')}的具体原因（是概念混淆还是审题失误）。
 2. **正确解析**：详细阐述正确答案${shuffledAnswer}成立的逻辑与依据。
-3. **避坑指南**：该题最容易出错的点在哪里？`;
+3. **避坑指南**：该题最容易出错的点在哪里。`;
                 } else if (isSubmitted && status === 'correct') {  
-                    prompt = `请解析这道题：
-${getAIContext()}
-用户已正确选择：${myAns.sort().join('')}。
+                    displayPrompt = '帮我解析这道题';
+                    hiddenContext = `用户已正确选择${myAns.sort().join('')}。
 请按以下结构输出（简明扼要）：
 1. **思路确认**：简练肯定用户的解题思路。
 2. **深度拓展**：补充1-2个相关的进阶知识点或易混淆概念，帮助举一反三。`;
-                } else { // 未提交状态
-                    prompt = `请帮我分析这道题的解题思路：
-${getAIContext()}
-【核心指令：用户尚未提交答案，绝对禁止透露正确答案！】
+                } else {
+                    displayPrompt = '帮我分析解题思路';
+                    hiddenContext = `用户尚未提交答案，绝对禁止透露正确答案。
 请按以下结构输出：
-1. **题目拆解**：提炼题干的核心考察点是什么？
-2. **思路引导**：用启发式提问，引导用户如何逐步排除干扰项或推导结论。（例如："你可以回想一下XX定理的适用条件..."）`;
+1. **题目拆解**：提炼题干的核心考察点是什么。
+2. **思路引导**：用启发式提问，引导用户如何逐步排除干扰项或推导结论（例如可以回想一下相关定理的适用条件）。`;
                 }
                 break;
                 
             case 'why_wrong':
                 if (isSubmitted && status === 'incorrect') {  
-                    prompt = `我选择了${myAns.sort().join('')}，但正确答案是${shuffledAnswer}。请详细分析：
-${getAIContext()}
+                    displayPrompt = '我为什么错了？';
+                    hiddenContext = `用户选择了${myAns.sort().join('')}，正确答案是${shuffledAnswer}。请详细分析：
 请按以下结构输出：
-1. **我的误区**：深度剖析我选${myAns.sort().join('')}的底层逻辑缺陷。
-2. **正确逻辑**：为什么${shuffledAnswer}才是唯一正确的？
-3. **同类陷阱**：考试中类似题目常设的陷阱是什么？`;
-                } else { // 未提交状态
-                    prompt = `请分析这道题常见的易错点：
-${getAIContext()}
-【核心指令：用户尚未提交答案，绝对禁止透露正确答案！】
+1. **我的误区**：深度剖析选${myAns.sort().join('')}的底层逻辑缺陷。
+2. **正确逻辑**：为什么${shuffledAnswer}才是唯一正确的。
+3. **同类陷阱**：考试中类似题目常设的陷阱是什么。`;
+                } else {
+                    displayPrompt = '这道题有什么易错点？';
+                    hiddenContext = `用户尚未提交答案，绝对禁止透露正确答案。
 请按以下结构输出：
-1. **陷阱识别**：题干中有哪些容易诱导犯错的关键词或条件？
+1. **陷阱识别**：题干中有哪些容易诱导犯错的关键词或条件。
 2. **概念辨析**：列出本题涉及的极易混淆的概念对（不指明谁对谁错，只做客观对比）。`;
                 }
                 break;
                 
             case 'knowledge':
-                prompt = `请围绕这道题补充相关知识点：
-${getAIContext()}
-【核心指令：如果用户未提交答案，请勿结合选项透露正确答案】
+                displayPrompt = '帮我补充相关知识点';
+                hiddenContext = `如果用户未提交答案，请勿结合选项透露正确答案。
 请按以下结构输出：
 1. **核心考点**：简明归纳本题涉及的核心知识点。
-2. **知识图谱**：使用层级列表，梳理该考点下的重要分支与公式/定理。
-3. **实战应用**：这些知识点通常还会怎么考？`;
+2. **知识图谱**：使用层级列表，梳理该考点下的重要分支与公式定理。
+3. **实战应用**：这些知识点通常还会怎么考。`;
                 break;
         }
 
-        if (prompt) {
-            sendAIMessage(prompt);
+        if (displayPrompt) {
+            sendAIMessage(displayPrompt, hiddenContext);
         }
     }
 
     /** 发送消息到DeepSeek API */
-    async function sendAIMessage(overrideText) {
+    async function sendAIMessage(overrideText, hiddenContext = '') {
         const input = document.getElementById('aiInput');
         const sendBtn = document.getElementById('aiSendBtn');
         const userText = overrideText || (input ? input.value.trim() : '');
@@ -4124,7 +4122,7 @@ ${getAIContext()}
         }
 
         const contextInfo = getAIContext();
-        const contextMsg = contextInfo ? `当前题目信息：\n${contextInfo}\n---` : '';
+        const contextMsg = contextInfo ? `【题目信息】\n${contextInfo}\n` : '';
 
         appendAIMessage('user', userText);
 
@@ -4134,6 +4132,10 @@ ${getAIContext()}
 
         if (contextMsg) {
             apiMessages.push({ role: 'system', content: contextMsg });
+        }
+
+        if (hiddenContext) {
+            apiMessages.push({ role: 'system', content: hiddenContext });
         }
 
         const currentMessages = getCurrentChatMessages();

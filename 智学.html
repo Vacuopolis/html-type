@@ -632,6 +632,10 @@
             border: 1px solid #c4b5fd;
         }
 
+        .quiz-type-hint.confirmed {
+            animation: none;
+        }
+
         .quiz-stem {
             font-size: 1.1rem;
             font-weight: 500;
@@ -2426,6 +2430,7 @@
         // 错题重做
         wrongRedoMode: false,       // 是否处于错题重做模式
         savedFullQuizOrder: [],     // 进入重做模式前保存的完整quizOrder
+        confirmedTypes: {},         // 已确认题型: { [realIdx]: 'single'|'multi'|'subjective' }
     };
 
     // ==================== 粘贴提示 ====================
@@ -3151,6 +3156,10 @@
         const shuffledAnswer = getShuffledAnswer(realIdx);
 
         let typeHint = q.type === 'multi' ? '<span class="quiz-type-hint multi">多选题</span>' : q.type === 'subjective' ? '<span class="quiz-type-hint unrecognized">未识别题型</span>' : '<span class="quiz-type-hint single">单选题</span>';
+        // 已确认题型时去掉 fadeIn 动画，避免每次选择刷新
+        if (state.confirmedTypes[realIdx]) {
+            typeHint = typeHint.replace('class="quiz-type-hint', 'class="quiz-type-hint confirmed');
+        }
         let progressText = `第 ${state.quizIndex + 1} / ${state.quizOrder.length} 题`;
         let html = '';
         // 错题重做模式横幅
@@ -3321,6 +3330,10 @@
         }
 
         state.userAnswers[realIdx] = myAns;
+        // 首次选择时确认题型，后续不再刷新 typeHint
+        if (!state.confirmedTypes[realIdx]) {
+            state.confirmedTypes[realIdx] = q.type;
+        }
         renderQuizView();
         updateAIQuestionInfo();
     }
@@ -3333,6 +3346,11 @@
         if (myAns.length === 0) {
             showToast('请先选择答案', 'error');
             return;
+        }
+
+        // 确认题型
+        if (!state.confirmedTypes[realIdx]) {
+            state.confirmedTypes[realIdx] = q.type;
         }
 
         // 使用随机映射后的答案进行比较

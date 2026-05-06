@@ -2573,6 +2573,9 @@
                     optPart = '';
                 }
 
+                // 去除题目前的题型/分数标记
+                qText = qText.replace(/^[（(]\s*(?:单选题|多选题|判断题|填空题|简答题|论述题|综合题)\s*[,，]\s*\d+(?:\.\d+)?\s*分?\s*[）)]\s*/, '');
+
                 const embedded = tryExtractEmbeddedAnswer(qText);
                 let answer = '';
                 if (embedded) {
@@ -2712,6 +2715,8 @@
         // 清理文本：移除不可见控制字符，压缩空白
         q.text = q.text.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF\u00AD]/g, '')
                         .replace(/\s+/g, ' ').trim();
+        // 去除题目前的题型/分数标记（兜底，应对跨行拼接后仍残留的情况）
+        q.text = q.text.replace(/^[（(]\s*(?:单选题|多选题|判断题|填空题|简答题|论述题|综合题)\s*[,，]\s*\d+(?:\.\d+)?\s*分?\s*[）)]\s*/, '');
         // 清理选项内容
         q.options.forEach(opt => {
             opt.content = opt.content.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF\u00AD]/g, '')
@@ -3318,8 +3323,10 @@
             return;
         }
 
-        // 保存当前完整的 quizOrder
-        state.savedFullQuizOrder = [...state.quizOrder];
+        // 保存当前完整的 quizOrder（仅在首次进入重做模式时保存，避免多次重做时覆盖）
+        if (!state.wrongRedoMode || state.savedFullQuizOrder.length === 0) {
+            state.savedFullQuizOrder = [...state.quizOrder];
+        }
         state.wrongRedoMode = true;
 
         // 重置错题的作答状态

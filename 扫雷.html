@@ -913,6 +913,27 @@
             box-shadow: 0 0 10px rgba(100, 181, 246, 0.5), inset 0 0 8px rgba(100, 181, 246, 0.2) !important;
             background: linear-gradient(145deg, rgba(100, 181, 246, 0.25), rgba(33, 150, 243, 0.2)) !important;
         }
+        /* ========== 快捷插旗预览样式 ========== */
+        .cell.chord-flag-preview {
+            border: 2px solid rgba(244, 67, 54, 0.9) !important;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.5), inset 0 0 8px rgba(244, 67, 54, 0.2) !important;
+            background: linear-gradient(145deg, rgba(244, 67, 54, 0.25), rgba(239, 83, 80, 0.2)) !important;
+            z-index: 8;
+            animation: chordFlagPreviewPulse 1.2s ease-in-out infinite;
+        }
+        .cell.chord-flag-preview-source {
+            border: 2px solid rgba(244, 67, 54, 0.6) !important;
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.3) !important;
+        }
+        @keyframes chordFlagPreviewPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(244, 67, 54, 0.5), inset 0 0 8px rgba(244, 67, 54, 0.2); }
+            50% { box-shadow: 0 0 18px rgba(244, 67, 54, 0.7), inset 0 0 12px rgba(244, 67, 54, 0.3); }
+        }
+        body.dark .cell.chord-flag-preview {
+            border: 2px solid rgba(239, 83, 80, 0.9) !important;
+            box-shadow: 0 0 10px rgba(239, 83, 80, 0.5), inset 0 0 8px rgba(239, 83, 80, 0.2) !important;
+            background: linear-gradient(145deg, rgba(239, 83, 80, 0.25), rgba(244, 67, 54, 0.2)) !important;
+        }
         /* ========== 数字颜色 ========== */
         .num-1 { color: #1976d2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         .num-2 { color: #388e3c; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
@@ -948,9 +969,6 @@
             gap: 8px;
             text-shadow: 0 1px 3px rgba(33, 150, 243, 0.2);
         }
-        .controls-title .title-icon {
-            font-size: 22px;
-        }
         .controls-options {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -981,9 +999,6 @@
             gap: 6px;
             padding-bottom: 10px;
             border-bottom: 1px solid rgba(33, 150, 243, 0.15);
-        }
-        .control-group h4 .group-icon {
-            font-size: 18px;
         }
         .control-options {
             display: flex;
@@ -1056,10 +1071,132 @@
             color: var(--primary-color);
             font-weight: 600;
         }
-        .control-option .option-icon {
-            font-size: 18px;
-            margin-right: 6px;
+        /* ========== 操作设置模态框增强 ========== */
+        .controls-modal-content {
+            max-width: 560px;
+        }
+        .controls-subtitle {
+            font-size: 13px;
+            opacity: 0.5;
+            text-align: center;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        /* 快捷选项区域 */
+        .controls-quick-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .quick-option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: var(--glass-blur);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            transition: var(--transition-fast);
+        }
+        .quick-option-row:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            border-color: rgba(33, 150, 243, 0.3);
+        }
+        .quick-option-info {
+            display: flex;
+            align-items: center;
+        }
+        .quick-option-text {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            align-items: flex-start;
+        }
+        .quick-option-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-color);
+            text-align: left;
+        }
+        .quick-option-desc {
+            font-size: 12px;
+            opacity: 0.5;
+            font-weight: 400;
+        }
+        /* 开关按钮样式 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
             flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            border-radius: 28px;
+            transition: 0.3s var(--easing);
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s var(--easing);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--primary-color), #64b5f6);
+        }
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+        .toggle-switch input:focus + .toggle-slider {
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+        }
+        /* 颜色图例 */
+        .quick-option-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(0, 0, 0, 0.1);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            opacity: 0.7;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid;
+        }
+        .legend-color-reveal {
+            background: linear-gradient(145deg, rgba(33, 150, 243, 0.25), rgba(100, 181, 246, 0.2));
+            border-color: rgba(33, 150, 243, 0.9);
+        }
+        .legend-color-flag {
+            background: linear-gradient(145deg, rgba(244, 67, 54, 0.25), rgba(239, 83, 80, 0.2));
+            border-color: rgba(244, 67, 54, 0.9);
         }
         /* ========== 游戏状态指示器 ========== */
         .mode-indicator {
@@ -1757,6 +1894,14 @@
         body.dark .control-option .radio-custom { border-color: rgba(255, 255, 255, 0.3); }
         body.dark .control-option.selected .radio-custom { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2); }
         body.dark .control-group h4 { border-bottom-color: rgba(33, 150, 243, 0.2); }
+        body.dark .quick-option-row { background: rgba(42, 42, 42, 0.8); border-color: rgba(255, 255, 255, 0.1); }
+        body.dark .quick-option-row:hover { border-color: rgba(33, 150, 243, 0.3); }
+        body.dark .quick-option-label { color: var(--text-color); }
+        body.dark .toggle-slider { background-color: #555; }
+        body.dark .toggle-switch input:checked + .toggle-slider { background: linear-gradient(135deg, var(--primary-color), #64b5f6); }
+        body.dark .quick-option-legend { border-top-color: rgba(255, 255, 255, 0.1); }
+        body.dark .legend-color-reveal { background: linear-gradient(145deg, rgba(100, 181, 246, 0.25), rgba(33, 150, 243, 0.2)); border-color: rgba(100, 181, 246, 0.9); }
+        body.dark .legend-color-flag { background: linear-gradient(145deg, rgba(239, 83, 80, 0.25), rgba(244, 67, 54, 0.2)); border-color: rgba(239, 83, 80, 0.9); }
         body.dark .help-section { background: rgba(255, 255, 255, 0.05); }
         body.dark .version-info { background: rgba(0, 0, 0, 0.2); }
         /* ========== 响应式设计 ========== */
@@ -1844,6 +1989,12 @@
             }
             .control-option {
                 padding: 8px 10px;
+            }
+            .quick-option-row {
+                padding: 12px 14px;
+            }
+            .quick-option-legend {
+                gap: 16px;
             }
         }
         @media (max-width: 320px) {
@@ -2322,86 +2473,122 @@
     </aside>
     <!-- 操作设置模态框 -->
     <aside class="modal" id="controls-modal" role="dialog" aria-modal="true" aria-label="操作设置">
-        <div class="modal-content">
-            <h2>🎮 操作设置</h2>
+        <div class="modal-content controls-modal-content">
+            <h2>操作设置</h2>
+
             <div class="controls-section">
-                <div class="controls-title"><span class="title-icon">🖥️</span> 电脑端设置</div>
+                <div class="controls-title">电脑端</div>
                 <div class="controls-options">
                     <div class="control-group">
-                        <h4><span class="group-icon">🖱️</span> 鼠标左键</h4>
+                        <h4>鼠标左键</h4>
                         <div class="control-options">
                             <div class="control-option selected" data-name="pc-left" data-value="open">
                                 <input type="radio" id="pc-left-open" name="pc-left" value="open" checked>
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">👆</span>
                                 <label for="pc-left-open">直接打开方块</label>
                             </div>
                             <div class="control-option" data-name="pc-left" data-value="flag">
                                 <input type="radio" id="pc-left-flag" name="pc-left" value="flag">
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">🚩</span>
                                 <label for="pc-left-flag">标记（旗帜→问号→空白）</label>
                             </div>
                         </div>
                     </div>
                     <div class="control-group">
-                        <h4><span class="group-icon">🖱️</span> 鼠标右键</h4>
+                        <h4>鼠标右键</h4>
                         <div class="control-options">
                             <div class="control-option selected" data-name="pc-right" data-value="flag">
                                 <input type="radio" id="pc-right-flag" name="pc-right" value="flag" checked>
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">🚩</span>
                                 <label for="pc-right-flag">标记（旗帜→问号→空白）</label>
                             </div>
                             <div class="control-option" data-name="pc-right" data-value="open">
                                 <input type="radio" id="pc-right-open" name="pc-right" value="open">
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">👆</span>
                                 <label for="pc-right-open">直接打开方块</label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
             <div class="controls-section">
-                <div class="controls-title"><span class="title-icon">📱</span> 移动端设置</div>
+                <div class="controls-title">移动端</div>
                 <div class="controls-options">
                     <div class="control-group">
-                        <h4><span class="group-icon">👆</span> 点击</h4>
+                        <h4>点击</h4>
                         <div class="control-options">
                             <div class="control-option selected" data-name="mobile-tap" data-value="flag">
                                 <input type="radio" id="mobile-tap-flag" name="mobile-tap" value="flag" checked>
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">🚩</span>
                                 <label for="mobile-tap-flag">标记（旗帜→问号→空白）</label>
                             </div>
                             <div class="control-option" data-name="mobile-tap" data-value="open">
                                 <input type="radio" id="mobile-tap-open" name="mobile-tap" value="open">
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">👆</span>
                                 <label for="mobile-tap-open">直接打开方块</label>
                             </div>
                         </div>
                     </div>
                     <div class="control-group">
-                        <h4><span class="group-icon">✋</span> 长按</h4>
+                        <h4>长按</h4>
                         <div class="control-options">
                             <div class="control-option selected" data-name="mobile-long" data-value="open">
                                 <input type="radio" id="mobile-long-open" name="mobile-long" value="open" checked>
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">👆</span>
                                 <label for="mobile-long-open">直接打开方块</label>
                             </div>
                             <div class="control-option" data-name="mobile-long" data-value="flag">
                                 <input type="radio" id="mobile-long-flag" name="mobile-long" value="flag">
                                 <span class="radio-custom"></span>
-                                <span class="option-icon">🚩</span>
                                 <label for="mobile-long-flag">标记（旗帜→问号→空白）</label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div class="controls-section">
+                <div class="controls-title">快捷操作</div>
+                <p class="controls-subtitle">点击已揭开的数字格子时，自动判断并执行翻开或插旗</p>
+                <div class="controls-quick-options">
+                    <div class="quick-option-row">
+                        <div class="quick-option-info">
+                            <div class="quick-option-text">
+                                <span class="quick-option-label">电脑端快捷插旗</span>
+                                <span class="quick-option-desc">悬停预览 + 点击数字一键插旗</span>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pc-flag-quick-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="quick-option-row">
+                        <div class="quick-option-info">
+                            <div class="quick-option-text">
+                                <span class="quick-option-label">移动端快捷插旗</span>
+                                <span class="quick-option-desc">点击数字一键插旗</span>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="mobile-flag-quick-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="quick-option-legend">
+                        <div class="legend-item">
+                            <span class="legend-color legend-color-reveal"></span>
+                            <span>快速翻开预览</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color legend-color-flag"></span>
+                            <span>快捷插旗预览</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-buttons">
                 <button class="btn success" id="btn-save-controls">保存设置</button>
                 <button class="btn" id="btn-close-controls">取消</button>
@@ -3186,7 +3373,9 @@ function createDefaultSurvivalItems() {
                         mobile: {
                             tap: 'flag',
                             long: 'open'
-                        }
+                        },
+                        pcFlagQuick: true,
+                        mobileFlagQuick: true
                     };
 
                     this.board = [];
@@ -3781,6 +3970,10 @@ clearHighlights() {
                         document.getElementById(`pc-right-${this.controlSettings.pc.right}`).checked = true;
                         document.getElementById(`mobile-tap-${this.controlSettings.mobile.tap}`).checked = true;
                         document.getElementById(`mobile-long-${this.controlSettings.mobile.long}`).checked = true;
+                        const pcFlagQuickToggle = document.getElementById('pc-flag-quick-toggle');
+                        if (pcFlagQuickToggle) pcFlagQuickToggle.checked = this.controlSettings.pcFlagQuick !== false;
+                        const mobileFlagQuickToggle = document.getElementById('mobile-flag-quick-toggle');
+                        if (mobileFlagQuickToggle) mobileFlagQuickToggle.checked = this.controlSettings.mobileFlagQuick !== false;
                         this.updateControlOptionStyles();
                         this.openModal('controls-modal');
                     }
@@ -3800,6 +3993,10 @@ clearHighlights() {
                             this.controlSettings.pc.right = document.querySelector('input[name="pc-right"]:checked').value;
                             this.controlSettings.mobile.tap = document.querySelector('input[name="mobile-tap"]:checked').value;
                             this.controlSettings.mobile.long = document.querySelector('input[name="mobile-long"]:checked').value;
+                            const pcFlagQuickToggle = document.getElementById('pc-flag-quick-toggle');
+                            this.controlSettings.pcFlagQuick = pcFlagQuickToggle ? pcFlagQuickToggle.checked : true;
+                            const mobileFlagQuickToggle = document.getElementById('mobile-flag-quick-toggle');
+                            this.controlSettings.mobileFlagQuick = mobileFlagQuickToggle ? mobileFlagQuickToggle.checked : true;
 
                             this.saveToStorage('controls', this.controlSettings);
                             this.showFloatingMessage('⚙️ 操作设置已保存！');
@@ -4864,6 +5061,8 @@ decompressBoardData(compressed) {
                     // 清除快速翻开预览状态
                     this._chordPreviewCells = null;
                     this._chordPreviewSource = null;
+                    this._chordFlagPreviewCells = null;
+                    this._chordFlagPreviewSource = null;
 
                     const boardElement = document.getElementById('game-board');
                     if (!boardElement) return;
@@ -4998,6 +5197,9 @@ decompressBoardData(compressed) {
                         if (this._chordPreviewSource && this._chordPreviewSource[0] === row && this._chordPreviewSource[1] === col) {
                             this._hideChordPreview();
                         }
+                        if (this._chordFlagPreviewSource && this._chordFlagPreviewSource[0] === row && this._chordFlagPreviewSource[1] === col) {
+                            this._hideChordFlagPreview();
+                        }
                     };
 
                     this._delegatedTouchStart = (e) => {
@@ -5076,34 +5278,59 @@ decompressBoardData(compressed) {
                 // 显示快速翻开预览：当悬停在已揭开的数字格子上且满足翻开条件时，高亮将被揭开的周围格子
                 _showChordPreview(row, col) {
                     this._hideChordPreview();
+                    this._hideChordFlagPreview();
                     if (this.gameState.gameOver || this.gameState.paused || this.gameState.autoSolving) return;
                     if (!this.revealed[row] || !this.revealed[row][col]) return;
                     if (!this.board[row] || this.board[row][col] <= 0) return;
 
                     const numValue = this.board[row][col];
                     let flagCount = 0;
+                    let unrevealedCount = 0;
                     const previewCells = [];
+                    const flagPreviewCells = [];
 
                     this.forEachNeighbor(row, col, (nr, nc) => {
                         if (this.flags[nr][nc]) flagCount++;
                         if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
+                            unrevealedCount++;
                             previewCells.push([nr, nc]);
+                            flagPreviewCells.push([nr, nc]);
                         }
                     });
 
-                    // 只有当标记数等于数字时才显示预览（快速翻开条件满足）
-                    if (flagCount !== numValue || previewCells.length === 0) return;
+                    // 快速翻开预览：标记数等于数字时，高亮将被揭开的格子
+                    if (flagCount === numValue && previewCells.length > 0) {
+                        const sourceCell = this.getCell(row, col);
+                        if (sourceCell) sourceCell.classList.add('chord-preview-source');
 
-                    const sourceCell = this.getCell(row, col);
-                    if (sourceCell) sourceCell.classList.add('chord-preview-source');
+                        previewCells.forEach(([nr, nc]) => {
+                            const cell = this.getCell(nr, nc);
+                            if (cell) cell.classList.add('chord-preview');
+                        });
 
-                    previewCells.forEach(([nr, nc]) => {
-                        const cell = this.getCell(nr, nc);
-                        if (cell) cell.classList.add('chord-preview');
-                    });
+                        this._chordPreviewCells = previewCells;
+                        this._chordPreviewSource = [row, col];
+                        return;
+                    }
 
-                    this._chordPreviewCells = previewCells;
-                    this._chordPreviewSource = [row, col];
+                    // 快捷插旗预览：未揭开数等于剩余雷数时（所有未揭开格子必为雷），高亮将被插旗的格子
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    const flagQuickEnabled = isMobile
+                        ? (this.controlSettings.mobileFlagQuick !== false)
+                        : (this.controlSettings.pcFlagQuick !== false);
+                    const remainingMines = numValue - flagCount;
+                    if (flagQuickEnabled && remainingMines > 0 && unrevealedCount === remainingMines && flagPreviewCells.length > 0) {
+                        const sourceCell = this.getCell(row, col);
+                        if (sourceCell) sourceCell.classList.add('chord-flag-preview-source');
+
+                        flagPreviewCells.forEach(([nr, nc]) => {
+                            const cell = this.getCell(nr, nc);
+                            if (cell) cell.classList.add('chord-flag-preview');
+                        });
+
+                        this._chordFlagPreviewCells = flagPreviewCells;
+                        this._chordFlagPreviewSource = [row, col];
+                    }
                 }
 
                 // 隐藏快速翻开预览
@@ -5120,6 +5347,23 @@ decompressBoardData(compressed) {
                         const cell = this.getCell(r, c);
                         if (cell) cell.classList.remove('chord-preview-source');
                         this._chordPreviewSource = null;
+                    }
+                }
+
+                // 隐藏快捷插旗预览
+                _hideChordFlagPreview() {
+                    if (this._chordFlagPreviewCells) {
+                        this._chordFlagPreviewCells.forEach(([nr, nc]) => {
+                            const cell = this.getCell(nr, nc);
+                            if (cell) cell.classList.remove('chord-flag-preview');
+                        });
+                        this._chordFlagPreviewCells = null;
+                    }
+                    if (this._chordFlagPreviewSource) {
+                        const [r, c] = this._chordFlagPreviewSource;
+                        const cell = this.getCell(r, c);
+                        if (cell) cell.classList.remove('chord-flag-preview-source');
+                        this._chordFlagPreviewSource = null;
                     }
                 }
 
@@ -6325,8 +6569,9 @@ resumeGameFromSave() {
 handleNumberCellClick(row, col) {
     if (this._checkTutorialGuard(row, col, 'double_click')) return;
 
-    // 隐藏快速翻开预览
+    // 隐藏快速翻开预览和快捷插旗预览
     this._hideChordPreview();
+    this._hideChordFlagPreview();
 
     // 游戏状态检查：游戏不可交互时直接返回，不记录任何统计
     if (this.gameState.gameOver || (this.gameState.paused && !this.gameState.survivalItems.timeStop.active) || this.gameState.autoSolving) {
@@ -6342,12 +6587,48 @@ handleNumberCellClick(row, col) {
     }
 
     let flagCount = 0;
+    let unrevealedCount = 0;
     this.forEachNeighbor(row, col, (nr, nc) => {
         if (this.flags[nr][nc]) flagCount++;
+        if (!this.revealed[nr][nc] && !this.flags[nr][nc]) unrevealedCount++;
     });
 
+    const numValue = this.board[row][col];
+
     this.gameState.gameData.totalClicks++;
-    if (flagCount === this.board[row][col]) {
+
+    // 快捷插旗：未揭开格子数等于剩余雷数（所有未揭开格子必为雷）
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const flagQuickEnabled = isMobile
+        ? (this.controlSettings.mobileFlagQuick !== false)
+        : (this.controlSettings.pcFlagQuick !== false);
+    const remainingMines = numValue - flagCount;
+    if (flagQuickEnabled && remainingMines > 0 && unrevealedCount === remainingMines) {
+        this.gameState.gameData.effectiveMoves++;
+        this.recordMoveTiming();
+        this.playSound('flag');
+        this.forEachNeighbor(row, col, (nr, nc) => {
+            if (!this.revealed[nr][nc] && !this.flags[nr][nc]) {
+                this.flags[nr][nc] = true;
+                this.gameState.minesLeft--;
+                this.gameState.gameData.flagsPlaced++;
+                this.updateCellAndMinimap(nr, nc);
+                const cell = this.getCell(nr, nc);
+                if (cell) this._addClickFeedback(cell);
+            }
+        });
+        this.updateDisplay();
+        // 插旗后检查胜利条件
+        this.checkWin();
+        if (this.tutorialState.active) {
+            this.checkTutorialAction('double_click', row, col);
+        }
+        this._refreshChordPreview();
+        return;
+    }
+
+    // 快速翻开：标记数等于数字值
+    if (flagCount === numValue) {
         this.gameState.gameData.effectiveMoves++;
         this.gameState.gameData.numberExpansions++;
         this.recordMoveTiming();
@@ -6391,6 +6672,13 @@ handleNumberCellClick(row, col) {
 
 // ========== 异步生成可解棋盘（首次点击动态生成 + Tank Solver验证） ==========
 generateBoardAsync(excludeRow, excludeCol, callback) {
+    // 防止重复调用：如果正在生成中，忽略新的请求
+    if (this._generatingBoard) {
+        console.warn('棋盘正在生成中，忽略重复请求');
+        return;
+    }
+    this._generatingBoard = true;
+
     const rows = this.gameState.rows;
     const cols = this.gameState.cols;
     const totalMines = this.gameState.totalMines;
@@ -6400,6 +6688,7 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
     if (totalMines > rows * cols - safeZone.size) {
         console.error('雷数过多，无法保证安全区无雷');
         const board = this.generateRandomBoardSync(excludeRow, excludeCol);
+        this._generatingBoard = false;
         callback(board);
         return;
     }
@@ -6408,6 +6697,8 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
     let activeWorkers = 0;
     let success = false;
     const workers = [];
+
+    const finish = () => { this._generatingBoard = false; };
 
     const updateProgress = () => {
         this.showFloatingMessage(`正在生成可解棋盘...`);
@@ -6431,12 +6722,14 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
                 }
                 worker.terminate();
                 activeWorkers--;
+                finish();
             } else if (type === 'failure') {
                 worker.terminate();
                 activeWorkers--;
                 if (activeWorkers === 0 && !success) {
                     console.warn('未能生成完全可解棋盘，使用尽力而为策略');
                     this.fallbackGenerateBoard(excludeRow, excludeCol, callback);
+                    finish();
                 }
             }
         };
@@ -6447,6 +6740,7 @@ generateBoardAsync(excludeRow, excludeCol, callback) {
             activeWorkers--;
             if (activeWorkers === 0 && !success) {
                 this.fallbackGenerateBoard(excludeRow, excludeCol, callback);
+                finish();
             }
         };
 
@@ -6507,6 +6801,7 @@ performOpenAction(row, col) {
 
     // 隐藏快速翻开预览
     this._hideChordPreview();
+    this._hideChordFlagPreview();
 
     if (this.revealed[row][col] || this.flags[row][col] || this.questions[row][col]) {
         this.gameState.gameData.ineffectiveMoves++;
@@ -6572,6 +6867,7 @@ performFlagAction(row, col) {
 
     // 隐藏快速翻开预览（标记操作可能改变翻开条件）
     this._hideChordPreview();
+    this._hideChordFlagPreview();
 
     // --- 检查是否为无效操作 ---
     // 如果格子已被揭开，则操作无效
@@ -6989,6 +7285,8 @@ _applyBatchRevealWithAnimation(batchCells) {
                     // 保留快速翻开预览样式类
                     if (cell.classList.contains('chord-preview')) targetClass += ' chord-preview';
                     if (cell.classList.contains('chord-preview-source')) targetClass += ' chord-preview-source';
+                    if (cell.classList.contains('chord-flag-preview')) targetClass += ' chord-flag-preview';
+                    if (cell.classList.contains('chord-flag-preview-source')) targetClass += ' chord-flag-preview-source';
 
                     if (cell.className !== targetClass) {
                         cell.className = targetClass;

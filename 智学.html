@@ -307,6 +307,96 @@
             box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
         }
 
+        /* 自定义示例下拉框 */
+        .custom-select {
+            position: relative;
+            min-width: 140px;
+            user-select: none;
+        }
+
+        .custom-select-trigger {
+            padding: 8px 28px 8px 12px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text);
+            position: relative;
+        }
+
+        .custom-select-trigger::after {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--text-secondary);
+            transition: transform 0.2s, border-top-color 0.2s;
+            pointer-events: none;
+        }
+
+        .custom-select-trigger:hover::after {
+            border-top-color: var(--primary);
+        }
+
+        .custom-select.open .custom-select-trigger::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: fixed;
+            min-width: 180px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 200;
+            display: none;
+        }
+
+        .custom-select-dropdown.open {
+            display: block;
+        }
+
+        .custom-select-list {
+            max-height: 240px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+
+        .custom-select-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .custom-select-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .custom-select-option {
+            padding: 7px 12px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background 0.15s;
+        }
+
+        .custom-select-option:hover {
+            background: var(--primary-light);
+        }
+
+        .custom-select-option.selected {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
         /* 统计栏 */
         .stats-bar {
             display: flex;
@@ -1024,6 +1114,18 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
         }
 
         .history-item {
@@ -2220,10 +2322,13 @@
                     aria-label="试题文本输入"></textarea>
                 <div class="controls" style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                     <button class="btn btn-primary" onclick="parseQuestions()">🔍 解析试题<span class="shortcut-hint"> Ctrl+Enter</span></button>
-                    <div style="display: inline-flex; gap: 0; align-items: center; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--card-bg);">
-                        <select id="exampleSelect" style="padding: 8px 12px; border: none; font-size: 0.875rem; background: transparent; color: var(--text); cursor: pointer; min-width: 140px; outline: none;" aria-label="选择示例题库">
-                            <option value="">加载中...</option>
-                        </select>
+                    <div style="display: inline-flex; gap: 0; align-items: center; border: 1px solid var(--border); border-radius: var(--radius); overflow: visible; background: var(--card-bg);">
+                        <div class="custom-select" id="exampleSelect">
+                            <div class="custom-select-trigger" onclick="toggleExampleDropdown()">加载中...</div>
+                            <div class="custom-select-dropdown" id="exampleDropdown">
+                                <div class="custom-select-list" id="exampleSelectList"></div>
+                            </div>
+                        </div>
                         <button class="btn btn-outline" onclick="loadExample()" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0;">📄 加载</button>
                         <button class="btn btn-outline" onclick="fetchExampleList()" title="重新获取示例列表" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0; padding: 8px 10px;">🔄</button>
                     </div>
@@ -2354,6 +2459,8 @@
         // 历史
         historyRecords: [],
         _activeHistoryTime: null,  // 当前加载的历史记录时间标识
+        localBankCounter: 0,       // 本地题库递增序号
+        currentBankSource: null,   // 当前题库来源 { type: 'online'|'local', name: string }
         // 错题重做
         wrongRedoMode: false,       // 是否处于错题重做模式
         savedFullQuizOrder: [],     // 进入重做模式前保存的完整quizOrder
@@ -2458,6 +2565,11 @@
         state.savedFullQuizOrder = [];
         aiState.chatCache = {};
         aiState.currentChatKey = null;
+
+        // 如果没有已标记的在线来源，则标记为本地题库
+        if (!state.currentBankSource) {
+            state.currentBankSource = { type: 'local', name: '本地题库' + (++state.localBankCounter) };
+        }
 
         renderParsePreview();
         updateStats();
@@ -3455,6 +3567,8 @@
     }
 
     // ==================== 加载示例 ====================
+    let exampleListData = [];          // 示例题库列表 [{name, file}]
+    let exampleSelectedIndex = -1;     // 当前选中项索引
 
     // 检测当前页面是否被 CSP 限制（great-site.net 等免费主机会阻止对外请求）
     function isRestrictedHost() {
@@ -3480,27 +3594,31 @@
 
     // 页面加载时拉取示例列表
     async function fetchExampleList() {
-        const select = document.getElementById('exampleSelect');
-        select.innerHTML = '<option value="">加载中...</option>';
+        const trigger = document.querySelector('#exampleSelect .custom-select-trigger');
+        const list = document.getElementById('exampleSelectList');
+        trigger.textContent = '加载中...';
+        exampleSelectedIndex = -1;
         try {
             const resp = await smartFetch('https://vacuopolis.qzz.io/api/examples');
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
-            select.innerHTML = '';
             if (data.examples && data.examples.length > 0) {
-                data.examples.forEach((ex, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = i;
-                    opt.textContent = ex.name;
-                    select.appendChild(opt);
-                });
+                exampleListData = data.examples;
+                renderExampleOptions();
+                exampleSelectedIndex = 0;
+                trigger.textContent = exampleListData[0].name;
                 showToast(`已获取 ${data.examples.length} 个示例题库`, 'info');
             } else {
-                select.innerHTML = '<option value="">暂无示例</option>';
+                exampleListData = [];
+                list.innerHTML = '<div class="custom-select-option" style="color:var(--text-secondary);cursor:default;">暂无示例</div>';
+                trigger.textContent = '暂无示例';
             }
         } catch (e) {
             // 本地 fallback
-            select.innerHTML = '<option value="0">思想道德与法治</option>';
+            exampleListData = [{ name: '思想道德与法治', file: '0.txt' }];
+            renderExampleOptions();
+            exampleSelectedIndex = 0;
+            trigger.textContent = '思想道德与法治';
             const reason = e.name === 'AbortError' ? '请求超时' : (e.message || '网络错误');
             showToast(`获取失败(${reason})，仅本地示例`, 'error');
             if (isRestrictedHost()) {
@@ -3508,6 +3626,72 @@
             }
         }
     }
+
+    function renderExampleOptions() {
+        const list = document.getElementById('exampleSelectList');
+        list.innerHTML = '';
+        exampleListData.forEach((ex, i) => {
+            const div = document.createElement('div');
+            div.className = 'custom-select-option' + (i === exampleSelectedIndex ? ' selected' : '');
+            div.textContent = ex.name;
+            div.title = ex.name;
+            div.onclick = () => selectExample(i);
+            list.appendChild(div);
+        });
+    }
+
+    function selectExample(index) {
+        exampleSelectedIndex = index;
+        const trigger = document.querySelector('#exampleSelect .custom-select-trigger');
+        trigger.textContent = exampleListData[index].name;
+        document.getElementById('exampleDropdown').classList.remove('open');
+        document.getElementById('exampleSelect').classList.remove('open');
+        renderExampleOptions();
+    }
+
+    function toggleExampleDropdown() {
+        const dropdown = document.getElementById('exampleDropdown');
+        const select = document.getElementById('exampleSelect');
+        const trigger = document.querySelector('#exampleSelect .custom-select-trigger');
+        if (dropdown.classList.contains('open')) {
+            dropdown.classList.remove('open');
+            select.classList.remove('open');
+        } else {
+            const rect = trigger.getBoundingClientRect();
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.top = rect.bottom + 'px';
+            dropdown.style.minWidth = Math.max(180, rect.width) + 'px';
+            // 如果下方空间不足，则向上弹出
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                dropdown.style.top = 'auto';
+                dropdown.style.bottom = (window.innerHeight - rect.top) + 'px';
+            } else {
+                dropdown.style.bottom = 'auto';
+            }
+            dropdown.classList.add('open');
+            select.classList.add('open');
+        }
+    }
+
+    // 点击外部关闭示例下拉
+    document.addEventListener('click', (e) => {
+        const select = document.getElementById('exampleSelect');
+        const dropdown = document.getElementById('exampleDropdown');
+        if (dropdown && !dropdown.contains(e.target) && select && !select.contains(e.target)) {
+            dropdown.classList.remove('open');
+            select.classList.remove('open');
+        }
+    });
+
+    // 窗口变化时关闭示例下拉（fixed定位会偏移）
+    window.addEventListener('resize', () => {
+        const dropdown = document.getElementById('exampleDropdown');
+        const select = document.getElementById('exampleSelect');
+        if (dropdown) dropdown.classList.remove('open');
+        if (select) select.classList.remove('open');
+    });
 
     // 显示网络受限警告（针对 great-site.net 等）
     function showNetworkWarning() {
@@ -3521,12 +3705,12 @@
     }
 
     async function loadExample() {
-        const select = document.getElementById('exampleSelect');
-        const idx = select.value;
-        if (idx === '' || idx === null) {
+        if (exampleSelectedIndex < 0 || !exampleListData[exampleSelectedIndex]) {
             showToast('请先选择一个示例题库', 'error');
             return;
         }
+        const idx = exampleSelectedIndex;
+        const name = exampleListData[idx].name;
         const btn = document.querySelector('[onclick="loadExample()"]');
         const originalText = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.textContent = '⏳ 加载中...'; }
@@ -3537,7 +3721,7 @@
             if (!data.text) throw new Error('返回内容为空');
             document.getElementById('inputText').value = data.text;
             autoResizeTextarea();
-            const name = select.options[select.selectedIndex].textContent;
+            state.currentBankSource = { type: 'online', name: name };
             showToast(`已加载示例「${name}」，点击"解析试题"查看效果`, 'info');
         } catch (e) {
             // 本地 file:// 或网络不可用时，使用本地简短示例
@@ -3554,6 +3738,7 @@
 4.简述新时代的内涵与意义。`;
             document.getElementById('inputText').value = fallback;
             autoResizeTextarea();
+            state.currentBankSource = { type: 'local', name: '本地题库' + (++state.localBankCounter) };
             showToast('已加载本地示例（完整示例需在线访问）', 'info');
             const reason = e.name === 'AbortError' ? '请求超时' : (e.message || '网络错误');
             console.warn('加载示例失败:', reason);
@@ -3603,8 +3788,10 @@
             shuffleEnabled: state.shuffleEnabled,
             quizOrder: JSON.parse(JSON.stringify(state.quizOrder)),
             aiChatCache: {},
+            source: state.currentBankSource ? { ...state.currentBankSource } : null,
         };
         state._activeHistoryTime = record.time;
+        state.currentBankSource = null;  // 重置来源标记
         state.historyRecords.unshift(record);
         if (state.historyRecords.length > 30) state.historyRecords.pop();
         saveHistoryToStorage();
@@ -3637,11 +3824,22 @@
                 progressColor = correctPct >= 80 ? 'var(--success)' : correctPct >= 60 ? 'var(--warning)' : 'var(--error)';
             }
 
+            // 题库来源标签
+            let sourceTag = '';
+            if (r.source) {
+                if (r.source.type === 'online') {
+                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#eef2ff;color:#4a6cf7;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #c7d2fe;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(r.source.name)}">☁️ ${escapeHtml(r.source.name)}</span>`;
+                } else {
+                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f5f9;color:#64748b;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #e2e8f0;">📁 ${escapeHtml(r.source.name)}</span>`;
+                }
+            }
+
             html += `<div class="history-item" style="flex-direction:column;align-items:stretch;gap:10px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;">
                     <div class="h-info">
                         <span class="h-time">${escapeHtml(r.time)}</span>
                         <span class="h-count">${r.count} 题</span>
+                        ${sourceTag}
                         ${isComplete ? `<span style="color:${progressColor};font-weight:600;font-size:0.8125rem;">${correct}/${objectiveTotal}</span>` : ''}
                     </div>
                     <button class="btn btn-sm btn-outline btn-outline-error" onclick="deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">✕</button>

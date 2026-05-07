@@ -689,6 +689,22 @@
             color: #fff;
         }
 
+        /* 多选题选中状态 - 橙色系，与单选蓝色区分，与答错红色/漏选黄色区分 */
+        .quiz-option.multi-selected {
+            border-color: #f97316;
+            background: #fff7ed;
+        }
+
+        .quiz-option.multi-selected .opt-label {
+            background: #f97316;
+            color: #fff;
+        }
+
+        .quiz-option.multi-hover:hover {
+            border-color: #fed7aa;
+            background: #fff7ed;
+        }
+
         /* 刷题模式：提交后状态 */
         .quiz-option.is-correct {
             border-color: var(--success);
@@ -3096,7 +3112,10 @@
                     }
                 } else {
                     if (myAns.includes(opt.label)) {
-                        cls += ' selected';
+                        cls += q.type === 'multi' ? ' multi-selected' : ' selected';
+                    }
+                    if (q.type === 'multi') {
+                        cls += ' multi-hover';
                     }
                 }
 

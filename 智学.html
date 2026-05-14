@@ -4340,6 +4340,8 @@
 
         try {
             aiState.abortCtrl = new AbortController();
+            // 初始请求超时：30秒内 DeepSeek API 无响应则中止
+            const fetchTimeout = setTimeout(() => aiState.abortCtrl.abort(), 30000);
 
             const response = await fetch(API_PROXY_URL, {
                 method: 'POST',
@@ -4356,6 +4358,7 @@
                 }),
                 signal: aiState.abortCtrl.signal
             });
+            clearTimeout(fetchTimeout); // 收到响应后清除请求超时
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
@@ -4530,8 +4533,13 @@
 
             // 等待打字机动画全部打完
             await new Promise(resolve => {
+                const typewriterDeadline = setTimeout(() => {
+                    // 超时则强制完成，确保 finally 能执行
+                    resolve();
+                }, 30000);
                 function checkDone() {
                     if (displayedContent.length >= fullContent.length && displayedReasoning.length >= reasoningContent.length) {
+                        clearTimeout(typewriterDeadline);
                         resolve();
                     } else {
                         setTimeout(checkDone, 30);
@@ -4555,7 +4563,12 @@
             if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
             removeAILoading(loadingEl);
             if (err.name === 'AbortError') {
-                appendAIMessage('bot', '⏹ 请求已取消');
+                // 区分超时中止和用户手动取消
+                if (err.message?.includes('超时') || !aiState.abortCtrl) {
+                    appendAIError('AI响应超时，请稍后重试');
+                } else {
+                    appendAIMessage('bot', '⏹ 请求已取消');
+                }
             } else {
                 appendAIError(err.message);
             }

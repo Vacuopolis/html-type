@@ -4351,7 +4351,7 @@
                     messages: apiMessages,
                     stream: true,
                     max_tokens: 2048,
-                    temperature: 0.7,
+                    ...(aiState.thinkingEnabled ? { temperature: 1 } : { temperature: 0.7 }),
                     ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
                 }),
                 signal: aiState.abortCtrl.signal
@@ -4360,6 +4360,11 @@
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
                 throw new Error(errData.error?.message || `API请求失败 (${response.status})`);
+            }
+
+            // 检查 response.body 是否可用（部分浏览器/环境可能为 null）
+            if (!response.body) {
+                throw new Error('浏览器不支持流式读取，请更换浏览器重试');
             }
 
             // 移除独立的加载动画，创建流式消息气泡（内含思考中提示）
@@ -4375,6 +4380,9 @@
             let firstContentArrived = false;
             let buffer = '';
             let streamDone = false;
+            let streamTimeout = null;   // 流式读取超时计时器
+            let lastChunkTime = Date.now();
+            const STREAM_TIMEOUT_MS = 60000; // 60秒无数据则判定超时
 
             // ====== 打字机动画：匀速输出，消除 API 吐字间隙的卡顿感 ======
             let displayedContent = '';       // 当前已渲染显示的内容
@@ -4430,8 +4438,30 @@
             // 启动打字机
             typewriterTimer = setTimeout(typewriterTick, TYPE_SPEED);
 
+            // 流式读取超时保护：使用 Promise.race 竞争每次 reader.read()
+            function readWithTimeout(reader, timeoutMs) {
+                return new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => reject(new Error('AI响应超时，请稍后重试')), timeoutMs);
+                    reader.read().then(
+                        (result) => { clearTimeout(timer); resolve(result); },
+                        (err) => { clearTimeout(timer); reject(err); }
+                    );
+                });
+            }
+
             while (true) {
-                const { done, value } = await reader.read();
+                let readResult;
+                try {
+                    // 每次读取最多等待 60 秒，超时则中止
+                    readResult = await readWithTimeout(reader, STREAM_TIMEOUT_MS);
+                } catch (readErr) {
+                    // 超时或读取异常，中止流
+                    if (readErr.message?.includes('超时')) {
+                        throw readErr;
+                    }
+                    break;
+                }
+                const { done, value } = readResult;
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
@@ -4445,9 +4475,35 @@
 
                     try {
                         const json = JSON.parse(trimmed.slice(6));
+
+                        // 处理代理端返回的错误事件（如上游流中断）
+                        if (json.error) {
+                            if (!fullContent) fullContent = `（${json.error}）`;
+                            streamDone = true;
+                            break;
+                        }
+
                         const choice = json.choices?.[0];
                         const contentDelta = choice?.delta?.content;
                         const reasoningDelta = choice?.delta?.reasoning_content;
+                        const finishReason = choice?.finish_reason;
+
+                        // 处理异常结束原因
+                        if (finishReason === 'content_filter') {
+                            // 内容被安全过滤，提示用户
+                            if (!fullContent) fullContent = '（AI回复因安全策略被过滤，请尝试换一种问法）';
+                            streamDone = true;
+                            break;
+                        }
+                        if (finishReason === 'length') {
+                            // 达到 token 上限，追加提示
+                            fullContent += '\n\n*（回复因长度限制被截断）*';
+                        }
+                        if (finishReason === 'insufficient_system_resource') {
+                            if (!fullContent) fullContent = '（AI服务暂时繁忙，请稍后重试）';
+                            streamDone = true;
+                            break;
+                        }
 
                         // 只累积数据，打字机定时器会匀速取出渲染
                         if (reasoningDelta) {
@@ -4464,6 +4520,9 @@
                         // 忽略解析错误
                     }
                 }
+
+                // 如果 finish_reason 已触发提前结束
+                if (streamDone) break;
             }
 
             // 流结束，标记完成（打字机继续把剩余内容打完）

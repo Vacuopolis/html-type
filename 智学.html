@@ -1164,6 +1164,78 @@
             font-size: 0.75rem;
         }
 
+        /* 批量管理模式 */
+        .batch-toolbar {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #f1f5f9;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .batch-toolbar.visible {
+            display: flex;
+        }
+
+        .batch-toolbar .batch-count {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .batch-toolbar .batch-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .history-item .batch-checkbox {
+            display: none;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .history-item.batch-mode .batch-checkbox {
+            display: block;
+        }
+
+        .history-item.batch-mode {
+            border-color: transparent;
+            background: #f8fafc;
+        }
+
+        .history-item.batch-mode.selected {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .hd-header .btn-manage {
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hd-header .btn-manage:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .hd-header .btn-manage.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
         /* ================= Toast 通知 ================= */
         .toast-container {
             position: fixed;
@@ -2300,7 +2372,21 @@
     <div class="history-dropdown" id="historyDropdown">
         <div class="hd-header">
             <h2>📚 解析历史 <span style="font-size:0.8rem;font-weight:400;color:var(--text-secondary);">（本地自动保存）</span></h2>
-            <button class="btn btn-sm btn-danger" onclick="clearAllHistory()" style="padding:3px 10px;font-size:0.75rem;">清空全部</button>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <button class="btn-manage" id="btnBatchManage" onclick="toggleBatchMode()">📋 管理</button>
+                <button class="btn btn-sm btn-danger" onclick="clearAllHistory()" style="padding:3px 10px;font-size:0.75rem;">清空全部</button>
+            </div>
+        </div>
+        <div class="batch-toolbar" id="batchToolbar">
+            <label style="display:flex;align-items:center;gap:4px;font-size:0.8125rem;cursor:pointer;user-select:none;">
+                <input type="checkbox" id="batchSelectAll" onchange="toggleSelectAll(this.checked)" style="accent-color:var(--primary);">
+                全选
+            </label>
+            <span class="batch-count" id="batchCount">已选 0 条</span>
+            <div class="batch-actions">
+                <button class="btn btn-sm btn-danger" id="btnBatchDelete" onclick="deleteSelected()" style="padding:3px 10px;font-size:0.75rem;">🗑️ 删除选中</button>
+                <button class="btn btn-sm btn-outline" onclick="exitBatchMode()" style="padding:3px 10px;font-size:0.75rem;">取消</button>
+            </div>
         </div>
         <div class="hd-body">
             <div class="history-list" id="historyList"></div>
@@ -2459,6 +2545,8 @@
         // 历史
         historyRecords: [],
         _activeHistoryTime: null,  // 当前加载的历史记录时间标识
+        batchMode: false,           // 是否处于批量管理模式
+        batchSelected: new Set(),   // 批量选中的索引集合
         localBankCounter: 0,       // 本地题库递增序号
         currentBankSource: null,   // 当前题库来源 { type: 'online'|'local', name: string }
         // 错题重做
@@ -3811,6 +3899,7 @@
         }
 
         badge.classList.add('visible');
+        const isBatch = state.batchMode;
         let html = '';
         state.historyRecords.forEach((r, i) => {
             const answered = r.quizStatus ? r.quizStatus.filter(s => s !== 'unanswered').length : 0;
@@ -3835,7 +3924,10 @@
                 }
             }
 
-            html += `<div class="history-item" style="flex-direction:column;align-items:stretch;gap:10px;">
+            const selectedClass = state.batchSelected.has(i) ? ' selected' : '';
+            html += `<div class="history-item${isBatch ? ' batch-mode' : ''}${selectedClass}" data-index="${i}" ${isBatch ? `onclick="toggleBatchItem(${i}, this)"` : ''}>
+                ${isBatch ? `<input type="checkbox" class="batch-checkbox" ${state.batchSelected.has(i) ? 'checked' : ''} onclick="event.stopPropagation();toggleBatchItem(${i}, this.closest('.history-item'))">` : ''}
+                <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;gap:10px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;">
                     <div class="h-info">
                         <span class="h-time">${escapeHtml(r.time)}</span>
@@ -3843,7 +3935,7 @@
                         ${sourceTag}
                         ${isComplete ? `<span style="color:${progressColor};font-weight:600;font-size:0.8125rem;">${correct}/${objectiveTotal}</span>` : ''}
                     </div>
-                    <button class="btn btn-sm btn-outline btn-outline-error" onclick="deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">✕</button>
+                    ${!isBatch ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">✕</button>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                     <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
@@ -3851,7 +3943,7 @@
                     </div>
                     <span style="font-size:0.75rem;color:var(--text-secondary);min-width:36px;text-align:right;">${progressPct}%</span>
                 </div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${!isBatch ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="continueHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">
                         ${answered > 0 ? '▶ 继续答题' : '▶ 开始答题'}
                     </button>
@@ -3859,6 +3951,7 @@
                     <button class="btn btn-sm btn-outline" onclick="loadHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">📄 仅加载题目</button>
                     ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;">❌ 查看错题</button>` : ''}
                     ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-warn" onclick="redoWrongFromHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">🔄 重做错题</button>` : ''}
+                </div>` : ''}
                 </div>
             </div>`;
         });
@@ -4024,6 +4117,7 @@
         const btn = document.querySelector('.history-tab');
         if (dropdown) dropdown.classList.remove('open');
         if (btn) btn.classList.remove('active');
+        if (state.batchMode) exitBatchMode();
     }
 
     function clearAllHistory() {
@@ -4032,6 +4126,97 @@
         saveHistoryToStorage();
         renderHistory();
         showToast('所有历史记录已清空', 'info');
+    }
+
+    // ==================== 批量管理 ====================
+    function toggleBatchMode() {
+        if (state.batchMode) {
+            exitBatchMode();
+        } else {
+            enterBatchMode();
+        }
+    }
+
+    function enterBatchMode() {
+        state.batchMode = true;
+        state.batchSelected = new Set();
+        document.getElementById('batchToolbar').classList.add('visible');
+        document.getElementById('btnBatchManage').classList.add('active');
+        document.getElementById('btnBatchManage').textContent = '📋 取消管理';
+        document.getElementById('batchSelectAll').checked = false;
+        updateBatchCount();
+        renderHistory();
+    }
+
+    function exitBatchMode() {
+        state.batchMode = false;
+        state.batchSelected = new Set();
+        document.getElementById('batchToolbar').classList.remove('visible');
+        document.getElementById('btnBatchManage').classList.remove('active');
+        document.getElementById('btnBatchManage').textContent = '📋 管理';
+        renderHistory();
+    }
+
+    function toggleBatchItem(index, el) {
+        if (state.batchSelected.has(index)) {
+            state.batchSelected.delete(index);
+            el.classList.remove('selected');
+            el.querySelector('.batch-checkbox').checked = false;
+        } else {
+            state.batchSelected.add(index);
+            el.classList.add('selected');
+            el.querySelector('.batch-checkbox').checked = true;
+        }
+        updateBatchCount();
+        // 更新全选状态
+        const selectAll = document.getElementById('batchSelectAll');
+        selectAll.checked = state.batchSelected.size === state.historyRecords.length;
+    }
+
+    function toggleSelectAll(checked) {
+        const items = document.querySelectorAll('.history-item.batch-mode');
+        if (checked) {
+            state.historyRecords.forEach((_, i) => state.batchSelected.add(i));
+            items.forEach(el => {
+                el.classList.add('selected');
+                const cb = el.querySelector('.batch-checkbox');
+                if (cb) cb.checked = true;
+            });
+        } else {
+            state.batchSelected.clear();
+            items.forEach(el => {
+                el.classList.remove('selected');
+                const cb = el.querySelector('.batch-checkbox');
+                if (cb) cb.checked = false;
+            });
+        }
+        updateBatchCount();
+    }
+
+    function updateBatchCount() {
+        const countEl = document.getElementById('batchCount');
+        const deleteBtn = document.getElementById('btnBatchDelete');
+        countEl.textContent = `已选 ${state.batchSelected.size} 条`;
+        deleteBtn.disabled = state.batchSelected.size === 0;
+        deleteBtn.style.opacity = state.batchSelected.size === 0 ? '0.5' : '1';
+    }
+
+    function deleteSelected() {
+        const count = state.batchSelected.size;
+        if (count === 0) return;
+        if (!confirm(`确定要删除选中的 ${count} 条历史记录吗？`)) return;
+        // 从大到小排序索引，避免删除后索引偏移
+        const indices = Array.from(state.batchSelected).sort((a, b) => b - a);
+        indices.forEach(i => state.historyRecords.splice(i, 1));
+        state.batchSelected.clear();
+        saveHistoryToStorage();
+        renderHistory();
+        updateBatchCount();
+        showToast(`已删除 ${count} 条历史记录`, 'info');
+        // 如果没有记录了，退出管理模式
+        if (state.historyRecords.length === 0) {
+            exitBatchMode();
+        }
     }
 
     // ==================== Toast 通知 ====================

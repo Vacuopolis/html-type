@@ -2707,7 +2707,8 @@
                 const embedded = tryExtractEmbeddedAnswer(qText);
                 let answer = '';
                 if (embedded) {
-                    qText = qText.replace(embedded.original, '（  ）');
+                    // 替换题干中所有含答案字母的括号为空括号（如 （A）（A）（A）→ （  ）（  ）（  ）
+                    qText = qText.replace(/[（(]\s*[A-Za-z]{1,8}\s*[）)]/g, '（  ）');
                     answer = embedded.answer;
                 }
 

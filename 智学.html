@@ -4338,6 +4338,16 @@
         aiState.isStreaming = true;
         aiState.userScrolledUp = false;  // 开始新的流式输出时重置滚动状态
 
+        // 这些变量必须声明在 try 之前，否则 catch/finally 中无法访问（let 块级作用域）
+        let typewriterTimer = null;
+        let displayedContent = '';
+        let displayedReasoning = '';
+        let fullContent = '';
+        let reasoningContent = '';
+        let firstContentArrived = false;
+        let streamDone = false;
+        let msgEl = null;
+
         try {
             aiState.abortCtrl = new AbortController();
             // 初始请求超时：30秒内 DeepSeek API 无响应则中止
@@ -4372,25 +4382,18 @@
 
             // 移除独立的加载动画，创建流式消息气泡（内含思考中提示）
             removeAILoading(loadingEl);
-            const msgEl = appendAIMessage('bot', '', true);
+            msgEl = appendAIMessage('bot', '', true);
             // 先显示"思考中…"提示，直到有实际内容到达
             msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">思考中…</span></div>';
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
-            let fullContent = '';       // API 实际累积的全部内容
-            let reasoningContent = '';  // API 实际累积的全部思考内容
-            let firstContentArrived = false;
             let buffer = '';
-            let streamDone = false;
             let streamTimeout = null;   // 流式读取超时计时器
             let lastChunkTime = Date.now();
             const STREAM_TIMEOUT_MS = 60000; // 60秒无数据则判定超时
 
             // ====== 打字机动画：匀速输出，消除 API 吐字间隙的卡顿感 ======
-            let displayedContent = '';       // 当前已渲染显示的内容
-            let displayedReasoning = '';     // 当前已渲染显示的思考内容
-            let typewriterTimer = null;
             const TYPE_SPEED = 30;          // 每次打字间隔(ms)，越小越快
             const CHARS_PER_TICK = 3;       // 每次打字推进字符数
 

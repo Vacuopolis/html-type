@@ -67,15 +67,14 @@ body {
 /* Mouse-following glow */
 .cursor-glow {
   position: fixed;
-  width: 600px;
-  height: 600px;
+  width: 420px;
+  height: 420px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(201, 169, 110, 0.1) 0%, rgba(201, 169, 110, 0.04) 40%, transparent 70%);
   pointer-events: none;
   z-index: 0;
   transform: translate(-50%, -50%);
-  transition: left 0.6s cubic-bezier(0.22, 1, 0.36, 1), top 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: left, top;
+  will-change: auto;
 }
 
 /* Ambient floating particles canvas */
@@ -580,7 +579,9 @@ body {
   display: flex;
   gap: 1.5rem;
   overflow-x: auto;
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
+  touch-action: pan-x pinch-zoom;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding-bottom: 1rem;
@@ -645,7 +646,8 @@ body {
 .carousel-nav-label {
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   display: flex;
@@ -1448,7 +1450,7 @@ footer {
   </div>
   <div class="footer-bottom">
     <p>&copy; <span id="currentYear"></span> 创意互动实验室 by 空城</p>
-    <p>所有项目均为前端技术演示，不包含真实交易与数据收集</p>
+    <p>所有项目均为前端技术演示，不涉及商业交易与数据收集</p>
   </div>
 </footer>
 
@@ -2274,6 +2276,8 @@ function initAmbientEffects() {
   let width, height;
   let mouseX = -9999, mouseY = -9999;
   let targetMouseX = -9999, targetMouseY = -9999;
+  let glowX = -9999, glowY = -9999;
+  let mouseOnScreen = false;
   let gridMx = 50, gridMy = 50;
   const isMobile = window.innerWidth <= 768;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2372,13 +2376,24 @@ function initAmbientEffects() {
       return;
     }
 
-    // Smooth mouse interpolation
-    mouseX += (targetMouseX - mouseX) * 0.06;
-    mouseY += (targetMouseY - mouseY) * 0.06;
+    // Smooth mouse interpolation (frozen when mouse leaves screen)
+    if (mouseOnScreen) {
+      if (mouseX < 0) { mouseX = targetMouseX; mouseY = targetMouseY; glowX = targetMouseX; glowY = targetMouseY; }
+      mouseX += (targetMouseX - mouseX) * 0.06;
+      mouseY += (targetMouseY - mouseY) * 0.06;
+      glowX += (targetMouseX - glowX) * 0.03;
+      glowY += (targetMouseY - glowY) * 0.03;
+    }
+
+    // Update big glow div position (desktop)
+    if (!isMobile) {
+      glow.style.left = glowX + 'px';
+      glow.style.top = glowY + 'px';
+    }
 
     // Smooth grid overlay position
-    const targetGridMx = targetMouseX > 0 ? (targetMouseX / window.innerWidth * 100) : 50;
-    const targetGridMy = targetMouseY > 0 ? (targetMouseY / window.innerHeight * 100) : 50;
+    const targetGridMx = mouseOnScreen ? (targetMouseX / window.innerWidth * 100) : 50;
+    const targetGridMy = mouseOnScreen ? (targetMouseY / window.innerHeight * 100) : 50;
     gridMx += (targetGridMx - gridMx) * 0.04;
     gridMy += (targetGridMy - gridMy) * 0.04;
     gridOverlay.style.setProperty('--grid-mx', gridMx.toFixed(1) + '%');
@@ -2400,7 +2415,7 @@ function initAmbientEffects() {
       const pos = cubicBezier(b.path.t, b.path.p0, b.path.p1, b.path.p2, b.path.p3);
 
       // Mouse attraction: blobs gently pulled toward cursor
-      if (mouseX > 0 && mouseY > 0) {
+      if (mouseOnScreen) {
         const mdx = mouseX - pos.x;
         const mdy = mouseY - pos.y;
         const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
@@ -2466,7 +2481,7 @@ function initAmbientEffects() {
       const pos = cubicBezier(p.path.t, p.path.p0, p.path.p1, p.path.p2, p.path.p3);
 
       // Mouse repulsion: push away from cursor
-      if (mouseX > 0 && mouseY > 0) {
+      if (mouseOnScreen) {
         const dx = pos.x - mouseX;
         const dy = pos.y - mouseY;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -2501,8 +2516,8 @@ function initAmbientEffects() {
       ctx.fill();
     });
 
-    // Draw mouse attraction ring
-    if (mouseX > 0 && mouseY > 0) {
+    // Draw mouse attraction ring (only when mouse on screen)
+    if (mouseOnScreen) {
       const ringRadius = 120;
       const gradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, ringRadius);
       gradient.addColorStop(0, 'rgba(220,185,120,0.05)');
@@ -2520,9 +2535,8 @@ function initAmbientEffects() {
   function updateMouse(x, y) {
     targetMouseX = x;
     targetMouseY = y;
-    if (!isMobile) {
-      glow.style.left = x + 'px';
-      glow.style.top = y + 'px';
+    if (!mouseOnScreen) {
+      mouseOnScreen = true;
     }
   }
 
@@ -2533,6 +2547,7 @@ function initAmbientEffects() {
   }, { passive: true });
 
   document.addEventListener('mouseleave', () => {
+    mouseOnScreen = false;
     targetMouseX = -9999;
     targetMouseY = -9999;
   });

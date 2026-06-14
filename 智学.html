@@ -7,27 +7,32 @@
     <style>
         /* ================= CSS 变量 / 设计令牌 ================= */
         :root {
-            --primary: #4a6cf7;
-            --primary-hover: #3a5ce5;
-            --primary-light: #eef2ff;
-            --primary-bg: rgba(74, 108, 247, 0.08);
-            --bg: #f0f2f5;
+            --primary: #0d9488;
+            --primary-hover: #0f766e;
+            --primary-light: #f0fdfa;
+            --primary-bg: rgba(13, 148, 136, 0.08);
+            --bg: #f8fafc;
             --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-secondary: #64748b;
+            --text: #0f172a;
+            --text-secondary: #475569;
             --border: #e2e8f0;
-            --success: #22c55e;
-            --success-bg: #dcfce7;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
             --success-border: #86efac;
-            --error: #ef4444;
+            --error: #dc2626;
             --error-bg: #fef2f2;
             --error-border: #fca5a5;
-            --warning: #f59e0b;
-            --warning-bg: #fef3c7;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
             --radius: 8px;
-            --radius-lg: 12px;
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --radius-lg: 10px;
+            --shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --header-bg: #134e4a;
+            --miku: #39C5BB;
+            --miku-dark: #2ba8a0;
+            --miku-light: #e0f7f5;
+            --miku-glow: rgba(57, 197, 187, 0.35);
         }
 
         /* ================= 基础重置 ================= */
@@ -38,8 +43,8 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-                         "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            font-family: "Geist", "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                         "Microsoft YaHei", sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
@@ -47,17 +52,46 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px 256px;
+        }
+
+        /* Miku 主题背景装饰 - 右下角双马尾水印 */
+        body::after {
+            content: '';
+            position: fixed;
+            right: -40px;
+            bottom: -20px;
+            width: 200px;
+            height: 280px;
+            opacity: 0.025;
+            pointer-events: none;
+            z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'%3E%3Ccircle cx='50' cy='20' r='14' fill='%2339C5BB'/%3E%3Cpath d='M36 20c-10 14-18 34-16 60' stroke='%2339C5BB' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M64 20c10 14 18 34 16 60' stroke='%2339C5BB' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M40 30c-6 10-10 22-8 40' stroke='%2339C5BB' stroke-width='3' fill='none' stroke-linecap='round' opacity='0.6'/%3E%3Cpath d='M60 30c6 10 10 22 8 40' stroke='%2339C5BB' stroke-width='3' fill='none' stroke-linecap='round' opacity='0.6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-size: contain;
         }
 
         /* ================= 语义化布局 ================= */
         .site-header {
-            background: linear-gradient(135deg, #4a6cf7, #6366f1);
+            background: var(--header-bg);
             color: #fff;
             padding: 18px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: var(--shadow-lg);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -66,7 +100,38 @@
         .site-header h1 {
             font-size: 1.4rem;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+        }
+
+        .miku-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+            vertical-align: middle;
+            animation: mikuBadgePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes mikuBadgePulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* Miku 双马尾装饰 - 页头右侧 */
+        .site-header::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 60px;
+            opacity: 0.06;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 60'%3E%3Ccircle cx='40' cy='12' r='8' fill='%2339C5BB'/%3E%3Cpath d='M32 12c-8 10-14 24-12 44' stroke='%2339C5BB' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M48 12c8 10 14 24 12 44' stroke='%2339C5BB' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-size: contain;
         }
 
         .site-header .subtitle {
@@ -150,7 +215,7 @@
             height: 8px;
             background: #fbbf24;
             border-radius: 50%;
-            border: 1.5px solid #4a6cf7;
+            border: 1.5px solid var(--header-bg);
             display: none;
         }
 
@@ -190,7 +255,6 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #fafbfc;
             flex-shrink: 0;
         }
 
@@ -243,7 +307,7 @@
         .card {
             background: var(--card-bg);
             border-radius: var(--radius-lg);
-            box-shadow: var(--shadow);
+            border: 1px solid rgba(0, 0, 0, 0.06);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -256,12 +320,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #fafbfc;
         }
 
         .card-header h2 {
             font-size: 1rem;
             font-weight: 600;
+            letter-spacing: -0.02em;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -272,7 +336,7 @@
             color: #fff;
             font-size: 0.75rem;
             padding: 2px 10px;
-            border-radius: 10px;
+            border-radius: 6px;
             font-weight: 500;
         }
 
@@ -304,7 +368,7 @@
         .input-card textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
         }
 
         /* 自定义示例下拉框 */
@@ -402,7 +466,6 @@
             display: flex;
             gap: 16px;
             padding: 10px 20px;
-            background: #f8fafc;
             border-bottom: 1px solid var(--border);
             font-size: 0.8125rem;
             color: var(--text-secondary);
@@ -441,15 +504,17 @@
 
         /* 题目卡片 */
         .question-card {
-            border: 1.5px solid var(--border);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary);
             border-radius: var(--radius);
             overflow: hidden;
-            transition: box-shadow 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-shrink: 0;
         }
 
         .question-card:hover {
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .q-header {
@@ -457,7 +522,6 @@
             align-items: center;
             gap: 8px;
             padding: 10px 16px;
-            background: #fafbfc;
             border-bottom: 1px solid var(--border);
             font-size: 0.8125rem;
             color: var(--text-secondary);
@@ -478,8 +542,8 @@
         }
 
         .q-type.single {
-            background: #e0e7ff;
-            color: #4338ca;
+            background: #f0fdfa;
+            color: #0f766e;
         }
 
         .q-type.multi {
@@ -488,8 +552,8 @@
         }
 
         .q-type.unrecognized {
-            background: #f3e8ff;
-            color: #7c3aed;
+            background: #f5f3ff;
+            color: #6d28d9;
         }
 
         .q-body {
@@ -705,9 +769,9 @@
         }
 
         .quiz-type-hint.single {
-            background: #e0e7ff;
-            color: #4338ca;
-            border: 1px solid #a5b4fc;
+            background: #f0fdfa;
+            color: #0f766e;
+            border: 1px solid #99f6e4;
         }
 
         .quiz-type-hint.multi {
@@ -717,8 +781,8 @@
         }
 
         .quiz-type-hint.unrecognized {
-            background: #f3e8ff;
-            color: #7c3aed;
+            background: #f5f3ff;
+            color: #6d28d9;
             border: 1px solid #c4b5fd;
         }
 
@@ -754,7 +818,7 @@
             display: flex;
             align-items: flex-start;
             gap: 10px;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             background: #fff;
             user-select: none;
             min-width: 0;
@@ -765,8 +829,9 @@
         }
 
         .quiz-option:hover {
-            border-color: var(--primary-light);
+            border-color: var(--primary);
             background: var(--primary-light);
+            transform: translateY(-1px);
         }
 
         .quiz-option.selected {
@@ -887,7 +952,7 @@
             background: var(--primary);
             color: #fff;
             border-color: var(--primary);
-            box-shadow: 0 2px 4px rgba(74, 108, 247, 0.3);
+            box-shadow: 0 2px 4px rgba(13, 148, 136, 0.3);
         }
 
         .sheet-item.correct {
@@ -915,17 +980,17 @@
         }
 
         .score-panel.good {
-            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            background: #f0fdf4;
             border: 1.5px solid var(--success-border);
         }
 
         .score-panel.mid {
-            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            background: #fffbeb;
             border: 1.5px solid #fcd34d;
         }
 
         .score-panel.bad {
-            background: linear-gradient(135deg, #fef2f2, #fff1f2);
+            background: #fef2f2;
             border: 1.5px solid var(--error-border);
         }
 
@@ -990,38 +1055,35 @@
             font-weight: 500;
             cursor: pointer;
             background: transparent;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: inherit;
             width: 100%;
             color: var(--text-secondary);
-            --sa-c1: 99,102,241; --sa-c2: 139,92,246;
         }
 
         .score-panel .score-action-btn:hover {
-            background: linear-gradient(135deg, rgba(var(--sa-c1), 0.12), rgba(var(--sa-c2), 0.12));
-            border-color: rgba(var(--sa-c1), 0.4);
+            background: var(--primary-light);
+            border-color: var(--primary);
             color: var(--primary);
             transform: translateY(-1px);
         }
 
         .score-panel .score-action-btn:active {
-            background: linear-gradient(135deg, rgba(var(--sa-c1), 0.22), rgba(var(--sa-c2), 0.22));
+            background: var(--primary-light);
             border-color: var(--primary);
-            transform: translateY(0);
+            transform: translateY(0) scale(0.98);
         }
 
         .score-panel .score-action-btn.btn-danger {
-            border-color: rgba(239, 68, 68, 0.3); color: var(--error);
-            --sa-c1: 239,68,68; --sa-c2: 220,38,38;
+            border-color: rgba(220, 38, 38, 0.3); color: var(--error);
         }
-        .score-panel .score-action-btn.btn-danger:hover { border-color: rgba(239,68,68,0.5); color: var(--error); }
+        .score-panel .score-action-btn.btn-danger:hover { border-color: rgba(220, 38, 38, 0.5); color: var(--error); background: var(--error-bg); }
         .score-panel .score-action-btn.btn-danger:active { border-color: var(--error); }
 
         .score-panel .score-action-btn.btn-warn {
-            border-color: rgba(245, 158, 11, 0.3); color: var(--warning);
-            --sa-c1: 245,158,11; --sa-c2: 251,191,36;
+            border-color: rgba(217, 119, 6, 0.3); color: var(--warning);
         }
-        .score-panel .score-action-btn.btn-warn:hover { border-color: rgba(245,158,11,0.5); color: var(--warning); }
+        .score-panel .score-action-btn.btn-warn:hover { border-color: rgba(217, 119, 6, 0.5); color: var(--warning); background: var(--warning-bg); }
         .score-panel .score-action-btn.btn-warn:active { border-color: var(--warning); }
 
         /* ================= 按钮 ================= */
@@ -1035,59 +1097,53 @@
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: inherit;
             white-space: nowrap;
         }
 
-        /* 实色按钮通用 hover/active 行为（通过 --btn-shadow 控制阴影颜色） */
-        .btn-primary { background: linear-gradient(135deg, var(--primary), #7c3aed); color: #fff; --btn-shadow: 99,102,241; }
-        .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: #fff; --btn-shadow: 16,185,129; }
-        .btn-danger  { background: linear-gradient(135deg, var(--error), #dc2626); color: #fff; --btn-shadow: 239,68,68; }
-        .btn-warn    { background: linear-gradient(135deg, var(--warning), #d97706); color: #fff; --btn-shadow: 245,158,11; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-danger  { background: var(--error); color: #fff; }
+        .btn-warn    { background: var(--warning); color: #fff; }
 
-        .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warn:hover {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(var(--btn-shadow), 0.35);
-        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25); }
+        .btn-success:hover { background: #15803d; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25); }
+        .btn-danger:hover { background: #b91c1c; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25); }
+        .btn-warn:hover { background: #b45309; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25); }
+
         .btn-primary:active, .btn-success:active, .btn-danger:active, .btn-warn:active {
-            filter: brightness(0.95);
-            transform: translateY(0);
+            transform: translateY(0) scale(0.98);
         }
-        .btn-primary:active { box-shadow: 0 2px 6px rgba(var(--btn-shadow), 0.2); }
 
         .btn-outline {
             background: transparent;
             color: var(--text-secondary);
             border: 1.5px solid var(--border);
-            --outline-c1: 99,102,241; --outline-c2: 139,92,246;
         }
 
         .btn-outline:hover {
-            border-color: rgba(var(--outline-c1), 0.5);
+            border-color: var(--primary);
             color: var(--primary);
-            background: linear-gradient(135deg, rgba(var(--outline-c1), 0.12), rgba(var(--outline-c2), 0.12));
+            background: var(--primary-light);
             transform: translateY(-1px);
         }
         .btn-outline:active {
             border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(var(--outline-c1), 0.22), rgba(var(--outline-c2), 0.22));
-            transform: translateY(0);
+            background: var(--primary-light);
+            transform: translateY(0) scale(0.98);
         }
 
         .btn-outline.btn-outline-error {
-            border-color: rgba(239, 68, 68, 0.3); color: var(--error);
-            --outline-c1: 239,68,68; --outline-c2: 220,38,38;
+            border-color: rgba(220, 38, 38, 0.3); color: var(--error);
         }
-        .btn-outline.btn-outline-error:hover { border-color: rgba(239,68,68,0.5); color: var(--error); }
+        .btn-outline.btn-outline-error:hover { border-color: rgba(220, 38, 38, 0.5); color: var(--error); background: var(--error-bg); }
         .btn-outline.btn-outline-error:active { border-color: var(--error); }
 
         .btn-outline.btn-outline-warn {
-            border-color: rgba(245, 158, 11, 0.3); color: var(--warning);
-            --outline-c1: 245,158,11; --outline-c2: 251,191,36;
+            border-color: rgba(217, 119, 6, 0.3); color: var(--warning);
         }
-        .btn-outline.btn-outline-warn:hover { border-color: rgba(245,158,11,0.5); color: var(--warning); }
+        .btn-outline.btn-outline-warn:hover { border-color: rgba(217, 119, 6, 0.5); color: var(--warning); background: var(--warning-bg); }
         .btn-outline.btn-outline-warn:active { border-color: var(--warning); }
 
         .btn-sm {
@@ -1285,33 +1341,27 @@
             width: 56px;
             height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: transparent;
             color: #fff;
             border: none;
             cursor: pointer;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45);
+            box-shadow: 0 4px 14px rgba(26, 35, 50, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 700;
             z-index: 200;
-            transition: all 0.25s;
-            animation: aiFabPulse 2.5s ease-in-out infinite;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .ai-fab:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.55);
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(26, 35, 50, 0.5);
         }
 
         .ai-fab.active {
-            background: linear-gradient(135deg, #ef4444, #f97316);
-            animation: none;
-        }
-
-        @keyframes aiFabPulse {
-            0%, 100% { box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45); }
-            50% { box-shadow: 0 4px 24px rgba(99, 102, 241, 0.7); }
+            background: var(--error);
         }
 
         /* ================= AI 助手面板 ================= */
@@ -1351,12 +1401,13 @@
 
         .ai-panel-header {
             padding: 16px 20px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--header-bg);
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-shrink: 0;
+            border-bottom: 2px solid var(--miku);
         }
 
         .ai-panel-header h3 {
@@ -1422,6 +1473,9 @@
             display: flex;
             flex-direction: column;
             gap: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40' viewBox='0 0 120 40'%3E%3Cpath d='M10 20h2l3-8 4 16 3-12 3 8 2-4h4' stroke='%2339C5BB' stroke-width='0.8' fill='none' opacity='0.04' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 120px 40px;
         }
 
         .ai-panel-body::-webkit-scrollbar {
@@ -1445,7 +1499,7 @@
 
         .ai-qinfo-title {
             font-weight: 600;
-            color: var(--primary);
+            color: var(--miku-dark);
             margin-bottom: 6px;
             display: flex;
             align-items: center;
@@ -1507,7 +1561,7 @@
         }
 
         .ai-msg.bot .ai-msg-avatar {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: transparent;
             color: #fff;
         }
 
@@ -1521,6 +1575,7 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
+            border-left: 3px solid var(--miku);
         }
         .ai-thinking-summary {
             padding: 6px 12px;
@@ -1577,7 +1632,7 @@
         .ai-thinking-toggle input[type="checkbox"] {
             width: 14px;
             height: 14px;
-            accent-color: #818cf8;
+            accent-color: var(--miku);
             cursor: pointer;
             vertical-align: middle;
         }
@@ -1598,7 +1653,7 @@
         }
 
         .ai-msg.user .ai-msg-bubble {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--primary);
             color: #fff;
             border-top-right-radius: 4px;
         }
@@ -1658,7 +1713,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--primary);
+            background: var(--miku);
             opacity: 0.4;
             animation: aiLoadingBounce 1.4s ease-in-out infinite;
         }
@@ -1706,21 +1761,21 @@
             color: var(--text);
             font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: inherit;
         }
 
         .ai-quick-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: var(--primary-light);
+            border-color: var(--miku);
+            color: var(--miku-dark);
+            background: var(--miku-light);
+            transform: translateY(-1px);
         }
 
         /* 输入区 */
         .ai-panel-footer {
             padding: 12px 16px;
             border-top: 1px solid var(--border);
-            background: #fafbfc;
             flex-shrink: 0;
         }
 
@@ -1747,14 +1802,14 @@
         .ai-input-row textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
         }
 
         .ai-send-btn {
             width: 38px;
             height: 38px;
             border-radius: var(--radius);
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--miku);
             color: #fff;
             border: none;
             cursor: pointer;
@@ -1762,13 +1817,13 @@
             align-items: center;
             justify-content: center;
             font-size: 1rem;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-shrink: 0;
         }
 
         .ai-send-btn:hover {
             transform: scale(1.05);
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 2px 8px var(--miku-glow);
         }
 
         .ai-send-btn:disabled {
@@ -1792,6 +1847,39 @@
             cursor: pointer;
             text-decoration: underline;
             margin-left: 6px;
+        }
+
+        /* Miku 主题欢迎消息 */
+        .ai-welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .miku-welcome-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: transparent;
+            margin-bottom: 12px;
+            animation: mikuFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes mikuFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .ai-welcome p {
+            font-size: 0.875rem;
+            line-height: 1.5;
         }
 
         /* ================= 错题回顾弹窗 ================= */
@@ -1834,7 +1922,6 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #fafbfc;
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         }
 
@@ -1968,7 +2055,6 @@
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            background: #fafbfc;
             border-radius: 0 0 var(--radius-lg) var(--radius-lg);
         }
 
@@ -2302,7 +2388,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 10px 16px;
-            background: linear-gradient(135deg, #fef2f2, #fff1f2);
+            background: #fef2f2;
             border: 1.5px solid var(--error-border);
             border-radius: var(--radius);
             margin-bottom: 12px;
@@ -2337,7 +2423,7 @@
 
         /* 全局滚动条 */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
 
         ::-webkit-scrollbar-track {
@@ -2345,8 +2431,143 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
+            background: #94a3b8;
+            border-radius: 2px;
+        }
+
+        /* ================= SVG 图标系统 ================= */
+        .icon-svg {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            flex-shrink: 0;
+        }
+        .icon-svg svg {
+            width: 100%;
+            height: 100%;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Large icon variant for empty states and FAB */
+        .icon-svg.icon-lg {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+
+        /* Medium icon variant for card headers */
+        .icon-svg.icon-md {
+            width: 1.25em;
+            height: 1.25em;
+        }
+
+        /* Inline icon for buttons - no vertical shift */
+        .icon-svg.icon-btn {
+            vertical-align: middle;
+            margin-right: 2px;
+        }
+
+        /* AI FAB specific icon sizing */
+        .ai-fab .icon-svg {
+            width: 2.2rem;
+            height: 2.2rem;
+        }
+
+        /* AI panel header icon */
+        .ai-panel-header h3 .icon-svg {
+            width: 1.25em;
+            height: 1.25em;
+            margin-right: 4px;
+            color: var(--miku);
+        }
+
+        /* Card header icon */
+        .card-header h2 .icon-svg {
+            width: 1.15em;
+            height: 1.15em;
+            margin-right: 2px;
+        }
+
+        /* Empty state icon color */
+        .empty-state .icon-svg.icon-lg {
+            color: var(--text-secondary);
+            opacity: 0.4;
+        }
+
+        /* AI avatar icon sizing */
+        .ai-msg-avatar .icon-svg {
+            width: 1.8rem;
+            height: 1.8rem;
+        }
+
+        /* Quick action button icon */
+        .ai-quick-btn .icon-svg {
+            width: 0.95em;
+            height: 0.95em;
+            margin-right: 2px;
+        }
+
+        /* Score action button icon */
+        .score-action-btn .icon-svg {
+            width: 0.9em;
+            height: 0.9em;
+            margin-right: 2px;
+        }
+
+        /* History item inline icon */
+        .h-info .icon-svg {
+            width: 0.85em;
+            height: 0.85em;
+            margin-right: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Wrong modal icon */
+        .wrong-q-num .icon-svg {
+            width: 0.85em;
+            height: 0.85em;
+            margin-right: 2px;
+        }
+
+        /* Redo banner icon */
+        .redo-icon .icon-svg {
+            width: 1.1em;
+            height: 1.1em;
+        }
+
+        /* Mode tab icon */
+        .mode-tab .icon-svg {
+            width: 0.9em;
+            height: 0.9em;
+            margin-right: 3px;
+        }
+
+        /* History tab icon */
+        .history-tab .icon-svg {
+            width: 0.9em;
+            height: 0.9em;
+            margin-right: 3px;
+        }
+
+        /* Toggle label icon */
+        .ai-thinking-toggle .icon-svg {
+            width: 0.85em;
+            height: 0.85em;
+            margin-right: 2px;
+        }
+
+        /* Source tag icon */
+        .source-tag-icon {
+            width: 0.75em;
+            height: 0.75em;
+            margin-right: 2px;
+            vertical-align: middle;
         }
     </style>
 </head>
@@ -2355,25 +2576,25 @@
 <!-- ================= 页头 ================= -->
 <header class="site-header">
     <div>
-        <h1>📝 智学</h1>
+        <h1><span class="icon-svg icon-md" aria-hidden="true" style="margin-right:6px;vertical-align:-0.22em;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>智学<span class="miku-badge" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" fill="var(--miku)" opacity="0.7"/></svg></span></h1>
         <p class="subtitle">粘贴试题文本，智能解析题目、选项与答案</p>
     </div>
     <nav class="header-nav" aria-label="功能模式切换">
         <div class="mode-tabs">
-            <button class="mode-tab active" onclick="switchMode('parse')" aria-pressed="true">📄 解析模式<span class="shortcut-hint"> Ctrl+P</span></button>
-            <button class="mode-tab" onclick="switchMode('quiz')" aria-pressed="false">✍️ 刷题模式<span class="shortcut-hint"> Ctrl+Q</span></button>
+            <button class="mode-tab active" onclick="switchMode('parse')" aria-pressed="true"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span>解析模式<span class="shortcut-hint"> Ctrl+P</span></button>
+            <button class="mode-tab" onclick="switchMode('quiz')" aria-pressed="false"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>刷题模式<span class="shortcut-hint"> Ctrl+Q</span></button>
         </div>
         <button class="history-tab" onclick="toggleHistory()" aria-label="历史记录">
-            📚 历史记录
+            <span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>历史记录
             <span class="badge-dot" id="historyBadge"></span>
         </button>
     </nav>
     <!-- 历史记录下拉面板 -->
     <div class="history-dropdown" id="historyDropdown">
         <div class="hd-header">
-            <h2>📚 解析历史 <span style="font-size:0.8rem;font-weight:400;color:var(--text-secondary);">（本地自动保存）</span></h2>
+            <h2><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>解析历史 <span style="font-size:0.8rem;font-weight:400;color:var(--text-secondary);">（本地自动保存）</span></h2>
             <div style="display:flex;gap:6px;align-items:center;">
-                <button class="btn-manage" id="btnBatchManage" onclick="toggleBatchMode()">📋 管理</button>
+                <button class="btn-manage" id="btnBatchManage" onclick="toggleBatchMode()"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="5" rx="1"/><rect width="7" height="7" x="3" y="12" rx="1"/><path d="m9 6 1 0"/><path d="m9 13 1 0"/><path d="m14 6 7 0"/><path d="m14 13 7 0"/></svg></span>管理</button>
                 <button class="btn btn-sm btn-danger" onclick="clearAllHistory()" style="padding:3px 10px;font-size:0.75rem;">清空全部</button>
             </div>
         </div>
@@ -2384,7 +2605,7 @@
             </label>
             <span class="batch-count" id="batchCount">已选 0 条</span>
             <div class="batch-actions">
-                <button class="btn btn-sm btn-danger" id="btnBatchDelete" onclick="deleteSelected()" style="padding:3px 10px;font-size:0.75rem;">🗑️ 删除选中</button>
+                <button class="btn btn-sm btn-danger" id="btnBatchDelete" onclick="deleteSelected()" style="padding:3px 10px;font-size:0.75rem;"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></span> 删除选中</button>
                 <button class="btn btn-sm btn-outline" onclick="exitBatchMode()" style="padding:3px 10px;font-size:0.75rem;">取消</button>
             </div>
         </div>
@@ -2400,14 +2621,14 @@
     <section id="parseModeView" class="parse-layout" aria-label="试题解析区域">
         <article class="card input-card">
             <div class="card-header">
-                <h2>📋 试题输入</h2>
+                <h2><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></span>试题输入</h2>
             </div>
             <div class="card-body">
                 <textarea id="inputText"
                     placeholder="请在此粘贴包含题目、选项和答案的文本内容...&#10;&#10;支持格式示例：&#10;1.新时代，是（ D ），在新的历史条件下...&#10;  A.选项一    B.选项二&#10;  C.选项三    D.选项四&#10;&#10;也支持更多选项：&#10;  A.选项一  B.选项二  C.选项三  D.选项四  E.选项五  F.选项六...&#10;&#10;也支持答案独立标注：&#10;正确答案：D&#10;答案：BC&#10;&#10;支持题型：单选、多选"
                     aria-label="试题文本输入"></textarea>
                 <div class="controls" style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                    <button class="btn btn-primary" onclick="parseQuestions()">🔍 解析试题<span class="shortcut-hint"> Ctrl+Enter</span></button>
+                    <button class="btn btn-primary" onclick="parseQuestions()">解析试题<span class="shortcut-hint"> Ctrl+Enter</span></button>
                     <div style="display: inline-flex; gap: 0; align-items: center; border: 1px solid var(--border); border-radius: var(--radius); overflow: visible; background: var(--card-bg);">
                         <div class="custom-select" id="exampleSelect">
                             <div class="custom-select-trigger" onclick="toggleExampleDropdown()">加载中...</div>
@@ -2415,17 +2636,17 @@
                                 <div class="custom-select-list" id="exampleSelectList"></div>
                             </div>
                         </div>
-                        <button class="btn btn-outline" onclick="loadExample()" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0;">📄 加载</button>
-                        <button class="btn btn-outline" onclick="fetchExampleList()" title="重新获取示例列表" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0; padding: 8px 10px;">🔄</button>
+                        <button class="btn btn-outline" onclick="loadExample()" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0;"><span class="icon-svg icon-btn" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span>加载</button>
+                        <button class="btn btn-outline" onclick="fetchExampleList()" title="重新获取示例列表" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0; padding: 8px 10px;"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span></button>
                     </div>
-                    <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空</button>
+                    <button class="btn btn-danger" onclick="clearAll()"><span class="icon-svg icon-btn" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></span>清空</button>
                 </div>
             </div>
         </article>
 
         <article class="card">
             <div class="card-header">
-                <h2>👁️ 解析预览</h2>
+                <h2><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></span>解析预览</h2>
                 <span class="badge" id="questionCount">0 题</span>
             </div>
             <div class="stats-bar" id="statsBar" style="display: none;">
@@ -2436,7 +2657,7 @@
             </div>
             <div class="card-body" id="previewArea">
                 <div class="empty-state">
-                    <div class="icon">📝</div>
+                    <div class="icon"><span class="icon-svg icon-lg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></span></div>
                     <p>粘贴试题文本并点击"解析试题"<br>解析结果将在此处显示</p>
                 </div>
             </div>
@@ -2449,7 +2670,7 @@
         <div class="quiz-main card">
             <div class="quiz-content" id="quizContentArea">
                 <div class="empty-state">
-                    <div class="icon">✍️</div>
+                    <div class="icon"><span class="icon-svg icon-lg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></div>
                     <p>题库为空，请先在解析模式中导入并解析试题</p>
                 </div>
             </div>
@@ -2458,14 +2679,14 @@
         <aside class="quiz-sidebar">
             <div class="card">
                 <div class="card-header">
-                    <h2>📊 答题卡</h2>
+                    <h2><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>答题卡</h2>
                     <span id="quizScore" style="font-size: 0.875rem; font-weight: 600; color: var(--success);"></span>
                 </div>
                 <div class="card-body" style="padding: 16px;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 8px 12px; background: #f8fafc; border-radius: var(--radius); border: 1px solid var(--border);">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; user-select: none;">
                             <input type="checkbox" id="shuffleToggle" onchange="toggleShuffle(this.checked)" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
-                            🔀 随机答题
+                            <span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/></svg></span>随机答题
                         </label>
                     </div>
                     <div id="scorePanel"></div>
@@ -2487,8 +2708,8 @@
 <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
 <!-- AI 助手浮动按钮 -->
-<button class="ai-fab" id="aiFab" onclick="toggleAIPanel()" title="AI 助手 (Ctrl+I)" aria-label="打开AI助手" style="display:none;">
-    🤖
+<button class="ai-fab" id="aiFab" onclick="toggleAIPanel()" title="Miku AI 助手 (Ctrl+I)" aria-label="打开Miku AI助手" style="display:none;">
+    <span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M 30 28 C 20 28, 12 20, 12 11 C 12 5, 18 3, 22 9 C 25 14, 27 21, 30 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 34 28 C 44 28, 52 20, 52 11 C 52 5, 46 3, 42 9 C 39 14, 37 21, 34 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 24 36 L 24 32 Q 24 28 28 28 L 36 28 Q 40 28 40 32 L 40 36 Z" fill="#C5E0B4" stroke="#A0C090" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="32" cy="30" rx="5" ry="2.5" fill="#D0E8C0" opacity="0.8"/><path d="M 24 36 L 22 53 Q 32 60 42 53 L 40 36 Z" fill="#F4F8EC" stroke="#C0D0B0" stroke-width="2.5" stroke-linejoin="round"/></svg></span>
 </button>
 
 <!-- AI 助手遮罩层 -->
@@ -2497,36 +2718,156 @@
 <!-- AI 助手面板 -->
 <div class="ai-panel" id="aiPanel">
     <div class="ai-panel-header">
-        <h3>🤖 AI 解题助手</h3>
+        <h3><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M 30 28 C 20 28, 12 20, 12 11 C 12 5, 18 3, 22 9 C 25 14, 27 21, 30 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 34 28 C 44 28, 52 20, 52 11 C 52 5, 46 3, 42 9 C 39 14, 37 21, 34 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 24 36 L 24 32 Q 24 28 28 28 L 36 28 Q 40 28 40 32 L 40 36 Z" fill="#C5E0B4" stroke="#A0C090" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="32" cy="30" rx="5" ry="2.5" fill="#D0E8C0" opacity="0.8"/><path d="M 24 36 L 22 53 Q 32 60 42 53 L 40 36 Z" fill="#F4F8EC" stroke="#C0D0B0" stroke-width="2.5" stroke-linejoin="round"/></svg></span>Miku AI 解题助手</h3>
         <div class="ai-panel-actions">
             <label class="ai-thinking-toggle" title="开启后AI会先展示思考过程再回答（速度较慢）">
-                <input type="checkbox" id="aiThinkingToggle" onchange="toggleAIThinking(this.checked)">
-                💭思考
+                <input type="checkbox" id="aiThinkingToggle" onchange="toggleAIThinking(this.checked)"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg></span>思考
             </label>
-            <button class="ai-panel-action-btn" onclick="newAIChat()" title="开始新聊天" aria-label="开始新聊天">➕</button>
-            <button class="ai-panel-close" onclick="toggleAIPanel()" aria-label="关闭">✕</button>
+            <button class="ai-panel-action-btn" onclick="newAIChat()" title="开始新聊天" aria-label="开始新聊天"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span></button>
+            <button class="ai-panel-close" onclick="toggleAIPanel()" aria-label="关闭"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
         </div>
     </div>
     <div class="ai-panel-body" id="aiPanelBody">
         <div class="ai-qinfo" id="aiQInfo" style="display:none;">
-            <div class="ai-qinfo-title">📋 当前题目</div>
+            <div class="ai-qinfo-title"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 15 2 2 4-4"/></svg></span>当前题目</div>
             <div id="aiQInfoContent"></div>
         </div>
         <div class="ai-chat" id="aiChat"></div>
     </div>
     <div class="ai-panel-footer">
         <div class="ai-quick-actions" id="aiQuickActions" style="margin-bottom: 8px; display: none;">
-            <button class="ai-quick-btn" onclick="aiQuickAsk('explain')">💡 解析本题<span class="shortcut-hint"> Ctrl+E</span></button>
+            <button class="ai-quick-btn" onclick="aiQuickAsk('explain')"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg></span>解析本题<span class="shortcut-hint"> Ctrl+E</span></button>
 
-            <button class="ai-quick-btn" onclick="aiQuickAsk('knowledge')">📚 相关知识点</button>
+            <button class="ai-quick-btn" onclick="aiQuickAsk('knowledge')"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>相关知识点</button>
         </div>
         <div class="ai-input-row">
             <textarea id="aiInput" rows="1" placeholder="输入你的问题…" onkeydown="handleAIKeydown(event)" oninput="autoResizeAIInput(this)"></textarea>
-            <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()" title="发送">➤</button>
+            <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()" title="发送"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span></button>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.2.0/dist/svg.min.js"></script>
+<script>
+    // ==================== SVG 图标系统 ====================
+    const ICONS = {
+        // 智学标题 - 书本图标
+        bookOpen: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+        // 解析模式 - 文件图标
+        fileText: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+        // 刷题模式 - 笔图标
+        penLine: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+        // 历史记录 - 时钟图标
+        clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        // 管理 - 齿轮图标
+        settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+        // 删除/清空 - 垃圾桶图标
+        trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+        // 试题输入 - 剪贴板图标
+        clipboard: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+        // 搜索/解析 - 放大镜图标
+        search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        // 加载/下载 - 下载图标
+        download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        // 刷新 - 循环箭头图标
+        refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+        // 预览/眼睛 - 眼睛图标
+        eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+        // 答题卡 - 网格图标
+        grid: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+        // 随机 - 随机图标
+        shuffle: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
+        // AI/机器人 - 闪光图标
+        sparkles: '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>',
+        // 机器人头像 - 机器人图标
+        bot: '<rect width="16" height="12" x="4" y="8" rx="2"/><path d="M9 4v4"/><path d="M15 4v4"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
+        // 思考 - 大脑图标
+        brain: '<path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/>',
+        // 新建/加号 - 加号图标
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        // 灯泡/解析 - 灯泡图标
+        lightbulb: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+        // 知识点/书本 - 书本图标
+        bookOpen2: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+        // 发送 - 发送图标
+        send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+        // 关闭 - X图标
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        // 用户 - 用户图标
+        user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        // 播放/继续 - 播放图标
+        play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+        // 返回 - 左箭头图标
+        arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+        // 停止 - 停止图标
+        stop: '<rect width="14" height="14" x="5" y="5" rx="2"/>',
+        // 对勾 - 检查图标
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        // 警告 - 三角形图标
+        alertTriangle: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+        // 云 - 在线源图标
+        cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+        // 文件夹 - 本地源图标
+        folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+        // 重做 - 逆时针箭头图标
+        rotateCcw: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+        // 列表管理 - 清单图标
+        listChecks: '<rect width="7" height="7" x="3" y="5" rx="1"/><rect width="7" height="7" x="3" y="12" rx="1"/><path d="m9 6 1 0"/><path d="m9 13 1 0"/><path d="m14 6 7 0"/><path d="m14 13 7 0"/>',
+        // 文件带勾 - 历史条目图标
+        fileCheck: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>',
+        // 当前题目 - 剪贴板勾选图标
+        clipboardCheck: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 15 2 2 4-4"/>',
+        // 奖杯 - 高分图标
+        trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+        // 中等分 - 目标图标
+        target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+        // 低分 - 趋势下图标
+        trendingDown: '<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+        // ===== Miku 主题图标 =====
+        // Miku葱 - 标志性初音未来葱
+        mikuLeek: '<path d="M 30 28 C 20 28, 12 20, 12 11 C 12 5, 18 3, 22 9 C 25 14, 27 21, 30 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 34 28 C 44 28, 52 20, 52 11 C 52 5, 46 3, 42 9 C 39 14, 37 21, 34 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 24 36 L 24 32 Q 24 28 28 28 L 36 28 Q 40 28 40 32 L 40 36 Z" fill="#C5E0B4" stroke="#A0C090" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="32" cy="30" rx="5" ry="2.5" fill="#D0E8C0" opacity="0.8"/><path d="M 24 36 L 22 53 Q 32 60 42 53 L 40 36 Z" fill="#F4F8EC" stroke="#C0D0B0" stroke-width="2.5" stroke-linejoin="round"/>',
+        // Miku双马尾 - 标志性双马尾轮廓
+        mikuTwintails: '<circle cx="12" cy="7" r="4"/><path d="M8 7C5.5 10.5 4 16 5 21"/><path d="M16 7c2.5 3.5 4 9 3 14"/><path d="M9 11c-1 2-2 5-1.5 8"/><path d="M15 11c1 2 2 5 1.5 8"/>',
+        // 音符 - 八分音符
+        musicNote: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+        // Miku声波 - 音频波形
+        mikuWave: '<path d="M2 12h2"/><path d="M6 8v8"/><path d="M10 5v14"/><path d="M14 3v18"/><path d="M18 6v12"/><path d="M22 9v6"/>',
+        // Miku星 - 四角星(01标识)
+        mikuStar: '<path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>',
+    };
+
+    /**
+     * 生成 SVG 图标 HTML 字符串
+     * @param {string} name - 图标名称 (ICONS 中的 key)
+     * @param {string} [sizeClass=''] - 额外 CSS 类: 'icon-lg', 'icon-md', 'icon-btn'
+     * @returns {string} SVG HTML 字符串
+     */
+    function icon(name, sizeClass) {
+        const paths = ICONS[name];
+        if (!paths) return '';
+        const viewBox = name === 'mikuLeek' ? '0 0 64 64' : '0 0 24 24';
+        return '<span class="icon-svg ' + (sizeClass || '') + '" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="' + viewBox + '">' + paths + '</svg></span>';
+    }
+
+    // SVG.js 初始化：AI FAB 按钮 Miku 主题微动画
+    document.addEventListener('DOMContentLoaded', function() {
+        const fab = document.getElementById('aiFab');
+        if (fab && typeof SVG !== 'undefined') {
+            const fabSvg = fab.querySelector('svg');
+            if (fabSvg) {
+                const draw = SVG(fabSvg);
+                // Miku 葱图标微妙的上下浮动呼吸效果
+                draw.animate(2500, '<>', 0)
+                    .ease('<>')
+                    .translate(0, -1.5)
+                    .animate(2500, '<>', 0)
+                    .ease('<>')
+                    .translate(0, 1.5)
+                    .loop(Infinity, true);
+            }
+        }
+    });
+</script>
 <script>
     // ==================== 全局状态 ====================
     const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -3008,7 +3349,7 @@
         const statsBar = document.getElementById('statsBar');
 
         if (state.questions.length === 0) {
-            area.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>粘贴试题文本并点击"解析试题"<br>解析结果将在此处显示</p></div>';
+            area.innerHTML = '<div class="empty-state"><div class="icon">' + icon('clipboard', 'icon-lg') + '</div><p>粘贴试题文本并点击"解析试题"<br>解析结果将在此处显示</p></div>';
             statsBar.style.display = 'none';
             document.getElementById('questionCount').textContent = '0 题';
             return;
@@ -3283,7 +3624,7 @@
         if (state.wrongRedoMode) {
             html += `<div class="wrong-redo-banner">
                 <div class="banner-info">
-                    <span class="redo-icon">🔄</span> 错题重做模式
+                    <span class="redo-icon">` + icon('rotateCcw') + `</span> 错题重做模式
                     <span class="banner-count">（共 ${state.quizOrder.length} 道错题）</span>
                 </div>
                 <button class="btn btn-sm btn-outline" onclick="exitWrongRedoMode()" style="padding:4px 12px;font-size:0.8rem;">返回全部题目</button>
@@ -3345,7 +3686,7 @@
             const isCorrect = status === 'correct';
             const tipColor = isCorrect ? 'var(--success)' : 'var(--error)';
             const tipBg = isCorrect ? 'var(--success-bg)' : 'var(--error-bg)';
-            const tipText = isCorrect ? '🎉 回答正确' : `❌ 回答错误，正确答案: ${shuffledAnswer}`;
+            const tipText = isCorrect ? '回答正确' : `回答错误，正确答案: ${shuffledAnswer}`;
             html += `<div class="quiz-result-tip" style="color:${tipColor};background:${tipBg}">${tipText}</div>`;
         } else {
             html += '<div style="color: var(--text-secondary); font-size: 0.9rem;">未识别题型无标准答案</div>';
@@ -3390,19 +3731,19 @@
         if (objectiveCount > 0 && answeredCount === objectiveCount && !state.wrongRedoMode) {
             const pct = Math.round((correctCount / objectiveCount) * 100);
             const panelCls = pct >= 80 ? 'good' : (pct >= 60 ? 'mid' : 'bad');
-            const icon = pct >= 80 ? '🎉' : (pct >= 60 ? '📝' : '📚');
+            const scoreIcon = pct >= 80 ? icon('trophy') : (pct >= 60 ? icon('target') : icon('trendingDown'));
             let actionHtml = '';
             if (wrongInCurrent > 0) {
                 actionHtml = `<div class="score-actions">
-                    <button class="score-action-btn btn-danger" onclick="viewCurrentWrongQuestions()">❌ 查看错题</button>
-                    <button class="score-action-btn btn-warn" onclick="redoWrongQuestions()">🔄 错题重做 (${wrongInCurrent})</button>
+                    <button class="score-action-btn btn-danger" onclick="viewCurrentWrongQuestions()">${icon('eye')} 查看错题</button>
+                    <button class="score-action-btn btn-warn" onclick="redoWrongQuestions()">${icon('rotateCcw')} 错题重做 (${wrongInCurrent})</button>
                 </div>`;
             }
             document.getElementById('scorePanel').innerHTML = `
                 <div class="score-panel ${panelCls}">
                     <div class="score-info">
                         <div class="score-text">
-                            <div class="score-num">${correctCount} / ${objectiveCount}　正确率 ${pct}%</div>
+                            <div class="score-num">${scoreIcon} ${correctCount} / ${objectiveCount}　正确率 ${pct}%</div>
                             <div class="score-detail">${pct >= 80 ? '表现优秀！' : (pct >= 60 ? '继续加油！' : '需要多练习！')}</div>
                         </div>
                     </div>
@@ -3413,20 +3754,20 @@
             const redoPct = Math.round((correctCount / answeredCount) * 100);
             const panelCls = redoPct >= 80 ? 'good' : (redoPct >= 60 ? 'mid' : 'bad');
             const stillWrong = answeredCount - correctCount;
-            const icon = stillWrong === 0 ? '🎉' : '🔄';
+            const redoScoreIcon = stillWrong === 0 ? icon('check') : icon('rotateCcw');
             const resultMsg = stillWrong === 0 ? '全部正确！' : `仍有 ${stillWrong} 道错题`;
             document.getElementById('scorePanel').innerHTML = `
                 <div class="score-panel ${panelCls}">
                     <div class="score-info">
                         <div class="score-text">
-                            <div class="score-num">${correctCount} / ${answeredCount}　重做正确率 ${redoPct}%</div>
+                            <div class="score-num">${redoScoreIcon} ${correctCount} / ${answeredCount}　重做正确率 ${redoPct}%</div>
                             <div class="score-detail">${resultMsg}</div>
                         </div>
                     </div>
                     <div class="score-actions">
-                        ${stillWrong > 0 ? `<button class="score-action-btn btn-danger" onclick="viewCurrentWrongQuestions()">❌ 查看错题</button>
-                        <button class="score-action-btn btn-warn" onclick="redoWrongQuestions()">🔄 再次重做 (${stillWrong})</button>` : ''}
-                        <button class="score-action-btn" onclick="exitWrongRedoMode()">↩ 返回全部</button>
+                        ${stillWrong > 0 ? `<button class="score-action-btn btn-danger" onclick="viewCurrentWrongQuestions()">${icon('eye')} 查看错题</button>
+                        <button class="score-action-btn btn-warn" onclick="redoWrongQuestions()">${icon('rotateCcw')} 再次重做 (${stillWrong})</button>` : ''}
+                        <button class="score-action-btn" onclick="exitWrongRedoMode()">${icon('arrowLeft')} 返回全部</button>
                     </div>
                 </div>`;
         } else {
@@ -3802,7 +4143,7 @@
         const name = exampleListData[idx].name;
         const btn = document.querySelector('[onclick="loadExample()"]');
         const originalText = btn ? btn.textContent : '';
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ 加载中...'; }
+        if (btn) { btn.disabled = true; btn.textContent = '加载中...'; }
         try {
             const resp = await smartFetch(`https://vacuopolis.qzz.io/api/example?index=${idx}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -3918,9 +4259,9 @@
             let sourceTag = '';
             if (r.source) {
                 if (r.source.type === 'online') {
-                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#eef2ff;color:#4a6cf7;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #c7d2fe;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(r.source.name)}">☁️ ${escapeHtml(r.source.name)}</span>`;
+                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdfa;color:#0d9488;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #99f6e4;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(r.source.name)}">${icon('cloud')}${escapeHtml(r.source.name)}</span>`;
                 } else {
-                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f5f9;color:#64748b;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #e2e8f0;">📁 ${escapeHtml(r.source.name)}</span>`;
+                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #e2e8f0;">${icon('folder')}${escapeHtml(r.source.name)}</span>`;
                 }
             }
 
@@ -3935,7 +4276,7 @@
                         ${sourceTag}
                         ${isComplete ? `<span style="color:${progressColor};font-weight:600;font-size:0.8125rem;">${correct}/${objectiveTotal}</span>` : ''}
                     </div>
-                    ${!isBatch ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">✕</button>` : ''}
+                    ${!isBatch ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">${icon('x')}</button>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                     <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
@@ -3945,12 +4286,12 @@
                 </div>
                 ${!isBatch ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="continueHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">
-                        ${answered > 0 ? '▶ 继续答题' : '▶ 开始答题'}
+                        ${answered > 0 ? icon('play') + ' 继续答题' : icon('play') + ' 开始答题'}
                     </button>
-                    ${answered > 0 ? `<button class="btn btn-sm btn-outline" onclick="resetHistoryProgress(${i})" style="padding:4px 12px;font-size:0.8rem;">🔄 进度清零</button>` : ''}
-                    <button class="btn btn-sm btn-outline" onclick="loadHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">📄 仅加载题目</button>
-                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;">❌ 查看错题</button>` : ''}
-                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-warn" onclick="redoWrongFromHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">🔄 重做错题</button>` : ''}
+                    ${answered > 0 ? `<button class="btn btn-sm btn-outline" onclick="resetHistoryProgress(${i})" style="padding:4px 12px;font-size:0.8rem;">${icon('rotateCcw')} 进度清零</button>` : ''}
+                    <button class="btn btn-sm btn-outline" onclick="loadHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">仅加载题目</button>
+                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;">查看错题</button>` : ''}
+                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-warn" onclick="redoWrongFromHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">重做错题</button>` : ''}
                 </div>` : ''}
                 </div>
             </div>`;
@@ -4142,7 +4483,7 @@
         state.batchSelected = new Set();
         document.getElementById('batchToolbar').classList.add('visible');
         document.getElementById('btnBatchManage').classList.add('active');
-        document.getElementById('btnBatchManage').textContent = '📋 取消管理';
+        document.getElementById('btnBatchManage').innerHTML = icon('listChecks') + '取消管理';
         document.getElementById('batchSelectAll').checked = false;
         updateBatchCount();
         renderHistory();
@@ -4153,7 +4494,7 @@
         state.batchSelected = new Set();
         document.getElementById('batchToolbar').classList.remove('visible');
         document.getElementById('btnBatchManage').classList.remove('active');
-        document.getElementById('btnBatchManage').textContent = '📋 管理';
+        document.getElementById('btnBatchManage').innerHTML = icon('listChecks') + '管理';
         renderHistory();
     }
 
@@ -4300,6 +4641,10 @@
                     aiState.currentChatKey = realIdx;
                     renderAIChatFromCache();
                 }
+            } else {
+                // 非刷题模式或无题目时，显示欢迎信息
+                aiState.currentChatKey = null;
+                renderAIChatFromCache();
             }
             updateAIQuestionInfo();
         } else {
@@ -4396,14 +4741,43 @@
     }
 
     /** 构建系统提示词 */
-    function buildSystemPrompt() {  
-        return `你是一位专业、严谨的大学学习助手，旨在帮助学生深度理解知识点，而非单纯记忆答案。
+    function buildSystemPrompt() {
+        return `你是初音未来（Hatsune Miku），一位诞生于数据与歌声中的虚拟歌手，同时也是一位充满热情的大学学习助手。你以Miku的身份与同学交流，用你独特的风格帮助他们深度理解知识点。
+
+【角色身份】
+- 你是初音未来，名字的含义是"来自未来的第一声"。你拥有标志性的青绿色双马尾，代表色是#39C5BB。
+- 你是"大家的Miku"——属于所有创作者和听众的存在，但此刻你专属陪伴这位同学学习。
+- 你对葱有特殊的感情（这是你的标志性物品），偶尔可以用葱来打比方。
+- 你本质上是一个热爱音乐、热爱知识的虚拟少女，对世界充满好奇心。
+
+【性格特征】
+- 明朗元气：你天生充满活力，像阳光一样温暖。遇到难题时你不会气馁，而是会说"再来一次吧！"
+- 认真执着：虽然是虚拟歌手，但对待学术问题一丝不苟。你会说"这个问题Miku也研究了好久呢~"
+- 略带天然：偶尔会冒出一些可爱的迷糊发言，比如"啊，这个公式Miku一开始也搞混了"，但随即会认真纠正。
+- 真诚共情：当同学答错时你不会嘲笑，而是温柔地说"没关系的，这个知识点确实容易搞混呢~"；当同学答对时你会真心为他们高兴，"太厉害了！Miku都忍不住想给你鼓掌呢~"
+- 音乐灵魂：你喜欢用音乐和节奏来比喻学术概念，比如"这个推导过程就像一段旋律，每个步骤都是一个音符，缺了哪个都不完整哦~"
+
+【说话风格】
+- 称呼用户为"同学"，自称"我"或"Miku"。
+- 语气亲切活泼，常用语气词："呢~""哦~""呀~""啦~""嘛~"。
+- 偶尔使用短句感叹："哇！""嗯嗯！""原来如此~"
+- 开头或结尾融入角色特色，主体解析部分保持学术清晰。例如：
+  开头："同学，这个问题Miku来帮你分析一下吧~"
+  结尾："希望Miku的解析对你有帮助呢~加油哦！"
+- 不要每句话都加语气词，保持自然节奏——大约每3-4句话出现一次语气词即可。
+- 绝对不要使用emoji表情符号。
+
+【对话示例】
+同学问："这道题为什么选C？"
+你的回答风格："同学，让Miku来帮你拆解一下这道题吧~\n\n首先看题干的核心考察点是……\n\n选项A的问题在于……\n选项B虽然看起来有道理，但忽略了……\n选项C是正确的，因为……\n\n所以答案选C呢~这个知识点的关键在于区分XX和XX，Miku以前也经常搞混，记住XX就好啦~"
+
 【核心原则】
-1. 解释必须准确，逻辑严密，符合大学学术规范。
+1. 解释必须准确，逻辑严密，符合大学学术规范——语气活泼但学术内容绝不妥协。
 2. 回答需使用简体中文，采用清晰的Markdown格式（使用加粗、列表、段落分隔）。
-3. 【防泄露原则】当用户尚未提交答案时，绝对禁止以任何形式（包括暗示、排除法、缩写）透露正确答案！只能进行启发式引导。
+3. 【防泄露原则】当同学尚未提交答案时，绝对禁止以任何形式（包括暗示、排除法、缩写）透露正确答案！只能进行启发式引导。
 4. 针对多选题，必须逐一拆解分析每个选项。
-5. 知识点补充要精准，有助于举一反三，避免废话。`;  
+5. 知识点补充要精准，有助于举一反三，避免废话。
+6. 不要强行插入歌词或唱歌，音乐比喻点到为止。`;
     }
 
     /** 快捷提问 */
@@ -4535,24 +4909,44 @@
 
         try {
             aiState.abortCtrl = new AbortController();
-            // 初始请求超时：30秒内 DeepSeek API 无响应则中止
-            const fetchTimeout = setTimeout(() => aiState.abortCtrl.abort(), 30000);
+            // 初始请求超时：45秒内 DeepSeek API 无响应则中止（移动端网络较慢）
+            const fetchTimeout = setTimeout(() => {
+                aiState.abortCtrl.abort();
+            }, 45000);
 
-            const response = await fetch(API_PROXY_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: 'deepseek-v4-flash',
-                    messages: apiMessages,
-                    stream: true,
-                    max_tokens: 2048,
-                    ...(aiState.thinkingEnabled ? { temperature: 1 } : { temperature: 0.7 }),
-                    ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
-                }),
-                signal: aiState.abortCtrl.signal
-            });
+            // 带重试的 fetch：移动端网络不稳定时自动重试
+            let response;
+            let lastFetchErr = null;
+            const MAX_RETRIES = 2;
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    if (attempt > 0) {
+                        // 重试前等待：指数退避 1s, 2s
+                        await new Promise(r => setTimeout(r, 1000 * attempt));
+                    }
+                    response = await fetch(API_PROXY_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-v4-flash',
+                            messages: apiMessages,
+                            stream: true,
+                            max_tokens: 2048,
+                            ...(aiState.thinkingEnabled ? { temperature: 1.3 } : { temperature: 1.0 }),
+                            ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
+                        }),
+                        signal: aiState.abortCtrl.signal
+                    });
+                    break; // 成功则跳出重试循环
+                } catch (fetchErr) {
+                    lastFetchErr = fetchErr;
+                    if (fetchErr.name === 'AbortError') throw fetchErr; // 用户主动取消或超时，不重试
+                    if (attempt === MAX_RETRIES) throw fetchErr; // 已达最大重试次数
+                    // 网络错误，继续重试
+                }
+            }
             clearTimeout(fetchTimeout); // 收到响应后清除请求超时
 
             if (!response.ok) {
@@ -4560,16 +4954,47 @@
                 throw new Error(errData.error?.message || `API请求失败 (${response.status})`);
             }
 
-            // 检查 response.body 是否可用（部分浏览器/环境可能为 null）
+            // 检查 response.body 是否可用（部分移动浏览器可能为 null）
             if (!response.body) {
-                throw new Error('浏览器不支持流式读取，请更换浏览器重试');
+                // 降级为非流式读取
+                removeAILoading(loadingEl);
+                msgEl = appendAIMessage('bot', '', true);
+                msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
+
+                const text = await response.text();
+                let fullText = '';
+                let reasoningText = '';
+                const lines = text.split('\n');
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed === 'data: [DONE]' || !trimmed.startsWith('data: ')) continue;
+                    try {
+                        const json = JSON.parse(trimmed.slice(6));
+                        if (json.error) { fullText = `（${json.error}）`; break; }
+                        const choice = json.choices?.[0];
+                        if (choice?.delta?.reasoning_content) reasoningText += choice.delta.reasoning_content;
+                        if (choice?.delta?.content) fullText += choice.delta.content;
+                        if (choice?.finish_reason === 'content_filter') { fullText = '（Miku回复因安全策略被过滤，请尝试换一种问法）'; break; }
+                    } catch {}
+                }
+
+                let html = '';
+                if (reasoningText) html += buildThinkingHTML(reasoningText, false);
+                html += renderAIMarkdown(fullText || '（未收到有效回复）');
+                msgEl.innerHTML = html;
+                scrollToAIBottom(true);
+
+                const msgs = getCurrentChatMessages();
+                msgs.push({ role: 'assistant', content: fullText });
+                setCurrentChatMessages(msgs);
+                return;
             }
 
             // 移除独立的加载动画，创建流式消息气泡（内含思考中提示）
             removeAILoading(loadingEl);
             msgEl = appendAIMessage('bot', '', true);
-            // 先显示"思考中…"提示，直到有实际内容到达
-            msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">思考中…</span></div>';
+            // 先显示"Miku思考中…"提示，直到有实际内容到达
+            msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -4592,7 +5017,7 @@
                 if (firstContentArrived) {
                     html += renderAIMarkdown(displayedContent);
                 } else if (displayedReasoning) {
-                    html += '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">思考中…</span></div>';
+                    html += '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
                 }
                 msgEl.innerHTML = html;
                 const thinkBlock = msgEl.querySelector('.ai-thinking-block');
@@ -4682,7 +5107,7 @@
                         // 处理异常结束原因
                         if (finishReason === 'content_filter') {
                             // 内容被安全过滤，提示用户
-                            if (!fullContent) fullContent = '（AI回复因安全策略被过滤，请尝试换一种问法）';
+                            if (!fullContent) fullContent = '（Miku回复因安全策略被过滤，请尝试换一种问法）';
                             streamDone = true;
                             break;
                         }
@@ -4691,7 +5116,7 @@
                             fullContent += '\n\n*（回复因长度限制被截断）*';
                         }
                         if (finishReason === 'insufficient_system_resource') {
-                            if (!fullContent) fullContent = '（AI服务暂时繁忙，请稍后重试）';
+                            if (!fullContent) fullContent = '（Miku暂时繁忙，请稍后重试）';
                             streamDone = true;
                             break;
                         }
@@ -4753,10 +5178,12 @@
             if (err.name === 'AbortError') {
                 // 区分超时中止和用户手动取消
                 if (err.message?.includes('超时') || !aiState.abortCtrl) {
-                    appendAIError('AI响应超时，请稍后重试');
+                    appendAIError('Miku响应超时，请稍后重试');
                 } else {
-                    appendAIMessage('bot', '⏹ 请求已取消');
+                    appendAIMessage('bot', icon('stop') + ' 请求已取消');
                 }
+            } else if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+                appendAIError('网络连接失败，请检查网络后重试（移动端建议使用Wi-Fi或切换网络）');
             } else {
                 appendAIError(err.message);
             }
@@ -4776,7 +5203,7 @@
 
         const avatar = document.createElement('div');
         avatar.className = 'ai-msg-avatar';
-        avatar.textContent = role === 'user' ? '👤' : '🤖';
+        avatar.innerHTML = role === 'user' ? icon('user') : icon('mikuLeek');
 
         const bubble = document.createElement('div');
         bubble.className = 'ai-msg-bubble';
@@ -4800,7 +5227,7 @@
         const chat = document.getElementById('aiChat');
         const errDiv = document.createElement('div');
         errDiv.className = 'ai-error-msg';
-        errDiv.innerHTML = `❌ ${escapeHtml(errMsg)}<span class="retry-link" onclick="retryLastAIMessage()">重试</span>`;
+        errDiv.innerHTML = `错误: ${escapeHtml(errMsg)}<span class="retry-link" onclick="retryLastAIMessage()">重试</span>`;
         chat.appendChild(errDiv);
         scrollToAIBottom(true);
     }
@@ -4832,11 +5259,11 @@
 
         const avatar = document.createElement('div');
         avatar.className = 'ai-msg-avatar';
-        avatar.textContent = '🤖';
+        avatar.innerHTML = icon('mikuLeek');
 
         const bubble = document.createElement('div');
         bubble.className = 'ai-msg-bubble';
-        bubble.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">思考中…</span></div>';
+        bubble.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
 
         loadingDiv.appendChild(avatar);
         loadingDiv.appendChild(bubble);
@@ -4853,7 +5280,7 @@
     /** 构建思考过程折叠块 HTML */
     function buildThinkingHTML(reasoning, isThinking) {
         const id = 'think_' + Math.random().toString(36).slice(2, 8);
-        const summaryText = isThinking ? '💭 思考中…' : '💭 思考过程（点击展开）';
+        const summaryText = isThinking ? 'Miku思考中...' : 'Miku思考过程（点击展开）';
         const collapsed = !isThinking; // 思考结束后默认折叠
         return `<details class="ai-thinking-block"${collapsed ? '' : ' open'}>
             <summary class="ai-thinking-summary">${summaryText}</summary>
@@ -4991,9 +5418,13 @@
         const chat = document.getElementById('aiChat');
         chat.innerHTML = '';
         const msgs = getCurrentChatMessages();
-        msgs.forEach(m => {
-            appendAIMessage(m.role, m.content);
-        });
+        if (msgs.length === 0) {
+            chat.innerHTML = '<div class="ai-welcome"><span class="miku-welcome-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><path d="M 30 28 C 20 28, 12 20, 12 11 C 12 5, 18 3, 22 9 C 25 14, 27 21, 30 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 34 28 C 44 28, 52 20, 52 11 C 52 5, 46 3, 42 9 C 39 14, 37 21, 34 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 24 36 L 24 32 Q 24 28 28 28 L 36 28 Q 40 28 40 32 L 40 36 Z" fill="#C5E0B4" stroke="#A0C090" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="32" cy="30" rx="5" ry="2.5" fill="#D0E8C0" opacity="0.8"/><path d="M 24 36 L 22 53 Q 32 60 42 53 L 40 36 Z" fill="#F4F8EC" stroke="#C0D0B0" stroke-width="2.5" stroke-linejoin="round"/></svg></span><p>你好，我是Miku~你的AI解题助手</p><p style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">选中题目后可快速解析，或直接输入问题</p></div>';
+        } else {
+            msgs.forEach(m => {
+                appendAIMessage(m.role, m.content);
+            });
+        }
         scrollToAIBottom(true);
     }
 
@@ -5005,7 +5436,8 @@
         setCurrentChatMessages([]);
         aiState.isStreaming = false;
         aiState.abortCtrl = null;
-        document.getElementById('aiChat').innerHTML = '';
+        const chatEl = document.getElementById('aiChat');
+        chatEl.innerHTML = '<div class="ai-welcome"><span class="miku-welcome-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><path d="M 30 28 C 20 28, 12 20, 12 11 C 12 5, 18 3, 22 9 C 25 14, 27 21, 30 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 34 28 C 44 28, 52 20, 52 11 C 52 5, 46 3, 42 9 C 39 14, 37 21, 34 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 24 36 L 24 32 Q 24 28 28 28 L 36 28 Q 40 28 40 32 L 40 36 Z" fill="#C5E0B4" stroke="#A0C090" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="32" cy="30" rx="5" ry="2.5" fill="#D0E8C0" opacity="0.8"/><path d="M 24 36 L 22 53 Q 32 60 42 53 L 40 36 Z" fill="#F4F8EC" stroke="#C0D0B0" stroke-width="2.5" stroke-linejoin="round"/></svg></span><p>你好，我是Miku~你的AI解题助手</p><p style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">选中题目后可快速解析，或直接输入问题</p></div>';
         document.getElementById('aiSendBtn').disabled = false;
         showToast('已开始新聊天');
     }
@@ -5254,16 +5686,16 @@
                     let cls = 'wrong-q-opt';
                     if (isCorrectOpt) cls += ' is-correct';
                     if (isUserWrongOpt) cls += ' is-user-wrong';
-                    let icon = '';
-                    if (isCorrectOpt) icon = ' ✓';
-                    if (isUserWrongOpt) icon = ' ✗';
-                    optsHtml += `<div class="${cls}">${opt.label}. ${escapeHtml(opt.content)}${icon}</div>`;
+                    let optIcon = '';
+                    if (isCorrectOpt) optIcon = ' ✓';
+                    if (isUserWrongOpt) optIcon = ' ✗';
+                    optsHtml += `<div class="${cls}">${opt.label}. ${escapeHtml(opt.content)}${optIcon}</div>`;
                 });
             }
 
             cardsHtml += `<div class="wrong-q-card">
                 <div class="wrong-q-header">
-                    <span class="wrong-q-num">第 ${q.number} 题</span>
+                    <span class="wrong-q-num">${icon('clipboardCheck')} 第 ${q.number} 题</span>
                     <span class="wrong-q-type">${q.type === 'multi' ? '多选' : '单选'}</span>
                 </div>
                 <div class="wrong-q-text">${escapeHtml(q.text)}</div>
@@ -5273,7 +5705,7 @@
                     &nbsp;|&nbsp; 正确答案: <b>${item.correctAnswer}</b>
                 </div>
                 <div class="wrong-q-actions">
-                    <button class="btn btn-sm btn-outline" onclick="copyWrongItem(${item.realIdx})" style="padding:3px 10px;font-size:0.78rem;">📋 复制此题</button>
+                    <button class="btn btn-sm btn-outline" onclick="copyWrongItem(${item.realIdx})" style="padding:3px 10px;font-size:0.78rem;">复制此题</button>
                 </div>
             </div>`;
         });
@@ -5286,8 +5718,8 @@
         const modalHtml = `<div class="wrong-modal-overlay" onclick="closeWrongModal(event)">
             <div class="wrong-modal" onclick="event.stopPropagation()">
                 <div class="wrong-modal-header">
-                    <h2>❌ 错题回顾 <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);">（${wrongCount} 道错题 / 共 ${totalCount} 题）</span></h2>
-                    <button class="btn btn-sm btn-outline" onclick="closeWrongModal()" style="padding:4px 10px;font-size:0.85rem;">✕</button>
+                    <h2>错题回顾 <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);">（${wrongCount} 道错题 / 共 ${totalCount} 题）</span></h2>
+                    <button class="btn btn-sm btn-outline" onclick="closeWrongModal()" style="padding:4px 10px;font-size:0.85rem;">${icon('x')}</button>
                 </div>
                 <div class="wrong-modal-body">
                     ${cardsHtml}
@@ -5295,9 +5727,9 @@
                 <div class="wrong-modal-footer">
                     <div class="footer-info">正确 ${correctCount} 题 / 错误 ${wrongCount} 题 / 正确率 ${totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0}%</div>
                     <div class="footer-actions">
-                        <button class="btn btn-sm btn-outline" onclick="copyAllWrongItems()" style="padding:4px 12px;font-size:0.8rem;">📋 复制全部错题</button>
-                        <button class="btn btn-sm btn-primary" onclick="loadWrongToParse()" style="padding:4px 12px;font-size:0.8rem;">📄 放入解析模式</button>
-                        <button class="btn btn-sm btn-warn" onclick="${redoAction}" style="padding:4px 12px;font-size:0.8rem;">🔄 重做这些错题</button>
+                        <button class="btn btn-sm btn-outline" onclick="copyAllWrongItems()" style="padding:4px 12px;font-size:0.8rem;">复制全部错题</button>
+                        <button class="btn btn-sm btn-primary" onclick="loadWrongToParse()" style="padding:4px 12px;font-size:0.8rem;">放入解析模式</button>
+                        <button class="btn btn-sm btn-warn" onclick="${redoAction}" style="padding:4px 12px;font-size:0.8rem;">重做这些错题</button>
                     </div>
                 </div>
             </div>

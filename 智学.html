@@ -36,6 +36,11 @@
         }
 
         /* ================= 基础重置 ================= */
+        html {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
         *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
@@ -50,9 +55,11 @@
             line-height: 1.6;
             height: 100vh;
             overflow: hidden;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             position: relative;
+            max-width: 100vw;
         }
 
         body::before {
@@ -71,13 +78,14 @@
         body::after {
             content: '';
             position: fixed;
-            right: -40px;
+            right: 0;
             bottom: -20px;
-            width: 200px;
-            height: 280px;
+            width: 160px;
+            height: 240px;
             opacity: 0.025;
             pointer-events: none;
             z-index: 0;
+            overflow: hidden;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'%3E%3Ccircle cx='50' cy='20' r='14' fill='%2339C5BB'/%3E%3Cpath d='M36 20c-10 14-18 34-16 60' stroke='%2339C5BB' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M64 20c10 14 18 34 16 60' stroke='%2339C5BB' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M40 30c-6 10-10 22-8 40' stroke='%2339C5BB' stroke-width='3' fill='none' stroke-linecap='round' opacity='0.6'/%3E%3Cpath d='M60 30c6 10 10 22 8 40' stroke='%2339C5BB' stroke-width='3' fill='none' stroke-linecap='round' opacity='0.6'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-size: contain;
@@ -122,13 +130,14 @@
         .site-header::after {
             content: '';
             position: absolute;
-            right: -20px;
+            right: 0;
             top: 50%;
             transform: translateY(-50%);
-            width: 80px;
-            height: 60px;
+            width: 60px;
+            height: 50px;
             opacity: 0.06;
             pointer-events: none;
+            overflow: hidden;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 60'%3E%3Ccircle cx='40' cy='12' r='8' fill='%2339C5BB'/%3E%3Cpath d='M32 12c-8 10-14 24-12 44' stroke='%2339C5BB' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M48 12c8 10 14 24 12 44' stroke='%2339C5BB' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-size: contain;
@@ -2101,6 +2110,7 @@
             body {
                 height: auto;
                 overflow-y: auto;
+                overflow-x: hidden;
                 display: block;
             }
 
@@ -2142,7 +2152,9 @@
             body {
                 height: auto;
                 overflow-y: auto;
+                overflow-x: hidden;
                 display: block;
+                max-width: 100vw;
             }
 
             main {
@@ -2335,8 +2347,8 @@
 
             /* AI 面板移动端适配 */
             .ai-panel {
-                width: 100vw;
-                right: -100vw;
+                width: 100%;
+                right: -100%;
             }
 
             .ai-panel.open {

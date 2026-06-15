@@ -512,14 +512,47 @@
             border-radius: 3px;
         }
 
+        /* 虚拟滚动容器 */
+        .virtual-scroll-container {
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            padding: 20px;
+        }
+
+        .virtual-scroll-container::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .virtual-scroll-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .virtual-scroll-spacer {
+            position: relative;
+        }
+
+        .virtual-scroll-content {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
         /* 题目卡片 */
         .question-card {
             border: 1px solid var(--border);
             border-left: 3px solid var(--primary);
             border-radius: var(--radius);
             overflow: hidden;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-shrink: 0;
+            will-change: transform;
         }
 
         .question-card:hover {
@@ -602,7 +635,7 @@
             padding: 8px 12px;
             border-radius: 6px;
             border: 1.5px solid transparent;
-            transition: all 0.15s;
+            transition: background-color 0.15s, border-color 0.15s;
             font-size: 0.9rem;
             line-height: 1.6;
             min-width: 0;
@@ -620,7 +653,7 @@
             font-weight: 600;
             font-size: 0.8125rem;
             color: var(--text-secondary);
-            transition: all 0.15s;
+            transition: background-color 0.15s, color 0.15s;
         }
 
         .opt-text {
@@ -3362,12 +3395,215 @@
         }
     }
 
-    // ==================== 解析模式渲染 ====================
+    // ==================== 解析模式渲染（虚拟滚动） ====================
+
+    // 虚拟滚动状态
+    const vs = {
+        itemHeights: [],      // 每道题的估算高度
+        positions: [],        // 每道题的累计 top 偏移
+        totalHeight: 0,       // 总内容高度
+        container: null,      // 滚动容器 DOM
+        spacer: null,         // 撑高容器 DOM
+        content: null,        // 渲染内容容器 DOM
+        scrollTop: 0,         // 当前滚动位置
+        renderedRange: [0, 0],// 当前渲染的索引范围
+        rafId: null,          // requestAnimationFrame ID
+        EST_ITEM_HEIGHT: 120, // 估算的每题高度（初始值）
+        BUFFER: 5,            // 上下缓冲区额外渲染的题目数
+        initialized: false,   // 是否已初始化
+        resizeObserver: null, // ResizeObserver 实例
+    };
+
+    /** 计算所有题目的位置信息 */
+    function vsCalcPositions() {
+        const heights = vs.itemHeights;
+        const positions = [];
+        let acc = 0;
+        for (let i = 0; i < heights.length; i++) {
+            positions.push(acc);
+            acc += heights[i];
+        }
+        vs.positions = positions;
+        vs.totalHeight = acc;
+    }
+
+    /** 二分查找：找到 scrollTop 对应的第一个可见项索引 */
+    function vsFindStartIndex(scrollTop) {
+        let low = 0, high = vs.positions.length - 1;
+        while (low <= high) {
+            const mid = (low + high) >> 1;
+            if (vs.positions[mid] <= scrollTop) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return Math.max(0, high);
+    }
+
+    /** 生成单道题目的 HTML */
+    function vsRenderQuestion(q) {
+        const typeClass = q.type === 'multi' ? 'multi' : q.type === 'subjective' ? 'unrecognized' : 'single';
+        const typeLabel = q.type === 'multi' ? '多选' : q.type === 'subjective' ? '未识别' : '单选';
+        const parts = [];
+        parts.push(`<div class="question-card" data-qnum="${q.number}">`);
+        parts.push(`<div class="q-header">`);
+        parts.push(`<span class="q-num">第${q.number}题</span>`);
+        parts.push(`<span class="q-type ${typeClass}">${typeLabel}</span>`);
+        parts.push(q.answer ? `<span class="answer-tag">${q.answer}</span>` : '<span class="no-answer-tag">未识别答案</span>');
+        parts.push(`</div>`);
+        parts.push(`<div class="q-body">`);
+        parts.push(`<div class="q-text">${formatStem(escapeHtml(q.text))}</div>`);
+        if (q.options.length > 0) {
+            parts.push(`<div class="options-list">`);
+            for (const opt of q.options) {
+                const isCorrect = q.answer && q.answer.includes(opt.label);
+                parts.push(`<div class="option-item ${isCorrect ? 'correct' : ''}">`);
+                parts.push(`<span class="opt-label">${opt.label}</span>`);
+                parts.push(`<span class="opt-text">${escapeHtml(opt.content)}</span>`);
+                if (isCorrect) parts.push('<span class="opt-check" style="color:var(--success);">✓</span>');
+                parts.push(`</div>`);
+            }
+            parts.push(`</div>`);
+        } else {
+            parts.push('<div style="color: var(--text-secondary); font-size: 0.9rem;">（未识别题型，无标准选项）</div>');
+        }
+        parts.push(`</div></div>`);
+        return parts.join('');
+    }
+
+    /** 根据滚动位置渲染可见区域的题目 */
+    function vsRenderVisible() {
+        if (!vs.container || state.questions.length === 0) return;
+
+        const scrollTop = vs.container.scrollTop;
+        const viewportHeight = vs.container.clientHeight;
+        const startIndex = Math.max(0, vsFindStartIndex(scrollTop) - vs.BUFFER);
+        const endIndex = Math.min(state.questions.length - 1, vsFindStartIndex(scrollTop + viewportHeight) + vs.BUFFER);
+
+        // 如果渲染范围没变，跳过
+        if (vs.renderedRange[0] === startIndex && vs.renderedRange[1] === endIndex) return;
+        vs.renderedRange = [startIndex, endIndex];
+
+        // 更新撑高容器高度
+        vs.spacer.style.height = vs.totalHeight + 'px';
+
+        // 计算渲染内容的偏移
+        const offsetY = vs.positions[startIndex] || 0;
+        vs.content.style.transform = `translateY(${offsetY}px)`;
+
+        // 只渲染可见范围的题目
+        const parts = [];
+        for (let i = startIndex; i <= endIndex; i++) {
+            parts.push(vsRenderQuestion(state.questions[i]));
+        }
+        vs.content.innerHTML = parts.join('');
+    }
+
+    /** 滚动事件处理（使用 rAF 节流） */
+    function vsOnScroll() {
+        if (vs.rafId) return;
+        vs.rafId = requestAnimationFrame(() => {
+            vs.rafId = null;
+            vsRenderVisible();
+        });
+    }
+
+    /** 测量已渲染题目的实际高度并更新估算值 */
+    function vsMeasureItems() {
+        if (!vs.content) return;
+        const cards = vs.content.querySelectorAll('.question-card');
+        let changed = false;
+        cards.forEach(card => {
+            const qnum = parseInt(card.getAttribute('data-qnum'));
+            const idx = qnum - 1; // 题号从1开始，索引从0开始
+            if (idx >= 0 && idx < vs.itemHeights.length) {
+                // offsetHeight + gap(14px)，最后一项不加 gap
+                const gap = (idx < state.questions.length - 1) ? 14 : 0;
+                const realHeight = card.offsetHeight + gap;
+                if (Math.abs(vs.itemHeights[idx] - realHeight) > 2) {
+                    vs.itemHeights[idx] = realHeight;
+                    changed = true;
+                }
+            }
+        });
+        if (changed) {
+            vsCalcPositions();
+            vs.spacer.style.height = vs.totalHeight + 'px';
+        }
+    }
+
+    /** 初始化虚拟滚动 */
+    function vsInit() {
+        const area = document.getElementById('previewArea');
+
+        // 禁用外层 card-body 的滚动，由虚拟滚动容器接管
+        area.style.overflow = 'hidden';
+        area.style.padding = '0';
+
+        // 创建虚拟滚动 DOM 结构
+        area.innerHTML = '<div class="virtual-scroll-container"><div class="virtual-scroll-spacer"><div class="virtual-scroll-content"></div></div></div>';
+
+        vs.container = area.querySelector('.virtual-scroll-container');
+        vs.spacer = area.querySelector('.virtual-scroll-spacer');
+        vs.content = area.querySelector('.virtual-scroll-content');
+
+        // 初始化高度估算
+        vs.itemHeights = state.questions.map(() => vs.EST_ITEM_HEIGHT);
+        vsCalcPositions();
+
+        // 绑定滚动事件（passive 提升性能）
+        vs.container.addEventListener('scroll', vsOnScroll, { passive: true });
+
+        // 监听容器大小变化，重新渲染可见区域
+        vs.resizeObserver = new ResizeObserver(() => {
+            vs.renderedRange = [-1, -1];
+            vsRenderVisible();
+        });
+        vs.resizeObserver.observe(vs.container);
+
+        vs.initialized = true;
+        vs.renderedRange = [-1, -1]; // 强制首次渲染
+
+        // 首次渲染
+        vsRenderVisible();
+
+        // 延迟测量真实高度
+        requestAnimationFrame(() => {
+            vsMeasureItems();
+            vsRenderVisible();
+        });
+    }
+
+    /** 销毁虚拟滚动 */
+    function vsDestroy() {
+        if (vs.resizeObserver) {
+            vs.resizeObserver.disconnect();
+            vs.resizeObserver = null;
+        }
+        if (vs.container) {
+            vs.container.removeEventListener('scroll', vsOnScroll);
+        }
+        if (vs.rafId) {
+            cancelAnimationFrame(vs.rafId);
+            vs.rafId = null;
+        }
+        vs.initialized = false;
+        vs.renderedRange = [-1, -1];
+        // 恢复 previewArea 的原始样式
+        const area = document.getElementById('previewArea');
+        if (area) {
+            area.style.overflow = '';
+            area.style.padding = '';
+        }
+    }
+
     function renderParsePreview() {
         const area = document.getElementById('previewArea');
         const statsBar = document.getElementById('statsBar');
 
         if (state.questions.length === 0) {
+            vsDestroy();
             area.innerHTML = '<div class="empty-state"><div class="icon">' + icon('clipboard', 'icon-lg') + '</div><p>粘贴试题文本并点击"解析试题"<br>解析结果将在此处显示</p></div>';
             statsBar.style.display = 'none';
             document.getElementById('questionCount').textContent = '0 题';
@@ -3376,35 +3612,33 @@
 
         statsBar.style.display = 'flex';
 
-        let html = '<div class="question-list">';
-        state.questions.forEach((q, i) => {
-            const typeClass = q.type === 'multi' ? 'multi' : q.type === 'subjective' ? 'unrecognized' : 'single';
-            const typeLabel = q.type === 'multi' ? '多选' : q.type === 'subjective' ? '未识别' : '单选';
+        // 题目数量较少时（<=30），直接全量渲染，无需虚拟滚动
+        if (state.questions.length <= 30) {
+            vsDestroy();
+            const parts = ['<div class="question-list">'];
+            state.questions.forEach((q) => {
+                parts.push(vsRenderQuestion(q));
+            });
+            parts.push('</div>');
+            area.innerHTML = parts.join('');
+            return;
+        }
 
-            html += `<div class="question-card">
-                <div class="q-header">
-                    <span class="q-num">第${q.number}题</span>
-                    <span class="q-type ${typeClass}">${typeLabel}</span>
-                    ${q.answer ? `<span class="answer-tag">${q.answer}</span>` : '<span class="no-answer-tag">未识别答案</span>'}
-                </div>
-                <div class="q-body">
-                    <div class="q-text">${formatStem(escapeHtml(q.text))}</div>
-                    ${q.options.length > 0 ? `<div class="options-list">
-                        ${q.options.map(opt => {
-                            const isCorrect = q.answer && q.answer.includes(opt.label);
-                            return `<div class="option-item ${isCorrect ? 'correct' : ''}">
-                                <span class="opt-label">${opt.label}</span>
-                                <span class="opt-text">${escapeHtml(opt.content)}</span>
-                                ${isCorrect ? '<span class="opt-check" style="color:var(--success);">✓</span>' : ''}
-                            </div>`;
-                        }).join('')}
-                    </div>` : '<div style="color: var(--text-secondary); font-size: 0.9rem;">（未识别题型，无标准选项）</div>'}
-                </div>
-            </div>`;
-        });
-        html += '</div>';
-
-        area.innerHTML = html;
+        // 题目数量较多时，使用虚拟滚动
+        if (vs.initialized) {
+            // 已初始化，更新数据并重新渲染
+            vs.itemHeights = state.questions.map(() => vs.EST_ITEM_HEIGHT);
+            vsCalcPositions();
+            vs.renderedRange = [-1, -1];
+            vsRenderVisible();
+            // 延迟测量
+            requestAnimationFrame(() => {
+                vsMeasureItems();
+                vsRenderVisible();
+            });
+        } else {
+            vsInit();
+        }
     }
 
     function formatStem(text) {
@@ -4598,9 +4832,12 @@
 
     // ==================== 工具函数 ====================
     function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(text));
-        return div.innerHTML;
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     // ==================== 初始化 ====================

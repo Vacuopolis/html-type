@@ -13,6 +13,8 @@
             --primary-light: #f0fdfa;
             --primary-bg: rgba(13, 148, 136, 0.08);
             --bg: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-tertiary: #e8e8e8;
             --card-bg: #ffffff;
             --text: #0f172a;
             --text-secondary: #475569;
@@ -21,6 +23,7 @@
             --success-bg: #f0fdf4;
             --success-border: #86efac;
             --error: #dc2626;
+            --danger: #dc2626;
             --error-bg: #fef2f2;
             --error-border: #fca5a5;
             --warning: #d97706;
@@ -551,7 +554,6 @@
             overflow: hidden;
             transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-shrink: 0;
-            will-change: transform;
         }
 
         .question-card:hover {
@@ -1505,10 +1507,6 @@
             background: rgba(255, 255, 255, 0.35);
         }
 
-        .ai-panel-action-btn[title]::after {
-            font-size: 0.7rem;
-        }
-
         .ai-panel-body {
             flex: 1;
             overflow-y: auto;
@@ -2302,8 +2300,8 @@
                 right: 0;
                 left: 0;
                 width: 100%;
-                max-height: calc(100vh - 100%);
-                max-height: calc(100dvh - 100%);
+                max-height: 60vh;
+                max-height: 60dvh;
                 border-radius: 0;
             }
 
@@ -2909,13 +2907,14 @@
             if (fabSvg) {
                 const draw = SVG(fabSvg);
                 // Miku 葱图标微妙的上下浮动呼吸效果
-                draw.animate(2500, '<>', 0)
+                // SVG.js 3.x: animate(duration, delay, when) - 第二参数为 delay(数字)，缓动通过 .ease() 设置
+                draw.animate(2500)
                     .ease('<>')
                     .translate(0, -1.5)
-                    .animate(2500, '<>', 0)
+                    .animate(2500)
                     .ease('<>')
                     .translate(0, 1.5)
-                    .loop(Infinity, true);
+                    .loop(true, true);
             }
         }
     });
@@ -4170,13 +4169,13 @@
         state.quizOrder = [...wrongIndices];
         state.quizIndex = 0;
 
-        // 如果在解析模式，切换到刷题模式
+        // 如果在解析模式，切换到刷题模式（switchMode 内部会调用 renderQuizView/renderAnswerSheet）
         if (state.currentMode === 'parse') {
             switchMode('quiz');
+        } else {
+            renderQuizView();
+            renderAnswerSheet();
         }
-
-        renderQuizView();
-        renderAnswerSheet();
         updateAIQuestionInfo();
         saveCurrentProgress();
 
@@ -4205,10 +4204,11 @@
         // 先加载该历史记录（继续答题模式）
         continueHistory(index);
 
-        // 稍后进入错题重做模式（continueHistory 会 switchMode，需要在之后执行）
-        setTimeout(() => {
+        // 进入错题重做模式（continueHistory 同步执行完毕后再调用）
+        // 使用 requestAnimationFrame 替代 setTimeout，确保在 DOM 更新后执行
+        requestAnimationFrame(() => {
             redoWrongQuestions();
-        }, 50);
+        });
     }
 
     /** 退出错题重做模式，恢复全部题目 */
@@ -4408,7 +4408,8 @@
         const idx = exampleSelectedIndex;
         const name = exampleListData[idx].name;
         const btn = document.querySelector('[onclick="loadExample()"]');
-        const originalText = btn ? btn.textContent : '';
+        // 使用 innerHTML 保存完整内容（含 SVG 图标），避免恢复时丢失图标
+        const originalHTML = btn ? btn.innerHTML : '';
         if (btn) { btn.disabled = true; btn.textContent = '加载中...'; }
         try {
             const resp = await smartFetch(`https://vacuopolis.qzz.io/api/example?index=${idx}`);
@@ -4439,7 +4440,7 @@
             const reason = e.name === 'AbortError' ? '请求超时' : (e.message || '网络错误');
             console.warn('加载示例失败:', reason);
         } finally {
-            if (btn) { btn.disabled = false; btn.textContent = originalText; }
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
         }
     }
 
@@ -4968,7 +4969,7 @@
 
         qInfo.style.display = 'block';
         qInfoContent.innerHTML = html;
-        quickActions.style.display = isSubmitted ? 'flex' : 'flex';
+        quickActions.style.display = 'flex';
     }
 
     /** 获取当前题目的上下文信息（用于API请求） */
@@ -5478,7 +5479,12 @@
         bubble.className = 'ai-msg-bubble';
 
         if (role === 'bot' && content) {
-            bubble.innerHTML = renderAIMarkdown(content);
+            // 如果 content 以 HTML 标签开头（如 icon() 返回的 <span>），直接使用 innerHTML 避免被 Markdown 转义
+            if (/^\s*<span\s/.test(content)) {
+                bubble.innerHTML = content;
+            } else {
+                bubble.innerHTML = renderAIMarkdown(content);
+            }
         } else {
             bubble.textContent = content;
         }
@@ -5567,7 +5573,8 @@
         // 加粗 **text**
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         // 斜体 *text*（避免与加粗冲突，只匹配单个*且非列表行首）
-        html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+        // 使用兼容性写法：匹配非*开头的单个*（避免后行断言 (?<!\*) ）
+        html = html.replace(/(^|[^\*])\*(?!\*)(.+?)([^\*]|$)\*(?!\*)/g, '$1<em>$2</em>$3');
         // 删除线 ~~text~~
         html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
 
@@ -5605,13 +5612,14 @@
 
         // 处理未闭合的单 * 斜体（排除行首列表 * ）
         // 简单做法：如果还有残留的单 * 且不在行首，临时处理
-        const remainingItalic = html.match(/(?<!\*)\*(?!\*)/g);
+        // 使用兼容性写法避免后行断言 (?<!\*)
+        const remainingItalic = html.match(/(^|[^\*])\*(?!\*)/g);
         if (remainingItalic && remainingItalic.length % 2 !== 0) {
             // 找最后一个未配对的 *
-            const matches = [...html.matchAll(/(?<!\*)\*(?!\*)/g)];
+            const matches = [...html.matchAll(/(^|[^\*])\*(?!\*)/g)];
             if (matches.length > 0) {
                 const lastMatch = matches[matches.length - 1];
-                const idx = lastMatch.index;
+                const idx = lastMatch.index + lastMatch[0].length - 1;
                 // 排除行首的 *（列表符号已转换为 <li>）
                 html = html.substring(0, idx) + '<em>' + html.substring(idx + 1);
                 html += '</em>';
@@ -5708,7 +5716,7 @@
         const chatEl = document.getElementById('aiChat');
         chatEl.innerHTML = '<div class="ai-welcome"><span class="miku-welcome-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><path d="M 30 28 C 20 28, 12 20, 12 11 C 12 5, 18 3, 22 9 C 25 14, 27 21, 30 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 34 28 C 44 28, 52 20, 52 11 C 52 5, 46 3, 42 9 C 39 14, 37 21, 34 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 24 36 L 24 32 Q 24 28 28 28 L 36 28 Q 40 28 40 32 L 40 36 Z" fill="#C5E0B4" stroke="#A0C090" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="32" cy="30" rx="5" ry="2.5" fill="#D0E8C0" opacity="0.8"/><path d="M 24 36 L 22 53 Q 32 60 42 53 L 40 36 Z" fill="#F4F8EC" stroke="#C0D0B0" stroke-width="2.5" stroke-linejoin="round"/></svg></span><p>你好，我是Miku~你的AI解题助手</p><p style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">选中题目后可快速解析，或直接输入问题</p></div>';
         document.getElementById('aiSendBtn').disabled = false;
-        showToast('已开始新聊天');
+        showToast('已开始新聊天', 'success');
     }
 
     // ==================== 键盘快捷键 ====================
@@ -5884,12 +5892,18 @@
 
     /** 通用剪贴板复制辅助 */
     function _copyText(text, successMsg) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast(successMsg, 'success');
-        }).catch(() => {
+        // 检查 clipboard API 是否可用（file:// 或旧浏览器中可能不存在）
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(successMsg, 'success');
+            }).catch(() => {
+                fallbackCopy(text);
+                showToast(successMsg, 'success');
+            });
+        } else {
             fallbackCopy(text);
             showToast(successMsg, 'success');
-        });
+        }
     }
 
     /** 打开错题回顾弹窗（历史记录来源） */

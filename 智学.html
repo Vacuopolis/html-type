@@ -127,21 +127,20 @@
             50% { opacity: 1; transform: scale(1.1); }
         }
 
-        /* Miku 双马尾装饰 - 页头右侧 */
+        /* Miku 剪影装饰 - 页头右侧 */
         .site-header::after {
             content: '';
             position: absolute;
             right: 0;
-            top: 50%;
-            transform: translateY(-50%);
+            bottom: 0;
             width: 75px;
             height: 100px;
             opacity: 0.06;
             pointer-events: none;
-            overflow: hidden;
             background-image: url("https://vacuopolis.qzz.io/svg/miku_background.svg");
             background-repeat: no-repeat;
             background-size: contain;
+            background-position: bottom;
         }
 
         .site-header .subtitle {

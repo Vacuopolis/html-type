@@ -3411,6 +3411,7 @@
         BUFFER: 5,            // 上下缓冲区额外渲染的题目数
         initialized: false,   // 是否已初始化
         resizeObserver: null, // ResizeObserver 实例
+        _measuring: false,    // 防止测量递归
     };
 
     /** 计算所有题目的位置信息 */
@@ -3497,6 +3498,18 @@
             parts.push(vsRenderQuestion(state.questions[i]));
         }
         vs.content.innerHTML = parts.join('');
+
+        // 渲染后测量真实高度，如有变化立即修正，消除跳动
+        if (!vs._measuring) {
+            vs._measuring = true;
+            requestAnimationFrame(() => {
+                vs._measuring = false;
+                if (vsMeasureItems()) {
+                    vs.renderedRange = [-1, -1];
+                    vsRenderVisible();
+                }
+            });
+        }
     }
 
     /** 滚动事件处理（使用 rAF 节流） */
@@ -3508,16 +3521,15 @@
         });
     }
 
-    /** 测量已渲染题目的实际高度并更新估算值 */
+    /** 测量已渲染题目的实际高度并更新估算值，返回是否有变化 */
     function vsMeasureItems() {
-        if (!vs.content) return;
+        if (!vs.content) return false;
         const cards = vs.content.querySelectorAll('.question-card');
         let changed = false;
         cards.forEach(card => {
             const qnum = parseInt(card.getAttribute('data-qnum'));
-            const idx = qnum - 1; // 题号从1开始，索引从0开始
+            const idx = qnum - 1;
             if (idx >= 0 && idx < vs.itemHeights.length) {
-                // offsetHeight + gap(14px)，最后一项不加 gap
                 const gap = (idx < state.questions.length - 1) ? 14 : 0;
                 const realHeight = card.offsetHeight + gap;
                 if (Math.abs(vs.itemHeights[idx] - realHeight) > 2) {
@@ -3530,6 +3542,7 @@
             vsCalcPositions();
             vs.spacer.style.height = vs.totalHeight + 'px';
         }
+        return changed;
     }
 
     /** 初始化虚拟滚动 */

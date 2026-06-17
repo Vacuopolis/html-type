@@ -322,7 +322,7 @@
         /* 解析预览中心旋转 Miku gif */
         .miku-preview-bg {
             position: absolute;
-            top: 50%;
+            top: 58%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 560px;
@@ -481,25 +481,6 @@
             background: var(--primary-light);
             color: var(--primary);
             font-weight: 600;
-        }
-
-        .example-info-tip {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            color: var(--text-secondary);
-            cursor: help;
-            flex-shrink: 0;
-            transition: background 0.15s, color 0.15s;
-        }
-
-        .example-info-tip:hover {
-            background: var(--miku);
-            color: #fff;
         }
 
         /* 统计栏 */
@@ -1407,11 +1388,6 @@
             to { opacity: 1; }
         }
 
-        @keyframes scaleIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
         /* ================= AI 助手浮动按钮 ================= */
         .ai-fab {
             position: fixed;
@@ -1856,108 +1832,6 @@
             flex-shrink: 0;
         }
 
-        /* API 设置面板 */
-        .ai-api-settings {
-            margin-bottom: 8px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        .ai-api-settings-toggle {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            width: 100%;
-            padding: 6px 10px;
-            background: var(--bg);
-            border: none;
-            cursor: pointer;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-family: inherit;
-            transition: background 0.15s;
-        }
-
-        .ai-api-settings-toggle:hover {
-            background: #e2e8f0;
-        }
-
-        .ai-api-settings-toggle .arrow {
-            transition: transform 0.2s;
-            font-size: 0.6rem;
-        }
-
-        .ai-api-settings-toggle.expanded .arrow {
-            transform: rotate(90deg);
-        }
-
-        .ai-api-settings-body {
-            display: none;
-            padding: 8px 10px;
-            background: #fff;
-            border-top: 1px solid var(--border);
-        }
-
-        .ai-api-settings-body.open {
-            display: block;
-        }
-
-        .ai-api-field {
-            margin-bottom: 6px;
-        }
-
-        .ai-api-field:last-child {
-            margin-bottom: 0;
-        }
-
-        .ai-api-field label {
-            display: block;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-bottom: 2px;
-            font-weight: 500;
-        }
-
-        .ai-api-field select,
-        .ai-api-field input {
-            width: 100%;
-            padding: 5px 8px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-family: inherit;
-            background: #fff;
-            transition: border-color 0.15s;
-        }
-
-        .ai-api-field select:focus,
-        .ai-api-field input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.12);
-        }
-
-        .ai-api-hint {
-            font-size: 0.65rem;
-            color: #94a3b8;
-            margin-top: 4px;
-            line-height: 1.4;
-        }
-
-        .ai-api-hint a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .ai-api-key-reminder {
-            font-size: 0.68rem;
-            color: #94a3b8;
-            text-align: center;
-            margin: 4px 0;
-            line-height: 1.4;
-        }
-
         .ai-input-row {
             display: flex;
             gap: 8px;
@@ -2316,103 +2190,6 @@
                 left: 10px;
                 width: auto;
             }
-        }
-
-        /* ==================== 刷题引导遮罩 ==================== */
-        .quiz-guide-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 900;
-            background: rgba(0, 0, 0, 0.55);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .quiz-guide-card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 28px 24px 20px;
-            max-width: 420px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-            animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .quiz-guide-card h3 {
-            margin: 0 0 16px;
-            font-size: 1.1rem;
-            color: var(--text);
-            text-align: center;
-        }
-
-        .quiz-guide-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-
-        .quiz-guide-step {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
-
-        .quiz-guide-step-num {
-            flex-shrink: 0;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: var(--miku);
-            color: #fff;
-            font-size: 0.8rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .quiz-guide-step-text {
-            font-size: 0.875rem;
-            line-height: 1.5;
-            color: var(--text);
-        }
-
-        .quiz-guide-step-text strong {
-            color: var(--primary);
-        }
-
-        .quiz-guide-btn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 10px;
-            background: var(--miku);
-            color: #fff;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.15s;
-        }
-
-        .quiz-guide-btn:hover {
-            background: #2db5a8;
-            transform: translateY(-1px);
-        }
-
-        .quiz-guide-dont-show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            margin-top: 12px;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            user-select: none;
         }
 
         @media (max-width: 600px) {
@@ -2938,7 +2715,6 @@
                             </div>
                         </div>
                         <button class="btn btn-outline" onclick="loadExample()" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0;"><span class="icon-svg icon-btn" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span>加载</button>
-                        <span class="example-info-tip" title="示例题库托管于 Cloudflare Pages，你可以自行部署并上传自己的 .txt 题库文件"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor"/></svg></span>
                         <button class="btn btn-outline" onclick="fetchExampleList()" title="重新获取示例列表" style="border: none; border-left: 1px solid var(--border); border-radius: 0; margin: 0; padding: 8px 10px;"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span></button>
                     </div>
                     <button class="btn btn-danger" onclick="clearAll()"><span class="icon-svg icon-btn" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></span>清空</button>
@@ -3044,43 +2820,6 @@
 
             <button class="ai-quick-btn" onclick="aiQuickAsk('knowledge')"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>相关知识点</button>
         </div>
-        <div class="ai-api-settings" id="aiApiSettings">
-            <button class="ai-api-settings-toggle" id="aiApiSettingsToggle" onclick="toggleApiSettings()">
-                <span class="arrow">▶</span> API 设置
-            </button>
-            <div class="ai-api-settings-body" id="aiApiSettingsBody">
-                <div class="ai-api-field">
-                    <label>服务商</label>
-                    <select id="aiApiProvider" onchange="onApiProviderChange()">
-                        <option value="deepseek">DeepSeek（推荐）</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="siliconflow">SiliconFlow（硅基流动）</option>
-                        <option value="qwen">阿里云通义千问</option>
-                        <option value="moonshot">Moonshot（月之暗面 Kimi）</option>
-                        <option value="zhipu">智谱 GLM</option>
-                        <option value="grok">xAI Grok</option>
-                        <option value="doubao">字节豆包</option>
-                        <option value="custom">自定义</option>
-                    </select>
-                </div>
-                <div class="ai-api-field">
-                    <label>API 端点</label>
-                    <input type="text" id="aiApiEndpoint" placeholder="https://api.deepseek.com/chat/completions" onchange="onApiEndpointChange()">
-                </div>
-                <div class="ai-api-field">
-                    <label>模型名称</label>
-                    <input type="text" id="aiApiModel" placeholder="deepseek-v4-flash" onchange="onApiModelChange()">
-                </div>
-                <div class="ai-api-field">
-                    <label>API Key</label>
-                    <input type="password" id="aiApiKey" placeholder="留空则使用默认服务" onchange="onApiKeyChange()">
-                </div>
-                <div class="ai-api-hint">
-                    请填写你自己申请的 API Key。<br>留空将使用智学默认的 DeepSeek 代理服务。
-                </div>
-            </div>
-        </div>
-        <div class="ai-api-key-reminder">📌 为保护服务稳定，建议填写你自己的 API Key</div>
         <div class="ai-input-row">
             <textarea id="aiInput" rows="1" placeholder="输入你的问题…" onkeydown="handleAIKeydown(event)" oninput="autoResizeAIInput(this)"></textarea>
             <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()" title="发送"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span></button>
@@ -3683,31 +3422,6 @@
         if (mode === 'parse' && aiState.panelOpen) {
             toggleAIPanel();
         }
-
-        // 首次进入刷题模式，显示引导
-        if (mode === 'quiz' && !localStorage.getItem('zhixue_quiz_guide_shown')) {
-            setTimeout(() => showQuizGuide(), 400);
-        }
-    }
-
-    // ==================== 刷题引导 ====================
-    function showQuizGuide() {
-        const overlay = document.getElementById('quizGuideOverlay');
-        if (overlay) overlay.style.display = 'flex';
-    }
-
-    function closeQuizGuide() {
-        const overlay = document.getElementById('quizGuideOverlay');
-        const dontShow = document.getElementById('quizGuideDontShow');
-        if (overlay) overlay.style.display = 'none';
-        if (dontShow && dontShow.checked) {
-            localStorage.setItem('zhixue_quiz_guide_shown', '1');
-        }
-    }
-
-    function closeQuizGuideForever() {
-        const dontShow = document.getElementById('quizGuideDontShow');
-        if (dontShow) dontShow.checked = !dontShow.checked;
     }
 
     // ==================== 解析模式渲染（虚拟滚动） ====================
@@ -5175,77 +4889,8 @@
     renderHistory();
 
     // ==================== AI 助手功能 ====================
-
-    // 多Provider预设（全部采用 OpenAI 兼容格式）
-    const AI_PROVIDERS = {
-        deepseek: {
-            name: 'DeepSeek',
-            endpoint: 'https://api.deepseek.com/chat/completions',
-            model: 'deepseek-v4-flash',
-            models: ['deepseek-v4-flash', 'deepseek-v4-pro', 'deepseek-chat', 'deepseek-reasoner'],
-            keyUrl: 'https://platform.deepseek.com/api_keys',
-        },
-        openai: {
-            name: 'OpenAI',
-            endpoint: 'https://api.openai.com/v1/chat/completions',
-            model: 'gpt-4.1-mini',
-            models: ['gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4.1', 'gpt-4o', 'gpt-4o-mini'],
-            keyUrl: 'https://platform.openai.com/api-keys',
-        },
-        siliconflow: {
-            name: 'SiliconFlow',
-            endpoint: 'https://api.siliconflow.cn/v1/chat/completions',
-            model: 'deepseek-ai/DeepSeek-V3',
-            models: ['deepseek-ai/DeepSeek-V3', 'deepseek-ai/DeepSeek-R1', 'Qwen/Qwen3-235B-A22B', 'Pro/zai-org/GLM-4.5'],
-            keyUrl: 'https://cloud.siliconflow.cn/account/ak',
-        },
-        qwen: {
-            name: '通义千问',
-            endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-            model: 'qwen-plus',
-            models: ['qwen-plus', 'qwen-max', 'qwen-flash', 'qwen-turbo', 'qwen3-coder-plus'],
-            keyUrl: 'https://bailian.console.aliyun.com/#/api-key',
-        },
-        moonshot: {
-            name: 'Moonshot',
-            endpoint: 'https://api.moonshot.cn/v1/chat/completions',
-            model: 'moonshot-v1-8k',
-            models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-            keyUrl: 'https://platform.moonshot.cn/console/api-keys',
-        },
-        zhipu: {
-            name: '智谱GLM',
-            endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-            model: 'glm-4-flash',
-            models: ['glm-4-flash', 'glm-4-plus', 'glm-4-air', 'glm-4-long'],
-            keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
-        },
-        grok: {
-            name: 'xAI Grok',
-            endpoint: 'https://api.x.ai/v1/chat/completions',
-            model: 'grok-4.1',
-            models: ['grok-4.1', 'grok-4', 'grok-3'],
-            keyUrl: 'https://console.x.ai/',
-        },
-        doubao: {
-            name: '字节豆包',
-            endpoint: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-            model: 'doubao-pro-32k',
-            models: ['doubao-pro-32k', 'doubao-pro-128k', 'doubao-lite-32k'],
-            keyUrl: 'https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey',
-        },
-        custom: {
-            name: '自定义',
-            endpoint: '',
-            model: '',
-            models: [],
-            keyUrl: '',
-        },
-    };
-
-    const DEFAULT_API_PROXY = 'https://polisvacuo.qzz.io/api/chat';
-    const AI_THINKING_KEY = 'zhixue_ai_thinking';
-    const AI_API_CONFIG_KEY = 'zhixue_ai_config';
+    const API_PROXY_URL = 'https://polisvacuo.qzz.io/api/chat';
+    const AI_THINKING_KEY = 'zhixue_ai_thinking'; // localStorage 键名
 
     const aiState = {
         panelOpen: false,
@@ -5266,107 +4911,6 @@
         localStorage.setItem(AI_THINKING_KEY, enabled ? 'true' : 'false');
         showToast(enabled ? '已开启深度思考模式' : '已关闭深度思考模式', 'info');
     }
-
-    // ==================== API 设置 ====================
-    function getApiConfig() {
-        try {
-            const raw = localStorage.getItem(AI_API_CONFIG_KEY);
-            if (raw) return JSON.parse(raw);
-        } catch (e) { /* ignore */ }
-        return { provider: 'deepseek', endpoint: '', model: '', key: '' };
-    }
-
-    function saveApiConfig(cfg) {
-        localStorage.setItem(AI_API_CONFIG_KEY, JSON.stringify(cfg));
-    }
-
-    function applyApiConfigToUI() {
-        const cfg = getApiConfig();
-        const provider = document.getElementById('aiApiProvider');
-        const endpoint = document.getElementById('aiApiEndpoint');
-        const model = document.getElementById('aiApiModel');
-        const key = document.getElementById('aiApiKey');
-        if (provider) provider.value = cfg.provider || 'deepseek';
-        if (endpoint) endpoint.value = cfg.endpoint || '';
-        if (model) model.value = cfg.model || '';
-        if (key) key.value = cfg.key || '';
-    }
-
-    function onApiProviderChange() {
-        const provider = document.getElementById('aiApiProvider').value;
-        const info = AI_PROVIDERS[provider];
-        const endpoint = document.getElementById('aiApiEndpoint');
-        const model = document.getElementById('aiApiModel');
-        if (info && endpoint && model) {
-            endpoint.value = info.endpoint || '';
-            endpoint.readOnly = (provider !== 'custom');
-            model.value = info.model || '';
-            model.readOnly = (provider !== 'custom' && info.models.length === 0);
-        }
-        saveCurrentConfig();
-    }
-
-    function onApiEndpointChange() {
-        saveCurrentConfig();
-    }
-
-    function onApiKeyChange() {
-        saveCurrentConfig();
-    }
-
-    function onApiModelChange() {
-        saveCurrentConfig();
-    }
-
-    function saveCurrentConfig() {
-        const provider = document.getElementById('aiApiProvider').value;
-        const endpoint = document.getElementById('aiApiEndpoint').value.trim();
-        const model = document.getElementById('aiApiModel').value.trim();
-        const key = document.getElementById('aiApiKey').value.trim();
-        saveApiConfig({ provider, endpoint, model, key });
-    }
-
-    function toggleApiSettings() {
-        const body = document.getElementById('aiApiSettingsBody');
-        const toggle = document.getElementById('aiApiSettingsToggle');
-        const isOpen = body.classList.toggle('open');
-        toggle.classList.toggle('expanded', isOpen);
-    }
-
-    /** 获取最终的请求目标 URL（有自定义Key则直连Provider，否则走默认代理） */
-    function getRequestUrl() {
-        const cfg = getApiConfig();
-        // 有自定义Key时直连Provider，无Key时走默认代理以保护配额
-        if (cfg.key && cfg.endpoint) return cfg.endpoint;
-        return DEFAULT_API_PROXY;
-    }
-
-    /** 获取最终的请求体，注入api_key */
-    function buildRequestBody(baseBody) {
-        const cfg = getApiConfig();
-        const body = { ...baseBody };
-        // 如果用户配置了自定义Key，注入到请求体供代理转发
-        if (cfg.key) body.api_key = cfg.key;
-        // 如果配置了自定义端点，注入到请求体供代理转发
-        if (cfg.endpoint && cfg.key) body.provider_endpoint = cfg.endpoint;
-        return body;
-    }
-
-    // 页面加载时初始化API设置UI
-    applyApiConfigToUI();
-    // 确保初始状态同步：如果Endpoint有值，provider为custom时不强制覆盖
-    (function _initApiUI() {
-        const cfg = getApiConfig();
-        const info = AI_PROVIDERS[cfg.provider];
-        const endpoint = document.getElementById('aiApiEndpoint');
-        const model = document.getElementById('aiApiModel');
-        if (info && endpoint && model) {
-            if (cfg.provider !== 'custom') {
-                endpoint.readOnly = true;
-                model.readOnly = (info.models.length === 0);
-            }
-        }
-    })();
 
     function getCurrentChatMessages() {
         if (aiState.currentChatKey === null) return [];
@@ -5680,19 +5224,19 @@
                         // 重试前等待：指数退避 1s, 2s
                         await new Promise(r => setTimeout(r, 1000 * attempt));
                     }
-                    response = await fetch(getRequestUrl(), {
+                    response = await fetch(API_PROXY_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(buildRequestBody({
-                            model: getApiConfig().model || 'deepseek-v4-flash',
+                        body: JSON.stringify({
+                            model: 'deepseek-v4-flash',
                             messages: apiMessages,
                             stream: true,
                             max_tokens: 2048,
                             ...(aiState.thinkingEnabled ? { temperature: 1.3 } : { temperature: 1.0 }),
                             ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
-                        })),
+                        }),
                         signal: aiState.abortCtrl.signal
                     });
                     break; // 成功则跳出重试循环
@@ -6565,31 +6109,5 @@
     }
 
 </script>
-
-<!-- 刷题模式引导遮罩 -->
-<div class="quiz-guide-overlay" id="quizGuideOverlay" style="display:none;">
-    <div class="quiz-guide-card">
-        <h3>欢迎使用刷题模式</h3>
-        <div class="quiz-guide-steps">
-            <div class="quiz-guide-step">
-                <div class="quiz-guide-step-num">1</div>
-                <div class="quiz-guide-step-text"><strong>阅读题干</strong>—— 页面左侧展示当前题目，仔细阅读后作答</div>
-            </div>
-            <div class="quiz-guide-step">
-                <div class="quiz-guide-step-num">2</div>
-                <div class="quiz-guide-step-text"><strong>点击选项</strong>—— 单选/多选可点击，提交后立即显示对错</div>
-            </div>
-            <div class="quiz-guide-step">
-                <div class="quiz-guide-step-num">3</div>
-                <div class="quiz-guide-step-text"><strong>答题卡导航</strong>—— 右侧答题卡实时显示进度，点击题号快速跳转</div>
-            </div>
-        </div>
-        <button class="quiz-guide-btn" onclick="closeQuizGuide()">开始刷题</button>
-        <div class="quiz-guide-dont-show" onclick="closeQuizGuideForever()">
-            <input type="checkbox" id="quizGuideDontShow" style="margin:0;"> 不再显示
-        </div>
-    </div>
-</div>
-
 </body>
 </html>

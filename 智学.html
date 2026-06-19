@@ -1791,6 +1791,53 @@
             opacity: 0.7;
         }
 
+        /* AI 消息中的表格样式 */
+        .ai-msg-bubble table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+            font-size: 0.82rem;
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .ai-msg-bubble th,
+        .ai-msg-bubble td {
+            border: 1px solid var(--border, #d0d0d0);
+            padding: 6px 10px;
+            text-align: left;
+        }
+        .ai-msg-bubble thead th {
+            background: rgba(0,0,0,0.04);
+            font-weight: 600;
+        }
+        .ai-msg-bubble tbody tr:nth-child(even) {
+            background: rgba(0,0,0,0.02);
+        }
+
+        /* AI 消息中的代码块样式 */
+        .ai-msg-bubble pre {
+            background: rgba(0,0,0,0.06);
+            border-radius: 6px;
+            padding: 8px 12px;
+            overflow-x: auto;
+            margin: 6px 0;
+            font-size: 0.8rem;
+        }
+        .ai-msg-bubble pre code {
+            background: transparent;
+            padding: 0;
+            font-size: 0.8rem;
+        }
+
+        /* AI 消息中的 KaTeX 公式样式 */
+        .ai-msg-bubble .katex-display {
+            margin: 8px 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
         /* 加载动画 */
         .ai-loading {
             display: flex;
@@ -2686,6 +2733,11 @@
             vertical-align: middle;
         }
     </style>
+    <!-- Markdown 渲染库 marked -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <!-- LaTeX 数学公式渲染库 KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 </head>
 <body>
 
@@ -5671,66 +5723,48 @@
 
     /** Markdown渲染（支持流式不完整标记） */
     function renderAIMarkdown(text) {
-        let html = escapeHtml(text);
+        if (!text) return '';
 
-        // 行内代码 `code`（优先处理，内部不再解析其他markdown）
-        html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+        // 先提取 LaTeX 公式，用占位符替换，避免 marked 破坏公式内容（如 _ * \ 等）
+        const mathBlocks = [];
+        const placeholder = (idx) => 'KATEXMATH' + idx + 'KATEXMATH';
 
-        // 加粗 **text**
-        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        // 斜体 *text*（避免与加粗冲突，只匹配单个*且非列表行首）
-        // 使用兼容性写法：匹配非*开头的单个*（避免后行断言 (?<!\*) ）
-        html = html.replace(/(^|[^\*])\*(?!\*)(.+?)([^\*]|$)\*(?!\*)/g, '$1<em>$2</em>$3');
-        // 删除线 ~~text~~
-        html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+        // 提取块级公式 $$...$$
+        text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+            const idx = mathBlocks.length;
+            mathBlocks.push({ display: true, formula: formula.trim() });
+            return placeholder(idx);
+        });
 
-        // 标题
-        html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
-        html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>');
-        html = html.replace(/^##\s+(.+)$/gm, '<h4>$1</h4>');
-        html = html.replace(/^#\s+(.+)$/gm, '<h4>$1</h4>');
+        // 提取行内公式 $...$
+        text = text.replace(/(^|[^\\$])\$(?!\s)([^\n$]+?)(?<!\s)\$(?!\d)/g, (match, pre, formula) => {
+            const idx = mathBlocks.length;
+            mathBlocks.push({ display: false, formula: formula });
+            return pre + placeholder(idx);
+        });
 
-        // 无序列表
-        html = html.replace(/^[-]\s+(.+)$/gm, '<li>$1</li>');
-        html = html.replace(/^[*]\s+(.+)$/gm, '<li>$1</li>');
-        // 有序列表
-        html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
-        // 包裹连续li为ul
-        html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-
-        // 换行
-        html = html.replace(/\n/g, '<br>');
-        // 清理多余br
-        html = html.replace(/<br><ul>/g, '<ul>');
-        html = html.replace(/<\/ul><br>/g, '</ul>');
-        html = html.replace(/<br><h4>/g, '<h4>');
-        html = html.replace(/<\/h4><br>/g, '</h4>');
-
-        // 流式输出时：处理未闭合的 ** 标记
-        // 计算未配对的 ** 数量（2个为一对）
-        const remainingBold = html.match(/\*\*/g);
-        if (remainingBold && remainingBold.length % 2 !== 0) {
-            // 有未闭合的 **，替换最后一个为 <strong> 并在末尾闭合
-            const lastIdx = html.lastIndexOf('**');
-            html = html.substring(0, lastIdx) + '<strong>' + html.substring(lastIdx + 2);
-            html += '</strong>';
+        // 使用 marked 解析 Markdown（支持表格、列表、代码块等）
+        let html;
+        try {
+            marked.setOptions({ breaks: true, gfm: true });
+            html = marked.parse(text);
+        } catch (e) {
+            html = escapeHtml(text).replace(/\n/g, '<br>');
         }
 
-        // 处理未闭合的单 * 斜体（排除行首列表 * ）
-        // 简单做法：如果还有残留的单 * 且不在行首，临时处理
-        // 使用兼容性写法避免后行断言 (?<!\*)
-        const remainingItalic = html.match(/(^|[^\*])\*(?!\*)/g);
-        if (remainingItalic && remainingItalic.length % 2 !== 0) {
-            // 找最后一个未配对的 *
-            const matches = [...html.matchAll(/(^|[^\*])\*(?!\*)/g)];
-            if (matches.length > 0) {
-                const lastMatch = matches[matches.length - 1];
-                const idx = lastMatch.index + lastMatch[0].length - 1;
-                // 排除行首的 *（列表符号已转换为 <li>）
-                html = html.substring(0, idx) + '<em>' + html.substring(idx + 1);
-                html += '</em>';
+        // 将占位符替换回 KaTeX 渲染结果
+        mathBlocks.forEach((block, idx) => {
+            try {
+                const rendered = katex.renderToString(block.formula, {
+                    displayMode: block.display,
+                    throwOnError: false
+                });
+                html = html.split(placeholder(idx)).join(rendered);
+            } catch (e) {
+                const fallback = block.display ? `$$${block.formula}$$` : `$${block.formula}$`;
+                html = html.split(placeholder(idx)).join(fallback);
             }
-        }
+        });
 
         return html;
     }

@@ -159,7 +159,7 @@
             cursor: pointer;
             background: transparent;
             color: rgba(255, 255, 255, 0.75);
-            transition: all 0.2s;
+            transition: color 0.2s, background 0.2s;
             font-family: inherit;
         }
 
@@ -184,7 +184,7 @@
             cursor: pointer;
             background: rgba(255, 255, 255, 0.15);
             color: rgba(255, 255, 255, 0.75);
-            transition: all 0.2s;
+            transition: color 0.2s, background 0.2s;
             font-family: inherit;
             position: relative;
             display: flex;
@@ -827,7 +827,7 @@
             background: #f0fdfa;
             color: #0f766e;
             border: 1px solid #99f6e4;
-            transition: all 0.2s;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
         }
 
         .quiz-progress-toggle:hover {
@@ -913,7 +913,7 @@
             display: flex;
             align-items: flex-start;
             gap: 10px;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             background: #fff;
             user-select: none;
             min-width: 0;
@@ -1035,7 +1035,7 @@
             font-weight: 600;
             cursor: pointer;
             background: #f8fafc;
-            transition: all 0.2s;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
         }
 
         .sheet-item:hover {
@@ -1150,7 +1150,7 @@
             font-weight: 500;
             cursor: pointer;
             background: transparent;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: inherit;
             width: 100%;
             color: var(--text-secondary);
@@ -1192,7 +1192,7 @@
             font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: inherit;
             white-space: nowrap;
         }
@@ -1371,7 +1371,7 @@
             background: #fff;
             color: var(--text);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
         }
 
         .hd-header .btn-manage:hover {
@@ -1445,7 +1445,8 @@
             font-size: 1.2rem;
             font-weight: 700;
             z-index: 200;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s;
+            will-change: transform;
         }
 
         .ai-fab:hover {
@@ -1461,7 +1462,7 @@
         .ai-panel {
             position: fixed;
             top: 0;
-            right: -420px;
+            right: 0;
             width: min(400px, 90vw);
             bottom: 0;
             background: var(--card-bg);
@@ -1469,11 +1470,14 @@
             z-index: 300;
             display: flex;
             flex-direction: column;
-            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+            backface-visibility: hidden;
         }
 
         .ai-panel.open {
-            right: 0;
+            transform: translateX(0);
         }
 
         .ai-panel-overlay {
@@ -1484,12 +1488,15 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.3);
             z-index: 299;
-            display: none;
-            animation: fadeIn 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            will-change: opacity;
         }
 
         .ai-panel-overlay.open {
-            display: block;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .ai-panel-header {
@@ -1688,7 +1695,6 @@
             overflow-y: auto;
             overflow-x: hidden;
             background: rgba(0,0,0,0.02);
-            -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
         }
         .ai-thinking-content::-webkit-scrollbar {
@@ -1799,7 +1805,6 @@
             font-size: 0.82rem;
             display: block;
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
         }
         .ai-msg-bubble th,
         .ai-msg-bubble td {
@@ -1835,7 +1840,6 @@
             margin: 8px 0;
             overflow-x: auto;
             overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
         }
 
         /* 加载动画 */
@@ -1898,7 +1902,7 @@
             color: var(--text);
             font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, color 0.2s, background 0.2s;
             font-family: inherit;
         }
 
@@ -1955,7 +1959,7 @@
             align-items: center;
             justify-content: center;
             font-size: 1rem;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-shrink: 0;
         }
 
@@ -2483,11 +2487,10 @@
             /* AI 面板移动端适配 */
             .ai-panel {
                 width: 100%;
-                right: -100%;
             }
 
             .ai-panel.open {
-                right: 0;
+                transform: translateX(0);
             }
 
             .ai-panel-header {

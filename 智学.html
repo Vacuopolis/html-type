@@ -923,10 +923,27 @@
             overflow: hidden;
         }
 
-        .quiz-option:hover {
+        @media (hover: hover) {
+            .quiz-option:hover {
+                border-color: var(--primary);
+                background: var(--primary-light);
+                transform: translateY(-1px);
+            }
+            .quiz-option.multi-hover:hover {
+                border-color: #fed7aa;
+                background: #fff7ed;
+            }
+        }
+
+        /* 触摸反馈：按下时高亮，划开或松手后消失（选中由 .selected 控制） */
+        .quiz-option:active {
             border-color: var(--primary);
             background: var(--primary-light);
-            transform: translateY(-1px);
+        }
+
+        .quiz-option.multi-hover:active {
+            border-color: #fed7aa;
+            background: #fff7ed;
         }
 
         .quiz-option.selected {
@@ -948,11 +965,6 @@
         .quiz-option.multi-selected .opt-label {
             background: #f97316;
             color: #fff;
-        }
-
-        .quiz-option.multi-hover:hover {
-            border-color: #fed7aa;
-            background: #fff7ed;
         }
 
         /* 刷题模式：提交后状态 */
@@ -1038,7 +1050,14 @@
             transition: color 0.2s, border-color 0.2s, background 0.2s;
         }
 
-        .sheet-item:hover {
+        @media (hover: hover) {
+            .sheet-item:hover {
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+        }
+
+        .sheet-item:active {
             border-color: var(--primary);
             color: var(--primary);
         }
@@ -1388,12 +1407,15 @@
         /* ================= Toast 通知 ================= */
         .toast-container {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 9999;
             display: flex;
             flex-direction: column;
+            align-items: center;
             gap: 8px;
+            pointer-events: none;
         }
 
         .toast {
@@ -1402,8 +1424,10 @@
             color: #fff;
             font-size: 0.875rem;
             box-shadow: var(--shadow-lg);
-            animation: slideIn 0.3s ease;
+            animation: toastSlideUp 0.3s ease;
             max-width: 360px;
+            pointer-events: auto;
+            white-space: nowrap;
         }
 
         .toast.success { background: var(--success); }
@@ -1411,14 +1435,14 @@
         .toast.info { background: var(--primary); }
         .toast.warning { background: var(--warning); }
 
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        @keyframes toastSlideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
+        @keyframes toastSlideDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(20px); opacity: 0; }
         }
 
         @keyframes fadeIn {
@@ -2447,13 +2471,15 @@
             }
 
             .toast-container {
-                top: 10px;
-                right: 10px;
+                bottom: 80px;
                 left: 10px;
+                right: 10px;
+                transform: none;
             }
 
             .toast {
                 max-width: 100%;
+                white-space: normal;
             }
 
             .wrong-modal {
@@ -4982,7 +5008,7 @@
         container.appendChild(toast);
 
         setTimeout(() => {
-            toast.style.animation = 'slideOut 0.3s ease forwards';
+            toast.style.animation = 'toastSlideDown 0.3s ease forwards';
             setTimeout(() => {
                 if (toast.parentNode) toast.parentNode.removeChild(toast);
             }, 300);

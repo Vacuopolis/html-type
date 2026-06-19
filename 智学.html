@@ -5446,7 +5446,7 @@
                     html += buildThinkingHTML(displayedReasoning, !firstContentArrived);
                 }
                 if (firstContentArrived) {
-                    html += renderAIMarkdown(displayedContent);
+                    html += renderAIMarkdown(displayedContent, true);
                 } else if (displayedReasoning) {
                     html += '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
                 }
@@ -5725,26 +5725,47 @@
     }
 
     /** Markdown渲染（支持流式不完整标记） */
-    function renderAIMarkdown(text) {
+    function renderAIMarkdown(text, isStreaming = false) {
         if (!text) return '';
 
         // 先提取 LaTeX 公式，用占位符替换，避免 marked 破坏公式内容（如 _ * \ 等）
         const mathBlocks = [];
         const placeholder = (idx) => 'KATEXMATH' + idx + 'KATEXMATH';
 
-        // 提取块级公式 $$...$$
+        // 提取完整的块级公式 $$...$$
         text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
             const idx = mathBlocks.length;
             mathBlocks.push({ display: true, formula: formula.trim() });
             return placeholder(idx);
         });
 
-        // 提取行内公式 $...$
+        // 提取完整的行内公式 $...$
         text = text.replace(/(^|[^\\$])\$(?!\s)([^\n$]+?)(?<!\s)\$(?!\d)/g, (match, pre, formula) => {
             const idx = mathBlocks.length;
             mathBlocks.push({ display: false, formula: formula });
             return pre + placeholder(idx);
         });
+
+        // 流式输出时：保护未闭合的块级公式 $$（避免内部 _ * \ 被 marked 解析）
+        if (isStreaming) {
+            text = text.replace(/\$\$([\s\S]+)$/, (match, formula) => {
+                const idx = mathBlocks.length;
+                mathBlocks.push({ display: true, formula: formula.trim(), incomplete: true });
+                return placeholder(idx);
+            });
+        }
+
+        // 禁用删除线：将 ~~ 替换为占位符，避免被 marked 误解析
+        const delPlaceholder = '\x00DEL\x00';
+        text = text.replace(/~~/g, delPlaceholder);
+
+        // 流式输出时：闭合未完成的代码块，避免 marked 将后续内容吞入代码块
+        if (isStreaming) {
+            const codeBlockCount = (text.match(/```/g) || []).length;
+            if (codeBlockCount % 2 !== 0) {
+                text += '\n```';
+            }
+        }
 
         // 使用 marked 解析 Markdown（支持表格、列表、代码块等）
         let html;
@@ -5755,8 +5776,16 @@
             html = escapeHtml(text).replace(/\n/g, '<br>');
         }
 
+        // 恢复删除线占位符为原始 ~~
+        html = html.replace(new RegExp(delPlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~~');
+
         // 将占位符替换回 KaTeX 渲染结果
         mathBlocks.forEach((block, idx) => {
+            if (block.incomplete) {
+                // 未完成的公式，显示原始文本（不尝试 KaTeX 渲染）
+                html = html.split(placeholder(idx)).join('$$' + escapeHtml(block.formula));
+                return;
+            }
             try {
                 const rendered = katex.renderToString(block.formula, {
                     displayMode: block.display,

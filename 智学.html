@@ -5007,15 +5007,21 @@
                     renderAIChatFromCache();
                 }
             } else {
-                // 非刷题模式或无题目时，显示欢迎信息
-                aiState.currentChatKey = null;
-                renderAIChatFromCache();
+                // 非刷题模式或无题目时，使用固定 key 保存通用对话（避免 null 导致历史不保存）
+                if (aiState.currentChatKey !== '__general__') {
+                    aiState.currentChatKey = '__general__';
+                    renderAIChatFromCache();
+                }
             }
             updateAIQuestionInfo();
         } else {
             panel.classList.remove('open');
             overlay.classList.remove('open');
             fab.classList.remove('active');
+            // 关闭面板时清空解析模式的对话历史，防止 token 暴涨
+            if (aiState.currentChatKey === '__general__') {
+                aiState.chatCache['__general__'] = [];
+            }
         }
     }
 

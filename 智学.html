@@ -3934,6 +3934,7 @@
 
     function toggleAutoNext(enabled) {
         state.autoNextEnabled = enabled;
+        localStorage.setItem(AUTO_NEXT_KEY, enabled ? 'true' : 'false');
         renderQuizView();
         saveCurrentProgress();
         showToast(enabled ? '已开启：答对时自动下一题' : '已关闭：答对时自动下一题', 'info');
@@ -4010,9 +4011,7 @@
                 </div>`;
             });
             html += '</div>';
-            if (!isSubmitted) {
-                html += `<div class="shortcut-hint" style="text-align:right;font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">按 ${shuffled.slice(0, 9).map((_, i) => `${i+1}`).join(' ')} 键可快速选择 ${shuffled.slice(0, 9).map(o => o.label).join(' ')}</div>`;
-            }
+            html += `<div class="shortcut-hint" style="text-align:right;font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">按 ${shuffled.slice(0, 9).map((_, i) => `${i+1}`).join(' ')} 键可快速选择 ${shuffled.slice(0, 9).map(o => o.label).join(' ')}</div>`;
         } else {
             html += '<div style="color: var(--text-secondary); margin-bottom: 20px;">（未识别题型，请自行核对思路）</div>';
         }
@@ -4537,6 +4536,7 @@
 
     // ==================== 本地持久化 ====================
     const STORAGE_KEY = 'quiz_system_history';
+    const AUTO_NEXT_KEY = 'quiz_auto_next_enabled';
 
     function loadHistoryFromStorage() {
         try {
@@ -4675,7 +4675,7 @@
             state.quizOrder = buildContinueQuizOrder();
         }
         document.getElementById('shuffleToggle').checked = state.shuffleEnabled;
-        state.autoNextEnabled = !!record.autoNextEnabled;
+        // autoNextEnabled 保持用户当前偏好，不从历史记录覆盖
         aiState.chatCache = JSON.parse(JSON.stringify(record.aiChatCache || {}));
         aiState.currentChatKey = null;
         const firstUnansweredPos = state.quizOrder.findIndex(
@@ -4727,7 +4727,7 @@
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
         state.shuffleEnabled = !!record.shuffleEnabled;
-        state.autoNextEnabled = !!record.autoNextEnabled;
+        // autoNextEnabled 保持用户当前偏好，不从历史记录覆盖
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
         state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
         document.getElementById('shuffleToggle').checked = state.shuffleEnabled;
@@ -4946,6 +4946,11 @@
 
     // ==================== 初始化 ====================
     loadHistoryFromStorage();
+    // 恢复 autoNextEnabled 偏好设置
+    const savedAutoNext = localStorage.getItem(AUTO_NEXT_KEY);
+    if (savedAutoNext !== null) {
+        state.autoNextEnabled = savedAutoNext === 'true';
+    }
     renderHistory();
 
     // ==================== AI 助手功能 ====================

@@ -5021,6 +5021,7 @@
             // 关闭面板时清空解析模式的对话历史，防止 token 暴涨
             if (aiState.currentChatKey === '__general__') {
                 aiState.chatCache['__general__'] = [];
+                aiState.currentChatKey = null;
             }
         }
     }

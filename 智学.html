@@ -5249,7 +5249,11 @@
         }
 
         const currentMessages = getCurrentChatMessages();
-        const recentHistory = currentMessages.slice(-20);
+        // 取最近20条历史消息，确保以 user 消息开头（避免截断导致 assistant 开头不符合 API 规范）
+        let recentHistory = currentMessages.slice(-20);
+        while (recentHistory.length > 0 && recentHistory[0].role !== 'user') {
+            recentHistory.shift();
+        }
         apiMessages.push(...recentHistory);
 
         apiMessages.push({ role: 'user', content: userText });

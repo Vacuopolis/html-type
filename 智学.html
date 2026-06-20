@@ -1866,6 +1866,22 @@
             overflow-y: hidden;
         }
 
+        /* AI 消息中的删除线、上下标、脚注样式 */
+        .ai-msg-bubble del {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        .ai-msg-bubble sub {
+            font-size: 0.75em;
+        }
+        .ai-msg-bubble sup {
+            font-size: 0.75em;
+        }
+        .ai-msg-bubble .ai-footnote {
+            color: var(--primary);
+            cursor: default;
+        }
+
         /* 加载动画 */
         .ai-loading {
             display: flex;
@@ -5781,9 +5797,20 @@
             });
         }
 
-        // 禁用删除线：将 ~~ 替换为占位符，避免被 marked 误解析
+        // 删除线：只匹配同一行内的 ~~text~~，避免跨行误匹配（如两行各以 ~ 结尾）
+        text = text.replace(/~~([^\n~]+)~~/g, '<del>$1</del>');
+        // 剩余的 ~~ 替换为占位符，避免被 marked 误解析
         const delPlaceholder = '\x00DEL\x00';
         text = text.replace(/~~/g, delPlaceholder);
+
+        // 下标：~text~（单波浪号，同一行内，仅匹配紧跟在字母数字后的短内容，如 H~2~O）
+        text = text.replace(/([\w])~([^\n~]{1,4})~/g, '$1<sub>$2</sub>');
+
+        // 上标：^text^（同一行内，仅匹配紧跟在字母数字后的短内容，如 x^2^）
+        text = text.replace(/([\w])\^([^\n^]{1,4})\^/g, '$1<sup>$2</sup>');
+
+        // 脚注引用：[^n] → 上标显示
+        text = text.replace(/\[\^([^\]]+)\]/g, '<sup class="ai-footnote">[$1]</sup>');
 
         // 流式输出时：闭合未完成的代码块，避免 marked 将后续内容吞入代码块
         if (isStreaming) {

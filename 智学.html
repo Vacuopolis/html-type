@@ -5866,14 +5866,41 @@
             });
         }
 
-        // 删除线：只匹配同一行内的 ~~text~~，避免跨行误匹配（如两行各以 ~ 结尾）
-        text = text.replace(/~~([^\n~]+)~~/g, '<del>$1</del>');
-        // 剩余的 ~~ 替换为占位符，避免被 marked 误解析
+        // 删除线占位符（用于保护 ~~ 不被 marked 误解析）
         const delPlaceholder = '\x00DEL\x00';
+
+        // 预处理 **text** 粗体：CommonMark 侧标记规则对中文标点（如 ""）处理不当，
+        // 当 ** 前为 CJK 字符、后为中文标点时 marked 不识别为粗体（只会把中间的"和"字变粗），
+        // 故对含 CJK 字符的内容提前转为 <strong>，绕过该问题
+        text = text.replace(/\*\*([^*\n]+)\*\*/g, (match, content) => {
+            if (/[\u4e00-\u9fff]/.test(content)) {
+                return '<strong>' + content + '</strong>';
+            }
+            return match;
+        });
+
+        // 删除线：只匹配同一行内的 ~~text~~，避免跨行误匹配（如两行各以 ~ 结尾）
+        // 但排除中文语气词用的 ~~（AI 常用 ~~ 做句尾语气符号，如 "好开心~~...讲清楚~~"）
+        // 判据：内容含 CJK 字符且（含句末标点 。！？ 或长度>30）时，视为语气词而非删除线
+        text = text.replace(/~~([^\n~]+)~~/g, (match, content) => {
+            const hasCJK = /[\u4e00-\u9fff]/.test(content);
+            const hasSentenceEnd = /[。！？!?]/.test(content);
+            const isLong = content.length > 30;
+            if (hasCJK && (hasSentenceEnd || isLong)) {
+                return delPlaceholder + content + delPlaceholder;
+            }
+            return '<del>' + content + '</del>';
+        });
+        // 剩余的 ~~ 替换为占位符，避免被 marked 误解析
         text = text.replace(/~~/g, delPlaceholder);
 
         // 下标：~text~（单波浪号，同一行内，仅匹配紧跟在字母数字后的短内容，如 H~2~O）
         text = text.replace(/([\w])~([^\n~]{1,4})~/g, '$1<sub>$2</sub>');
+
+        // 剩余的单个 ~ 替换为占位符，避免被 marked 误解析为删除线
+        // （AI 常用 ~ 做中文语气符号，如 "好开心~" ，不应被渲染为删除线）
+        const tildePlaceholder = '\x00TILDE\x00';
+        text = text.replace(/~/g, tildePlaceholder);
 
         // 上标：^text^（同一行内，仅匹配紧跟在字母数字后的短内容，如 x^2^）
         text = text.replace(/([\w])\^([^\n^]{1,4})\^/g, '$1<sup>$2</sup>');
@@ -5900,6 +5927,8 @@
 
         // 恢复删除线占位符为原始 ~~
         html = html.replace(new RegExp(delPlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~~');
+        // 恢复单个 ~ 占位符为原始 ~
+        html = html.replace(new RegExp(tildePlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~');
 
         // 将占位符替换回 KaTeX 渲染结果
         mathBlocks.forEach((block, idx) => {

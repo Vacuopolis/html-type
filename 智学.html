@@ -5879,6 +5879,30 @@
             return match;
         });
 
+        // 预处理 __text__ 粗体（下划线语法）：同样存在 CJK 侧标记问题
+        text = text.replace(/__([^_\n]+)__/g, (match, content) => {
+            if (/[\u4e00-\u9fff]/.test(content)) {
+                return '<strong>' + content + '</strong>';
+            }
+            return match;
+        });
+
+        // 预处理 *text* 斜体：CJK 侧标记规则对中文标点处理不当（同 ** 问题）
+        text = text.replace(/\*([^*\n]+)\*/g, (match, content) => {
+            if (/[\u4e00-\u9fff]/.test(content)) {
+                return '<em>' + content + '</em>';
+            }
+            return match;
+        });
+
+        // 预处理 _text_ 斜体（下划线语法）：同样存在 CJK 侧标记问题
+        text = text.replace(/_([^_\n]+)_/g, (match, content) => {
+            if (/[\u4e00-\u9fff]/.test(content)) {
+                return '<em>' + content + '</em>';
+            }
+            return match;
+        });
+
         // 删除线：只匹配同一行内的 ~~text~~，避免跨行误匹配（如两行各以 ~ 结尾）
         // 但排除中文语气词用的 ~~（AI 常用 ~~ 做句尾语气符号，如 "好开心~~...讲清楚~~"）
         // 判据：内容含 CJK 字符且（含句末标点 。！？ 或长度>30）时，视为语气词而非删除线

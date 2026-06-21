@@ -4567,32 +4567,62 @@
         renderExampleOptions();
     }
 
-    function toggleExampleDropdown() {
+    function positionExampleDropdown() {
         const dropdown = document.getElementById('exampleDropdown');
         const select = document.getElementById('exampleSelect');
         const trigger = document.querySelector('#exampleSelect .custom-select-trigger');
+        if (!dropdown || !trigger) return false;
+
+        const rect = trigger.getBoundingClientRect();
+        // trigger 滚出视口则关闭
+        if (rect.bottom < 0 || rect.top > window.innerHeight) {
+            dropdown.classList.remove('open');
+            if (select) select.classList.remove('open');
+            return false;
+        }
+
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = rect.bottom + 'px';
+        dropdown.style.minWidth = Math.max(180, rect.width) + 'px';
+        // 如果下方空间不足，则向上弹出
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+            dropdown.style.top = 'auto';
+            dropdown.style.bottom = (window.innerHeight - rect.top) + 'px';
+            dropdown.classList.add('dropup');
+        } else {
+            dropdown.style.bottom = 'auto';
+            dropdown.classList.remove('dropup');
+        }
+        return true;
+    }
+
+    function toggleExampleDropdown() {
+        const dropdown = document.getElementById('exampleDropdown');
+        const select = document.getElementById('exampleSelect');
         if (dropdown.classList.contains('open')) {
             dropdown.classList.remove('open');
             select.classList.remove('open');
         } else {
-            const rect = trigger.getBoundingClientRect();
-            dropdown.style.left = rect.left + 'px';
-            dropdown.style.top = rect.bottom + 'px';
-            dropdown.style.minWidth = Math.max(180, rect.width) + 'px';
-            // 如果下方空间不足，则向上弹出
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            if (spaceBelow < 250 && spaceAbove > spaceBelow) {
-                dropdown.style.top = 'auto';
-                dropdown.style.bottom = (window.innerHeight - rect.top) + 'px';
-                dropdown.classList.add('dropup');
-            } else {
-                dropdown.style.bottom = 'auto';
-                dropdown.classList.remove('dropup');
+            if (positionExampleDropdown()) {
+                dropdown.classList.add('open');
+                select.classList.add('open');
             }
-            dropdown.classList.add('open');
-            select.classList.add('open');
         }
+    }
+
+    // 滚动/窗口变化时，让示例下拉跟随 trigger 移动；超出视口则关闭
+    let _exampleDropdownRafPending = false;
+    function _onExampleDropdownScrollOrResize() {
+        const dropdown = document.getElementById('exampleDropdown');
+        if (!dropdown || !dropdown.classList.contains('open')) return;
+        if (_exampleDropdownRafPending) return;
+        _exampleDropdownRafPending = true;
+        requestAnimationFrame(() => {
+            _exampleDropdownRafPending = false;
+            positionExampleDropdown();
+        });
     }
 
     // 点击外部关闭示例下拉
@@ -4605,13 +4635,10 @@
         }
     });
 
-    // 窗口变化时关闭示例下拉（fixed定位会偏移）
-    window.addEventListener('resize', () => {
-        const dropdown = document.getElementById('exampleDropdown');
-        const select = document.getElementById('exampleSelect');
-        if (dropdown) dropdown.classList.remove('open');
-        if (select) select.classList.remove('open');
-    });
+    // 滚动时让示例下拉跟随 trigger；窗口变化时同样处理
+    // 使用 capture 阶段以监听 main 内部等所有滚动容器
+    window.addEventListener('scroll', _onExampleDropdownScrollOrResize, true);
+    window.addEventListener('resize', _onExampleDropdownScrollOrResize);
 
     // 显示网络受限警告（针对 great-site.net 等）
     function showNetworkWarning() {

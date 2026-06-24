@@ -5750,7 +5750,7 @@
         const bubble = document.createElement('div');
         bubble.className = 'ai-msg-bubble';
 
-        if (role === 'bot' && content) {
+        if ((role === 'bot' || role === 'assistant') && content) {
             // 如果 content 以 HTML 标签开头（如 icon() 返回的 <span>），直接使用 innerHTML 避免被 Markdown 转义
             if (/^\s*<span\s/.test(content)) {
                 bubble.innerHTML = content;

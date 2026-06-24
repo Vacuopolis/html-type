@@ -5156,6 +5156,14 @@
         aiState.chatCache[aiState.currentChatKey] = msgs;
     }
 
+    /** 获取当前题目对应的AI聊天缓存键。
+     *  错题重做模式下使用独立键（__redo__ + realIdx），
+     *  避免与正常刷题模式下同一题的聊天记录混淆。 */
+    function getAIChatKey() {
+        const realIdx = getRealIndex(state.quizIndex);
+        return state.wrongRedoMode ? ('__redo__' + realIdx) : realIdx;
+    }
+
     function toggleAIPanel() {
         aiState.panelOpen = !aiState.panelOpen;
         const panel = document.getElementById('aiPanel');
@@ -5167,9 +5175,9 @@
             overlay.classList.add('open');
             fab.classList.add('active');
             if (state.currentMode === 'quiz' && state.questions.length > 0) {
-                const realIdx = getRealIndex(state.quizIndex);
-                if (aiState.currentChatKey !== realIdx) {
-                    aiState.currentChatKey = realIdx;
+                const chatKey = getAIChatKey();
+                if (aiState.currentChatKey !== chatKey) {
+                    aiState.currentChatKey = chatKey;
                     renderAIChatFromCache();
                 }
             } else {
@@ -6032,8 +6040,7 @@
     /** 切换题目时更新AI面板信息并切换对话缓存 */
     function onAIQuestionChange() {
         if (!aiState.panelOpen) return;
-        const realIdx = getRealIndex(state.quizIndex);
-        aiState.currentChatKey = realIdx;
+        aiState.currentChatKey = getAIChatKey();
         renderAIChatFromCache();
         updateAIQuestionInfo();
     }

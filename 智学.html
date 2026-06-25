@@ -702,7 +702,12 @@
             font-weight: 600;
             font-size: 0.8125rem;
             color: var(--text-secondary);
-            transition: background-color 0.15s, color 0.15s;
+            transition: background-color 0.15s, color 0.15s, border-radius 0.15s;
+        }
+
+        /* 多选题选项标签：方形圆角（与单选圆形区分） */
+        .quiz-option.is-multi .opt-label {
+            border-radius: 7px;
         }
 
         .opt-text {
@@ -1464,7 +1469,7 @@
             box-shadow: var(--shadow-lg);
             animation: toastSlideUp 0.3s ease;
             max-width: 360px;
-            pointer-events: auto;
+            pointer-events: none;
             white-space: nowrap;
         }
 
@@ -3150,6 +3155,7 @@
         // 错题重做
         wrongRedoMode: false,       // 是否处于错题重做模式
         savedFullQuizOrder: [],     // 进入重做模式前保存的完整quizOrder
+        savedWrongStates: {},       // 进入重做模式前错题的原始状态: { [realIdx]: { answers, status } }
         confirmedTypes: {},         // 已确认题型: { [realIdx]: 'single'|'multi'|'subjective' }
     };
 
@@ -3249,6 +3255,7 @@
         state.shuffledOptions = generateShuffledOptions(state.shuffleEnabled);
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
+        state.savedWrongStates = {};
         aiState.chatCache = {};
         aiState.currentChatKey = null;
 
@@ -3930,14 +3937,58 @@
         }
     }
 
+    // 特殊选项短语：这些选项在随机洗牌时固定到最后位置，不参与随机
+    const SPECIAL_OPTION_PHRASES = [
+        '以上都不对', '以上均不对', '以上全不对',
+        '以上都不正确', '以上均不正确',
+        '以上说法都不对', '以上说法均不正确',
+        '以上各项都不对', '以上各项均不对',
+        '以上都不是', '以上均不是', '以上全不是',
+        '以上各项均非',
+        '以上都对', '以上均对', '以上全对',
+        '以上都正确', '以上均正确',
+        '以上说法都对', '以上说法均正确',
+        '以上各项都对', '以上各项均正确',
+        '以上皆是', '以上全是', '以上均皆是',
+        '以上都包含', '以上均包含',
+        '以上全包括', '以上都包括',
+        '以上都不符合', '以上均不符合',
+        '以上都不适用', '以上均不适用',
+        '以上均不符'
+    ];
+
+    /** 判断选项内容是否为"以上都不对"等特殊选项（固定在末尾） */
+    function isSpecialOption(content) {
+        if (!content) return false;
+        // 去除首尾空白及常见尾部标点
+        const trimmed = content.trim().replace(/[。.、，,；;:：）)\s]+$/, '');
+        return SPECIAL_OPTION_PHRASES.includes(trimmed);
+    }
+
     /** 为单道题构建选项随机映射（内部辅助函数） */
     function _buildShuffledOptionMapping(q, shuffleOptions) {
         if (!q.options || q.options.length === 0) return [];
-        const indices = q.options.map((_, i) => i);
+
+        // 将选项分为普通选项与特殊选项（"以上都不对"等固定在末尾）
+        const normalIndices = [];
+        const specialIndices = [];
+        q.options.forEach((opt, i) => {
+            if (isSpecialOption(opt.content)) {
+                specialIndices.push(i);
+            } else {
+                normalIndices.push(i);
+            }
+        });
+
+        // 仅对普通选项进行随机洗牌
         if (shuffleOptions) {
-            shuffleArray(indices);
+            shuffleArray(normalIndices);
         }
-        return indices.map((origIdx, newPos) => ({
+
+        // 特殊选项保持原相对顺序，附加在普通选项之后
+        const finalIndices = [...normalIndices, ...specialIndices];
+
+        return finalIndices.map((origIdx, newPos) => ({
             origIdx,
             label: LABELS[newPos] || String(newPos + 1),
             content: q.options[origIdx].content,
@@ -4139,6 +4190,8 @@
                         cls += ' multi-hover';
                     }
                 }
+                // 多选题统一标识，用于将选项标签渲染为方形圆角
+                if (q.type === 'multi') cls += ' is-multi';
 
                 html += `<div class="${cls}" ${clickAttr}>
                     <span class="opt-label">${opt.label}</span>
@@ -4344,8 +4397,13 @@
         onAIQuestionChange();
         requestAnimationFrame(() => {
             const contentArea = document.getElementById('quizContentArea');
-            if (contentArea) contentArea.scrollTo({ top: 0, behavior: 'smooth' });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (contentArea) {
+                // 桌面端：quizContentArea 自身是滚动容器，滚动到顶部
+                contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+                // 移动端/页面可滚动时：让题目区域顶部对齐视口顶部
+                // （避免滚动到 window 顶部露出模式切换/历史记录等按钮）
+                contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     }
 
@@ -4376,6 +4434,16 @@
             state.savedFullQuizOrder = [...state.quizOrder];
         }
         state.wrongRedoMode = true;
+
+        // 备份错题的原始状态（仅在首次进入时备份，避免多次重做时被重置后的状态覆盖）
+        if (Object.keys(state.savedWrongStates).length === 0) {
+            wrongIndices.forEach(realIdx => {
+                state.savedWrongStates[realIdx] = {
+                    answers: [...(state.userAnswers[realIdx] || [])],
+                    status: state.quizStatus[realIdx]
+                };
+            });
+        }
 
         // 重置错题的作答状态
         wrongIndices.forEach(realIdx => {
@@ -4447,6 +4515,19 @@
         }
         state.savedFullQuizOrder = [];
 
+        // 对未重新作答的错题，恢复进入重做模式前的原始状态
+        // （避免退出后错题永久变为 unanswered）
+        Object.keys(state.savedWrongStates).forEach(idx => {
+            const realIdx = Number(idx);
+            // 仅恢复当前仍为 unanswered 的题目（用户已重新作答的保留新结果）
+            if (state.quizStatus[realIdx] === 'unanswered') {
+                const saved = state.savedWrongStates[realIdx];
+                state.userAnswers[realIdx] = [...saved.answers];
+                state.quizStatus[realIdx] = saved.status;
+            }
+        });
+        state.savedWrongStates = {};
+
         // 跳转到第一道未答题
         const firstUnansweredPos = state.quizOrder.findIndex(
             realIdx => state.quizStatus[realIdx] === 'unanswered'
@@ -4474,6 +4555,7 @@
         state.shuffledOptions = [];
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
+        state.savedWrongStates = {};
         aiState.chatCache = {};
         aiState.currentChatKey = null;
         renderParsePreview();
@@ -4829,6 +4911,7 @@
         state.quizIndex = 0;
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
+        state.savedWrongStates = {};
         if (record.shuffledOptions && record.shuffledOptions.length > 0) {
             state.shuffledOptions = JSON.parse(JSON.stringify(record.shuffledOptions));
             state.shuffleEnabled = !!record.shuffleEnabled;
@@ -4892,6 +4975,7 @@
         state.quizIndex = 0;
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
+        state.savedWrongStates = {};
         state.shuffleEnabled = !!record.shuffleEnabled;
         // autoNextEnabled 保持用户当前偏好，不从历史记录覆盖
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);

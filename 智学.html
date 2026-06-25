@@ -4955,6 +4955,24 @@
         saveHistoryToStorage();
         renderHistory();
         showToast('答题进度已清零', 'info');
+
+        // 如果当前答题区正在显示这条历史记录，同步清零当前状态并刷新视图
+        if (state._activeHistoryTime === record.time && state.questions.length === record.questions.length) {
+            state.userAnswers = state.questions.map(() => []);
+            state.quizStatus = state.questions.map(() => 'unanswered');
+            state.quizIndex = 0;
+            state.wrongRedoMode = false;
+            state.savedFullQuizOrder = [];
+            state.savedWrongStates = {};
+            state.quizOrder = [...record.quizOrder];
+            state.shuffledOptions = JSON.parse(JSON.stringify(record.shuffledOptions));
+            aiState.chatCache = {};
+            aiState.currentChatKey = null;
+            if (state.currentMode === 'quiz') {
+                renderQuizView();
+                renderAnswerSheet();
+            }
+        }
     }
 
     function deleteHistory(index) {

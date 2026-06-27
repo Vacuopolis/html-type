@@ -834,7 +834,6 @@
             flex-direction: column;
             overflow-y: auto;
             overflow-x: hidden;
-            scroll-margin-top: 0px;
             word-break: break-word;
             overflow-wrap: break-word;
             min-width: 0;
@@ -4388,38 +4387,29 @@
         }
     }
 
-    /** 将题目区域滚动到顶部（停在与 site-header 之间的空隙处）
-     *  @param {boolean} smooth 是否使用平滑动画；为 undefined 时按距离智能决定 */
-    function scrollQuizToTop(smooth) {
-        const contentArea = document.getElementById('quizContentArea');
-        if (!contentArea) return;
-        // 使用 scroll-margin-top 让内容停在 site-header 下方的空隙处
-        // （避免被 sticky 页头遮挡，也避免滚到窗口顶部露出模式按钮）
-        contentArea.style.scrollMarginTop = '';
-
-        const useSmooth = (smooth === undefined) ? needsSmoothScroll(contentArea) : smooth;
-
+    /** 将 quizContentArea 滚到视口顶部（补偿 main 的 padding），.quiz-stem 可见→瞬间；完全看不到→平滑 */
+    function scrollQuizToTop() {
         requestAnimationFrame(() => {
-            if (useSmooth) {
-                contentArea.scrollTo({ top: 0, behavior: 'smooth' });
-                contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                // 距离近时滚动内部容器
-                contentArea.scrollTo({ top: 0 });
-            }
+            const contentArea = document.getElementById('quizContentArea');
+            if (!contentArea) return;
+            const stem = contentArea.querySelector('.quiz-stem');
+            const mainEl = document.querySelector('main');
+            contentArea.style.scrollMarginTop = '';
+            contentArea.scrollTo({ top: 0 });
+            // 计算目标滚动位置
+            const areaRect = contentArea.getBoundingClientRect();
+            const mainRect = mainEl ? mainEl.getBoundingClientRect() : null;
+            const scroller = (mainEl && getComputedStyle(mainEl).overflowY === 'auto') ? mainEl : null;
+            const scrollBase = scroller ? scroller.scrollTop : window.scrollY;
+            const padTop = mainEl ? parseFloat(getComputedStyle(mainEl).paddingTop) || 0 : 0;
+            const relativeTop = scroller ? (areaRect.top - mainRect.top + scrollBase) : (areaRect.top + scrollBase);
+            const target = relativeTop - padTop;
+            // 用 .quiz-stem 判断动画
+            const rect = stem ? stem.getBoundingClientRect() : areaRect;
+            const vh = window.innerHeight;
+            const outOfView = rect.bottom <= 0 || rect.top >= vh;
+            (scroller || window).scrollTo({ top: target, behavior: outOfView ? 'smooth' : 'auto' });
         });
-    }
-
-    /** 判断是否需要平滑滚动：找到真正滚动的容器，检查其 scrollTop
-     *  - 桌面端：quizContentArea 自身是滚动容器（overflow-y:auto），看其 scrollTop
-     *  - 移动端：contentArea 占满视口不能滚，页面整体滚动，看 window.scrollY */
-    function needsSmoothScroll(contentArea) {
-        // 桌面端：contentArea 自身可滚动
-        if (contentArea.scrollHeight > contentArea.clientHeight + 1) {
-            return contentArea.scrollTop > 80;
-        }
-        // 移动端：window 滚动
-        return window.scrollY > 80;
     }
 
     function prevQuestion() {
@@ -4428,7 +4418,7 @@
             renderQuizView();
             renderAnswerSheet();
             onAIQuestionChange();
-            scrollQuizToTop();   // 按距离智能决定
+            scrollQuizToTop();
         }
     }
 
@@ -4438,7 +4428,7 @@
             renderQuizView();
             renderAnswerSheet();
             onAIQuestionChange();
-            scrollQuizToTop();   // 按距离智能决定
+            scrollQuizToTop();
         }
     }
 
@@ -4447,7 +4437,7 @@
         renderQuizView();
         renderAnswerSheet();
         onAIQuestionChange();
-        scrollQuizToTop();   // 默认按距离智能决定（点击答题卡时用平滑）
+        scrollQuizToTop();
     }
 
     // ==================== 错题重做 ====================

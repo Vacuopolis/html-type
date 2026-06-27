@@ -4403,7 +4403,14 @@
             const scrollBase = scroller ? scroller.scrollTop : window.scrollY;
             const padTop = mainEl ? parseFloat(getComputedStyle(mainEl).paddingTop) || 0 : 0;
             const relativeTop = scroller ? (areaRect.top - mainRect.top + scrollBase) : (areaRect.top + scrollBase);
-            const target = relativeTop - padTop;
+            let target = relativeTop - padTop;
+            // 错题重做模式：多滚 banner 高度，把 banner 顶出视野
+            const redoBanner = contentArea.querySelector('.wrong-redo-banner');
+            if (redoBanner) {
+                const bannerH = redoBanner.getBoundingClientRect().height;
+                const bannerMargin = parseFloat(getComputedStyle(redoBanner).marginBottom) || 0;
+                target += bannerH + bannerMargin;
+            }
             // 用 .quiz-stem 判断动画
             const rect = stem ? stem.getBoundingClientRect() : areaRect;
             const vh = window.innerHeight;

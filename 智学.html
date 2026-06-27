@@ -3596,9 +3596,8 @@
             }
             renderQuizView();
             renderAnswerSheet();
+            scrollQuizToTop(true);
         }
-
-        // AI助手按钮可见性：两个模式都可见
         const aiFab = document.getElementById('aiFab');
         if (aiFab) aiFab.style.display = state.questions.length > 0 ? 'flex' : 'none';
         // 如果切换到解析模式且AI面板打开，关闭面板
@@ -4112,6 +4111,7 @@
         renderQuizView();
         renderAnswerSheet();
         updateAIQuestionInfo();
+        scrollQuizToTop();
         if (state.currentMode === 'parse') {
             renderParsePreview();
         }
@@ -4124,6 +4124,7 @@
         state.autoNextEnabled = enabled;
         localStorage.setItem(AUTO_NEXT_KEY, enabled ? 'true' : 'false');
         renderQuizView();
+        scrollQuizToTop();
         saveCurrentProgress();
         showToast(enabled ? '已开启：答对时自动下一题' : '已关闭：答对时自动下一题', 'info');
     }
@@ -4388,7 +4389,7 @@
     }
 
     /** 将 quizContentArea 滚到视口顶部（补偿 main 的 padding），.quiz-stem 可见→瞬间；完全看不到→平滑 */
-    function scrollQuizToTop() {
+    function scrollQuizToTop(forceSmooth) {
         requestAnimationFrame(() => {
             const contentArea = document.getElementById('quizContentArea');
             if (!contentArea) return;
@@ -4411,11 +4412,12 @@
                 const bannerMargin = parseFloat(getComputedStyle(redoBanner).marginBottom) || 0;
                 target += bannerH + bannerMargin;
             }
-            // 用 .quiz-stem 判断动画
+            // 用 .quiz-stem 判断动画（forceSmooth 强制平滑）
             const rect = stem ? stem.getBoundingClientRect() : areaRect;
             const vh = window.innerHeight;
             const outOfView = rect.bottom <= 0 || rect.top >= vh;
-            (scroller || window).scrollTo({ top: target, behavior: outOfView ? 'smooth' : 'auto' });
+            const behavior = forceSmooth ? 'smooth' : (outOfView ? 'smooth' : 'auto');
+            (scroller || window).scrollTo({ top: target, behavior });
         });
     }
 
@@ -4505,8 +4507,8 @@
         } else {
             renderQuizView();
             renderAnswerSheet();
+            scrollQuizToTop();
         }
-        updateAIQuestionInfo();
         saveCurrentProgress();
 
         showToast(`已进入错题重做模式（${wrongIndices.length} 道错题）`, 'info');
@@ -4577,6 +4579,7 @@
         renderQuizView();
         renderAnswerSheet();
         updateAIQuestionInfo();
+        scrollQuizToTop();
         saveCurrentProgress();
 
         showToast('已退出错题重做模式', 'info');
@@ -4990,6 +4993,9 @@
         record.userAnswers = record.questions.map(() => []);
         record.quizStatus = record.questions.map(() => 'unanswered');
         record.aiChatCache = {};
+        record.wrongRedoMode = false;
+        record.savedFullQuizOrder = null;
+        record.savedWrongStates = null;
         const tempQuestions = state.questions;
         state.questions = record.questions;
         record.shuffledOptions = generateShuffledOptions(!!record.shuffleEnabled);
@@ -5014,6 +5020,7 @@
             if (state.currentMode === 'quiz') {
                 renderQuizView();
                 renderAnswerSheet();
+                scrollQuizToTop();
             }
         }
     }
@@ -5085,12 +5092,8 @@
             record.shuffledOptions = JSON.parse(JSON.stringify(state.shuffledOptions));
             record.shuffleEnabled = state.shuffleEnabled;
             record.autoNextEnabled = state.autoNextEnabled;
-            // 保存完整的 quizOrder（重做模式下使用 savedFullQuizOrder）
-            record.quizOrder = JSON.parse(JSON.stringify(
-                state.wrongRedoMode && state.savedFullQuizOrder.length > 0
-                    ? state.savedFullQuizOrder
-                    : state.quizOrder
-            ));
+            // 保存当前活跃的 quizOrder（错题重做时为 wrong-only）
+            record.quizOrder = JSON.parse(JSON.stringify(state.quizOrder));
             // 保存错题重做状态，刷新页面后不丢失
             record.wrongRedoMode = state.wrongRedoMode;
             if (state.wrongRedoMode) {

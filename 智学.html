@@ -834,6 +834,7 @@
             flex-direction: column;
             overflow-y: auto;
             overflow-x: hidden;
+            scroll-margin-top: 0px;
             word-break: break-word;
             overflow-wrap: break-word;
             min-width: 0;
@@ -4387,18 +4388,38 @@
         }
     }
 
-    /** 将题目区域滚动到顶部（桌面端滚动容器内 + 移动端对齐卡片顶部） */
-    function scrollQuizToTop() {
+    /** 将题目区域滚动到顶部（停在与 site-header 之间的空隙处）
+     *  @param {boolean} smooth 是否使用平滑动画；为 undefined 时按距离智能决定 */
+    function scrollQuizToTop(smooth) {
+        const contentArea = document.getElementById('quizContentArea');
+        if (!contentArea) return;
+        // 使用 scroll-margin-top 让内容停在 site-header 下方的空隙处
+        // （避免被 sticky 页头遮挡，也避免滚到窗口顶部露出模式按钮）
+        contentArea.style.scrollMarginTop = '';
+
+        const useSmooth = (smooth === undefined) ? needsSmoothScroll(contentArea) : smooth;
+
         requestAnimationFrame(() => {
-            const contentArea = document.getElementById('quizContentArea');
-            if (contentArea) {
-                // 桌面端：quizContentArea 自身是滚动容器，滚动到顶部
+            if (useSmooth) {
                 contentArea.scrollTo({ top: 0, behavior: 'smooth' });
-                // 移动端/页面可滚动时：让题目卡片(.quiz-main)顶部对齐视口顶部
-                const card = contentArea.closest('.quiz-main');
-                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                contentArea.scrollTo({ top: 0 });
+                contentArea.scrollIntoView({ block: 'start' });
             }
         });
+    }
+
+    /** 判断是否需要平滑滚动：找到真正滚动的容器，检查其 scrollTop
+     *  - 桌面端：quizContentArea 自身是滚动容器（overflow-y:auto），看其 scrollTop
+     *  - 移动端：contentArea 占满视口不能滚，页面整体滚动，看 window.scrollY */
+    function needsSmoothScroll(contentArea) {
+        // 桌面端：contentArea 自身可滚动
+        if (contentArea.scrollHeight > contentArea.clientHeight + 1) {
+            return contentArea.scrollTop > 80;
+        }
+        // 移动端：window 滚动
+        return window.scrollY > 80;
     }
 
     function prevQuestion() {
@@ -4407,7 +4428,7 @@
             renderQuizView();
             renderAnswerSheet();
             onAIQuestionChange();
-            scrollQuizToTop();
+            scrollQuizToTop();   // 按距离智能决定
         }
     }
 
@@ -4417,7 +4438,7 @@
             renderQuizView();
             renderAnswerSheet();
             onAIQuestionChange();
-            scrollQuizToTop();
+            scrollQuizToTop();   // 按距离智能决定
         }
     }
 
@@ -4426,7 +4447,7 @@
         renderQuizView();
         renderAnswerSheet();
         onAIQuestionChange();
-        scrollQuizToTop();
+        scrollQuizToTop();   // 默认按距离智能决定（点击答题卡时用平滑）
     }
 
     // ==================== 错题重做 ====================

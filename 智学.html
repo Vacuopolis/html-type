@@ -4387,13 +4387,16 @@
         }
     }
 
-    /** 将题目区域滚动到顶部（桌面端滚动容器内 + 移动端对齐视口顶部） */
+    /** 将题目区域滚动到顶部（桌面端滚动容器内 + 移动端对齐卡片顶部） */
     function scrollQuizToTop() {
         requestAnimationFrame(() => {
             const contentArea = document.getElementById('quizContentArea');
             if (contentArea) {
+                // 桌面端：quizContentArea 自身是滚动容器，滚动到顶部
                 contentArea.scrollTo({ top: 0, behavior: 'smooth' });
-                contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // 移动端/页面可滚动时：让题目卡片(.quiz-main)顶部对齐视口顶部
+                const card = contentArea.closest('.quiz-main');
+                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         });
     }

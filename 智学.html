@@ -4368,8 +4368,20 @@
                 renderQuizView();
                 renderAnswerSheet();
                 onAIQuestionChange();
+                scrollQuizToTop();
             }, 600);
         }
+    }
+
+    /** 将题目区域滚动到顶部（桌面端滚动容器内 + 移动端对齐视口顶部） */
+    function scrollQuizToTop() {
+        requestAnimationFrame(() => {
+            const contentArea = document.getElementById('quizContentArea');
+            if (contentArea) {
+                contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+                contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
     }
 
     function prevQuestion() {
@@ -4378,6 +4390,7 @@
             renderQuizView();
             renderAnswerSheet();
             onAIQuestionChange();
+            scrollQuizToTop();
         }
     }
 
@@ -4387,6 +4400,7 @@
             renderQuizView();
             renderAnswerSheet();
             onAIQuestionChange();
+            scrollQuizToTop();
         }
     }
 
@@ -4395,16 +4409,7 @@
         renderQuizView();
         renderAnswerSheet();
         onAIQuestionChange();
-        requestAnimationFrame(() => {
-            const contentArea = document.getElementById('quizContentArea');
-            if (contentArea) {
-                // 桌面端：quizContentArea 自身是滚动容器，滚动到顶部
-                contentArea.scrollTo({ top: 0, behavior: 'smooth' });
-                // 移动端/页面可滚动时：让题目区域顶部对齐视口顶部
-                // （避免滚动到 window 顶部露出模式切换/历史记录等按钮）
-                contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
+        scrollQuizToTop();
     }
 
     // ==================== 错题重做 ====================

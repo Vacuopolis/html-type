@@ -4404,8 +4404,8 @@
                 contentArea.scrollTo({ top: 0, behavior: 'smooth' });
                 contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
+                // 距离近时滚动内部容器
                 contentArea.scrollTo({ top: 0 });
-                contentArea.scrollIntoView({ block: 'start' });
             }
         });
     }

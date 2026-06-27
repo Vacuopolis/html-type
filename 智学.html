@@ -4949,9 +4949,12 @@
         state.userAnswers = JSON.parse(JSON.stringify(record.userAnswers || record.questions.map(() => [])));
         state.quizStatus = JSON.parse(JSON.stringify(record.quizStatus || record.questions.map(() => 'unanswered')));
         state.quizIndex = 0;
-        state.wrongRedoMode = false;
-        state.savedFullQuizOrder = [];
-        state.savedWrongStates = {};
+        // 恢复错题重做状态
+        state.wrongRedoMode = !!record.wrongRedoMode;
+        state.savedFullQuizOrder = record.savedFullQuizOrder && record.savedFullQuizOrder.length > 0
+            ? JSON.parse(JSON.stringify(record.savedFullQuizOrder)) : [];
+        state.savedWrongStates = record.savedWrongStates
+            ? JSON.parse(JSON.stringify(record.savedWrongStates)) : {};
         if (record.shuffledOptions && record.shuffledOptions.length > 0) {
             state.shuffledOptions = JSON.parse(JSON.stringify(record.shuffledOptions));
             state.shuffleEnabled = !!record.shuffleEnabled;
@@ -5088,6 +5091,15 @@
                     ? state.savedFullQuizOrder
                     : state.quizOrder
             ));
+            // 保存错题重做状态，刷新页面后不丢失
+            record.wrongRedoMode = state.wrongRedoMode;
+            if (state.wrongRedoMode) {
+                record.savedFullQuizOrder = JSON.parse(JSON.stringify(state.savedFullQuizOrder));
+                record.savedWrongStates = JSON.parse(JSON.stringify(state.savedWrongStates));
+            } else {
+                record.savedFullQuizOrder = null;
+                record.savedWrongStates = null;
+            }
             record.aiChatCache = JSON.parse(JSON.stringify(aiState.chatCache));
             saveHistoryToStorage();
             renderHistory();

@@ -4356,19 +4356,33 @@
         renderAnswerSheet();
         updateAIQuestionInfo();
 
+        // 答对且开启自动下一题且有下一题时，合并提示文案，避免两个通知并列
+        const willAutoNext = isCorrect && state.autoNextEnabled && state.quizIndex < state.quizOrder.length - 1;
         showToast(
-            isCorrect ? '回答正确！' : `回答错误，正确答案: ${shuffledAnswer}`,
+            isCorrect ? (willAutoNext ? '回答正确！即将跳转下一题…' : '回答正确！') : `回答错误，正确答案: ${shuffledAnswer}`,
             isCorrect ? 'success' : 'error'
         );
 
         // 答对时自动跳转下一题
-        if (isCorrect && state.autoNextEnabled && state.quizIndex < state.quizOrder.length - 1) {
+        if (willAutoNext) {
+            // 记录答对时的题号，延时后仅当用户未手动切题时才自动跳转，
+            // 避免与用户手动上一题/下一题叠加导致跳错（如 12-1+1=12、12+1+1=14）
+            const answeredIdx = state.quizIndex;
+            const targetIdx = answeredIdx + 1;
             setTimeout(() => {
-                state.quizIndex++;
-                renderQuizView();
-                renderAnswerSheet();
-                onAIQuestionChange();
-                scrollQuizToTop();
+                if (state.quizIndex === answeredIdx) {
+                    // 用户未操作，执行自动跳转
+                    state.quizIndex = targetIdx;
+                    renderQuizView();
+                    renderAnswerSheet();
+                    onAIQuestionChange();
+                    scrollQuizToTop();
+                } else if (state.quizIndex !== targetIdx) {
+                    // 用户手动切题且不在目标位置：
+                    // - 连点≥2次下一题（已越过目标）或点了上一题 → 提示
+                    // - 恰好点1次下一题到达目标位置 → 静默取消（与自动跳转效果一致）
+                    showToast('已取消自动跳转', 'info');
+                }
             }, 600);
         }
     }

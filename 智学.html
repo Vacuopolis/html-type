@@ -3948,7 +3948,8 @@
         '以上都正确', '以上均正确',
         '以上说法都对', '以上说法均正确',
         '以上各项都对', '以上各项均正确',
-        '以上皆是', '以上全是', '以上均皆是',
+        '以上皆是', '以上全是', '以上都是', '以上均皆是',
+        '以上各项均是',
         '以上都包含', '以上均包含',
         '以上全包括', '以上都包括',
         '以上都不符合', '以上均不符合',
@@ -3959,9 +3960,12 @@
     /** 判断选项内容是否为"以上都不对"等特殊选项（固定在末尾） */
     function isSpecialOption(content) {
         if (!content) return false;
-        // 去除首尾空白及常见尾部标点
-        const trimmed = content.trim().replace(/[。.、，,；;:：）)\s]+$/, '');
-        return SPECIAL_OPTION_PHRASES.includes(trimmed);
+        // 去掉HTML标签、首尾空白、常见尾部标点，再匹配
+        const clean = content
+            .replace(/<[^>]*>/g, '')
+            .trim()
+            .replace(/[。.、，,；;:：）)]+$/g, '');
+        return SPECIAL_OPTION_PHRASES.includes(clean);
     }
 
     /** 为单道题构建选项随机映射（内部辅助函数） */
@@ -4459,12 +4463,17 @@
         }
 
         // 收集所有错题的 realIdx
-        const wrongIndices = [];
-        state.questions.forEach((q, realIdx) => {
-            if (state.quizStatus[realIdx] === 'incorrect') {
-                wrongIndices.push(realIdx);
-            }
-        });
+        // 如果已有保存的原始错题状态（如刷新后重新进入重做模式），使用它作为错题来源
+        const wrongIndices = (state.wrongRedoMode && Object.keys(state.savedWrongStates).length > 0)
+            ? Object.keys(state.savedWrongStates).map(Number)
+            : [];
+        if (wrongIndices.length === 0) {
+            state.questions.forEach((q, realIdx) => {
+                if (state.quizStatus[realIdx] === 'incorrect') {
+                    wrongIndices.push(realIdx);
+                }
+            });
+        }
 
         if (wrongIndices.length === 0) {
             showToast('当前没有错题，无需重做', 'info');
@@ -4520,15 +4529,14 @@
         const record = state.historyRecords[index];
         if (!record) return;
 
-        // 检查是否有错题
-        const wrongIndices = [];
-        if (record.quizStatus) {
-            record.quizStatus.forEach((s, realIdx) => {
-                if (s === 'incorrect') wrongIndices.push(realIdx);
-            });
+        // 检查是否有错题（优先用保存的原始错题状态）
+        let wrongCount = 0;
+        if (record.wrongRedoMode && record.savedWrongStates) {
+            wrongCount = Object.keys(record.savedWrongStates).length;
+        } else if (record.quizStatus) {
+            wrongCount = record.quizStatus.filter(s => s === 'incorrect').length;
         }
-
-        if (wrongIndices.length === 0) {
+        if (wrongCount === 0) {
             showToast('该记录中没有错题', 'info');
             return;
         }
@@ -4935,8 +4943,8 @@
                     </button>
                     ${answered > 0 ? `<button class="btn btn-sm btn-outline" onclick="resetHistoryProgress(${i})" style="padding:4px 12px;font-size:0.8rem;">${icon('rotateCcw')} 进度清零</button>` : ''}
                     <button class="btn btn-sm btn-outline" onclick="loadHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">仅加载题目</button>
-                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;">查看错题</button>` : ''}
-                    ${r.quizStatus && r.quizStatus.some(s => s === 'incorrect') ? `<button class="btn btn-sm btn-outline btn-outline-warn" onclick="redoWrongFromHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">重做错题</button>` : ''}
+                    ${(r.quizStatus && r.quizStatus.some(s => s === 'incorrect')) || (r.wrongRedoMode && r.savedWrongStates && Object.keys(r.savedWrongStates).length > 0) ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;">查看错题</button>` : ''}
+                    ${(r.quizStatus && r.quizStatus.some(s => s === 'incorrect')) || (r.wrongRedoMode && r.savedWrongStates && Object.keys(r.savedWrongStates).length > 0) ? `<button class="btn btn-sm btn-outline btn-outline-warn" onclick="redoWrongFromHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">重做错题</button>` : ''}
                 </div>` : ''}
                 </div>
             </div>`;
@@ -6379,9 +6387,16 @@
     /** 获取历史记录中的错题列表 */
     function getWrongQuestions(record) {
         const wrongList = [];
-        if (!record.quizStatus || !record.questions) return wrongList;
+        if (!record.questions) return wrongList;
+        // 重做模式下优先使用 savedWrongStates 作为错题来源
+        const wrongRealIdxSet = (record.wrongRedoMode && record.savedWrongStates)
+            ? new Set(Object.keys(record.savedWrongStates).map(Number))
+            : null;
         record.questions.forEach((q, realIdx) => {
-            if (record.quizStatus[realIdx] === 'incorrect') {
+            const isWrong = wrongRealIdxSet
+                ? wrongRealIdxSet.has(realIdx)
+                : (record.quizStatus && record.quizStatus[realIdx] === 'incorrect');
+            if (isWrong) {
                 const userShuffledAns = (record.userAnswers[realIdx] || []).join('');
                 const correctShuffledAns = getShuffledAnswer(realIdx, record);
                 const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns, record.shuffledOptions[realIdx]);
@@ -6438,8 +6453,15 @@
             return;
         }
         const wrongList = [];
+        // 重做模式下优先使用 savedWrongStates 作为错题来源
+        const wrongRealIdxSet = (state.wrongRedoMode && Object.keys(state.savedWrongStates).length > 0)
+            ? new Set(Object.keys(state.savedWrongStates).map(Number))
+            : null;
         state.questions.forEach((q, realIdx) => {
-            if (state.quizStatus[realIdx] === 'incorrect') {
+            const isWrong = wrongRealIdxSet
+                ? wrongRealIdxSet.has(realIdx)
+                : (state.quizStatus[realIdx] === 'incorrect');
+            if (isWrong) {
                 const userShuffledAns = (state.userAnswers[realIdx] || []).join('');
                 const correctShuffledAns = getShuffledAnswer(realIdx);
                 const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns);

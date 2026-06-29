@@ -2825,6 +2825,8 @@
     </style>
     <!-- Markdown 渲染库 marked -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <!-- HTML 净化库 DOMPurify（防止 AI 回复中的 XSS 载荷通过 innerHTML 注入） -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
     <!-- LaTeX 数学公式渲染库 KaTeX -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -3148,6 +3150,8 @@
         // 历史
         historyRecords: [],
         _activeHistoryTime: null,  // 当前加载的历史记录时间标识
+        _activeHistoryId: null,    // 当前加载的历史记录唯一 id（用于精确匹配）
+        _autoNextTimer: null,     // 答对自动跳转下一题的 setTimeout 句柄
         batchMode: false,           // 是否处于批量管理模式
         batchSelected: new Set(),   // 批量选中的索引集合
         localBankCounter: 0,       // 本地题库递增序号
@@ -3256,6 +3260,7 @@
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
         state.savedWrongStates = {};
+        state.confirmedTypes = {};  // 解析新题库时重置已确认题型
         aiState.chatCache = {};
         aiState.currentChatKey = null;
 
@@ -3714,8 +3719,10 @@
         // 渲染后测量真实高度，如有变化立即修正，消除跳动
         if (!vs._measuring) {
             vs._measuring = true;
-            requestAnimationFrame(() => {
+            vs.measureRafId = requestAnimationFrame(() => {
                 vs._measuring = false;
+                vs.measureRafId = null;
+                if (!vs.container) return; // 已销毁则放弃
                 if (vsMeasureItems()) {
                     vs.renderedRange = [-1, -1];
                     vsRenderVisible();
@@ -3812,8 +3819,17 @@
             cancelAnimationFrame(vs.rafId);
             vs.rafId = null;
         }
+        if (vs.measureRafId) {
+            cancelAnimationFrame(vs.measureRafId);
+            vs.measureRafId = null;
+        }
+        vs._measuring = false;
         vs.initialized = false;
         vs.renderedRange = [-1, -1];
+        // 清空 DOM 引用，避免悬空引用误操作已脱离文档的节点
+        vs.container = null;
+        vs.spacer = null;
+        vs.content = null;
         // 恢复 previewArea 的原始样式
         const area = document.getElementById('previewArea');
         if (area) {
@@ -4015,7 +4031,7 @@
         const shuffledOpts = record ? (record.shuffledOptions || []) : state.shuffledOptions;
         const q = questions[realIdx];
         const shuffled = shuffledOpts[realIdx];
-        if (!q || !q.answer) return record ? '' : (q ? q.answer : '');
+        if (!q || !q.answer) return '';
         if (!shuffled || shuffled.length === 0) return q.answer;
         const result = [];
         for (const ch of q.answer) {
@@ -4374,7 +4390,15 @@
             // 避免与用户手动上一题/下一题叠加导致跳错（如 12-1+1=12、12+1+1=14）
             const answeredIdx = state.quizIndex;
             const targetIdx = answeredIdx + 1;
-            setTimeout(() => {
+            // 清理可能存在的旧定时器，避免叠加触发
+            if (state._autoNextTimer) {
+                clearTimeout(state._autoNextTimer);
+                state._autoNextTimer = null;
+            }
+            state._autoNextTimer = setTimeout(() => {
+                state._autoNextTimer = null;
+                // 若已清空题库，直接放弃（避免空状态崩溃）
+                if (state.questions.length === 0) return;
                 if (state.quizIndex === answeredIdx) {
                     // 用户未操作，执行自动跳转
                     state.quizIndex = targetIdx;
@@ -4426,6 +4450,7 @@
     }
 
     function prevQuestion() {
+        if (state._autoNextTimer) { clearTimeout(state._autoNextTimer); state._autoNextTimer = null; }
         if (state.quizIndex > 0) {
             state.quizIndex--;
             renderQuizView();
@@ -4436,6 +4461,7 @@
     }
 
     function nextQuestion() {
+        if (state._autoNextTimer) { clearTimeout(state._autoNextTimer); state._autoNextTimer = null; }
         if (state.quizIndex < state.quizOrder.length - 1) {
             state.quizIndex++;
             renderQuizView();
@@ -4446,6 +4472,7 @@
     }
 
     function jumpToQuestion(quizIdx) {
+        if (state._autoNextTimer) { clearTimeout(state._autoNextTimer); state._autoNextTimer = null; }
         state.quizIndex = quizIdx;
         renderQuizView();
         renderAnswerSheet();
@@ -4463,11 +4490,27 @@
         }
 
         // 收集所有错题的 realIdx
-        // 如果已有保存的原始错题状态（如刷新后重新进入重做模式），使用它作为错题来源
-        const wrongIndices = (state.wrongRedoMode && Object.keys(state.savedWrongStates).length > 0)
-            ? Object.keys(state.savedWrongStates).map(Number)
-            : [];
-        if (wrongIndices.length === 0) {
+        let wrongIndices = [];
+        // 判断是否为"再次重做"场景：已在重做模式 + 当前轮次已全部作答
+        // （此时 savedWrongStates 仍保留原始错题，但已答对的题不应再次进入重做）
+        const isRedoAgain = state.wrongRedoMode
+            && state.quizOrder.length > 0
+            && state.quizOrder.every(realIdx =>
+                state.quizStatus[realIdx] && state.quizStatus[realIdx] !== 'unanswered'
+            );
+
+        if (isRedoAgain) {
+            // "再次重做"：仅保留当前轮次中仍答错的题
+            state.quizOrder.forEach(realIdx => {
+                if (state.quizStatus[realIdx] === 'incorrect') {
+                    wrongIndices.push(realIdx);
+                }
+            });
+        } else if (state.wrongRedoMode && Object.keys(state.savedWrongStates).length > 0) {
+            // 刷新后重新进入重做模式：使用保存的原始错题列表
+            wrongIndices = Object.keys(state.savedWrongStates).map(Number);
+        } else {
+            // 首次进入错题重做：收集当前所有错题
             state.questions.forEach((q, realIdx) => {
                 if (state.quizStatus[realIdx] === 'incorrect') {
                     wrongIndices.push(realIdx);
@@ -4476,7 +4519,12 @@
         }
 
         if (wrongIndices.length === 0) {
-            showToast('当前没有错题，无需重做', 'info');
+            // 重做模式下若本轮已全部答对，自动退出重做模式
+            if (state.wrongRedoMode) {
+                exitWrongRedoMode();
+            } else {
+                showToast('当前没有错题，无需重做', 'info');
+            }
             return;
         }
 
@@ -4596,6 +4644,11 @@
     // ==================== 清空 ====================
     function clearAll() {
         if (state.questions.length > 0 && !confirm('确定要清空输入区和所有解析记录吗？')) return;
+        // 清理可能挂起的自动跳转定时器，避免清空后触发崩溃
+        if (state._autoNextTimer) {
+            clearTimeout(state._autoNextTimer);
+            state._autoNextTimer = null;
+        }
         document.getElementById('inputText').value = '';
         autoResizeTextarea();
         state.questions = [];
@@ -4607,6 +4660,9 @@
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
         state.savedWrongStates = {};
+        state.confirmedTypes = {};
+        state._activeHistoryTime = null;
+        state._activeHistoryId = null;
         aiState.chatCache = {};
         aiState.currentChatKey = null;
         renderParsePreview();
@@ -4647,7 +4703,7 @@
     async function fetchExampleList() {
         const trigger = document.querySelector('#exampleSelect .custom-select-trigger');
         const list = document.getElementById('exampleSelectList');
-        trigger.textContent = '加载中...';
+        if (trigger) trigger.textContent = '加载中...';
         exampleSelectedIndex = -1;
         try {
             const resp = await smartFetch('https://vacuopolis.qzz.io/api/examples');
@@ -4657,19 +4713,19 @@
                 exampleListData = data.examples;
                 renderExampleOptions();
                 exampleSelectedIndex = 0;
-                trigger.textContent = exampleListData[0].name;
+                if (trigger) trigger.textContent = exampleListData[0].name;
                 showToast(`已获取 ${data.examples.length} 个示例题库`, 'info');
             } else {
                 exampleListData = [];
-                list.innerHTML = '<div class="custom-select-option" style="color:var(--text-secondary);cursor:default;">暂无示例</div>';
-                trigger.textContent = '暂无示例';
+                if (list) list.innerHTML = '<div class="custom-select-option" style="color:var(--text-secondary);cursor:default;">暂无示例</div>';
+                if (trigger) trigger.textContent = '暂无示例';
             }
         } catch (e) {
             // 本地 fallback
             exampleListData = [{ name: '思想道德与法治', file: '0.txt' }];
             renderExampleOptions();
             exampleSelectedIndex = 0;
-            trigger.textContent = '思想道德与法治';
+            if (trigger) trigger.textContent = '思想道德与法治';
             const reason = e.name === 'AbortError' ? '请求超时' : (e.message || '网络错误');
             showToast(`获取失败(${reason})，仅本地示例`, 'error');
             if (isRestrictedHost()) {
@@ -4734,6 +4790,7 @@
     function toggleExampleDropdown() {
         const dropdown = document.getElementById('exampleDropdown');
         const select = document.getElementById('exampleSelect');
+        if (!dropdown || !select) return;  // 防御性 null 检查，与 positionExampleDropdown 保持一致
         if (dropdown.classList.contains('open')) {
             dropdown.classList.remove('open');
             select.classList.remove('open');
@@ -4841,7 +4898,9 @@
         try {
             const data = localStorage.getItem(STORAGE_KEY);
             if (data) {
-                state.historyRecords = JSON.parse(data);
+                const parsed = JSON.parse(data);
+                // 校验解析结果必须是数组，否则旧数据/损坏数据会导致后续 forEach 抛错
+                state.historyRecords = Array.isArray(parsed) ? parsed : [];
             }
         } catch (e) {
             console.warn('加载历史记录失败:', e);
@@ -4854,6 +4913,8 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state.historyRecords));
         } catch (e) {
             console.warn('保存历史记录失败:', e);
+            // 配额超限或隐私模式下 localStorage 被禁用时，向用户反馈，避免静默丢数据
+            showToast('保存历史记录失败，存储空间可能已满', 'error');
         }
     }
 
@@ -4874,6 +4935,7 @@
             source: state.currentBankSource ? { ...state.currentBankSource } : null,
         };
         state._activeHistoryTime = record.time;
+        state._activeHistoryId = record.id;
         state.currentBankSource = null;  // 重置来源标记
         state.historyRecords.unshift(record);
         if (state.historyRecords.length > 30) state.historyRecords.pop();
@@ -4956,10 +5018,12 @@
         const record = state.historyRecords[index];
         if (!record) return;
         state._activeHistoryTime = record.time;
+        state._activeHistoryId = record.id;
         state.questions = JSON.parse(JSON.stringify(record.questions));
         state.userAnswers = JSON.parse(JSON.stringify(record.userAnswers || record.questions.map(() => [])));
         state.quizStatus = JSON.parse(JSON.stringify(record.quizStatus || record.questions.map(() => 'unanswered')));
         state.quizIndex = 0;
+        state.confirmedTypes = {};  // 切换题库时重置已确认题型，避免残留状态影响新题
         // 恢复错题重做状态
         state.wrongRedoMode = !!record.wrongRedoMode;
         state.savedFullQuizOrder = record.savedFullQuizOrder && record.savedFullQuizOrder.length > 0
@@ -5004,17 +5068,22 @@
         record.wrongRedoMode = false;
         record.savedFullQuizOrder = null;
         record.savedWrongStates = null;
+        // 用 try/finally 保护 state.questions 的临时交换，避免异常时全局 state 被污染
         const tempQuestions = state.questions;
         state.questions = record.questions;
-        record.shuffledOptions = generateShuffledOptions(!!record.shuffleEnabled);
-        record.quizOrder = generateQuizOrder(!!record.shuffleEnabled);
-        state.questions = tempQuestions;
+        try {
+            record.shuffledOptions = generateShuffledOptions(!!record.shuffleEnabled);
+            record.quizOrder = generateQuizOrder(!!record.shuffleEnabled);
+        } finally {
+            state.questions = tempQuestions;
+        }
         saveHistoryToStorage();
         renderHistory();
         showToast('答题进度已清零', 'info');
 
         // 如果当前答题区正在显示这条历史记录，同步清零当前状态并刷新视图
-        if (state._activeHistoryTime === record.time && state.questions.length === record.questions.length) {
+        // 使用唯一 id 精确匹配，避免同 time + 同题数 误判
+        if (state._activeHistoryId === record.id) {
             state.userAnswers = state.questions.map(() => []);
             state.quizStatus = state.questions.map(() => 'unanswered');
             state.quizIndex = 0;
@@ -5045,6 +5114,7 @@
         const record = state.historyRecords[index];
         if (!record) return;
         state._activeHistoryTime = record.time;
+        state._activeHistoryId = record.id;
         state.questions = JSON.parse(JSON.stringify(record.questions));
         state.userAnswers = state.questions.map(() => []);
         state.quizStatus = state.questions.map(() => 'unanswered');
@@ -5052,6 +5122,7 @@
         state.wrongRedoMode = false;
         state.savedFullQuizOrder = [];
         state.savedWrongStates = {};
+        state.confirmedTypes = {};  // 切换题库时重置已确认题型
         state.shuffleEnabled = !!record.shuffleEnabled;
         // autoNextEnabled 保持用户当前偏好，不从历史记录覆盖
         state.quizOrder = generateQuizOrder(state.shuffleEnabled);
@@ -5089,11 +5160,18 @@
     /** 保存当前答题进度到对应的历史记录 */
     function saveCurrentProgress() {
         if (state.questions.length === 0) return;
-        const record = state.historyRecords.find(r =>
-            r.questions.length === state.questions.length &&
-            r.questions[0].text === state.questions[0].text &&
-            r.time === state._activeHistoryTime
-        );
+        // 优先用唯一 id 精确匹配当前活动历史记录；旧数据无 id 时回退到旧逻辑
+        let record;
+        if (state._activeHistoryId != null) {
+            record = state.historyRecords.find(r => r.id === state._activeHistoryId);
+        }
+        if (!record) {
+            record = state.historyRecords.find(r =>
+                r.questions.length === state.questions.length &&
+                r.questions[0].text === state.questions[0].text &&
+                r.time === state._activeHistoryTime
+            );
+        }
         if (record) {
             record.userAnswers = JSON.parse(JSON.stringify(state.userAnswers));
             record.quizStatus = JSON.parse(JSON.stringify(state.quizStatus));
@@ -5251,6 +5329,7 @@
     // ==================== Toast 通知 ====================
     function showToast(message, type = 'info') {
         const container = document.getElementById('toastContainer');
+        if (!container) return;  // 容器不存在时直接返回，避免错误处理链被中断
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.textContent = message;
@@ -5267,7 +5346,8 @@
 
     // ==================== 工具函数 ====================
     function escapeHtml(text) {
-        return text
+        if (text == null) return '';  // 处理 null/undefined，避免抛 TypeError
+        return String(text)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -5294,6 +5374,7 @@
         chatCache: {},   // { [realIdx]: [{ role, content }, ...] } 按题目索引缓存对话
         currentChatKey: null,  // 当前对话对应的 realIdx
         abortCtrl: null,  // 用于中断请求
+        userAborted: false,  // 用户主动中止（如开始新聊天），用于区分超时与主动取消
         userScrolledUp: false,  // 用户是否主动上滚（流式输出时）
         thinkingEnabled: localStorage.getItem(AI_THINKING_KEY) === 'true',  // 是否开启思考模式
     };
@@ -5608,7 +5689,7 @@
 
         // 显示加载动画
         const loadingEl = showAILoading();
-        sendBtn.disabled = true;
+        if (sendBtn) sendBtn.disabled = true;
         aiState.isStreaming = true;
         aiState.userScrolledUp = false;  // 开始新的流式输出时重置滚动状态
 
@@ -5621,12 +5702,20 @@
         let firstContentArrived = false;
         let streamDone = false;
         let msgEl = null;
+        // fetchTimeout / reader 同样需要声明在 try 外，以便 catch/finally 清理
+        let fetchTimeout = null;
+        let reader = null;
 
         try {
-            aiState.abortCtrl = new AbortController();
+            // 在闭包中捕获控制器引用，避免 aiState.abortCtrl 被替换后定时器误中止新请求
+            const ctrl = new AbortController();
+            aiState.abortCtrl = ctrl;
+            aiState.userAborted = false;  // 进入新请求前重置
             // 初始请求超时：45秒内 DeepSeek API 无响应则中止（移动端网络较慢）
-            const fetchTimeout = setTimeout(() => {
-                aiState.abortCtrl.abort();
+            // 用 ctrl._timedOut 标记区分"超时中止"与"用户主动取消"，避免 AbortError message 不含"超时"时误显示"请求已取消"
+            fetchTimeout = setTimeout(() => {
+                ctrl._timedOut = true;
+                ctrl.abort();
             }, 45000);
 
             // 带重试的 fetch：移动端网络不稳定时自动重试
@@ -5652,7 +5741,7 @@
                             ...(aiState.thinkingEnabled ? { temperature: 1.3 } : { temperature: 1.0 }),
                             ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
                         }),
-                        signal: aiState.abortCtrl.signal
+                        signal: ctrl.signal
                     });
                     break; // 成功则跳出重试循环
                 } catch (fetchErr) {
@@ -5662,7 +5751,7 @@
                     // 网络错误，继续重试
                 }
             }
-            clearTimeout(fetchTimeout); // 收到响应后清除请求超时
+            clearTimeout(fetchTimeout); fetchTimeout = null; // 收到响应后清除请求超时
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
@@ -5676,21 +5765,26 @@
                 msgEl = appendAIMessage('bot', '', true);
                 msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
 
-                const text = await response.text();
                 let fullText = '';
                 let reasoningText = '';
-                const lines = text.split('\n');
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed || trimmed === 'data: [DONE]' || !trimmed.startsWith('data: ')) continue;
-                    try {
-                        const json = JSON.parse(trimmed.slice(6));
-                        if (json.error) { fullText = `（${json.error}）`; break; }
-                        const choice = json.choices?.[0];
-                        if (choice?.delta?.reasoning_content) reasoningText += choice.delta.reasoning_content;
-                        if (choice?.delta?.content) fullText += choice.delta.content;
-                        if (choice?.finish_reason === 'content_filter') { fullText = '（Miku回复因安全策略被过滤，请尝试换一种问法）'; break; }
-                    } catch {}
+                try {
+                    const text = await response.text();
+                    const lines = text.split('\n');
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed || trimmed === 'data: [DONE]' || !trimmed.startsWith('data: ')) continue;
+                        try {
+                            const json = JSON.parse(trimmed.slice(6));
+                            if (json.error) { fullText = `（${json.error}）`; break; }
+                            const choice = json.choices?.[0];
+                            if (choice?.delta?.reasoning_content) reasoningText += choice.delta.reasoning_content;
+                            if (choice?.delta?.content) fullText += choice.delta.content;
+                            if (choice?.finish_reason === 'content_filter') { fullText = '（Miku回复因安全策略被过滤，请尝试换一种问法）'; break; }
+                        } catch {}
+                    }
+                } catch (textErr) {
+                    // response.text() 失败（网络中断等），避免 loading 残留
+                    throw new Error('读取响应失败：' + (textErr.message || textErr));
                 }
 
                 let html = '';
@@ -5711,7 +5805,8 @@
             // 先显示"Miku思考中…"提示，直到有实际内容到达
             msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
 
-            const reader = response.body.getReader();
+            const streamReader = response.body.getReader();
+            reader = streamReader;  // 暴露给外层 catch/finally 以便释放
             const decoder = new TextDecoder();
             let buffer = '';
             let streamTimeout = null;   // 流式读取超时计时器
@@ -5770,10 +5865,10 @@
             typewriterTimer = setTimeout(typewriterTick, TYPE_SPEED);
 
             // 流式读取超时保护：使用 Promise.race 竞争每次 reader.read()
-            function readWithTimeout(reader, timeoutMs) {
+            function readWithTimeout(readerObj, timeoutMs) {
                 return new Promise((resolve, reject) => {
                     const timer = setTimeout(() => reject(new Error('AI响应超时，请稍后重试')), timeoutMs);
-                    reader.read().then(
+                    readerObj.read().then(
                         (result) => { clearTimeout(timer); resolve(result); },
                         (err) => { clearTimeout(timer); reject(err); }
                     );
@@ -5784,7 +5879,7 @@
                 let readResult;
                 try {
                     // 每次读取最多等待 60 秒，超时则中止
-                    readResult = await readWithTimeout(reader, STREAM_TIMEOUT_MS);
+                    readResult = await readWithTimeout(streamReader, STREAM_TIMEOUT_MS);
                 } catch (readErr) {
                     // 超时或读取异常，中止流
                     if (readErr.message?.includes('超时')) {
@@ -5889,10 +5984,25 @@
 
         } catch (err) {
             if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
+            // 清理可能挂起的 fetch 超时定时器，避免后续误中止新请求
+            if (fetchTimeout) { clearTimeout(fetchTimeout); fetchTimeout = null; }
+            // 释放流式 reader，避免底层 ReadableStream 资源泄漏
+            if (reader) {
+                try { await reader.cancel(); } catch (_) {}
+                reader = null;
+            }
             removeAILoading(loadingEl);
+            // 若 bot 气泡仍是 loading 占位（未收到任何内容），移除避免残留
+            if (msgEl && msgEl.querySelector('.ai-loading')) {
+                msgEl.remove();
+                msgEl = null;
+            }
             if (err.name === 'AbortError') {
-                // 区分超时中止和用户手动取消
-                if (err.message?.includes('超时') || !aiState.abortCtrl) {
+                // 用户主动中止（如开始新聊天），不显示错误
+                if (aiState.userAborted) {
+                    // 静默处理
+                } else if (err.message?.includes('超时') || aiState.abortCtrl?._timedOut || !aiState.abortCtrl) {
+                    // _timedOut: 45s fetch 超时；!abortCtrl: finally 已置 null（兜底）
                     appendAIError('Miku响应超时，请稍后重试');
                 } else {
                     appendAIMessage('bot', icon('stop') + ' 请求已取消');
@@ -5904,9 +6014,15 @@
             }
         } finally {
             if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
+            if (fetchTimeout) { clearTimeout(fetchTimeout); fetchTimeout = null; }
+            if (reader) {
+                try { reader.cancel().catch(() => {}); } catch (_) {}
+                reader = null;
+            }
             aiState.isStreaming = false;
             aiState.abortCtrl = null;
-            sendBtn.disabled = false;
+            aiState.userAborted = false;  // 重置用户中止标志
+            if (sendBtn) sendBtn.disabled = false;
         }
     }
 
@@ -5925,8 +6041,12 @@
 
         if ((role === 'bot' || role === 'assistant') && content) {
             // 如果 content 以 HTML 标签开头（如 icon() 返回的 <span>），直接使用 innerHTML 避免被 Markdown 转义
+            // 注意：仅信任本地构造的 icon() 输出；外部输入（如 errMsg）必须经 escapeHtml/renderAIMarkdown 处理
             if (/^\s*<span\s/.test(content)) {
-                bubble.innerHTML = content;
+                // 用 DOMPurify 净化，避免未来误传含用户数据的字符串触发 XSS
+                bubble.innerHTML = (typeof DOMPurify !== 'undefined')
+                    ? DOMPurify.sanitize(content, { ALLOWED_TAGS: ['span','svg','path','g','circle','rect','line','polyline','polygon'], ALLOWED_ATTR: ['class','d','viewBox','fill','stroke','stroke-width','cx','cy','r','x','y','width','height','points','xmlns','aria-hidden'] })
+                    : content;
             } else {
                 bubble.innerHTML = renderAIMarkdown(content);
             }
@@ -5955,6 +6075,7 @@
     /** 重试上次消息 */
     function retryLastAIMessage() {
         const chat = document.getElementById('aiChat');
+        // 移除最后一条错误提示
         const errEl = chat.querySelector('.ai-error-msg:last-of-type');
         if (errEl) errEl.remove();
 
@@ -5965,6 +6086,19 @@
                 const idx = currentMessages.lastIndexOf(lastUser);
                 currentMessages.splice(idx, 1);
                 setCurrentChatMessages(currentMessages);
+
+                // 移除 DOM 中可能残留的最后一条用户气泡（上次失败时已 appendAIMessage('user', ...)）
+                const userMsgs = chat.querySelectorAll('.ai-msg.user');
+                if (userMsgs.length > 0) userMsgs[userMsgs.length - 1].remove();
+                // 同时移除可能残留的、未完成的 bot 气泡（仅含 loading 或为空内容）
+                const botMsgs = chat.querySelectorAll('.ai-msg.bot');
+                if (botMsgs.length > 0) {
+                    const lastBot = botMsgs[botMsgs.length - 1];
+                    if (lastBot.querySelector('.ai-loading') || !lastBot.querySelector('.ai-msg-bubble')?.textContent.trim()) {
+                        lastBot.remove();
+                    }
+                }
+
                 sendAIMessage(lastUser.content);
             }
         }
@@ -5999,7 +6133,6 @@
 
     /** 构建思考过程折叠块 HTML */
     function buildThinkingHTML(reasoning, isThinking) {
-        const id = 'think_' + Math.random().toString(36).slice(2, 8);
         const summaryText = isThinking ? 'Miku思考中...' : 'Miku思考过程（点击展开）';
         const collapsed = !isThinking; // 思考结束后默认折叠
         return `<details class="ai-thinking-block"${collapsed ? '' : ' open'}>
@@ -6045,9 +6178,10 @@
         // 预处理 **text** 粗体：CommonMark 侧标记规则对中文标点（如 ""）处理不当，
         // 当 ** 前为 CJK 字符、后为中文标点时 marked 不识别为粗体（只会把中间的"和"字变粗），
         // 故对含 CJK 字符的内容提前转为 <strong>，绕过该问题
+        // 注意：必须先 escapeHtml content 再嵌入，否则 AI 回复中的 <img onerror=...> 等载荷会被直接注入
         text = text.replace(/\*\*([^*\n]+)\*\*/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<strong>' + content + '</strong>';
+                return '<strong>' + escapeHtml(content) + '</strong>';
             }
             return match;
         });
@@ -6055,7 +6189,7 @@
         // 预处理 __text__ 粗体（下划线语法）：同样存在 CJK 侧标记问题
         text = text.replace(/__([^_\n]+)__/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<strong>' + content + '</strong>';
+                return '<strong>' + escapeHtml(content) + '</strong>';
             }
             return match;
         });
@@ -6063,7 +6197,7 @@
         // 预处理 *text* 斜体：CJK 侧标记规则对中文标点处理不当（同 ** 问题）
         text = text.replace(/\*([^*\n]+)\*/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<em>' + content + '</em>';
+                return '<em>' + escapeHtml(content) + '</em>';
             }
             return match;
         });
@@ -6071,7 +6205,7 @@
         // 预处理 _text_ 斜体（下划线语法）：同样存在 CJK 侧标记问题
         text = text.replace(/_([^_\n]+)_/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<em>' + content + '</em>';
+                return '<em>' + escapeHtml(content) + '</em>';
             }
             return match;
         });
@@ -6086,13 +6220,14 @@
             if (hasCJK && (hasSentenceEnd || isLong)) {
                 return delPlaceholder + content + delPlaceholder;
             }
-            return '<del>' + content + '</del>';
+            return '<del>' + escapeHtml(content) + '</del>';
         });
         // 剩余的 ~~ 替换为占位符，避免被 marked 误解析
         text = text.replace(/~~/g, delPlaceholder);
 
         // 下标：~text~（单波浪号，同一行内，仅匹配紧跟在字母数字后的短内容，如 H~2~O）
-        text = text.replace(/([\w])~([^\n~]{1,4})~/g, '$1<sub>$2</sub>');
+        // 注意：$2 来自 AI 文本，必须转义避免注入
+        text = text.replace(/([\w])~([^\n~]{1,4})~/g, (m, pre, content) => pre + '<sub>' + escapeHtml(content) + '</sub>');
 
         // 剩余的单个 ~ 替换为占位符，避免被 marked 误解析为删除线
         // （AI 常用 ~ 做中文语气符号，如 "好开心~" ，不应被渲染为删除线）
@@ -6100,10 +6235,11 @@
         text = text.replace(/~/g, tildePlaceholder);
 
         // 上标：^text^（同一行内，仅匹配紧跟在字母数字后的短内容，如 x^2^）
-        text = text.replace(/([\w])\^([^\n^]{1,4})\^/g, '$1<sup>$2</sup>');
+        text = text.replace(/([\w])\^([^\n^]{1,4})\^/g, (m, pre, content) => pre + '<sup>' + escapeHtml(content) + '</sup>');
 
         // 脚注引用：[^n] → 上标显示
-        text = text.replace(/\[\^([^\]]+)\]/g, '<sup class="ai-footnote">[$1]</sup>');
+        // 注意：$1 来自 AI 文本，必须转义避免注入
+        text = text.replace(/\[\^([^\]]+)\]/g, (m, label) => '<sup class="ai-footnote">[' + escapeHtml(label) + ']</sup>');
 
         // 流式输出时：闭合未完成的代码块，避免 marked 将后续内容吞入代码块
         if (isStreaming) {
@@ -6118,6 +6254,18 @@
         try {
             marked.setOptions({ breaks: true, gfm: true });
             html = marked.parse(text);
+            // marked v12 默认不再内置 sanitizer，会透传 AI 回复中的原始 HTML，
+            // 必须用 DOMPurify 净化，移除 <script>/onerror 等危险标签与属性
+            if (typeof DOMPurify !== 'undefined') {
+                html = DOMPurify.sanitize(html, {
+                    // 允许 marked 输出的常见语义标签，及我们预处理注入的 <strong>/<em>/<del>/<sub>/<sup>/<details>
+                    ALLOWED_TAGS: ['p','br','strong','em','del','sub','sup','details','summary',
+                        'ul','ol','li','blockquote','code','pre','table','thead','tbody','tr','th','td',
+                        'a','span','div','img','hr','h1','h2','h3','h4','h5','h6','del','s','mark','b','i','u'],
+                    ALLOWED_ATTR: ['href','src','alt','title','class','target','rel','colspan','rowspan','open','aria-hidden','data-*'],
+                    ALLOW_DATA_ATTR: true
+                });
+            }
         } catch (e) {
             html = escapeHtml(text).replace(/\n/g, '<br>');
         }
@@ -6227,6 +6375,8 @@
     /** 开始新聊天 */
     function newAIChat() {
         if (aiState.isStreaming && aiState.abortCtrl) {
+            // 标记为用户主动中止，避免被中止的 fetch 在新聊天界面注入"超时"错误
+            aiState.userAborted = true;
             aiState.abortCtrl.abort();
         }
         setCurrentChatMessages([]);
@@ -6234,7 +6384,8 @@
         aiState.abortCtrl = null;
         const chatEl = document.getElementById('aiChat');
         chatEl.innerHTML = '<div class="ai-welcome"><span class="miku-welcome-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="48" height="48"><path d="M 30 28 C 20 28, 12 20, 12 11 C 12 5, 18 3, 22 9 C 25 14, 27 21, 30 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 34 28 C 44 28, 52 20, 52 11 C 52 5, 46 3, 42 9 C 39 14, 37 21, 34 28 Z" fill="#70AD47" stroke="#558B2F" stroke-width="2.5" stroke-linejoin="round"/><path d="M 24 36 L 24 32 Q 24 28 28 28 L 36 28 Q 40 28 40 32 L 40 36 Z" fill="#C5E0B4" stroke="#A0C090" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="32" cy="30" rx="5" ry="2.5" fill="#D0E8C0" opacity="0.8"/><path d="M 24 36 L 22 53 Q 32 60 42 53 L 40 36 Z" fill="#F4F8EC" stroke="#C0D0B0" stroke-width="2.5" stroke-linejoin="round"/></svg></span><p>你好，我是Miku~你的AI解题助手</p><p style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;">选中题目后可快速解析，或直接输入问题</p></div>';
-        document.getElementById('aiSendBtn').disabled = false;
+        const sendBtn = document.getElementById('aiSendBtn');
+        if (sendBtn) sendBtn.disabled = false;
         showToast('已开始新聊天', 'success');
     }
 
@@ -6388,19 +6539,25 @@
     function getWrongQuestions(record) {
         const wrongList = [];
         if (!record.questions) return wrongList;
+        // 兼容旧数据：userAnswers/quizStatus/shuffledOptions 可能不存在
+        const userAnswers = record.userAnswers || [];
+        const quizStatus = record.quizStatus || [];
+        const shuffledOptions = record.shuffledOptions || [];
         // 重做模式下优先使用 savedWrongStates 作为错题来源
         const wrongRealIdxSet = (record.wrongRedoMode && record.savedWrongStates)
             ? new Set(Object.keys(record.savedWrongStates).map(Number))
             : null;
         record.questions.forEach((q, realIdx) => {
+            // 主观题不参与错题统计，避免 totalCount（仅统计客观题）与 wrongCount 错位导致正确率为负
+            if (q.type === 'subjective') return;
             const isWrong = wrongRealIdxSet
                 ? wrongRealIdxSet.has(realIdx)
-                : (record.quizStatus && record.quizStatus[realIdx] === 'incorrect');
+                : (quizStatus[realIdx] === 'incorrect');
             if (isWrong) {
-                const userShuffledAns = (record.userAnswers[realIdx] || []).join('');
+                const userShuffledAns = (userAnswers[realIdx] || []).join('');
                 const correctShuffledAns = getShuffledAnswer(realIdx, record);
-                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns, record.shuffledOptions[realIdx]);
-                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns, record.shuffledOptions[realIdx]);
+                const userOrigAns = mapShuffledToOrigLabel(realIdx, userShuffledAns, shuffledOptions[realIdx]);
+                const correctOrigAns = mapShuffledToOrigLabel(realIdx, correctShuffledAns, shuffledOptions[realIdx]);
                 wrongList.push({
                     realIdx,
                     question: q,
@@ -6423,12 +6580,19 @@
             navigator.clipboard.writeText(text).then(() => {
                 showToast(successMsg, 'success');
             }).catch(() => {
-                fallbackCopy(text);
-                showToast(successMsg, 'success');
+                // 降级方案失败时给出明确提示，避免用户误以为已复制
+                if (fallbackCopy(text)) {
+                    showToast(successMsg, 'success');
+                } else {
+                    showToast('复制失败，请手动复制', 'error');
+                }
             });
         } else {
-            fallbackCopy(text);
-            showToast(successMsg, 'success');
+            if (fallbackCopy(text)) {
+                showToast(successMsg, 'success');
+            } else {
+                showToast('复制失败，请手动复制', 'error');
+            }
         }
     }
 
@@ -6453,11 +6617,20 @@
             return;
         }
         const wrongList = [];
-        // 重做模式下优先使用 savedWrongStates 作为错题来源
-        const wrongRealIdxSet = (state.wrongRedoMode && Object.keys(state.savedWrongStates).length > 0)
+        // 判断是否为"再次重做"轮次完成场景：已在重做模式 + 当前轮次已全部作答
+        // 此时 savedWrongStates 仍保留原始错题，但已答对的题不应再算作错题
+        const isRedoRoundDone = state.wrongRedoMode
+            && state.quizOrder.length > 0
+            && state.quizOrder.every(realIdx =>
+                state.quizStatus[realIdx] && state.quizStatus[realIdx] !== 'unanswered'
+            );
+        // 重做模式下：本轮已全部作答时仅看当前仍错的题；否则（如刷新后未完成本轮）回退到保存的原始错题
+        const wrongRealIdxSet = (state.wrongRedoMode && !isRedoRoundDone && Object.keys(state.savedWrongStates).length > 0)
             ? new Set(Object.keys(state.savedWrongStates).map(Number))
             : null;
         state.questions.forEach((q, realIdx) => {
+            // 主观题不参与错题统计，避免 totalCount（仅统计客观题）与 wrongCount 错位导致正确率为负
+            if (q.type === 'subjective') return;
             const isWrong = wrongRealIdxSet
                 ? wrongRealIdxSet.has(realIdx)
                 : (state.quizStatus[realIdx] === 'incorrect');
@@ -6600,15 +6773,22 @@
     function copyAllCurrentWrongQuestions() { copyAllWrongItems(); }
     function loadCurrentWrongQuestionsToParse() { loadWrongToParse(); }
 
-    /** 剪贴板降级方案 */
+    /** 剪贴板降级方案，返回是否成功 */
     function fallbackCopy(text) {
         const ta = document.createElement('textarea');
         ta.value = text;
         ta.style.cssText = 'position:fixed;left:-9999px;';
         document.body.appendChild(ta);
         ta.select();
-        document.execCommand('copy');
+        let ok = false;
+        try {
+            // execCommand 已废弃，部分浏览器/安全上下文会返回 false
+            ok = document.execCommand('copy');
+        } catch (_) {
+            ok = false;
+        }
         document.body.removeChild(ta);
+        return ok;
     }
 
 </script>

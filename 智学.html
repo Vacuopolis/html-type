@@ -1470,7 +1470,11 @@
             animation: toastSlideUp 0.3s ease;
             max-width: 360px;
             pointer-events: none;
-            white-space: nowrap;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            text-align: center;
+            line-height: 1.5;
         }
 
         .toast.success { background: var(--success); }

@@ -3550,7 +3550,7 @@
         q.text = q.text.replace(/^[（(]\s*(?:单选题|多选题|判断题|填空题|简答题|论述题|综合题)\s*[,，]\s*\d+(?:\.\d+)?\s*分?\s*[）)]\s*/, '');
         // 清理选项内容
         q.options.forEach(opt => {
-            opt.content = opt.content.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF\u00AD]/g, '')
+            opt.content = opt.content.replace(/[\u0000-\u001F\u007F-\u009F\u2000-\u200F\uFEFF\u00A0\u202F\u3000\u00AD]/g, '')
                                      .replace(/\s+/g, ' ').trim();
         });
 
@@ -3974,15 +3974,16 @@
         '以上全包括', '以上都包括',
         '以上都不符合', '以上均不符合',
         '以上都不适用', '以上均不适用',
-        '以上均不符','以上都可以','都不是','都不对'
+        '以上均不符','以上都可以','都不是','都不对','两者无关'
     ];
 
     /** 判断选项内容是否为"以上都不对"等特殊选项（固定在末尾） */
     function isSpecialOption(content) {
         if (!content) return false;
-        // 去掉HTML标签、首尾空白、常见尾部标点，再匹配
+        // 去掉HTML标签、非断行空格等Unicode空白、首尾空白、常见尾部标点，再匹配
         const clean = content
             .replace(/<[^>]*>/g, '')
+            .replace(/[\u00A0\u202F\u2000-\u200F\uFEFF\u3000]/g, ' ')
             .trim()
             .replace(/[。.、，,；;:：）)]+$/g, '');
         return SPECIAL_OPTION_PHRASES.includes(clean);

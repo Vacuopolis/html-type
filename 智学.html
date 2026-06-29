@@ -3423,8 +3423,9 @@
                 const embedded = tryExtractEmbeddedAnswer(qText);
                 let answer = '';
                 if (embedded) {
-                    // 替换题干中所有含答案字母的括号为空括号（如 （A）（A）（A）→ （  ）（  ）（  ）
-                    qText = qText.replace(/[（(]\s*[A-Za-z]{1,8}\s*[）)]/g, '（  ）');
+                    // 替换题干中仅含合法答案字母(A-H, 1-8个)的括号为空括号（如 （A）（BCD）→ （  ）（   ））
+                    // 不替换含缩写的括号如 (EBCT)(DNA)(RNA)，因其含A-H之外的字母
+                    qText = qText.replace(/[（(]\s*[A-Ha-h]{1,8}\s*[）)]/g, '（  ）');
                     answer = embedded.answer;
                 }
 
@@ -3453,13 +3454,14 @@
     }
 
     function tryExtractEmbeddedAnswer(text) {
-        const regex = /[（(]\s*([A-Za-z]{1,8})\s*[）)]/g;
+        // 仅匹配1-8个合法选项字母(A-H)，避免误将缩写如(EBCT)(DNA)(RNA)当作答案
+        const regex = /[（(]\s*([A-Ha-h]{1,8})\s*[）)]/g;
         let lastMatch = null;
         let lastAnswer = null;
         let m;
         while ((m = regex.exec(text)) !== null) {
             const candidate = m[1].toUpperCase();
-            if (/^[A-Z]+$/.test(candidate)) {
+            if (/^[A-H]+$/.test(candidate)) {
                 lastMatch = m[0];
                 lastAnswer = candidate.split('').sort().join('');
             }
@@ -6194,18 +6196,36 @@
         // 删除线占位符（用于保护 ~~ 不被 marked 误解析）
         const delPlaceholder = '\x00DEL\x00';
 
+        // 流式输出时：闭合未完成的代码块，避免 marked 将后续内容吞入代码块
+        // 移到预处理之前，以便代码块提取能匹配完整的 ```...```
+        if (isStreaming) {
+            const codeBlockCount = (text.match(/```/g) || []).length;
+            if (codeBlockCount % 2 !== 0) {
+                text += '\n```';
+            }
+        }
+
+        // 提取代码块（```...``` 和 `...`），避免预处理破坏代码内的 * _ ~ 等字符
+        // 否则代码块内的 **中文** 会被预处理转为 <strong>，经 marked 转义后显示为 &lt;strong&gt;
+        const codeBlocks = [];
+        const codePlaceholder = (idx) => '%%CODEBLOCK' + idx + '%%';
+        text = text.replace(/```[\s\S]*?```|`[^`\n]+`/g, (match) => {
+            const idx = codeBlocks.length;
+            codeBlocks.push(match);
+            return codePlaceholder(idx);
+        });
+
         // 预处理 **text** 粗体：CommonMark 侧标记规则对中文标点（如 ""）处理不当，
         // 当 ** 前为 CJK 字符、后为中文标点时 marked 不识别为粗体（只会把中间的"和"字变粗），
-        // 故对含 CJK 字符的内容提前转为 <strong>，绕过该问题
+        // 故提前转为 <strong>，绕过该问题（不区分是否含CJK，统一处理避免marked漏解析）
         // 注意：必须先 escapeHtml content 再嵌入，否则 AI 回复中的 <img onerror=...> 等载荷会被直接注入
-        text = text.replace(/\*\*([^*\n]+)\*\*/g, (match, content) => {
-            if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<strong>' + escapeHtml(content) + '</strong>';
-            }
-            return match;
+        // 正则用 [^\n]+? 非贪婪匹配，允许内容含单个 *（如 **a*b*c** ）
+        text = text.replace(/\*\*([^\n]+?)\*\*/g, (match, content) => {
+            return '<strong>' + escapeHtml(content) + '</strong>';
         });
 
         // 预处理 __text__ 粗体（下划线语法）：同样存在 CJK 侧标记问题
+        // 保留 CJK 检查，避免误匹配 Python 方法名如 __init__
         text = text.replace(/__([^_\n]+)__/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
                 return '<strong>' + escapeHtml(content) + '</strong>';
@@ -6214,6 +6234,7 @@
         });
 
         // 预处理 *text* 斜体：CJK 侧标记规则对中文标点处理不当（同 ** 问题）
+        // 保留 CJK 检查，避免误匹配数学乘法如 2 * 3 * 4
         text = text.replace(/\*([^*\n]+)\*/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
                 return '<em>' + escapeHtml(content) + '</em>';
@@ -6222,6 +6243,7 @@
         });
 
         // 预处理 _text_ 斜体（下划线语法）：同样存在 CJK 侧标记问题
+        // 保留 CJK 检查，避免误匹配变量名如 my_var_name
         text = text.replace(/_([^_\n]+)_/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
                 return '<em>' + escapeHtml(content) + '</em>';
@@ -6260,19 +6282,22 @@
         // 注意：$1 来自 AI 文本，必须转义避免注入
         text = text.replace(/\[\^([^\]]+)\]/g, (m, label) => '<sup class="ai-footnote">[' + escapeHtml(label) + ']</sup>');
 
-        // 流式输出时：闭合未完成的代码块，避免 marked 将后续内容吞入代码块
-        if (isStreaming) {
-            const codeBlockCount = (text.match(/```/g) || []).length;
-            if (codeBlockCount % 2 !== 0) {
-                text += '\n```';
-            }
-        }
+        // 恢复代码块（在 marked 之前，让 marked 正确处理代码块语法）
+        codeBlocks.forEach((block, idx) => {
+            text = text.split(codePlaceholder(idx)).join(block);
+        });
 
         // 使用 marked 解析 Markdown（支持表格、列表、代码块等）
         let html;
         try {
             marked.setOptions({ breaks: true, gfm: true });
             html = marked.parse(text);
+
+            // 在 DOMPurify 之前恢复占位符，因为 DOMPurify 会剥离 \x00 null 字节，
+            // 导致 \x00TILDE\x00 变成残留文字 "TILDE"
+            html = html.replace(new RegExp(delPlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~~');
+            html = html.replace(new RegExp(tildePlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~');
+
             // marked v12 默认不再内置 sanitizer，会透传 AI 回复中的原始 HTML，
             // 必须用 DOMPurify 净化，移除 <script>/onerror 等危险标签与属性
             if (typeof DOMPurify !== 'undefined') {
@@ -6288,11 +6313,6 @@
         } catch (e) {
             html = escapeHtml(text).replace(/\n/g, '<br>');
         }
-
-        // 恢复删除线占位符为原始 ~~
-        html = html.replace(new RegExp(delPlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~~');
-        // 恢复单个 ~ 占位符为原始 ~
-        html = html.replace(new RegExp(tildePlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~');
 
         // 将占位符替换回 KaTeX 渲染结果
         mathBlocks.forEach((block, idx) => {

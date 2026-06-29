@@ -22,7 +22,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
 a{color:var(--accent);text-decoration:none}
 .app{
   display:grid; gap:12px; padding:12px; height:100%;
-  grid-template-rows:auto 1fr auto;
+  grid-template-rows:auto minmax(0, 1fr) auto;
 }
 header, footer{
   display:flex; align-items:center; justify-content:space-between;
@@ -97,6 +97,11 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   position:absolute;
   display:none;
   z-index:10;
+}
+
+/* 移动端控制栏：默认隐藏，仅竖屏/横屏媒体查询中显示 */
+.mobile-controls{
+  display:none;
 }
 
 .mobile-left{
@@ -395,167 +400,593 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   background: linear-gradient(90deg, #10b981, #34d399);
   transition: width 0.3s ease;
 }
-        
+
+/* ============ 竖屏适配：3 行布局（顶栏 / 游戏区 / 双拇指控制栏） ============ */
 @media (max-width: 980px) and (orientation: portrait){
-  .layout{
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    overflow:auto;
+  /* 整体应用：去掉底部页脚，紧凑头部 */
+  .app{
+    grid-template-rows: auto minmax(0, 1fr);
+    padding: 6px;
+    gap: 6px;
+    height: 100dvh;
+    overflow: hidden;
   }
-  .right, .left{order:2}
-  .center{order:1; min-height:55vh}
-          
-  .mobile-controls{
-    display:flex;
-    padding:16px 12px;
-  }
-  .mobile-controls .btn{
-    flex:1 1 calc(25% - 8px);
-    min-width:70px;
-    max-width:120px;
-    padding:16px 12px;
-    font-size:14px;
-  }
-  .mobile-side{display:none}
-          
-  header, footer{
-    position:sticky;
-    top:0;
-    z-index:50;
-  }
-          
-  .combo-notification {
-    font-size: 32px;
-  }
-  .combo-4 { font-size: 42px; }
-  .combo-tspin { font-size: 38px; }
-  .combo-b2b { font-size: 36px; }
-          
-  .header-toggle{ display:none; }
-}
-        
-@media (max-width: 980px) and (orientation: landscape){
-  .layout{
-    grid-template-columns: 120px 1fr 120px;
-    grid-template-rows: 1fr;
-    overflow:hidden;
-  }
-  .left, .right{
-    order:initial;
-    font-size:12px;
-  }
-  .center{
-    min-height:100%;
-  }
-          
+
+  /* 头部：单行紧凑工具栏 */
   header{
-    display:none;
+    padding: 6px 10px;
+    gap: 4px;
+    border-radius: 10px;
   }
-  header.header-visible{
-    display:flex;
-    position:fixed;
-    left:10px;
-    right:10px;
-    top:50px;
-    z-index:100;
-    box-shadow:0 8px 20px rgba(0,0,0,.5);
+  header .title{ font-size: 14px; font-weight: 700; }
+  header .controls{ gap: 4px; flex-wrap: nowrap; }
+  header .controls button{
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 8px;
+    white-space: nowrap;
   }
-  footer{display:none}
-        
-  .mobile-controls{display:none}
-          
-  .playfield-wrap{
-    padding-left: var(--side-ctrl-w);
-    padding-right: var(--side-ctrl-w);
+  /* 隐藏排行榜按钮文字以节省空间 */
+  #btnLeaderboard{ padding: 6px; }
+
+  /* 隐藏底部页脚腾出空间 */
+  footer{ display: none; }
+  .feedback-bar{ display: none !important; }
+
+  /* 主体网格：顶栏一行 + 游戏区一行 */
+  .layout{
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 6px;
+    overflow: hidden;
   }
-          
-  .mobile-side{
-    display:block;
+
+  /* 左面板（暂存+统计）→ 顶栏左半 */
+  .left{
+    grid-column: 1;
+    grid-row: 1;
+    order: initial;
+    padding: 6px 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
   }
-          
-  .header-toggle{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
+  /* 右面板（下一块预览）→ 顶栏右半 */
+  .right{
+    grid-column: 2;
+    grid-row: 1;
+    order: initial;
+    padding: 6px 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
   }
-          
-  .right {
+
+  /* 隐藏竖屏下不需要的次要元素 */
+  .left .badges,
+  .left .gamepad-indicator,
+  .left .undo-controls,
+  .left .status-indicators,
+  /* 模式显示行（.left 直接子级 stat-line，非 .stats 内的统计行） */
+  .left > .stat-line,
+  .right .preview-title,
+  /* 移动端隐藏键盘按键提示（如 "(C/Shift)"），只保留功能名称 */
+  .kbd-hint{
+    display: none !important;
+  }
+
+  /* 垃圾行进度（挖掘模式）：竖屏下紧凑显示，由 JS 控制可见性 */
+  .left .cheese-preview{
+    margin: 0;
+    padding: 4px 6px;
+    flex-shrink: 0;
+    min-width: 60px;
+  }
+  .cheese-preview-title{ font-size: 8px; margin-bottom: 2px; }
+  .left .cheese-preview .stat-line{ font-size: 9px; }
+  .left .cheese-preview .stat-value{ font-size: 12px; }
+  .cheese-bar{ height: 4px; }
+
+  /* 计时器（限时模式）：竖屏下紧凑显示，由 JS 控制可见性 */
+  .left #timerContainer{
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .timer-display{
+    font-size: 16px;
+    padding: 4px 8px;
+    margin: 0;
+    border-radius: 6px;
+    line-height: 1.2;
+    min-width: 70px;
+    text-align: center;
+  }
+
+  /* 暂存+计时器上下堆叠（hold 在上，timer 在下） */
+  .left .hold-timer-stack{
     display: flex;
     flex-direction: column;
-    gap:8px;
-    padding:8px;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
   }
-          
-  .right .preview-title {
-    order: 1;
-    margin-bottom: 4px;
-    font-size:11px;
-  }
-          
-  .right .previews {
-    order: 2;
-    flex:1;
-    overflow-y:auto;
-  }
-          
-  .right .previews .preview-item{
-    padding:4px;
-  }
-          
-  .right .previews canvas{
-    width:100%;
-    height:auto;
-    max-height:70px;
-  }
-          
-  .left{
-    padding:8px;
-  }
-  .left .hold-box{
-    margin-bottom:8px;
-    padding:6px;
-  }
+
+  /* 暂存标签：横排小字，居中显示在 hold 上方 */
   .left .preview-title{
-    font-size:11px;
+    font-size: 10px;
+    margin: 0;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-align: center;
+    white-space: nowrap;
   }
+
+  /* 暂存盒紧凑化 */
+  .left .hold-box{
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 2px;
+    flex-shrink: 0;
+    border-radius: 6px;
+  }
+  .left .hold-box canvas{
+    width: 38px !important;
+    height: 38px !important;
+  }
+  .left .hold-box.locked::after{ font-size: 16px; }
+
+  /* 统计区网格：足够宽时 2 列，狭窄时 1 列 */
   .left .stats{
-    font-size:12px;
-    gap:4px;
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    gap: 2px 6px;
+    font-size: 10px;
+    min-width: 0;
   }
-  .left .badges{
-    display:none;
+  .left .stat-line{
+    flex-direction: column;
+    gap: 0;
+    font-size: 9px;
+    text-align: center;
+    line-height: 1.2;
+    min-width: 0;
   }
-          
-  .combo-notification {
-    font-size: 28px;
+  .left .stat-line span{ font-size: 9px; color: var(--muted); }
+  .left .stat-value{
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
   }
-  .combo-4 { font-size: 36px; }
-  .combo-tspin { font-size: 32px; }
-  .combo-b2b { font-size: 30px; }
+
+  /* 右面板：预览横向均匀分布，填充顶栏右半空间 */
+  .right .previews{
+    flex: 1;
+    flex-direction: row;
+    gap: 4px;
+    overflow: hidden;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .right .preview-item{
+    width: 54px;
+    height: 54px;
+    padding: 3px;
+    border-radius: 6px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .right .preview-item canvas{
+    width: 48px !important;
+    height: 48px !important;
+  }
+  /* 竖屏只显示前 3 个预览 */
+  .right .preview-item:nth-child(n+4){ display: none; }
+
+  /* 中央游戏区：填满剩余空间 */
+  .center{
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  /* 游戏画布区：弹性填充 */
+  .playfield-wrap{
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* 竖屏不使用侧边浮动控制 */
+  .mobile-side{ display: none !important; }
+
+  /* ============ 双拇指控制栏 ============ */
+  .mobile-controls{
+    display: grid;
+    /* 6 个按钮分两组，中间留视觉分隔 */
+    grid-template-columns: 1fr 1fr 1fr 6px 1fr 1fr 1fr;
+    grid-template-rows: 1fr;
+    gap: 6px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)) 8px;
+    background: var(--panel);
+    border: 1px solid #263057;
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    margin-top: 4px;
+  }
+  /* 分隔列 */
+  .mobile-controls::before{
+    content: '';
+    grid-column: 4;
+    grid-row: 1;
+    background: linear-gradient(180deg, transparent, #2b345d 30%, #2b345d 70%, transparent);
+    width: 2px;
+    justify-self: center;
+    align-self: stretch;
+    border-radius: 1px;
+  }
+
+  .mobile-controls .btn{
+    min-width: 0;
+    max-width: none;
+    flex: none;
+    padding: 14px 4px;
+    font-size: 12px;
+    border-radius: 12px;
+    aspect-ratio: 1.1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    line-height: 1.1;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-controls .btn .btn-icon{
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1;
+  }
+  .mobile-controls .btn .btn-label{
+    font-size: 9px;
+    opacity: 0.8;
+    letter-spacing: 0.3px;
+  }
+
+  /* 重排按钮顺序：左拇指组(左移/软降/右移) | 右拇指组(右旋/硬降/暂存) */
+  .mobile-controls .btn[data-act="left"]{ order: 1; }
+  .mobile-controls .btn[data-act="soft"]{ order: 2; }
+  .mobile-controls .btn[data-act="right"]{ order: 3; }
+  .mobile-controls .btn[data-act="rotateRight"]{ order: 5; }
+  .mobile-controls .btn[data-act="hard"]{ order: 6; }
+  .mobile-controls .btn[data-act="hold"]{ order: 7; }
+  /* 左旋和暂停按钮在竖屏下移出底栏（用手势替代） */
+  .mobile-controls .btn[data-act="rotateLeft"]{ display: none; }
+  .mobile-controls .btn[data-act="pause"]{ display: none; }
+
+  /* 按键颜色区分 */
+  .mobile-controls .btn[data-act="left"],
+  .mobile-controls .btn[data-act="right"]{
+    background: #1b2140;
+  }
+  .mobile-controls .btn[data-act="soft"]{
+    background: linear-gradient(135deg, #1f2847, #1b2140);
+    border-color: #2b345d;
+  }
+  .mobile-controls .btn[data-act="rotateRight"]{
+    background: linear-gradient(135deg, #2d3a6e, #1f2847);
+    border-color: #4f8cff;
+    color: #4f8cff;
+    font-weight: bold;
+    box-shadow: 0 3px 0 rgba(79,140,255,.3);
+  }
+  .mobile-controls .btn[data-act="hard"]{
+    background: linear-gradient(135deg, #3d1f2f, #2a1525);
+    border-color: #ef4444;
+    color: #fca5a5;
+    box-shadow: 0 3px 0 rgba(239,68,68,.3);
+  }
+  .mobile-controls .btn[data-act="hold"]{
+    background: linear-gradient(135deg, #3d2f1f, #2a2515);
+    border-color: #f59e0b;
+    color: #fcd34d;
+    box-shadow: 0 3px 0 rgba(245,158,11,.3);
+  }
+
+  /* 按压反馈：放大并下沉 */
+  .mobile-controls .btn:active,
+  .mobile-controls .btn.pressed{
+    transform: translateY(2px) scale(0.97);
+    filter: brightness(1.3);
+  }
+
+  /* 连击通知缩小 */
+  .combo-notification { font-size: 30px; }
+  .combo-4 { font-size: 40px; }
+  .combo-tspin { font-size: 36px; }
+  .combo-b2b { font-size: 34px; }
+
+  /* 隐藏菜单切换按钮（竖屏下头部始终可见） */
+  .header-toggle{ display: none !important; }
+
+  /* 模态框适配竖屏 */
+  .modal{
+    width: min(96vw, 600px);
+    max-height: 88vh;
+    padding: 12px;
+  }
+  .grid2{ grid-template-columns: 1fr; }
+  .row input[type="number"], .row select{ width: 100%; max-width: 140px; }
+  .mode-selector{ grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mode-card{ padding: 10px; }
+  .mode-card h4{ font-size: 13px; }
+  .mode-card p{ font-size: 11px; }
+
+  /* 暂停/游戏结束弹窗适配 */
+  .pause-modal{ padding: 20px 24px; }
+  .pause-modal h2{ font-size: 26px; }
+  .pause-modal .pause-stats{ gap: 10px; padding: 12px; }
+  .pause-modal .pause-stat-value{ font-size: 20px; }
+
+  .gameover-modal{ padding: 16px; }
+  .gameover-stats-grid{ grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gameover-stat-value{ font-size: 22px; }
+
+  .countdown-number{ font-size: 100px; }
+  .countdown-number.go{ font-size: 80px; }
+
+  .levelup-text{ font-size: 36px; }
+  .levelup-level{ font-size: 60px; }
+
+  /* 排行榜适配 */
+  .leaderboard-modal{ max-height: 90vh; padding: 14px; }
+  .leaderboard-header,
+  .leaderboard-row{
+    grid-template-columns: 36px 1fr 70px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .leaderboard-date{ display: none; }
+  .leaderboard-tabs{ gap: 4px; }
+  .leaderboard-tab{ padding: 6px 10px; font-size: 11px; }
+  .stats-panel{ grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stats-card{ padding: 8px; }
+  .stats-card-value{ font-size: 18px; }
+  .stats-card-label{ font-size: 9px; }
+
+  /* 锁定进度条更细 */
+  .lock-progress-bar{ height: 4px; }
+
+  /* 键位反馈条隐藏（竖屏下用按钮按压反馈替代） */
+  .key-feedback{ display: none !important; }
 }
-        
-@media (max-width: 640px) and (orientation: landscape){
+
+/* ============ 竖屏小屏（< 480px）进一步优化 ============ */
+@media (max-width: 480px) and (orientation: portrait){
+  .app{ padding: 4px; gap: 4px; }
+  header{ padding: 5px 8px; }
+  header .title{ font-size: 13px; }
+  header .controls button{
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+  /* 超窄屏：隐藏重新开始和排行榜按钮（可通过暂停菜单访问） */
+  #btnRestart, #btnLeaderboard{ display: none; }
+
+  .left, .right{ padding: 4px 6px; gap: 5px; }
+  .left .hold-box{ width: 38px; height: 38px; }
+  .left .hold-box canvas{ width: 32px !important; height: 32px !important; }
+  .left .stat-value{ font-size: 12px; }
+  .left .stat-line span{ font-size: 8px; }
+  .right .preview-item{ width: 46px; height: 46px; }
+  .right .preview-item canvas{ width: 40px !important; height: 40px !important; }
+  /* 超窄屏只显示前 2 个预览 */
+  .right .preview-item:nth-child(n+3){ display: none; }
+
+  .mobile-controls{ padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)) 6px; gap: 4px; }
+  .mobile-controls .btn{ padding: 10px 2px; font-size: 10px; border-radius: 10px; }
+  .mobile-controls .btn .btn-icon{ font-size: 16px; }
+  .mobile-controls .btn .btn-label{ font-size: 8px; }
+
+  .mode-selector{ grid-template-columns: 1fr; }
+}
+
+/* ============ 横屏小屏适配（与竖屏对称的双拇指布局） ============ */
+
+@media (max-width: 980px) and (orientation: landscape){
+  /* 整体 2 行：顶栏（hold+stats | preview） / 主区（画布 + 双拇指底栏） */
+  .app{
+    grid-template-rows: auto minmax(0, 1fr);
+    padding: 6px;
+    gap: 6px;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* 隐藏顶部 header 与底部 footer，腾出空间给画布 */
+  header{ display: none; }
+  footer{ display: none; }
+  .feedback-bar{ display: none !important; }
+  /* 不再使用浮动菜单按钮，菜单入口由 FAB 长按或画布点击触发 */
+  .header-toggle{ display: none !important; }
+
   .layout{
-    grid-template-columns: 100px 1fr 100px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 6px;
+    overflow: hidden;
   }
-          
-  :root{
-    --side-ctrl-w: 85px;
+  /* 顶栏：左侧 hold+stats，右侧 preview，并列一行 */
+  .left{
+    grid-column: 1; grid-row: 1;
+    display: flex; flex-direction: row; align-items: center;
+    gap: 8px; padding: 6px 8px;
+    font-size: 12px;
   }
-          
-  .mobile-side .btn{
-    padding:10px 6px;
-    font-size:12px;
-    margin:6px 6px;
+  .right{
+    grid-column: 2; grid-row: 1;
+    display: flex; flex-direction: row; align-items: center;
+    gap: 8px; padding: 6px 8px;
+    justify-content: flex-end;
   }
-          
-  .left, .right{
-    font-size:11px;
+  /* 主区：画布 + 底栏，垂直填充 */
+  .center{
+    grid-column: 1 / -1; grid-row: 2;
+    display: flex; flex-direction: column;
+    min-height: 0; overflow: hidden;
+    padding: 6px;
   }
-          
-  .stat-line{
-    font-size:11px;
+  .playfield-wrap{
+    flex: 1; min-height: 0;
+    padding: 0;
   }
+
+  /* 隐藏次要 UI 元素，保持顶栏紧凑 */
+  .left .badges,
+  .left .gamepad-indicator,
+  .left .undo-controls,
+  .left .status-indicators,
+  .left > .stat-line,
+  .right .preview-title,
+  /* 移动端隐藏键盘按键提示（如 "(C/Shift)"） */
+  .kbd-hint{
+    display: none !important;
+  }
+
+  /* 顶栏 hold 盒子紧凑化（横向） */
+  .left .hold-box{
+    width: 44px; height: 44px;
+    margin: 0; padding: 4px;
+    flex-shrink: 0;
+  }
+  .left .hold-box canvas{
+    width: 38px !important; height: 38px !important;
+  }
+  /* 统计区横向排布 */
+  .left .stats{
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 8px;
+    flex: 1;
+  }
+  /* 计时器/垃圾行进度由 JS 控制可见性，CSS 仅紧凑化 */
+  .left .cheese-preview{ margin: 0; padding: 4px 6px; min-width: 60px; }
+  .left #timerContainer{ margin: 0; flex-shrink: 0; }
+  .timer-display{ font-size: 16px; padding: 4px 8px; min-width: 70px; }
+
+  /* 右侧 preview 横向排列，最多显示 4 个 */
+  .right .previews{
+    flex-direction: row;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .right .preview-item{
+    width: 38px; height: 38px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .right .preview-item:nth-child(n+5){ display: none; }
+
+  /* 关闭旧的左右悬浮控制栏，改用底部双拇指控制栏 */
+  .mobile-side{ display: none !important; }
+  .mobile-side .btn{ display: none !important; }
+
+  /* 双拇指底栏：与竖屏一致的 7 列布局（3 + 分隔 + 3） */
+  .mobile-controls{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 6px 1fr 1fr 1fr;
+    gap: 6px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)) 8px;
+    border-radius: 10px;
+    background: rgba(15, 20, 38, 0.92);
+    border: 1px solid #2b345d;
+    flex-shrink: 0;
+  }
+  /* 中间视觉分隔条 */
+  .mobile-controls::before{
+    content: '';
+    grid-column: 4;
+    background: linear-gradient(180deg, transparent, #2b345d 30%, #2b345d 70%, transparent);
+    width: 2px;
+  }
+  /* 按钮使用 span 结构（图标+文字），横屏略扁 */
+  .mobile-controls .btn{
+    padding: 8px 4px;
+    aspect-ratio: 1.6 / 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-width: 0;
+  }
+  .mobile-controls .btn .btn-icon{ font-size: 20px; font-weight: bold; line-height: 1; }
+  .mobile-controls .btn .btn-label{ font-size: 9px; opacity: 0.8; margin-top: 2px; }
+
+  /* 双拇指分组：左拇指(左移/软降/右移) | 右拇指(右旋/硬降/暂存) */
+  .mobile-controls .btn[data-act="left"]{ order: 1; }
+  .mobile-controls .btn[data-act="soft"]{ order: 2; }
+  .mobile-controls .btn[data-act="right"]{ order: 3; }
+  .mobile-controls .btn[data-act="rotateRight"]{ order: 5; }
+  .mobile-controls .btn[data-act="hard"]{ order: 6; }
+  .mobile-controls .btn[data-act="hold"]{ order: 7; }
+  /* 左旋与暂停按钮在横屏底栏隐藏（左旋可用右旋替代，暂停用 FAB） */
+  .mobile-controls .btn[data-act="rotateLeft"]{ display: none; }
+  .mobile-controls .btn[data-act="pause"]{ display: none; }
+
+  /* 功能色：蓝色右旋、红色硬降、橙色暂存，与竖屏统一 */
+  .mobile-controls .btn[data-act="rotateRight"]{
+    background: linear-gradient(135deg,#2d3a6e,#1f2847);
+    border-color: #4f8cff; color: #4f8cff;
+    box-shadow: 0 3px 0 rgba(79,140,255,.3);
+  }
+  .mobile-controls .btn[data-act="hard"]{
+    background: linear-gradient(135deg,#3d1f28,#2a1418);
+    border-color: #ef4444; color: #ff6b6b;
+    box-shadow: 0 3px 0 rgba(239,68,68,.3);
+  }
+  .mobile-controls .btn[data-act="hold"]{
+    background: linear-gradient(135deg,#3d2a14,#2a1d0e);
+    border-color: #f59e0b; color: #fbbf24;
+    box-shadow: 0 3px 0 rgba(245,158,11,.3);
+  }
+
+  /* 横屏下隐藏键位反馈指示器 */
+  .key-feedback{ display: none !important; }
+
+  /* combo 通知缩小，避免遮挡画布 */
+  .combo-notification{ font-size: 32px; }
+  .combo-4{ font-size: 40px; }
+  .combo-tspin{ font-size: 36px; }
+  .combo-b2b{ font-size: 34px; }
+}
+
+/* 横屏超小屏（<640px）进一步紧凑化 */
+@media (max-width: 640px) and (orientation: landscape){
+  /* 顶栏 hold 盒子更小 */
+  .left .hold-box{ width: 38px; height: 38px; }
+  .left .hold-box canvas{ width: 32px !important; height: 32px !important; }
+  .left .stats{ gap: 4px; font-size: 11px; }
+  .timer-display{ font-size: 14px; padding: 3px 6px; min-width: 60px; }
+
+  /* 右侧 preview 减少到 3 个 */
+  .right .preview-item{ width: 32px; height: 32px; }
+  .right .preview-item:nth-child(n+4){ display: none; }
+
+  /* 底栏按钮更小 */
+  .mobile-controls{ padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px)) 6px; gap: 4px; }
+  .mobile-controls .btn{ padding: 6px 2px; aspect-ratio: 1.4 / 1; }
+  .mobile-controls .btn .btn-icon{ font-size: 16px; }
+  .mobile-controls .btn .btn-label{ font-size: 8px; }
 }
         
 .tab-nav {
@@ -746,82 +1177,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   50% { filter: brightness(1.8) contrast(1.2); }
 }
         
-.portrait-warning {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, var(--bg) 0%, #1a1f3d 100%);
-  z-index: 10000;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-        
-.portrait-warning.show {
-  display: flex;
-}
-        
-.portrait-content {
-  text-align: center;
-  padding: 40px 20px;
-  max-width: 400px;
-}
-        
-.portrait-icon {
-  font-size: 100px;
-  margin-bottom: 30px;
-  animation: rotate-hint 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px rgba(79, 140, 255, 0.5));
-}
-        
-@keyframes rotate-hint {
-  0%, 100% {
-    transform: rotate(0deg) scale(1);
-  }
-  25% {
-    transform: rotate(-15deg) scale(1.1);
-  }
-  50% {
-    transform: rotate(0deg) scale(1);
-  }
-  75% {
-    transform: rotate(15deg) scale(1.1);
-  }
-}
-        
-.portrait-content h2 {
-  font-size: 28px;
-  margin: 20px 0;
-  color: var(--accent);
-  font-weight: 700;
-  text-shadow: 0 2px 10px rgba(79, 140, 255, 0.3);
-}
-        
-.portrait-content p {
-  font-size: 16px;
-  color: var(--muted);
-  line-height: 1.8;
-  margin-top: 16px;
-}
-        
-@media (max-width: 980px) and (orientation: portrait) {
-  .portrait-warning.active {
-    display: flex !important;
-  }
-          
-  .portrait-warning.active ~ .app {
-    display: none;
-  }
-}
-        
-@media (orientation: landscape) {
-  .portrait-warning {
-    display: none !important;
-  }
-}
+/* 竖屏警告已移除，改为原生竖屏适配 */
         
 .leaderboard-overlay {
   position: fixed;
@@ -1094,20 +1450,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   }
 }
         
-@media (max-width: 980px) and (orientation: portrait) {
-  .leaderboard-header,
-  .leaderboard-row {
-    grid-template-columns: 40px 1fr 70px;
-  }
-          
-  .leaderboard-date {
-    display: none;
-  }
-          
-  .stats-panel {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* 竖屏排行榜/统计适配已整合至主竖屏媒体查询 */
         
 .countdown-overlay {
   position: fixed;
@@ -1394,14 +1737,28 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
 }
         
 .key-feedback {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   gap: 8px;
-  z-index: 100;
+  justify-content: center;
+  flex-wrap: wrap;
   pointer-events: none;
+}
+
+/* 暂存+计时器堆叠容器：桌面端不生成盒子，子元素参与父级布局 */
+.hold-timer-stack{
+  display: contents;
+}
+
+/* 桌面端反馈栏（footer）：键位指示器居底显示 */
+.feedback-bar{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: var(--panel);
+  border: 1px solid #263057;
+  border-radius: 10px;
 }
         
 .key-indicator {
@@ -1484,22 +1841,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   }
 }
         
-@media (max-width: 980px) and (orientation: portrait) {
-  .key-feedback {
-    bottom: 10px;
-    gap: 4px;
-  }
-          
-  .key-indicator {
-    padding: 6px 10px;
-    font-size: 10px;
-    min-width: 40px;
-  }
-          
-  .gameover-stats-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
+/* 竖屏键位反馈/结束面板适配已整合至主竖屏媒体查询 */
 
 .lock-progress-bar {
   position: absolute;
@@ -1692,13 +2034,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
 <body>
 <div class="param-toast" id="paramToast"></div>
 <div class="app">
-<div id="portraitWarning" class="portrait-warning">
-  <div class="portrait-content">
-    <div class="portrait-icon">📱</div>
-    <h2>请旋转您的设备</h2>
-    <p>为了获得最佳游戏体验<br>请将设备横向放置</p>
-  </div>
-</div>
+<!-- 竖屏模式已原生支持，无需旋转提示 -->
   <header id="topHeader">
     <div class="title">俄罗斯方块</div>
     <div class="controls">
@@ -1713,20 +2049,21 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
           
   <div class="layout">
     <div class="panel left">
-      <div class="preview-title">暂存 (C/Shift)</div>
-      <div class="hold-box" style="margin-bottom:10px">
-        <canvas id="hold" width="140" height="140"></canvas>
+      <div class="hold-timer-stack">
+        <div class="preview-title">暂存<span class="kbd-hint"> (C/Shift)</span></div>
+        <div class="hold-box">
+          <canvas id="hold" width="140" height="140"></canvas>
+        </div>
+        <div id="timerContainer" style="display:none;">
+          <div class="timer-display" id="timerDisplay">00:00.00</div>
+        </div>
       </div>
-                
+
       <div class="stat-line" style="margin-bottom: 8px;">
         <span>模式</span>
         <strong class="stat-value" id="modeDisplay">马拉松</strong>
       </div>
-          
-      <div id="timerContainer" style="display:none;">
-        <div class="timer-display" id="timerDisplay">00:00.00</div>
-      </div>
-          
+
       <div id="cheeseContainer" class="cheese-preview" style="display:none;">
         <div class="cheese-preview-title">垃圾行剩余</div>
         <div class="stat-line">
@@ -1769,13 +2106,6 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
         <div class="undo-controls" id="undoControls">
           <button id="btnUndo" title="撤销 (Ctrl+Z)">↶ 撤销</button>
           <button id="btnRedo" title="重做 (Ctrl+Y)">↷ 重做</button>
-        </div>
-          
-        <div class="badges">
-          <span class="badge">自定义键位</span>
-          <span class="badge">手柄支持</span>
-          <span class="badge">震动反馈</span>
-          <span class="badge">多种模式</span>
         </div>
       </div>
     </div>
@@ -2059,14 +2389,14 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
           
           
       <div class="mobile-controls" id="mobileControls">
-        <div class="btn" data-act="left">← 左</div>
-        <div class="btn" data-act="right">右 →</div>
-        <div class="btn" data-act="rotateLeft">↺ 左旋</div>
-        <div class="btn" data-act="rotateRight">↻ 右旋</div>
-        <div class="btn" data-act="soft">↓ 软降</div>
-        <div class="btn" data-act="hard">⤓ 硬降</div>
-        <div class="btn" data-act="hold">Hold</div>
-        <div class="btn" data-act="pause">⏸ 暂停</div>
+        <div class="btn" data-act="left"><span class="btn-icon">←</span><span class="btn-label">左移</span></div>
+        <div class="btn" data-act="right"><span class="btn-icon">→</span><span class="btn-label">右移</span></div>
+        <div class="btn" data-act="rotateLeft"><span class="btn-icon">↺</span><span class="btn-label">左旋</span></div>
+        <div class="btn" data-act="rotateRight"><span class="btn-icon">↻</span><span class="btn-label">右旋</span></div>
+        <div class="btn" data-act="soft"><span class="btn-icon">↓</span><span class="btn-label">软降</span></div>
+        <div class="btn" data-act="hard"><span class="btn-icon">⤓</span><span class="btn-label">硬降</span></div>
+        <div class="btn" data-act="hold"><span class="btn-icon">H</span><span class="btn-label">暂存</span></div>
+        <div class="btn" data-act="pause"><span class="btn-icon">⏸</span><span class="btn-label">暂停</span></div>
       </div>
     </div>
           
@@ -2103,6 +2433,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
     <div class="actions">
       <button id="btnPauseResume" class="primary">▶ 继续游戏</button>
       <button id="btnPauseRestart">🔄 重新开始</button>
+      <button id="btnPauseLeaderboard">🏆 排行榜</button>
       <button id="btnPauseSettings">⚙ 设置</button>
     </div>
   </div>
@@ -2159,6 +2490,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   </div>
 </div>
           
+<footer class="feedback-bar">
 <div class="key-feedback" id="keyFeedback">
   <div class="key-indicator left" data-key="left">←</div>
   <div class="key-indicator right" data-key="right">→</div>
@@ -2167,6 +2499,7 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
   <div class="key-indicator hard" data-key="hard">⤓</div>
   <div class="key-indicator hold" data-key="hold">H</div>
 </div>
+</footer>
 
 <div class="timer-beep-indicator" id="timerBeepIndicator"></div>
           
@@ -2230,9 +2563,6 @@ canvas.playfield{background:#0b0f23; border:1px solid #2b3156; border-radius:10p
 </div>
           
           
-  <footer>
-    <div>专业竞技版：多模式 | 自定义键位 | 手柄支持 | 震动反馈</div>
-  </footer>
 </div>
       
 <script>
@@ -2552,40 +2882,31 @@ function highlightKey(action) {
         }, 150);
     }
 }
-let wasPortraitPaused = false;
+// 竖屏方向检测：不再阻止竖屏游戏，仅触发画布重排以适配新方向
 function checkOrientation() {
-    const portraitWarning = document.getElementById('portraitWarning');
-    if (!portraitWarning) return;
-    const isMobile = window.innerWidth <= 980;
-    const isPortrait = window.innerHeight > window.innerWidth;
-    if (isMobile && isPortrait) {
-        portraitWarning.classList.add('show');
-        portraitWarning.classList.add('active');
-        if (running && !paused && !gameOver) {
-            togglePause();
-            wasPortraitPaused = true;
-        }
-    } else {
-        const wasShowing = portraitWarning.classList.contains('show');
-        portraitWarning.classList.remove('show');
-        portraitWarning.classList.remove('active');
-        if (wasShowing && wasPortraitPaused && running && paused && !gameOver) {
-            togglePause();
-            wasPortraitPaused = false;
-        }
+    // 通知布局系统方向可能已变化，触发布局重排
+    if (typeof resize === 'function') {
+        // 延迟一帧执行，确保 CSS media query 已应用
+        requestAnimationFrame(() => {
+            try { resize(); } catch(e) {}
+            // 重绘侧边栏预览以适应新尺寸
+            if (typeof redrawSidePanels === 'function') {
+                try { redrawSidePanels(); } catch(e) {}
+            }
+        });
     }
 }
 function initOrientationDetection() {
     window.addEventListener('orientationchange', () => {
-        setTimeout(checkOrientation, 100);
+        setTimeout(checkOrientation, 120);
     });
     window.addEventListener('resize', checkOrientation);
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
-            setTimeout(checkOrientation, 100);
+            setTimeout(checkOrientation, 120);
         }
     });
-    setTimeout(checkOrientation, 100);
+    setTimeout(checkOrientation, 120);
 }
 class AudioSystem {
   constructor() {
@@ -3039,6 +3360,7 @@ const pauseLines = document.getElementById('pauseLines');
 const pauseLevel = document.getElementById('pauseLevel');
 const btnPauseResume = document.getElementById('btnPauseResume');
 const btnPauseRestart = document.getElementById('btnPauseRestart');
+const btnPauseLeaderboard = document.getElementById('btnPauseLeaderboard');
 const btnPauseSettings = document.getElementById('btnPauseSettings');
 const levelupOverlay = document.getElementById('levelupOverlay');
 const levelupLevel = document.getElementById('levelupLevel');
@@ -4504,19 +4826,31 @@ function redrawSidePanels(){
 
 function drawMini(c, type){
     const mat = SHAPES[type];
-    const w = mat[0].length, h = mat.length;
+    // 裁剪空行/空列，避免空白行列导致视觉偏移
+    let top = mat.length, bottom = 0, left = mat[0].length, right = 0;
+    for(let y = 0; y < mat.length; y++){
+      for(let x = 0; x < mat[0].length; x++){
+        if(mat[y][x]){
+          top = Math.min(top, y);
+          bottom = Math.max(bottom, y);
+          left = Math.min(left, x);
+          right = Math.max(right, x);
+        }
+      }
+    }
+    const trimW = right - left + 1, trimH = bottom - top + 1;
     const margin = Math.floor(Math.min(c.canvas.width, c.canvas.height) * 0.1);
     const areaW = c.canvas.width - margin*2;
     const areaH = c.canvas.height - margin*2;
-    const cell = Math.max(2, Math.floor(Math.min(areaW / w, areaH / h)));
-    const shapeW = w*cell, shapeH = h*cell;
+    const cell = Math.max(2, Math.floor(Math.min(areaW / trimW, areaH / trimH)));
+    const shapeW = trimW * cell, shapeH = trimH * cell;
     const ox = Math.floor((c.canvas.width - shapeW)/2);
     const oy = Math.floor((c.canvas.height - shapeH)/2);
-    for(let y=0;y<h;y++){
-      for(let x=0;x<w;x++){
+    for(let y = top; y <= bottom; y++){
+      for(let x = left; x <= right; x++){
         if(!mat[y][x]) continue;
         c.fillStyle = skin[type];
-        c.fillRect(ox + x*cell + 1, oy + y*cell + 1, cell-2, cell-2);
+        c.fillRect(ox + (x - left)*cell + 1, oy + (y - top)*cell + 1, cell-2, cell-2);
       }
     }
   }
@@ -4676,7 +5010,7 @@ function drawMini(c, type){
       const box = document.createElement('div');
       box.className = 'preview-item';
       const cv = document.createElement('canvas');
-      cv.width = 140; cv.height = 100;
+      cv.width = 100; cv.height = 100;
       box.appendChild(cv);
       previewsEl.appendChild(box);
     }
@@ -5201,6 +5535,11 @@ btnPauseRestart.addEventListener('click', () => {
   hidePauseMenu();
   showSettingsOverlay(true, '重新开始');
 });
+// 暂停菜单排行榜按钮：作为小屏隐藏 header 排行榜按钮的替代入口
+btnPauseLeaderboard.addEventListener('click', () => {
+  hidePauseMenu();
+  showLeaderboard();
+});
 btnPauseSettings.addEventListener('click', () => {
   hidePauseMenu();
   showSettingsOverlay(true);
@@ -5479,9 +5818,20 @@ function startGameOverCrushAnimation(callback, overlayType = 'G') {
   step();
 }
 function updateMobilePauseButtons(label) {
+  // 兼容旧版纯文本按钮（横屏侧栏）和新版 span 结构按钮（竖屏底栏）
   const btns = document.querySelectorAll('.btn[data-act="pause"]');
   btns.forEach(b => {
-    b.textContent = label;
+    const iconEl = b.querySelector('.btn-icon');
+    const labelEl = b.querySelector('.btn-label');
+    if (iconEl && labelEl) {
+      // 新版结构：拆分图标与文字
+      const icon = label.includes('继续') ? '▶' : '⏸';
+      const text = label.includes('继续') ? '继续' : '暂停';
+      iconEl.textContent = icon;
+      labelEl.textContent = text;
+    } else {
+      b.textContent = label;
+    }
   });
 }
 function pauseGame() {

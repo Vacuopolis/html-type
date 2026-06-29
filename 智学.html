@@ -6193,6 +6193,16 @@
             });
         }
 
+        // HTML标签占位符：所有预处理的HTML标签使用占位符，避免marked干扰导致</strong>等标签被拆散
+        // marked的HTML解析可能将<strong>和</strong>拆到不同上下文，导致闭合标签作为文本抛出
+        const TAG_PH = {
+            strongO: '%%SO%%', strongC: '%%SC%%',
+            emO: '%%EO%%', emC: '%%EC%%',
+            delO: '%%DO%%', delC: '%%DC%%',
+            subO: '%%SUBO%%', subC: '%%SUBC%%',
+            supO: '%%SUPO%%', supC: '%%SUPC%%',
+            fnO: '%%FNO%%', fnC: '%%FNC%%'
+        };
         // 删除线占位符（用于保护 ~~ 不被 marked 误解析）
         const delPlaceholder = '\x00DEL\x00';
 
@@ -6206,7 +6216,7 @@
         }
 
         // 提取代码块（```...``` 和 `...`），避免预处理破坏代码内的 * _ ~ 等字符
-        // 否则代码块内的 **中文** 会被预处理转为 <strong>，经 marked 转义后显示为 &lt;strong&gt;
+        // 否则代码块内的 **中文** 会被预处理转为占位符，经 marked 转义后显示为 %%SO%%
         const codeBlocks = [];
         const codePlaceholder = (idx) => '%%CODEBLOCK' + idx + '%%';
         text = text.replace(/```[\s\S]*?```|`[^`\n]+`/g, (match) => {
@@ -6217,18 +6227,18 @@
 
         // 预处理 **text** 粗体：CommonMark 侧标记规则对中文标点（如 ""）处理不当，
         // 当 ** 前为 CJK 字符、后为中文标点时 marked 不识别为粗体（只会把中间的"和"字变粗），
-        // 故提前转为 <strong>，绕过该问题（不区分是否含CJK，统一处理避免marked漏解析）
+        // 故提前转为占位符，绕过该问题（不区分是否含CJK，统一处理避免marked漏解析）
         // 注意：必须先 escapeHtml content 再嵌入，否则 AI 回复中的 <img onerror=...> 等载荷会被直接注入
         // 正则用 [^\n]+? 非贪婪匹配，允许内容含单个 *（如 **a*b*c** ）
         text = text.replace(/\*\*([^\n]+?)\*\*/g, (match, content) => {
-            return '<strong>' + escapeHtml(content) + '</strong>';
+            return TAG_PH.strongO + escapeHtml(content) + TAG_PH.strongC;
         });
 
         // 预处理 __text__ 粗体（下划线语法）：同样存在 CJK 侧标记问题
         // 保留 CJK 检查，避免误匹配 Python 方法名如 __init__
         text = text.replace(/__([^_\n]+)__/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<strong>' + escapeHtml(content) + '</strong>';
+                return TAG_PH.strongO + escapeHtml(content) + TAG_PH.strongC;
             }
             return match;
         });
@@ -6237,7 +6247,7 @@
         // 保留 CJK 检查，避免误匹配数学乘法如 2 * 3 * 4
         text = text.replace(/\*([^*\n]+)\*/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<em>' + escapeHtml(content) + '</em>';
+                return TAG_PH.emO + escapeHtml(content) + TAG_PH.emC;
             }
             return match;
         });
@@ -6246,7 +6256,7 @@
         // 保留 CJK 检查，避免误匹配变量名如 my_var_name
         text = text.replace(/_([^_\n]+)_/g, (match, content) => {
             if (/[\u4e00-\u9fff]/.test(content)) {
-                return '<em>' + escapeHtml(content) + '</em>';
+                return TAG_PH.emO + escapeHtml(content) + TAG_PH.emC;
             }
             return match;
         });
@@ -6261,14 +6271,14 @@
             if (hasCJK && (hasSentenceEnd || isLong)) {
                 return delPlaceholder + content + delPlaceholder;
             }
-            return '<del>' + escapeHtml(content) + '</del>';
+            return TAG_PH.delO + escapeHtml(content) + TAG_PH.delC;
         });
         // 剩余的 ~~ 替换为占位符，避免被 marked 误解析
         text = text.replace(/~~/g, delPlaceholder);
 
         // 下标：~text~（单波浪号，同一行内，仅匹配紧跟在字母数字后的短内容，如 H~2~O）
         // 注意：$2 来自 AI 文本，必须转义避免注入
-        text = text.replace(/([\w])~([^\n~]{1,4})~/g, (m, pre, content) => pre + '<sub>' + escapeHtml(content) + '</sub>');
+        text = text.replace(/([\w])~([^\n~]{1,4})~/g, (m, pre, content) => pre + TAG_PH.subO + escapeHtml(content) + TAG_PH.subC);
 
         // 剩余的单个 ~ 替换为占位符，避免被 marked 误解析为删除线
         // （AI 常用 ~ 做中文语气符号，如 "好开心~" ，不应被渲染为删除线）
@@ -6276,11 +6286,11 @@
         text = text.replace(/~/g, tildePlaceholder);
 
         // 上标：^text^（同一行内，仅匹配紧跟在字母数字后的短内容，如 x^2^）
-        text = text.replace(/([\w])\^([^\n^]{1,4})\^/g, (m, pre, content) => pre + '<sup>' + escapeHtml(content) + '</sup>');
+        text = text.replace(/([\w])\^([^\n^]{1,4})\^/g, (m, pre, content) => pre + TAG_PH.supO + escapeHtml(content) + TAG_PH.supC);
 
         // 脚注引用：[^n] → 上标显示
         // 注意：$1 来自 AI 文本，必须转义避免注入
-        text = text.replace(/\[\^([^\]]+)\]/g, (m, label) => '<sup class="ai-footnote">[' + escapeHtml(label) + ']</sup>');
+        text = text.replace(/\[\^([^\]]+)\]/g, (m, label) => TAG_PH.fnO + '[' + escapeHtml(label) + ']' + TAG_PH.fnC);
 
         // 恢复代码块（在 marked 之前，让 marked 正确处理代码块语法）
         codeBlocks.forEach((block, idx) => {
@@ -6297,6 +6307,20 @@
             // 导致 \x00TILDE\x00 变成残留文字 "TILDE"
             html = html.replace(new RegExp(delPlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~~');
             html = html.replace(new RegExp(tildePlaceholder.replace(/\x00/g, '\\x00'), 'g'), '~');
+
+            // 恢复HTML标签占位符为真实标签（必须在DOMPurify之前，否则%%SO%%等会被转义或剥离）
+            html = html.replace(new RegExp(TAG_PH.strongO, 'g'), '<strong>');
+            html = html.replace(new RegExp(TAG_PH.strongC, 'g'), '</strong>');
+            html = html.replace(new RegExp(TAG_PH.emO, 'g'), '<em>');
+            html = html.replace(new RegExp(TAG_PH.emC, 'g'), '</em>');
+            html = html.replace(new RegExp(TAG_PH.delO, 'g'), '<del>');
+            html = html.replace(new RegExp(TAG_PH.delC, 'g'), '</del>');
+            html = html.replace(new RegExp(TAG_PH.subO, 'g'), '<sub>');
+            html = html.replace(new RegExp(TAG_PH.subC, 'g'), '</sub>');
+            html = html.replace(new RegExp(TAG_PH.supO, 'g'), '<sup>');
+            html = html.replace(new RegExp(TAG_PH.supC, 'g'), '</sup>');
+            html = html.replace(new RegExp(TAG_PH.fnO, 'g'), '<sup class="ai-footnote">');
+            html = html.replace(new RegExp(TAG_PH.fnC, 'g'), '</sup>');
 
             // marked v12 默认不再内置 sanitizer，会透传 AI 回复中的原始 HTML，
             // 必须用 DOMPurify 净化，移除 <script>/onerror 等危险标签与属性

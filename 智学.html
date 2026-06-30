@@ -3118,6 +3118,11 @@
 
     // SVG.js 初始化：AI FAB 按钮 Miku 主题微动画
     document.addEventListener('DOMContentLoaded', function() {
+        // 禁用浏览器自动滚动恢复：刷新后页面默认进入解析模式，结构与刷新前不同，
+        // 浏览器恢复的滚动位置会指向错误位置，造成解析模式界面莫名滚动
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
         // 防止 AI 面板滚动到边界时穿透到下层页面
         const aiPanelBody = document.getElementById('aiPanelBody');
         if (aiPanelBody) {
@@ -4439,6 +4444,9 @@
 
     /** 将 quizContentArea 滚到视口顶部（补偿 main 的 padding），.quiz-stem 可见→瞬间；完全看不到→平滑 */
     function scrollQuizToTop(forceSmooth) {
+        // 仅在刷题模式下执行滚动，避免解析模式下 quizContentArea(display:none) 导致 getBoundingClientRect 返回全0、
+        // target 计算为错误负值，进而触发异常滚动（刷新重进解析模式时会出现莫名滚动）
+        if (state.currentMode !== 'quiz') return;
         requestAnimationFrame(() => {
             const contentArea = document.getElementById('quizContentArea');
             if (!contentArea) return;
@@ -4995,9 +5003,9 @@
             let sourceTag = '';
             if (r.source) {
                 if (r.source.type === 'online') {
-                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdfa;color:#0d9488;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #99f6e4;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(r.source.name)}">${icon('cloud')}${escapeHtml(r.source.name)}</span>`;
+                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f0fdfa;color:#0d9488;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #99f6e4;word-break:break-word;" title="${escapeHtml(r.source.name)}">${icon('cloud')}${escapeHtml(r.source.name)}</span>`;
                 } else {
-                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #e2e8f0;">${icon('folder')}${escapeHtml(r.source.name)}</span>`;
+                    sourceTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f5f9;color:#475569;padding:1px 8px;border-radius:10px;font-size:0.75rem;font-weight:500;border:1px solid #e2e8f0;word-break:break-word;" title="${escapeHtml(r.source.name)}">${icon('folder')}${escapeHtml(r.source.name)}</span>`;
                 }
             }
 

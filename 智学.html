@@ -5848,19 +5848,70 @@
 
             function renderDisplayedContent() {
                 if (!msgEl || !msgEl.parentNode) return;
-                const wasThinkingOpen = msgEl.querySelector('.ai-thinking-block')?.open ?? (firstContentArrived ? false : true);
-                let html = '';
+                const isThinking = !firstContentArrived;
+
+                // 增量更新：避免每次重建整个 innerHTML 导致思考块闪烁、滚动位置丢失
+                let thinkBlock = msgEl.querySelector('.ai-thinking-block');
+                let contentDiv = msgEl.querySelector('.ai-content-body');
+                let loadingDiv = msgEl.querySelector('.ai-loading');
+
+                // 初始无内容状态：显示"Miku思考中…"加载提示
+                if (!displayedReasoning && !firstContentArrived) {
+                    if (!loadingDiv) {
+                        msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
+                    }
+                    scrollToAIBottom(false);
+                    return;
+                }
+
+                // 1. 思考块：增量更新内容，保留 open 状态和滚动位置
                 if (displayedReasoning) {
-                    html += buildThinkingHTML(displayedReasoning, !firstContentArrived);
+                    if (!thinkBlock) {
+                        // 首次创建思考块（插入到最前面），并移除初始 loading
+                        const wrapper = document.createElement('div');
+                        wrapper.innerHTML = buildThinkingHTML(displayedReasoning, isThinking);
+                        thinkBlock = wrapper.firstElementChild;
+                        if (loadingDiv) { loadingDiv.remove(); loadingDiv = null; }
+                        msgEl.insertBefore(thinkBlock, msgEl.firstChild);
+                    } else {
+                        // 仅更新内容文本，保留 details 的 open 状态和 scrollTop
+                        const contentEl = thinkBlock.querySelector('.ai-thinking-content');
+                        if (contentEl) {
+                            const savedScrollTop = contentEl.scrollTop;
+                            const wasAtBottom = savedScrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 2;
+                            contentEl.innerHTML = escapeHtml(displayedReasoning);
+                            // 若用户原本停留在底部则自动跟随新内容，否则保持原位置不被打扰
+                            contentEl.scrollTop = wasAtBottom ? contentEl.scrollHeight : savedScrollTop;
+                        }
+                        // 同步 summary 文案（思考中 → 思考过程）
+                        const summaryEl = thinkBlock.querySelector('.ai-thinking-summary');
+                        if (summaryEl) {
+                            const newSummary = isThinking ? 'Miku思考中...' : 'Miku思考过程（点击展开）';
+                            if (summaryEl.textContent !== newSummary) summaryEl.textContent = newSummary;
+                        }
+                    }
                 }
+
+                // 2. 正文内容：增量更新
                 if (firstContentArrived) {
-                    html += renderAIMarkdown(displayedContent, true);
-                } else if (displayedReasoning) {
-                    html += '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
+                    // 正文开始到达，移除思考阶段的 loading 提示
+                    if (loadingDiv) { loadingDiv.remove(); loadingDiv = null; }
+                    if (!contentDiv) {
+                        contentDiv = document.createElement('div');
+                        contentDiv.className = 'ai-content-body';
+                        contentDiv.innerHTML = renderAIMarkdown(displayedContent, true);
+                        msgEl.appendChild(contentDiv);
+                    } else {
+                        contentDiv.innerHTML = renderAIMarkdown(displayedContent, true);
+                    }
+                } else if (displayedReasoning && !loadingDiv) {
+                    // 有思考内容但正文未到达：补上 loading 提示
+                    loadingDiv = document.createElement('div');
+                    loadingDiv.className = 'ai-loading';
+                    loadingDiv.innerHTML = '<div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
+                    msgEl.appendChild(loadingDiv);
                 }
-                msgEl.innerHTML = html;
-                const thinkBlock = msgEl.querySelector('.ai-thinking-block');
-                if (thinkBlock && wasThinkingOpen) thinkBlock.open = true;
+
                 scrollToAIBottom(false);
             }
 
@@ -6009,7 +6060,18 @@
                 finalHtml += buildThinkingHTML(reasoningContent, false);
             }
             finalHtml += renderAIMarkdown(fullContent);
+
+            // 保留流式过程中用户的交互状态（思考块展开/滚动位置），避免最终渲染打断阅读
+            const prevThink = msgEl.querySelector('.ai-thinking-block');
+            const prevThinkOpen = prevThink?.open ?? false;
+            const prevThinkScroll = prevThink?.querySelector('.ai-thinking-content')?.scrollTop ?? 0;
             msgEl.innerHTML = finalHtml;
+            const newThink = msgEl.querySelector('.ai-thinking-block');
+            if (newThink && prevThinkOpen) {
+                newThink.open = true;
+                const newContent = newThink.querySelector('.ai-thinking-content');
+                if (newContent) newContent.scrollTop = prevThinkScroll;
+            }
 
         } catch (err) {
             if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
@@ -6178,10 +6240,24 @@
         const mathBlocks = [];
         const placeholder = (idx) => 'KATEXMATH' + idx + 'KATEXMATH';
 
+        // 提取完整的块级公式 \[...\]（LaTeX 风格，常用于化学方程式等）
+        text = text.replace(/\\\[([\s\S]+?)\\\]/g, (match, formula) => {
+            const idx = mathBlocks.length;
+            mathBlocks.push({ display: true, formula: formula.trim() });
+            return placeholder(idx);
+        });
+
         // 提取完整的块级公式 $$...$$
         text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
             const idx = mathBlocks.length;
             mathBlocks.push({ display: true, formula: formula.trim() });
+            return placeholder(idx);
+        });
+
+        // 提取完整的行内公式 \(...\)（LaTeX 风格）
+        text = text.replace(/\\\(([\s\S]+?)\\\)/g, (match, formula) => {
+            const idx = mathBlocks.length;
+            mathBlocks.push({ display: false, formula: formula });
             return placeholder(idx);
         });
 
@@ -6192,11 +6268,21 @@
             return pre + placeholder(idx);
         });
 
-        // 流式输出时：保护未闭合的块级公式 $$（避免内部 _ * \ 被 marked 解析）
+        // 流式输出时：保护未闭合的块级公式 $$ 和 \[（避免内部 _ * \ 被 marked 解析）
         if (isStreaming) {
             text = text.replace(/\$\$([\s\S]+)$/, (match, formula) => {
                 const idx = mathBlocks.length;
                 mathBlocks.push({ display: true, formula: formula.trim(), incomplete: true });
+                return placeholder(idx);
+            });
+            text = text.replace(/\\\[([\s\S]+)$/, (match, formula) => {
+                const idx = mathBlocks.length;
+                mathBlocks.push({ display: true, formula: formula.trim(), incomplete: true });
+                return placeholder(idx);
+            });
+            text = text.replace(/\\\(([\s\S]+)$/, (match, formula) => {
+                const idx = mathBlocks.length;
+                mathBlocks.push({ display: false, formula: formula, incomplete: true });
                 return placeholder(idx);
             });
         }

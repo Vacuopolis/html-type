@@ -5842,9 +5842,23 @@
             let lastChunkTime = Date.now();
             const STREAM_TIMEOUT_MS = 60000; // 60秒无数据则判定超时
 
-            // ====== 打字机动画：匀速输出，消除 API 吐字间隙的卡顿感 ======
+            // ====== 打字机动画：自适应速率输出，消除 API 吐字间隙的卡顿感 ======
+            // 根据缓冲区大小动态调整每次推进字符数：
+            // - 缓冲区小（API 慢）：慢速输出，保持打字机感
+            // - 缓冲区大（API 快）：快速追赶，减少用户等待
+            // - 流结束后：加速清空剩余内容，避免长尾等待
             const TYPE_SPEED = 30;          // 每次打字间隔(ms)，越小越快
-            const CHARS_PER_TICK = 3;       // 每次打字推进字符数
+            function getAdaptiveChars(bufferSize, done) {
+                if (done) {
+                    // 流已结束，加速清空剩余缓冲区（仍保留少量打字机效果，避免突变）
+                    return Math.max(4, Math.ceil(bufferSize / 15));
+                }
+                if (bufferSize > 300) return 16;
+                if (bufferSize > 150) return 10;
+                if (bufferSize > 80) return 6;
+                if (bufferSize > 30) return 4;
+                return 2;
+            }
 
             function renderDisplayedContent() {
                 if (!msgEl || !msgEl.parentNode) return;
@@ -5917,15 +5931,21 @@
 
             function typewriterTick() {
                 let changed = false;
+                // 计算待输出缓冲区大小，用于动态调整速率
+                const reasoningBuf = reasoningContent.length - displayedReasoning.length;
+                const contentBuf = fullContent.length - displayedContent.length;
+                const totalBuf = reasoningBuf + contentBuf;
+                const chars = getAdaptiveChars(totalBuf, streamDone);
+
                 // 推进思考内容
-                if (displayedReasoning.length < reasoningContent.length) {
-                    const nextLen = Math.min(displayedReasoning.length + CHARS_PER_TICK, reasoningContent.length);
+                if (reasoningBuf > 0) {
+                    const nextLen = Math.min(displayedReasoning.length + chars, reasoningContent.length);
                     displayedReasoning = reasoningContent.slice(0, nextLen);
                     changed = true;
                 }
                 // 推进正文内容
-                if (firstContentArrived && displayedContent.length < fullContent.length) {
-                    const nextLen = Math.min(displayedContent.length + CHARS_PER_TICK, fullContent.length);
+                if (firstContentArrived && contentBuf > 0) {
+                    const nextLen = Math.min(displayedContent.length + chars, fullContent.length);
                     displayedContent = fullContent.slice(0, nextLen);
                     changed = true;
                 }
@@ -5984,7 +6004,8 @@
 
                         // 处理代理端返回的错误事件（如上游流中断）
                         if (json.error) {
-                            if (!fullContent) fullContent = `（${json.error}）`;
+                            // 无论是否已有部分内容，都追加错误提示，确保用户感知到中断
+                            fullContent += (fullContent ? '\n\n' : '') + `*（${json.error}）*`;
                             streamDone = true;
                             break;
                         }
@@ -6002,8 +6023,10 @@
                             break;
                         }
                         if (finishReason === 'length') {
-                            // 达到 token 上限，追加提示
+                            // 达到 token 上限，追加提示并结束流
                             fullContent += '\n\n*（回复因长度限制被截断）*';
+                            streamDone = true;
+                            break;
                         }
                         if (finishReason === 'insufficient_system_resource') {
                             if (!fullContent) fullContent = '（Miku暂时繁忙，请稍后重试）';
@@ -6033,6 +6056,11 @@
 
             // 流结束，标记完成（打字机继续把剩余内容打完）
             streamDone = true;
+
+            // 异常中断兜底：若未收到任何内容且未触发 error/finish_reason，判定为流异常中断
+            if (!fullContent && !reasoningContent) {
+                fullContent = '（Miku响应异常中断，请稍后重试）';
+            }
 
             // 等待打字机动画全部打完
             await new Promise(resolve => {

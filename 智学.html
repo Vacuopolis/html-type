@@ -5730,6 +5730,8 @@
         let reasoningContent = '';
         let firstContentArrived = false;
         let streamDone = false;
+        let gotNormalFinish = false;   // 是否收到 finish_reason: 'stop'（正常结束标志）
+        let streamRetryCount = 0;      // 流异常终止时的静默重试计数
         let msgEl = null;
         // fetchTimeout / reader 同样需要声明在 try 外，以便 catch/finally 清理
         let fetchTimeout = null;
@@ -5766,7 +5768,7 @@
                             model: 'deepseek-v4-flash',
                             messages: apiMessages,
                             stream: true,
-                            max_tokens: 2048,
+                            max_tokens: aiState.thinkingEnabled ? 8192 : 4096,
                             ...(aiState.thinkingEnabled ? { temperature: 1.3 } : { temperature: 1.0 }),
                             ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
                         }),
@@ -5840,7 +5842,7 @@
             let buffer = '';
             let streamTimeout = null;   // 流式读取超时计时器
             let lastChunkTime = Date.now();
-            const STREAM_TIMEOUT_MS = 60000; // 60秒无数据则判定超时
+            const STREAM_TIMEOUT_MS = 120000; // 120秒无数据则判定超时（思考模式静默期较长）
 
             // ====== 打字机动画：自适应速率输出，消除 API 吐字间隙的卡顿感 ======
             // 根据缓冲区大小动态调整每次推进字符数：
@@ -6033,6 +6035,10 @@
                             streamDone = true;
                             break;
                         }
+                        if (finishReason === 'stop') {
+                            // 正常结束：模型完整生成了回复
+                            gotNormalFinish = true;
+                        }
 
                         // 只累积数据，打字机定时器会匀速取出渲染
                         if (reasoningDelta) {
@@ -6060,6 +6066,100 @@
             // 异常中断兜底：若未收到任何内容且未触发 error/finish_reason，判定为流异常中断
             if (!fullContent && !reasoningContent) {
                 fullContent = '（Miku响应异常中断，请稍后重试）';
+            }
+
+            // ====== 异常终止静默重试 ======
+            // 当流被截断（未收到 finish_reason: 'stop'，且有部分内容但过短），
+            // 说明流在传输中被中断而非正常结束。此时静默重试，避免用户看到残缺回复。
+            if (!gotNormalFinish && fullContent.length > 0 && fullContent.length < 80
+                && !reasoningContent && !aiState.userAborted && streamRetryCount < 1) {
+                streamRetryCount++;
+                // 停止打字机，重置状态
+                if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
+                // 释放旧 reader
+                if (reader) { try { await reader.cancel(); } catch (_) {} reader = null; }
+                // 重置流式状态
+                fullContent = '';
+                reasoningContent = '';
+                displayedContent = '';
+                displayedReasoning = '';
+                firstContentArrived = false;
+                streamDone = false;
+                gotNormalFinish = false;
+                // 重置消息气泡为加载状态
+                if (msgEl) {
+                    msgEl.innerHTML = '<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span class="ai-loading-text">Miku思考中…</span></div>';
+                }
+                // 重新发起 fetch
+                try {
+                    const ctrl2 = new AbortController();
+                    aiState.abortCtrl = ctrl2;
+                    const retryTimeout = setTimeout(() => { ctrl2._timedOut = true; ctrl2.abort(); }, 45000);
+                    let retryResp;
+                    try {
+                        retryResp = await fetch(API_PROXY_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: 'deepseek-v4-flash',
+                                messages: apiMessages,
+                                stream: true,
+                                max_tokens: aiState.thinkingEnabled ? 8192 : 4096,
+                                ...(aiState.thinkingEnabled ? { temperature: 1.3 } : { temperature: 1.0 }),
+                                ...(aiState.thinkingEnabled ? { thinking: { type: 'enabled' } } : { thinking: { type: 'disabled' } })
+                            }),
+                            signal: ctrl2.signal
+                        });
+                    } catch (retryFetchErr) {
+                        clearTimeout(retryTimeout);
+                        throw retryFetchErr;
+                    }
+                    clearTimeout(retryTimeout);
+                    if (!retryResp.ok) throw new Error('重试请求失败');
+                    if (!retryResp.body) throw new Error('重试无流式响应');
+                    // 读取重试流
+                    const retryReader = retryResp.body.getReader();
+                    reader = retryReader;
+                    const retryDecoder = new TextDecoder();
+                    let retryBuf = '';
+                    while (true) {
+                        let rr;
+                        try { rr = await readWithTimeout(retryReader, STREAM_TIMEOUT_MS); }
+                        catch (e) { break; }
+                        if (rr.done) break;
+                        retryBuf += retryDecoder.decode(rr.value, { stream: true });
+                        const rLines = retryBuf.split('\n');
+                        retryBuf = rLines.pop() || '';
+                        for (const rLine of rLines) {
+                            const rTrimmed = rLine.trim();
+                            if (!rTrimmed || rTrimmed === 'data: [DONE]' || !rTrimmed.startsWith('data: ')) continue;
+                            try {
+                                const rJson = JSON.parse(rTrimmed.slice(6));
+                                if (rJson.error) { streamDone = true; break; }
+                                const rChoice = rJson.choices?.[0];
+                                if (rChoice?.finish_reason === 'stop') gotNormalFinish = true;
+                                if (rChoice?.finish_reason === 'length') { fullContent += '\n\n*（回复因长度限制被截断）*'; streamDone = true; break; }
+                                if (rChoice?.delta?.content) {
+                                    if (!firstContentArrived) firstContentArrived = true;
+                                    fullContent += rChoice.delta.content;
+                                }
+                                if (rChoice?.delta?.reasoning_content) {
+                                    reasoningContent += rChoice.delta.reasoning_content;
+                                }
+                            } catch (_) {}
+                        }
+                        if (streamDone) break;
+                    }
+                    streamDone = true;
+                    if (!fullContent && !reasoningContent) fullContent = '（Miku响应异常中断，请稍后重试）';
+                    // 重新启动打字机
+                    if (msgEl) msgEl.innerHTML = '';
+                    typewriterTimer = setTimeout(typewriterTick, TYPE_SPEED);
+                } catch (retryErr) {
+                    // 重试失败，保持原始内容（可能为空）
+                    if (!fullContent) fullContent = '（Miku响应中断，请稍后重试）';
+                    streamDone = true;
+                }
             }
 
             // 等待打字机动画全部打完

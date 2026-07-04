@@ -4583,7 +4583,10 @@
             }
         });
 
-        // 设置 quizOrder 仅包含错题
+        // 设置 quizOrder 仅包含错题（开启随机时打乱错题顺序）
+        if (state.shuffleEnabled) {
+            shuffleArray(wrongIndices);
+        }
         state.quizOrder = [...wrongIndices];
         state.quizIndex = 0;
 

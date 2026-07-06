@@ -5035,7 +5035,7 @@
                     <button class="btn btn-sm btn-primary" onclick="continueHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">
                         ${answered > 0 ? icon('play') + ' 继续答题' : icon('play') + ' 开始答题'}
                     </button>
-                    ${answered > 0 ? `<button class="btn btn-sm btn-outline" onclick="resetHistoryProgress(${i})" style="padding:4px 12px;font-size:0.8rem;">${icon('rotateCcw')} 进度清零</button>` : ''}
+                    ${answered > 0 ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); resetHistoryProgress(${i})" style="padding:4px 12px;font-size:0.8rem;">${icon('rotateCcw')} 进度清零</button>` : ''}
                     <button class="btn btn-sm btn-outline" onclick="loadHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">仅加载题目</button>
                     ${(r.quizStatus && r.quizStatus.some(s => s === 'incorrect')) || (r.wrongRedoMode && r.savedWrongStates && Object.keys(r.savedWrongStates).length > 0) ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="viewWrongQuestions(${i})" style="padding:4px 12px;font-size:0.8rem;">查看错题</button>` : ''}
                     ${(r.quizStatus && r.quizStatus.some(s => s === 'incorrect')) || (r.wrongRedoMode && r.savedWrongStates && Object.keys(r.savedWrongStates).length > 0) ? `<button class="btn btn-sm btn-outline btn-outline-warn" onclick="redoWrongFromHistory(${i})" style="padding:4px 12px;font-size:0.8rem;">重做错题</button>` : ''}

@@ -5023,7 +5023,7 @@
                         ${sourceTag}
                         ${isComplete ? `<span style="color:${progressColor};font-weight:600;font-size:0.8125rem;">${correct}/${objectiveTotal}</span>` : ''}
                     </div>
-                    ${!isBatch ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">${icon('x')}</button>` : ''}
+                    ${!isBatch ? `<button class="btn btn-sm btn-outline btn-outline-error" onclick="event.stopPropagation(); deleteHistory(${i})" style="padding:3px 8px;font-size:0.75rem;">${icon('x')}</button>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                     <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">

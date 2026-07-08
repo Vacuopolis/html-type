@@ -1707,6 +1707,8 @@
             display: flex;
             gap: 10px;
             animation: fadeIn 0.3s ease;
+            width: 100%;
+            min-width: 0;
         }
 
         .ai-msg.bot {
@@ -1812,6 +1814,8 @@
             font-size: 0.875rem;
             line-height: 1.7;
             word-break: break-word;
+            min-width: 0;
+            overflow-x: hidden;
         }
 
         .ai-msg.bot .ai-msg-bubble {
@@ -1873,6 +1877,7 @@
         .ai-msg-bubble table {
             border-collapse: collapse;
             width: 100%;
+            max-width: 100%;
             margin: 8px 0;
             font-size: 0.82rem;
             display: block;
@@ -1900,6 +1905,7 @@
             overflow-x: auto;
             margin: 6px 0;
             font-size: 0.8rem;
+            max-width: 100%;
         }
         .ai-msg-bubble pre code {
             background: transparent;
@@ -1912,6 +1918,52 @@
             margin: 8px 0;
             overflow-x: auto;
             overflow-y: hidden;
+            max-width: 100%;
+        }
+
+        .ai-msg-bubble img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 可滚动元素的滚动优化 */
+        .ai-msg-bubble .katex-display,
+        .ai-msg-bubble pre,
+        .ai-msg-bubble table {
+            overscroll-behavior-x: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.25) transparent;
+        }
+        .ai-msg-bubble .katex-display::-webkit-scrollbar,
+        .ai-msg-bubble pre::-webkit-scrollbar,
+        .ai-msg-bubble table::-webkit-scrollbar {
+            height: 8px;
+        }
+        .ai-msg-bubble .katex-display::-webkit-scrollbar-track,
+        .ai-msg-bubble pre::-webkit-scrollbar-track,
+        .ai-msg-bubble table::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .ai-msg-bubble .katex-display::-webkit-scrollbar-thumb,
+        .ai-msg-bubble pre::-webkit-scrollbar-thumb,
+        .ai-msg-bubble table::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .ai-msg-bubble .katex-display::-webkit-scrollbar-thumb:hover,
+        .ai-msg-bubble pre::-webkit-scrollbar-thumb:hover,
+        .ai-msg-bubble table::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.4);
+        }
+        .ai-msg-bubble .katex-display {
+            cursor: grab;
+        }
+        .ai-msg-bubble .katex-display.dragging,
+        .ai-msg-bubble pre.dragging,
+        .ai-msg-bubble table.dragging {
+            cursor: grabbing;
+            user-select: none;
         }
 
         /* AI 消息中的删除线、上下标、脚注样式 */
@@ -7078,6 +7130,52 @@
         document.body.removeChild(ta);
         return ok;
     }
+
+    // 拖拽滚动：在可水平滚动的聊天内容元素上启用拖拽滚动（鼠标/触摸均可）
+    (function setupDragScroll() {
+        const selector = '.ai-msg-bubble .katex-display, .ai-msg-bubble pre, .ai-msg-bubble table';
+        let activeEl = null;
+        let startX = 0;
+        let startScrollLeft = 0;
+        let dragging = false;
+
+        document.addEventListener('pointerdown', function(e) {
+            const el = e.target.closest(selector);
+            if (!el) return;
+            if (el.scrollWidth <= el.clientWidth + 1) return; // 无溢出则不启用
+            if (e.target.closest('a, button, input, textarea, select, [contenteditable]')) return;
+            activeEl = el;
+            startX = e.clientX;
+            startScrollLeft = el.scrollLeft;
+            dragging = false;
+        });
+
+        document.addEventListener('pointermove', function(e) {
+            if (!activeEl) return;
+            const dx = e.clientX - startX;
+            if (!dragging) {
+                if (Math.abs(dx) > 5) {
+                    dragging = true;
+                    activeEl.classList.add('dragging');
+                } else {
+                    return;
+                }
+            }
+            activeEl.scrollLeft = startScrollLeft - dx;
+            e.preventDefault();
+        });
+
+        function endDrag() {
+            if (activeEl && dragging) {
+                activeEl.classList.remove('dragging');
+            }
+            activeEl = null;
+            dragging = false;
+        }
+
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
+    })();
 
 </script>
 </body>

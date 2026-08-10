@@ -1,7 +1,0 @@
-flask
-pilk
-lameenc
-numpy
-soundfile
-scipy
-gunicorn

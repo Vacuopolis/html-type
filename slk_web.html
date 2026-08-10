@@ -273,7 +273,7 @@
           <span>选择 QQ 语音文件</span>
         </h2>
         <label class="filebtn" id="slkBtn" data-text="点击选择 .slk / .silk 文件" data-sub="支持 QQ slk、微信 silk / amr / aud · 可多选">
-          <input type="file" id="slkFiles" accept=".slk,.silk,.amr,.aud" multiple>
+          <input type="file" id="slkFiles" accept="*/*" multiple>
           <svg class="filebtn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
           <span class="filebtn-text">点击选择 .slk / .silk 文件</span>
           <span class="filebtn-sub">支持 QQ slk、微信 silk / amr / aud · 可多选</span>
@@ -295,7 +295,7 @@
           <span>选择音频文件</span>
         </h2>
         <label class="filebtn" id="mp3Btn" data-text="点击选择 .mp3 / .wav 等文件" data-sub="支持 mp3 / wav / m4a / flac / aac / ogg · 可多选">
-          <input type="file" id="mp3Files" accept=".mp3,.wav,.m4a,.flac,.aac,.ogg" multiple>
+          <input type="file" id="mp3Files" accept="*/*" multiple>
           <svg class="filebtn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
           <span class="filebtn-text">点击选择 .mp3 / .wav 等文件</span>
           <span class="filebtn-sub">支持 mp3 / wav / m4a / flac / aac / ogg · 可多选</span>
@@ -305,7 +305,7 @@
           <span>QQ 录音模板 <em>(可选)</em></span>
         </h2>
         <label class="filebtn" id="tplBtn" data-text="点击选择模板 slk 文件" data-sub="选择后自动匹配模板的采样率与帧数">
-          <input type="file" id="tplFile" accept=".slk,.silk">
+          <input type="file" id="tplFile" accept="*/*">
           <svg class="filebtn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg>
           <span class="filebtn-text">点击选择模板 slk 文件</span>
           <span class="filebtn-sub">选择后自动匹配模板的采样率与帧数, 输出文件将沿用模板名</span>
@@ -16091,23 +16091,59 @@ var audios = [];
 var tplData = null;
 var tplName = null;
 
+var OK_SLK = { slk: 1, silk: 1, amr: 1, aud: 1 };
+var OK_AUDIO = { mp3: 1, wav: 1, m4a: 1, flac: 1, aac: 1, ogg: 1 };
+var OK_TPL = { slk: 1, silk: 1 };
+
+function extOf(name) {
+  var i = name.lastIndexOf('.');
+  return i > 0 ? name.slice(i + 1).toLowerCase() : '';
+}
+
+function filterExts(files, exts) {
+  var ok = [], bad = [];
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    if (exts[extOf(f.name)]) ok.push(f); else bad.push(f);
+  }
+  return { ok: ok, bad: bad };
+}
+
 $('slkFiles').addEventListener('change', function (e) {
-  silks = Array.from(e.target.files || []);
+  var r = filterExts(Array.from(e.target.files || []), OK_SLK);
+  silks = r.ok;
   setFiles('slkBtn', silks.length);
   $('btnSlk2Mp3').disabled = silks.length === 0;
+  var st = $('status1');
+  st.className = r.bad.length ? 'status err' : 'status';
+  st.textContent = r.bad.length
+    ? '已忽略 ' + r.bad.length + ' 个不支持的文件 (仅支持 slk / silk / amr / aud)'
+    : '';
 });
 $('mp3Files').addEventListener('change', function (e) {
-  audios = Array.from(e.target.files || []);
+  var r = filterExts(Array.from(e.target.files || []), OK_AUDIO);
+  audios = r.ok;
   setFiles('mp3Btn', audios.length);
   $('btnMp32Slk').disabled = audios.length === 0;
+  var st = $('status2');
+  st.className = r.bad.length ? 'status err' : 'status';
+  st.textContent = r.bad.length
+    ? '已忽略 ' + r.bad.length + ' 个不支持的文件 (仅支持 mp3 / wav / m4a / flac / aac / ogg)'
+    : '';
 });
 $('tplFile').addEventListener('change', function (e) {
   var f = (e.target.files || [])[0];
-  tplData = null;
-  tplName = null;
   var btn = $('tplBtn');
   var txt = btn.querySelector('.filebtn-text');
   var sub = btn.querySelector('.filebtn-sub');
+  if (f && !OK_TPL[extOf(f.name)]) {
+    var st2 = $('status2');
+    st2.className = 'status err';
+    st2.textContent = '模板格式不支持: ' + f.name + ' (仅支持 slk / silk)';
+    return;
+  }
+  tplData = null;
+  tplName = null;
   if (f) {
     btn.classList.add('filled');
     txt.textContent = f.name;

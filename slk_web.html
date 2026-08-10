@@ -365,11 +365,11 @@
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg>
           <span>QQ 录音模板 <em>(可选)</em></span>
         </h2>
-        <label class="filebtn" id="tplBtn" data-text="点击选择模板 slk 文件" data-sub="选择后自动匹配模板的采样率与帧数">
+        <label class="filebtn" id="tplBtn" data-text="点击选择模板 slk 文件" data-sub="按模板采样率/帧数对齐 · 超出模板时长的部分会被截断">
           <input type="file" id="tplFile" accept="*/*">
           <svg class="filebtn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg>
           <span class="filebtn-text">点击选择模板 slk 文件</span>
-          <span class="filebtn-sub">选择后自动匹配模板的采样率与帧数, 输出文件将沿用模板名</span>
+          <span class="filebtn-sub">按模板采样率/帧数对齐 · 超出模板时长的部分会被截断</span>
         </label>
         <button type="button" class="btn" id="btnMp32Slk" disabled>
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 21v-8h6v8"/></svg>
@@ -16271,7 +16271,8 @@ function cloudConvertOne(file, mode, tpl, onProgress) {
         var secs = parseFloat(xhr.getResponseHeader('X-Out-Seconds') || '0');
         var tpl = xhr.getResponseHeader('X-Out-Tpl') === '1';
         var rate = parseInt(xhr.getResponseHeader('X-Out-Rate') || '0', 10);
-        resolve({ ok: true, name: name, blob: xhr.response, sha: sha, seconds: secs, tpl: tpl, rate: rate });
+        var token = xhr.getResponseHeader('X-Out-Token') || '';
+        resolve({ ok: true, name: name, blob: xhr.response, sha: sha, seconds: secs, tpl: tpl, rate: rate, token: token });
       } else {
         var msg = '服务器错误 ' + xhr.status;
         try {
@@ -16372,7 +16373,7 @@ $('btnSlk2Mp3').addEventListener('click', async function () {
               st.textContent = '上传 ' + Math.round(p * 100) + '% · ' + f.name;
             });
             if (r.ok) {
-              var url = URL.createObjectURL(r.blob);
+              var url = r.token ? (cloud.url + '/dl/' + r.token) : URL.createObjectURL(r.blob);
               var dlName = baseName(f.name) + '.mp3';
               var info = 'OK ' + (r.seconds > 0 ? r.seconds.toFixed(2) + 's' : '') + ' · 云端' + (r.sha ? ' · ' + r.sha.slice(0, 8) : '');
               addResultLine(box, dlName, info, false, url, dlName);
@@ -16432,7 +16433,7 @@ $('btnMp32Slk').addEventListener('click', async function () {
               st.textContent = '上传 ' + Math.round(p * 100) + '% · ' + f.name;
             });
             if (r.ok) {
-              var url = URL.createObjectURL(r.blob);
+              var url = r.token ? (cloud.url + '/dl/' + r.token) : URL.createObjectURL(r.blob);
               var dlName = (tplFileObj && tplName) ? baseName(tplName) + '.slk' : baseName(f.name) + '.slk';
               var info = 'OK ' + (r.seconds > 0 ? r.seconds.toFixed(2) + 's' : '') + ' · 云端';
               if (r.tpl) info += ' · 模板' + (r.rate > 0 ? ' ' + r.rate + 'Hz' : '');

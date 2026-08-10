@@ -16269,7 +16269,9 @@ function cloudConvertOne(file, mode, tpl, onProgress) {
         }
         var sha = xhr.getResponseHeader('X-Out-Sha256') || '';
         var secs = parseFloat(xhr.getResponseHeader('X-Out-Seconds') || '0');
-        resolve({ ok: true, name: name, blob: xhr.response, sha: sha, seconds: secs });
+        var tpl = xhr.getResponseHeader('X-Out-Tpl') === '1';
+        var rate = parseInt(xhr.getResponseHeader('X-Out-Rate') || '0', 10);
+        resolve({ ok: true, name: name, blob: xhr.response, sha: sha, seconds: secs, tpl: tpl, rate: rate });
       } else {
         var msg = '服务器错误 ' + xhr.status;
         try {
@@ -16371,8 +16373,9 @@ $('btnSlk2Mp3').addEventListener('click', async function () {
             });
             if (r.ok) {
               var url = URL.createObjectURL(r.blob);
+              var dlName = baseName(f.name) + '.mp3';
               var info = 'OK ' + (r.seconds > 0 ? r.seconds.toFixed(2) + 's' : '') + ' · 云端' + (r.sha ? ' · ' + r.sha.slice(0, 8) : '');
-              addResultLine(box, r.name, info, false, url, r.name);
+              addResultLine(box, dlName, info, false, url, dlName);
               st.textContent = '转换中 (' + (i + 1) + '/' + silks.length + '): ' + f.name;
             } else {
               failed++;
@@ -16430,8 +16433,12 @@ $('btnMp32Slk').addEventListener('click', async function () {
             });
             if (r.ok) {
               var url = URL.createObjectURL(r.blob);
-              var info = 'OK ' + (r.seconds > 0 ? r.seconds.toFixed(2) + 's' : '') + ' · 云端' + (r.sha ? ' · ' + r.sha.slice(0, 8) : '');
-              addResultLine(box, r.name, info, false, url, r.name);
+              var dlName = (tplFileObj && tplName) ? baseName(tplName) + '.slk' : baseName(f.name) + '.slk';
+              var info = 'OK ' + (r.seconds > 0 ? r.seconds.toFixed(2) + 's' : '') + ' · 云端';
+              if (r.tpl) info += ' · 模板' + (r.rate > 0 ? ' ' + r.rate + 'Hz' : '');
+              else if (tplFileObj) info += ' · 模板未生效';
+              if (r.sha) info += ' · ' + r.sha.slice(0, 8);
+              addResultLine(box, dlName, info, false, url, dlName);
               st.textContent = '转换中 (' + (i + 1) + '/' + audios.length + '): ' + f.name;
             } else {
               failed++;

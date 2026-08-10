@@ -128,6 +128,57 @@
     background: var(--surface); color: var(--primary); font-weight: 600;
     box-shadow: var(--shadow-sm);
   }
+  .mode-switch {
+    display: flex; gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .mode-btn {
+    flex: 1; border: 0; background: transparent;
+    padding: 8px 8px; border-radius: var(--radius-full);
+    font-size: 13px; font-weight: 500; color: var(--text-2);
+    cursor: pointer; touch-action: manipulation;
+    transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+  }
+  .mode-btn:hover { color: var(--text); }
+  .mode-btn.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff; font-weight: 600;
+    box-shadow: var(--shadow-btn);
+  }
+  .cloud-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .cloud-bar input {
+    flex: 1; min-width: 0;
+    border: 1px solid var(--line-strong); border-radius: 8px;
+    background: var(--surface-2); color: var(--text);
+    padding: 8px 10px; font-size: 13px;
+    outline: none;
+    transition: border-color .15s ease;
+  }
+  .cloud-bar input:focus { border-color: var(--primary); }
+  .cloud-bar .cloud-save {
+    flex: none;
+    border: 0; border-radius: 8px; cursor: pointer;
+    background: var(--primary-soft); color: var(--primary);
+    font-size: 13px; font-weight: 600; padding: 8px 14px;
+    transition: background .15s ease;
+  }
+  .cloud-bar .cloud-save:hover { background: var(--primary-soft-2); }
+  .cloud-status { flex: none; font-size: 12px; color: var(--text-3); }
+  .cloud-status.ok { color: var(--success); }
+  .cloud-status.err { color: var(--error); }
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -261,6 +312,16 @@
   </header>
 
   <main class="wrap">
+    <div class="mode-switch" role="group" aria-label="转换模式">
+      <button type="button" class="mode-btn active" id="modeLocal">本地模式</button>
+      <button type="button" class="mode-btn" id="modeCloud">云端模式</button>
+    </div>
+    <div class="cloud-bar" id="cloudBar" hidden>
+      <input type="url" id="cloudUrl" placeholder="https://vacuopolis.pythonanywhere.com" spellcheck="false" autocomplete="off">
+      <button type="button" class="cloud-save" id="cloudSave">保存</button>
+      <span class="cloud-status" id="cloudStatus"></span>
+    </div>
+
     <div class="tabs" role="tablist">
       <button type="button" class="tab active" id="tab1" role="tab" aria-selected="true" aria-controls="panel1">slk → mp3</button>
       <button type="button" class="tab" id="tab2" role="tab" aria-selected="false" aria-controls="panel2">mp3 → slk</button>
@@ -16090,6 +16151,12 @@ var silks = [];
 var audios = [];
 var tplData = null;
 var tplName = null;
+var tplFileObj = null;
+
+var cloud = {
+  enabled: localStorage.getItem('slkCloudMode') === null || localStorage.getItem('slkCloudMode') === '1',
+  url: (localStorage.getItem('slkCloudUrl') || 'https://vacuopolis.pythonanywhere.com').replace(/\/+$/, '')
+};
 
 var OK_SLK = { slk: 1, silk: 1, amr: 1, aud: 1 };
 var OK_AUDIO = { mp3: 1, wav: 1, m4a: 1, flac: 1, aac: 1, ogg: 1 };
@@ -16144,11 +16211,13 @@ $('tplFile').addEventListener('change', function (e) {
   }
   tplData = null;
   tplName = null;
+  tplFileObj = null;
   if (f) {
     btn.classList.add('filled');
     txt.textContent = f.name;
     sub.textContent = '已选择模板 · 点击可重新选择';
     tplName = f.name;
+    tplFileObj = f;
     f.arrayBuffer().then(function (ab) { tplData = new Uint8Array(ab); });
   } else {
     btn.classList.remove('filled');
@@ -16165,6 +16234,92 @@ function setBusy(btnId, busy) {
   btn.classList.toggle('busy', busy);
   btn.disabled = busy;
 }
+
+function cloudPing() {
+  return new Promise(function (resolve) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', cloud.url + '/ping');
+    xhr.timeout = 60000;
+    xhr.onload = function () { resolve(xhr.status === 200); };
+    xhr.onerror = xhr.ontimeout = function () { resolve(false); };
+    xhr.send();
+  });
+}
+
+function cloudConvertOne(file, mode, tpl, onProgress) {
+  return new Promise(function (resolve) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', cloud.url + '/convert');
+    xhr.responseType = 'blob';
+    xhr.timeout = 120000;
+    var fd = new FormData();
+    fd.append('mode', mode);
+    fd.append('file', file);
+    if (tpl) fd.append('tpl', tpl);
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
+    };
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        var name = file.name;
+        var cd = xhr.getResponseHeader('Content-Disposition') || '';
+        var m = /filename\*=UTF-8''([^;]+)/i.exec(cd) || /filename="([^"]+)"/i.exec(cd);
+        if (m) {
+          try { name = decodeURIComponent(m[1]); } catch (e2) { name = m[1]; }
+        }
+        var sha = xhr.getResponseHeader('X-Out-Sha256') || '';
+        var secs = parseFloat(xhr.getResponseHeader('X-Out-Seconds') || '0');
+        resolve({ ok: true, name: name, blob: xhr.response, sha: sha, seconds: secs });
+      } else {
+        var msg = '服务器错误 ' + xhr.status;
+        try {
+          var j = JSON.parse(xhr.responseText);
+          if (j && j.error) msg = j.error;
+        } catch (e3) {}
+        resolve({ ok: false, error: msg });
+      }
+    };
+    xhr.onerror = function () { resolve({ ok: false, error: '网络错误' }); };
+    xhr.ontimeout = function () { resolve({ ok: false, error: '请求超时' }); };
+    xhr.send(fd);
+  });
+}
+
+function setCloudMode(enabled) {
+  cloud.enabled = enabled;
+  localStorage.setItem('slkCloudMode', enabled ? '1' : '0');
+  $('modeLocal').classList.toggle('active', !enabled);
+  $('modeCloud').classList.toggle('active', enabled);
+  $('cloudBar').hidden = !enabled;
+  document.querySelector('.hero-badge').textContent = enabled
+    ? '云端转换 · 文件上传至服务器处理'
+    : '本地转换 · 文件不上传';
+  if (enabled) checkCloudStatus();
+}
+
+function checkCloudStatus() {
+  var st = $('cloudStatus');
+  if (!cloud.url) {
+    st.textContent = '请先填写服务器地址';
+    st.className = 'cloud-status';
+    return;
+  }
+  st.textContent = '检查中…';
+  st.className = 'cloud-status';
+  cloudPing().then(function (ok) {
+    st.textContent = ok ? '云端就绪' : '无法连接 · 请确认服务已部署并 Reload';
+    st.className = 'cloud-status ' + (ok ? 'ok' : 'err');
+  });
+}
+
+$('modeLocal').addEventListener('click', function () { setCloudMode(false); });
+$('modeCloud').addEventListener('click', function () { setCloudMode(true); });
+$('cloudSave').addEventListener('click', function () {
+  cloud.url = $('cloudUrl').value.trim().replace(/\/+$/, '');
+  localStorage.setItem('slkCloudUrl', cloud.url);
+  checkCloudStatus();
+});
+setCloudMode(cloud.enabled);
 
 function wireDrop(labelId, inputId, multiple) {
   var label = $(labelId);
@@ -16196,21 +16351,50 @@ $('btnSlk2Mp3').addEventListener('click', async function () {
   var box = buildResultBox('results1');
   var st = $('status1');
   st.className = 'status busy';
-  st.textContent = '转换中…';
   setBusy('btnSlk2Mp3', true);
   var failed = 0;
   try {
-    for (var i = 0; i < silks.length; i++) {
-      var f = silks[i];
-      st.textContent = '转换中 (' + (i + 1) + '/' + silks.length + '): ' + f.name;
-      try {
-        var bytes = new Uint8Array(await f.arrayBuffer());
-        var r = await slkToMp3(bytes);
-        var url = makeBlobUrl(r.data);
-        addResultLine(box, f.name, 'OK ' + r.seconds.toFixed(2) + 's', false, url, baseName(f.name) + '.mp3');
-      } catch (err) {
-        failed++;
-        addResultLine(box, f.name, '失败: ' + err.message, true, null, null);
+    if (cloud.enabled) {
+      if (!cloud.url) {
+        failed = silks.length;
+        for (var c = 0; c < silks.length; c++) addResultLine(box, silks[c].name, '未配置云端服务器地址', true, null, null);
+      } else {
+        st.textContent = '检查云端服务…';
+        if (!(await cloudPing())) {
+          failed = silks.length;
+          for (var d = 0; d < silks.length; d++) addResultLine(box, silks[d].name, '云端不可用: 请检查服务器或切换本地模式', true, null, null);
+        } else {
+          for (var i = 0; i < silks.length; i++) {
+            var f = silks[i];
+            var r = await cloudConvertOne(f, 'slk2mp3', null, function (p) {
+              st.textContent = '上传 ' + Math.round(p * 100) + '% · ' + f.name;
+            });
+            if (r.ok) {
+              var url = URL.createObjectURL(r.blob);
+              var info = 'OK ' + (r.seconds > 0 ? r.seconds.toFixed(2) + 's' : '') + ' · 云端' + (r.sha ? ' · ' + r.sha.slice(0, 8) : '');
+              addResultLine(box, r.name, info, false, url, r.name);
+              st.textContent = '转换中 (' + (i + 1) + '/' + silks.length + '): ' + f.name;
+            } else {
+              failed++;
+              addResultLine(box, f.name, '失败: ' + r.error, true, null, null);
+            }
+          }
+        }
+      }
+    } else {
+      st.textContent = '转换中…';
+      for (var i = 0; i < silks.length; i++) {
+        var f = silks[i];
+        st.textContent = '转换中 (' + (i + 1) + '/' + silks.length + '): ' + f.name;
+        try {
+          var bytes = new Uint8Array(await f.arrayBuffer());
+          var r = await slkToMp3(bytes);
+          var url = makeBlobUrl(r.data);
+          addResultLine(box, f.name, 'OK ' + r.seconds.toFixed(2) + 's', false, url, baseName(f.name) + '.mp3');
+        } catch (err) {
+          failed++;
+          addResultLine(box, f.name, '失败: ' + err.message, true, null, null);
+        }
       }
     }
   } finally {
@@ -16226,22 +16410,51 @@ $('btnMp32Slk').addEventListener('click', async function () {
   var box = buildResultBox('results2');
   var st = $('status2');
   st.className = 'status busy';
-  st.textContent = tplData ? '模板匹配: 读取模板采样率中…' : '转换中…';
   setBusy('btnMp32Slk', true);
   var failed = 0;
   try {
-    for (var i = 0; i < audios.length; i++) {
-      var f = audios[i];
-      st.textContent = '转换中 (' + (i + 1) + '/' + audios.length + '): ' + f.name;
-      try {
-        var r = await mp3ToSlk(f, tplData);
-        var info = 'OK ' + r.seconds.toFixed(2) + 's @' + r.rate + 'Hz' + (r.tpl ? ' 帧数=' + r.frames : '');
-        var url = makeBlobUrl(r.data);
-        var dlName = (tplData && tplName) ? baseName(tplName) + '.slk' : baseName(f.name) + '.slk';
-        addResultLine(box, f.name, info, false, url, dlName);
-      } catch (err) {
-        failed++;
-        addResultLine(box, f.name, '失败: ' + err.message, true, null, null);
+    if (cloud.enabled) {
+      if (!cloud.url) {
+        failed = audios.length;
+        for (var c = 0; c < audios.length; c++) addResultLine(box, audios[c].name, '未配置云端服务器地址', true, null, null);
+      } else {
+        st.textContent = '检查云端服务…';
+        if (!(await cloudPing())) {
+          failed = audios.length;
+          for (var d = 0; d < audios.length; d++) addResultLine(box, audios[d].name, '云端不可用: 请检查服务器或切换本地模式', true, null, null);
+        } else {
+          for (var i = 0; i < audios.length; i++) {
+            var f = audios[i];
+            var r = await cloudConvertOne(f, 'mp32slk', tplFileObj, function (p) {
+              st.textContent = '上传 ' + Math.round(p * 100) + '% · ' + f.name;
+            });
+            if (r.ok) {
+              var url = URL.createObjectURL(r.blob);
+              var info = 'OK ' + (r.seconds > 0 ? r.seconds.toFixed(2) + 's' : '') + ' · 云端' + (r.sha ? ' · ' + r.sha.slice(0, 8) : '');
+              addResultLine(box, r.name, info, false, url, r.name);
+              st.textContent = '转换中 (' + (i + 1) + '/' + audios.length + '): ' + f.name;
+            } else {
+              failed++;
+              addResultLine(box, f.name, '失败: ' + r.error, true, null, null);
+            }
+          }
+        }
+      }
+    } else {
+      st.textContent = tplData ? '模板匹配: 读取模板采样率中…' : '转换中…';
+      for (var i = 0; i < audios.length; i++) {
+        var f = audios[i];
+        st.textContent = '转换中 (' + (i + 1) + '/' + audios.length + '): ' + f.name;
+        try {
+          var r = await mp3ToSlk(f, tplData);
+          var info = 'OK ' + r.seconds.toFixed(2) + 's @' + r.rate + 'Hz' + (r.tpl ? ' 帧数=' + r.frames : '');
+          var url = makeBlobUrl(r.data);
+          var dlName = (tplData && tplName) ? baseName(tplName) + '.slk' : baseName(f.name) + '.slk';
+          addResultLine(box, f.name, info, false, url, dlName);
+        } catch (err) {
+          failed++;
+          addResultLine(box, f.name, '失败: ' + err.message, true, null, null);
+        }
       }
     }
   } finally {

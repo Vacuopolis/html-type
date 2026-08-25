@@ -1,0 +1,2528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#070a18">
+<title>星湖拾光 · 栗子的生日夜</title>
+<style>
+/* ============ 基础 ============ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#070a18}
+body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:#e8e6f2;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation;position:fixed;inset:0}
+#app{position:fixed;inset:0;width:100%;height:100%}
+canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+#vignette{position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(4,6,16,.55) 100%)}
+#flash{position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;
+  background:radial-gradient(circle at 50% 30%,rgba(255,228,170,.85),rgba(255,200,120,.22) 42%,transparent 68%)}
+#meteors{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.serif{font-family:"Songti SC","STSong","STZhongsong","SimSun",serif}
+
+/* ============ HUD ============ */
+#hud{position:absolute;inset:0;pointer-events:none;z-index:10;display:none}
+#counter{position:absolute;top:calc(12px + env(safe-area-inset-top));left:14px;
+  display:flex;align-items:center;gap:8px;padding:7px 14px;
+  background:rgba(10,13,32,.72);border:1px solid rgba(212,175,55,.45);border-radius:999px;
+  backdrop-filter:blur(6px);font-size:14px;letter-spacing:1px}
+#counter .star{color:#f5d76e;font-size:15px;filter:drop-shadow(0 0 6px rgba(245,215,110,.8))}
+#counter b{color:#f5e6b8;font-weight:600;font-variant-numeric:tabular-nums}
+#topBtns{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;display:flex;gap:10px;pointer-events:auto}
+.iconBtn{width:40px;height:40px;border-radius:50%;border:1px solid rgba(212,175,55,.5);
+  background:rgba(10,13,32,.72);color:#f5e6b8;font-size:17px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;backdrop-filter:blur(6px);transition:.2s}
+.iconBtn:active{transform:scale(.92)}
+#hint{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  max-width:86%;padding:9px 18px;background:rgba(10,13,32,.78);border:1px solid rgba(212,175,55,.35);
+  border-radius:999px;font-size:13px;color:#d8d2b8;letter-spacing:.5px;text-align:center;
+  opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hint.show{opacity:1}
+#arrow{position:absolute;width:24px;height:24px;pointer-events:none;opacity:0;transition:opacity .4s;z-index:11}
+#arrow::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(8,11,26,.55) 32%,rgba(8,11,26,.2) 60%,transparent 70%)}
+#arrow::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;
+  border-top:3px solid #ffd76e;border-right:3px solid #ffd76e;
+  transform:translate(-32%,-50%) rotate(45deg);
+  filter:drop-shadow(0 0 6px rgba(255,215,110,1)) drop-shadow(0 0 2px rgba(255,255,255,.8));
+  animation:arrowNudge 1.1s ease-in-out infinite}
+@keyframes arrowNudge{0%,100%{transform:translate(-32%,-50%) rotate(45deg) scale(1)}50%{transform:translate(-32%,-50%) rotate(45deg) scale(1.25)}}
+
+/* ============ 通用弹层 ============ */
+.overlay{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
+  background:rgba(4,6,16,.66);backdrop-filter:blur(4px)}
+.overlay.show{display:flex;animation:ovIn .35s ease}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+.gbtn{display:inline-block;padding:12px 42px;border-radius:999px;cursor:pointer;letter-spacing:6px;text-indent:6px;
+  font-size:16px;color:#1a1408;font-weight:700;border:none;
+  background:linear-gradient(135deg,#f7e9bd,#d4af37 50%,#f7e9bd);
+  box-shadow:0 0 18px rgba(212,175,55,.45),inset 0 1px 0 rgba(255,255,255,.6);transition:.25s}
+.gbtn:active{transform:scale(.95)}
+.gbtn.ghost{background:transparent;color:#f5e6b8;border:1px solid rgba(212,175,55,.65);box-shadow:none;font-weight:400}
+
+/* ============ 传送特效(以启程按钮为原点) ============ */
+#warp{position:absolute;inset:0;z-index:35;pointer-events:none;display:none}
+#warp.show{display:block}
+#warpCore{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;
+  background:radial-gradient(circle,#fff 0%,#ffe9a3 30%,rgba(255,215,110,.85) 55%,rgba(255,215,110,0) 75%);
+  transform:scale(0);animation:warpCore .8s cubic-bezier(.3,.9,.3,1) forwards}
+@keyframes warpCore{0%{transform:scale(0);opacity:0}
+  30%{transform:scale(1);opacity:1}
+  72%{transform:scale(1);opacity:1}
+  100%{transform:scale(1);opacity:0}}
+.warpRing{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;
+  border:2.5px solid rgba(255,232,160,.9);opacity:0;
+  animation:warpRing 1.05s ease-out forwards}
+.warpRing.r2{animation-delay:.16s}
+.warpRing.r3{animation-delay:.32s}
+@keyframes warpRing{0%{transform:scale(.15);opacity:.95}
+  100%{transform:scale(52);opacity:0}}
+#warpFlash{position:absolute;inset:0;opacity:0;
+  animation:warpFlash 1.5s .5s ease-in forwards}
+@keyframes warpFlash{0%{opacity:0}
+  38%{opacity:1}
+  62%{opacity:1}
+  100%{opacity:0}}
+#warpStreaks{position:absolute;inset:0;overflow:hidden}
+.wstreak{position:absolute;width:2.5px;height:70px;margin-left:-1.25px;border-radius:2px;
+  transform-origin:50% 0;opacity:0;
+  background:linear-gradient(to bottom,rgba(255,240,200,0),rgba(255,240,200,.95));
+  animation:wstreak .85s ease-in forwards}
+@keyframes wstreak{0%{opacity:0;transform:rotate(var(--a)) translateY(-52px) scaleY(.3)}
+  30%{opacity:1}
+  100%{opacity:0;transform:rotate(var(--a)) translateY(-340px) scaleY(1.15)}}
+
+/* ============ 标题屏 ============ */
+#titleScreen{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;background:radial-gradient(ellipse at 50% 30%,#101638 0%,#070a18 65%);transition:opacity .45s ease}
+#titleScreen.hide{opacity:0;pointer-events:none}
+#titleStars{position:absolute;inset:0;overflow:hidden}
+.tstar{position:absolute;background:#fff;border-radius:50%;animation:twinkle 3s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:.9}}
+#titleInner{position:relative;text-align:center;padding:0 24px}
+#titleMain{font-size:min(15vw,84px);letter-spacing:.18em;text-indent:.18em;font-weight:700;
+  background:linear-gradient(180deg,#fdf6dd 15%,#e9c85c 55%,#b8892e 90%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 4px 22px rgba(212,175,55,.35));line-height:1.25}
+#titleSub{margin-top:14px;font-size:min(4.2vw,17px);color:#aab4e8;letter-spacing:.55em;text-indent:.55em}
+#titleLine{width:min(60vw,320px);height:1px;margin:26px auto 34px;
+  background:linear-gradient(90deg,transparent,#d4af37,transparent)}
+#startBtn{animation:breath 2.6s ease-in-out infinite}
+@keyframes breath{0%,100%{box-shadow:0 0 18px rgba(212,175,55,.45),inset 0 1px 0 rgba(255,255,255,.6)}
+  50%{box-shadow:0 0 34px rgba(232,190,90,.8),inset 0 1px 0 rgba(255,255,255,.6)}}
+
+/* ============ 乙游对话框 ============ */
+#dialog{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  z-index:22;width:min(92%,720px);display:none;cursor:pointer}
+#dialog.show{display:block;animation:dlgIn .35s ease}
+@keyframes dlgIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.dlgBox{position:relative;padding:20px 26px 30px;background:linear-gradient(180deg,rgba(13,17,40,.94),rgba(9,12,30,.94));
+  border:1px solid rgba(212,175,55,.55);border-radius:10px;
+  box-shadow:0 8px 40px rgba(0,0,0,.6),inset 0 0 0 1px rgba(212,175,55,.12)}
+.dlgBox::before{content:"";position:absolute;inset:4px;border:1px solid rgba(212,175,55,.22);border-radius:7px;pointer-events:none}
+#dlgName{position:absolute;top:-14px;left:18px;padding:4px 18px;font-size:14px;letter-spacing:3px;
+  color:#1a1408;font-weight:700;background:linear-gradient(135deg,#f7e9bd,#d4af37);border-radius:4px;
+  box-shadow:0 2px 12px rgba(212,175,55,.5)}
+#dlgText{min-height:66px;font-size:15.5px;line-height:1.95;color:#ece9db;letter-spacing:.5px;text-align:justify}
+#dlgNext{position:absolute;right:16px;bottom:10px;color:#f5d76e;font-size:12px;animation:nextBlink 1s infinite}
+@keyframes nextBlink{0%,100%{opacity:.25}50%{opacity:1}}
+
+/* ============ 聊天界面 ============ */
+#chatUI{flex-direction:column;padding:0}
+.chatWrap{width:min(94%,460px);height:min(82vh,640px);display:flex;flex-direction:column;overflow:hidden;
+  background:linear-gradient(180deg,#0c1128,#0a0e22);border:1px solid rgba(212,175,55,.5);border-radius:14px;
+  box-shadow:0 12px 60px rgba(0,0,0,.7)}
+.chatHead{padding:14px 18px;text-align:center;background:rgba(20,26,58,.9);border-bottom:1px solid rgba(212,175,55,.3);flex:none}
+.chatHead .cn{font-size:16px;color:#f5e6b8;letter-spacing:2px}
+.chatHead .cs{font-size:11px;color:#7d84ad;margin-top:3px;letter-spacing:1px}
+.chatBody{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch}
+.bub{max-width:82%;padding:10px 14px;border-radius:12px;font-size:14.5px;line-height:1.75;letter-spacing:.4px;
+  opacity:0;transform:translateY(10px);transition:.4s}
+.bub.on{opacity:1;transform:none}
+.bub.left{align-self:flex-start;background:#182146;border:1px solid rgba(123,108,240,.4);color:#dfe4ff;border-top-left-radius:3px}
+.bub.left.qin{background:#221c26;border-color:rgba(194,59,59,.5);color:#f0e6d8}
+.bub.sys{align-self:center;background:rgba(212,175,55,.1);border:1px dashed rgba(212,175,55,.4);color:#cbb96a;font-size:12.5px;border-radius:999px}
+.bub.art{align-self:flex-start;background:transparent;border:none;padding:4px}
+.artCard{width:190px;border-radius:8px;overflow:hidden;border:2px solid #d4af37;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.artCanvas{width:100%;display:block}
+.artCap{padding:7px 10px;background:#12162e;font-size:11.5px;color:#aab4e8;text-align:center;letter-spacing:1px}
+.chatFoot{flex:none;padding:12px;text-align:center;border-top:1px solid rgba(212,175,55,.25)}
+.typingDot{display:inline-flex;gap:5px;align-self:flex-start;padding:12px 16px}
+.typingDot i{width:7px;height:7px;border-radius:50%;background:#7b6cf0;animation:tdot 1.2s infinite}
+.typingDot i:nth-child(2){animation-delay:.2s}.typingDot i:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+
+/* ============ 来电界面 ============ */
+#callUI{flex-direction:column;background:rgba(4,6,16,.9)}
+.callWrap{width:min(92%,560px);margin:0 auto;text-align:center;animation:callIn .5s ease}
+@keyframes callIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+#callState{margin-bottom:34px}
+#callName{font-size:26px;letter-spacing:4px;color:#f5e6b8;margin-top:20px}
+#callNum{font-size:13px;color:#7d84ad;margin-top:8px;letter-spacing:2px}
+.callAvatar{width:96px;height:96px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:40px;color:#f0e6d8;background:#221c26;border:2px solid rgba(194,59,59,.6);position:relative}
+.callAvatar::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:1px solid rgba(194,59,59,.4);animation:ripple 1.8s infinite}
+@keyframes ripple{from{transform:scale(.8);opacity:1}to{transform:scale(1.5);opacity:0}}
+.callBtns{display:flex;gap:70px;justify-content:center;margin-top:40px}
+.callBtn{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;transition:.2s}
+.callBtn:active{transform:scale(.9)}
+.callBtn.accept{background:#27c07d;color:#06281a;box-shadow:0 0 26px rgba(39,192,125,.5)}
+.callBtn.reject{background:#d94848;color:#2a0808;box-shadow:0 0 26px rgba(217,72,72,.4)}
+#callTalk{display:none;width:min(88%,560px);text-align:left}
+#callWave{display:block;width:120px;height:36px;margin:0 auto 20px;opacity:.9}
+#callText{min-height:120px;font-size:16px;line-height:2.1;color:#ece9db;text-align:center;letter-spacing:.6px}
+#callEnd{text-align:center;margin-top:26px}
+
+/* ============ 抽卡界面 ============ */
+#gachaUI{background:rgba(4,6,16,.92)}
+.gachaWrap{width:min(92%,440px);text-align:center}
+#gachaBanner{padding:26px 20px;background:linear-gradient(160deg,#141a3e,#0b0f28);border:1px solid rgba(212,175,55,.55);
+  border-radius:14px;position:relative;overflow:hidden}
+#gachaBanner::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 15%,rgba(212,175,55,.14),transparent 40%),
+  radial-gradient(circle at 85% 85%,rgba(123,108,240,.14),transparent 45%)}
+.gbTitle{font-size:22px;letter-spacing:8px;text-indent:8px;color:#f5e6b8;position:relative}
+.gbSub{font-size:12px;color:#8a92c4;letter-spacing:4px;margin-top:10px;position:relative}
+.gbStar{color:#f5d76e;font-size:15px;letter-spacing:6px;margin-top:16px;position:relative;text-shadow:0 0 12px rgba(245,215,110,.6)}
+#gachaGo{margin-top:26px}
+#gachaFlash{display:none;position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;
+  background:radial-gradient(circle,#fff8dc 0%,rgba(212,175,55,.85) 18%,rgba(212,175,55,0) 62%);
+  border-radius:50%;pointer-events:none;z-index:3;animation:flash 1s ease-out forwards}
+@keyframes flash{from{transform:scale(0);opacity:1}to{transform:scale(14);opacity:0}}
+#gachaFocus{display:none;position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,rgba(255,244,200,.9) 0%,rgba(212,175,55,.35) 12%,rgba(4,6,16,.96) 46%);animation:focusIn 1.1s ease-in forwards}
+@keyframes focusIn{from{opacity:0}to{opacity:1}}
+/* SSR 卡 */
+#cardStage{perspective:1200px}
+#ssrCard{display:none;width:min(74vw,270px);margin:0 auto;aspect-ratio:3/4.35;position:relative;
+  transform-style:preserve-3d;cursor:pointer}
+#ssrCard.flip{display:block;animation:cardFlip 1s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes cardFlip{from{transform:rotateY(180deg) scale(.4);opacity:0}to{transform:rotateY(360deg) scale(1);opacity:1}}
+.cardInner{position:absolute;inset:0;background:linear-gradient(165deg,#1a2150 0%,#0d1129 55%,#241b3f 100%);
+  border:2px solid transparent;border-radius:12px;overflow:hidden;
+  background-clip:padding-box;box-shadow:0 0 34px rgba(212,175,55,.4),0 18px 50px rgba(0,0,0,.7)}
+.cardInner::before{content:"";position:absolute;inset:0;border:1.5px solid rgba(212,175,55,.75);border-radius:10px;z-index:5;pointer-events:none}
+.cardInner::after{content:"";position:absolute;top:-60%;left:-80%;width:60%;height:220%;transform:rotate(25deg);
+  background:linear-gradient(90deg,transparent,rgba(255,246,214,.22),transparent);animation:shine 3.2s infinite;z-index:6;pointer-events:none}
+@keyframes shine{0%{left:-80%}55%,100%{left:130%}}
+.cardArt{position:absolute;inset:10% 7% 24% 7%;border-radius:8px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 30%,#3a4a9e 0%,#141a3e 45%,#0a0e22 100%)}
+.cardArt .cstar{position:absolute;background:#f5e6b8;border-radius:50%}
+.cardArt .lake{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,#101a3d,#0a1230)}
+.cardArt .fireflyDot{position:absolute;width:4px;height:4px;border-radius:50%;background:#ffe9a3;box-shadow:0 0 8px 2px rgba(255,233,163,.8);animation:twinkle 2.4s infinite}
+.cardRarity{position:absolute;top:12px;right:-38px;padding:5px 44px;font-size:13px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(135deg,#f7e9bd,#d4af37);color:#1a1408;transform:rotate(38deg);z-index:7;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.cardName{position:absolute;left:0;right:0;bottom:11.5%;text-align:center;font-size:23px;letter-spacing:8px;text-indent:8px;
+  color:#f7e9bd;text-shadow:0 0 16px rgba(212,175,55,.7);z-index:7}
+.cardTag{position:absolute;left:0;right:0;bottom:6%;text-align:center;font-size:10.5px;color:#9aa2d4;letter-spacing:3px;z-index:7}
+.cardCake{position:absolute;top:7%;left:7%;font-size:22px;z-index:7;filter:drop-shadow(0 0 8px rgba(255,220,130,.8))}
+#cardQuote{display:none;margin-top:22px;padding:14px 18px;font-size:14px;line-height:1.9;color:#d8d2b8;
+  border-top:1px solid rgba(212,175,55,.35);border-bottom:1px solid rgba(212,175,55,.35);letter-spacing:.5px;opacity:0;transition:opacity .6s}
+#cardQuote.on{opacity:1}
+#gachaClose{margin-top:22px;display:none}
+
+/* ============ 信件 ============ */
+#letterUI{background:rgba(4,6,16,.88)}
+.letterWrap{width:min(90%,560px);max-height:84vh;overflow-y:auto;padding:38px 34px;position:relative;
+  background:linear-gradient(175deg,#0e1330,#0a0d22);border:1px solid rgba(212,175,55,.55);border-radius:12px;
+  box-shadow:0 16px 70px rgba(0,0,0,.7),0 0 0 1px rgba(212,175,55,.1);-webkit-overflow-scrolling:touch;
+  animation:letterIn .9s cubic-bezier(.2,.8,.25,1) both}
+@keyframes letterIn{from{opacity:0;transform:translateY(38px) scale(.93)}to{opacity:1;transform:none}}
+.letterWrap::before{content:"";position:absolute;inset:5px;border:1px solid rgba(212,175,55,.2);border-radius:8px;pointer-events:none}
+.letterTitle{text-align:center;font-size:24px;letter-spacing:10px;text-indent:10px;color:#f5e6b8;margin-bottom:6px;
+  filter:drop-shadow(0 0 14px rgba(212,175,55,.4))}
+.letterSub{text-align:center;font-size:11.5px;color:#8a92c4;letter-spacing:4px;margin-bottom:26px}
+.letterBody{font-size:15px;line-height:2.35;color:#e6e1cd;text-align:justify;letter-spacing:.6px;white-space:pre-wrap}
+.letterSign{margin-top:26px;text-align:right;color:#f5d76e;letter-spacing:2px;line-height:2}
+.letterPS{margin-top:14px;font-size:12.5px;color:#9aa2d4}
+#letterNext{margin-top:28px;text-align:center}
+
+/* ============ 终章字幕 ============ */
+#finaleCap{position:absolute;inset:0;z-index:15;display:none;align-items:center;justify-content:center;
+  flex-direction:column;pointer-events:none;text-align:center;padding:0 8vw}
+#finaleCap.show{display:flex}
+.capMain{font-size:min(9vw,52px);letter-spacing:.25em;text-indent:.25em;font-weight:700;color:#fdf6dd;
+  text-shadow:0 0 30px rgba(212,175,55,.6),0 4px 18px rgba(0,0,0,.6);opacity:0;animation:capIn 2.2s ease forwards}
+.capSub{margin-top:18px;font-size:min(3.6vw,15px);letter-spacing:.5em;color:#c9c2a4;opacity:0;animation:capIn 2.2s .5s ease forwards}
+@keyframes capIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* ============ Toast / 帮助 ============ */
+#toast{position:absolute;top:calc(16% + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-8px);
+  z-index:40;padding:10px 24px;background:rgba(10,13,32,.88);border:1px solid rgba(212,175,55,.5);border-radius:999px;
+  font-size:13.5px;color:#f0e6c8;letter-spacing:1px;opacity:0;transition:.5s;pointer-events:none;white-space:nowrap;max-width:92%;
+  overflow:hidden;text-overflow:ellipsis}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#helpUI .helpBox{width:min(88%,420px);padding:30px 28px;background:linear-gradient(170deg,#10153a,#0a0e24);
+  border:1px solid rgba(212,175,55,.5);border-radius:14px}
+.helpBox h3{text-align:center;font-size:18px;letter-spacing:6px;color:#f5e6b8;margin-bottom:20px}
+.helpBox p{font-size:13.5px;line-height:2.1;color:#c6c9e2;letter-spacing:.5px}
+.helpBox p b{color:#f5d76e;font-weight:600}
+.helpBox .sep{height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,.4),transparent);margin:14px 0}
+#helpClose{margin-top:20px;text-align:center}
+
+/* 自由模式角标 */
+#freeBadge{position:absolute;top:calc(62px + env(safe-area-inset-top));right:14px;display:none;
+  padding:5px 12px;background:rgba(212,175,55,.14);border:1px solid rgba(212,175,55,.5);border-radius:999px;
+  font-size:11.5px;color:#f0d992;letter-spacing:2px;pointer-events:none}
+
+/* 加载中 */
+#loading{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  background:#070a18;flex-direction:column;gap:18px;transition:opacity .8s}
+#loading.hide{opacity:0;pointer-events:none}
+#loading .lt{font-size:13px;color:#8a92c4;letter-spacing:4px}
+.loadRing{width:34px;height:34px;border-radius:50%;border:3px solid rgba(212,175,55,.2);border-top-color:#d4af37;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media (max-width:520px){
+  #dlgText{font-size:14px}
+  .letterBody{font-size:14px;line-height:2.2}
+  .letterWrap{padding:30px 22px}
+  .callBtns{gap:54px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gl"></canvas>
+  <canvas id="meteors"></canvas>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="counter"><span class="star">✦</span><span>星屑</span><b id="cntNum">0</b><span style="color:#7d84ad">/ 9</span></div>
+    <div id="topBtns">
+      <div class="iconBtn" id="btnMute" title="声音">♪</div>
+      <div class="iconBtn" id="btnHelp" title="帮助">?</div>
+    </div>
+    <div id="freeBadge">自由放花模式</div>
+    <div id="hint"></div>
+    <div id="arrow"></div>
+  </div>
+
+  <!-- 传送特效 -->
+  <div id="warp">
+    <div id="warpStreaks"></div>
+    <div id="warpCore"></div>
+    <div class="warpRing"></div>
+    <div class="warpRing r2"></div>
+    <div class="warpRing r3"></div>
+    <div id="warpFlash"></div>
+  </div>
+
+  <!-- 标题屏 -->
+  <div id="titleScreen">
+    <div id="titleStars"></div>
+    <div id="titleInner">
+      <div id="titleMain" class="serif">星湖拾光</div>
+      <div id="titleSub">栗 子 的 生 日 夜</div>
+      <div id="titleLine"></div>
+      <button class="gbtn" id="startBtn">启&nbsp;程</button>
+    </div>
+  </div>
+
+  <!-- 对话框 -->
+  <div id="dialog">
+    <div class="dlgBox">
+      <div id="dlgName">星屑的记忆</div>
+      <div id="dlgText"></div>
+      <div id="dlgNext">▼ 轻触继续</div>
+    </div>
+  </div>
+
+  <!-- 聊天界面 -->
+  <div id="chatUI" class="overlay">
+    <div class="chatWrap">
+      <div class="chatHead"><div class="cn">Z</div><div class="cs">未署名的画家 · 来自远方</div></div>
+      <div class="chatBody" id="chatBody"></div>
+      <div class="chatFoot"><button class="gbtn ghost" id="chatClose" style="padding:8px 34px;letter-spacing:3px">收 起</button></div>
+    </div>
+  </div>
+
+  <!-- 来电界面 -->
+  <div id="callUI" class="overlay">
+    <div class="callWrap">
+      <div id="callState">
+        <div class="callAvatar">符</div>
+        <div id="callName">未知来电</div>
+        <div id="callNum">+86 0219 ****919</div>
+        <div class="callBtns">
+          <div class="callBtn reject" id="callReject">✕</div>
+          <div class="callBtn accept" id="callAccept">✆</div>
+        </div>
+      </div>
+      <div id="callTalk">
+        <svg id="callWave" viewBox="0 0 120 36"><path d="M0 18 Q10 4 20 18 T40 18 T60 18 T80 18 T100 18 T120 18" fill="none" stroke="#c23b3b" stroke-width="2" opacity=".85"><animate attributeName="d" dur="1.2s" repeatCount="indefinite" values="M0 18 Q10 4 20 18 T40 18 T60 18 T80 18 T100 18 T120 18;M0 18 Q10 32 20 18 T40 18 T60 18 T80 18 T100 18 T120 18;M0 18 Q10 4 20 18 T40 18 T60 18 T80 18 T100 18 T120 18"/></path></svg>
+        <div id="callText"></div>
+        <div id="callEnd"><button class="gbtn ghost" id="callDone" style="padding:9px 38px;letter-spacing:4px">挂 断</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 抽卡界面 -->
+  <div id="gachaUI" class="overlay">
+    <div id="gachaFocus"></div>
+    <div id="gachaFlash"></div>
+    <div class="gachaWrap">
+      <div id="gachaBanner">
+        <div class="gbTitle serif">星 湖 祈 愿</div>
+        <div class="gbSub">STARLAKE WISH · 生日限定</div>
+        <div class="gbStar">✦ ✦ ✦ ✦ ✦</div>
+      </div>
+      <div id="cardStage">
+        <div id="ssrCard">
+          <div class="cardInner">
+            <div class="cardRarity">SSR</div>
+            <div class="cardArt" id="cardArt"></div>
+            <div class="cardName serif">萤影同归</div>
+            <div class="cardTag">BIRTHDAY LIMITED · 第919夜</div>
+          </div>
+        </div>
+        <div id="cardQuote">「一颗星屑走了 919 个夜晚,穿过银河与湖面,只为在今夜——落进你的眼睛里。」</div>
+      </div>
+      <div id="gachaGo"><button class="gbtn" id="wishBtn">祈 愿 一 次</button></div>
+      <div id="gachaClose"><button class="gbtn ghost" id="gachaDone" style="padding:10px 40px;letter-spacing:4px">收下这份星辉</button></div>
+    </div>
+  </div>
+
+  <!-- 生日信 -->
+  <div id="letterUI" class="overlay">
+    <div class="letterWrap">
+      <div class="letterTitle serif">写给你的信</div>
+      <div class="letterSub">A LETTER FROM XIAOKONGCHENG</div>
+      <div class="letterBody" id="letterBody"></div>
+      <div class="letterSign" id="letterSign"></div>
+      <div class="letterPS">P.S. 轻触夜空,想看多少烟花,就放多少烟花。</div>
+      <div id="letterNext"><button class="gbtn" id="letterDone" style="padding:11px 44px;letter-spacing:5px">回 到 星 湖</button></div>
+    </div>
+  </div>
+
+  <!-- 帮助 -->
+  <div id="helpUI" class="overlay">
+    <div class="helpBox">
+      <h3 class="serif">湖 畔 指 南</h3>
+      <p><b>移动</b> — 轻触地面任意处,光灵会飞过去;电脑也可用 <b>W A S D / 方向键</b></p>
+      <div class="sep"></div>
+      <p><b>星屑</b> — 跟着金色箭头,按顺序点亮湖畔的 9 颗回忆星屑(最亮的那颗就是下一颗)</p>
+      <div class="sep"></div>
+      <p><b>祈愿台</b> — 收集 4 颗星屑后,湖心小岛会亮起光柱</p>
+      <div class="sep"></div>
+      <p><b>终章</b> — 集齐 9 颗星屑并完成祈愿后,回到湖心,为栗子点燃整片星空</p>
+      <div id="helpClose"><button class="gbtn ghost" id="helpDone" style="padding:8px 36px;letter-spacing:4px">明 白 了</button></div>
+    </div>
+  </div>
+
+  <!-- 终章字幕 -->
+  <div id="finaleCap"><div class="capMain serif" id="capMain"></div><div class="capSub" id="capSub"></div></div>
+
+  <div id="toast"></div>
+  <div id="loading"><div class="loadRing"></div><div class="lt">正在点亮星空…</div></div>
+</div>
+
+<script>
+/* =========================================================
+   星湖拾光 · 栗子的生日夜
+   单文件生日祝福网页 · Three.js r128(CDN三源回退,失败降级Canvas2D)
+   ========================================================= */
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var clamp=function(v,a,b){return v<a?a:(v>b?b:v)};
+var lerp=function(a,b,t){return a+(b-a)*t};
+var rand=function(a,b){return a+Math.random()*(b-a)};
+var TAU=Math.PI*2;
+
+/* ---------- 配置 ---------- */
+var FRIEND_DATE=new Date(2024,1,19);          // 加好友日 2024-02-19
+var daysSince=Math.max(1,Math.floor((Date.now()-FRIEND_DATE.getTime())/864e5)); // 动态天数
+var IS_TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+
+/* ---------- 剧情数据:9 颗星屑 ---------- */
+/* 位置不变(心形),拾取顺序:从心形底尖开始,沿左瓣向上→顶部凹口→右瓣向下,
+   相邻且连续。POS_ORDER[k] = 第k颗星屑所用的位置在 SHARDS 里的下标 */
+var POS_ORDER=[5,0,8,1,2,6,3,7,4];
+var SHARDS=[
+ {ang:2.30,r:24,name:"星屑的记忆",special:null,
+  text:["2024年2月19日。原神2.8的深渊像一堵墙,你在微博上找到了代打,走进了唐唐建的群。",
+        "群里有个活泼开朗的「女生」——热络健谈,和谁都聊得来。",
+        "后来你才知道:那是个男的。……果然,替身使者是会互相吸引的。"]},
+ {ang:3.45,r:29,name:"星屑的记忆",special:null,
+  text:["「你居然是男生?!」——澄清身份的那天,你在屏幕这边愣了半天。",
+        "他挠着头(你猜的)发来一串抱歉的表情。",
+        "从那天起,群聊搬进了私聊;「大佬打完了吗」也慢慢变成了「今天吃了什么」。"]},
+ {ang:4.40,r:21,name:"星屑的记忆",special:null,
+  text:["一起追版本剧情,一起吐槽反派,一起分享各自的游戏成果。",
+        "她抽到心仪的限定角色时,惊叹与雀跃几乎要溢出屏幕——即使隔着屏幕,他也由衷地为她高兴。",
+        "游戏是相识的理由;后来聊的,越来越像认识了很久的老朋友。",
+        "两个次元的旅人,就这样慢慢走成了同一条路。"]},
+ {ang:5.55,r:33,name:"星屑的记忆",special:null,
+  text:["解剖、生化、生理、病理……她的书比城墙砖还厚。",
+        "考试周他不敢打扰,只在她冒泡时秒回;她也总在他emo时,准时冒出来,把人从坏情绪里拽出去。",
+        "厚厚的课本压不弯她;她只管往前走,屏幕那头有人一直相信她做得到。"]},
+ {ang:0.55,r:27,name:"星屑的记忆",special:"qin",
+  text:["湖畔的芦苇丛里,静静躺着一张泛黄的符纸——朱砂纹路,系着一段红绳,坠着小小的翠玉。",
+        "指尖触到的一瞬,符纸微微发烫,夜风里传来一个温和的声音……"]},
+ {ang:1.45,r:32,name:"星屑的记忆",special:"lu",
+  text:["湖面上漂来一盏纸船,船头立着一颗小小的蓝紫色星星。",
+        "星星闪烁了三下,你的掌心忽然亮起——是来自「Z」的消息。"]},
+ {ang:5.05,r:24.5,name:"星屑的记忆",special:"call",
+  text:["这颗星屑有点特别——它在半空中一明一灭,像某种信号。",
+        "忽然,整片星湖轻轻震了一下。有电话,打进了这片夜晚。"]},
+ {ang:0.20,r:30,name:"星屑的记忆",special:null,
+  text:["也有一阵子,聊天框安静得可怕。几句说重的话,几天没回的消息,谁也没有先开口。",
+        "……还好。星轨绕了一大圈,还是回到了同一片夜空下。",
+        "有些人吵不散——因为心,一直朝着同一个方向。"]},
+ {ang:2.95,r:35,name:"星屑的记忆",special:null,
+  text:["今夜,九颗星屑全部亮起,湖心的光柱正在等你。",
+        "919 个日夜,被揉进了一场烟火。去吧——替她,点燃整片星空。"]}
+];
+/* 特殊剧情文本 */
+var QIN_LINES=[
+ "……嗯,符纸收到了?那便好。",
+ "阴气重的日子,得让我先到场——所以今年,我又提前来了。",
+ "蜡烛别急着自己点。愿望说出来就不灵了,那就换我说:",
+ "往后每年今天,我都提前到场。这张符不是辟邪的,是个记号——",
+ "标记你是我要护一辈子的人。生日快乐,栗子。"];
+var LU_MSGS=[
+ {t:"sys",x:"收到一条来自「Z」的陌生消息"},
+ {t:"lu",x:"姐姐,收礼物前,先答应我三件事"},
+ {t:"lu",x:"闭眼、许愿,然后——只看着我"},
+ {t:"lu",x:"我把「Z」的新作留给你了,画的是今天吹蜡烛的你"},
+ {t:"lu",x:"这是无价的孤品——因为画里的人,和往后每一个生日的你,都是独一无二"},
+ {t:"art"},
+ {t:"lu",x:"最后,替我谢谢那个笨蛋——他挑的日子不错。"},
+ {t:"sys",x:"——「Z」放下画笔,朝星湖的方向笑了笑"}];
+var CALL_LINES=[
+ "……喂?听得见吗。咳,是我。",
+ "别惊讶,星屑里寄一缕声音,对捉鬼师来说不算难事。",
+ "湖畔芦苇丛里那张符纸,记得收好。不是辟邪——是让你在害怕的时候,能想起有人说过要护你一辈子。",
+ "今晚的湖边有点冷,许愿的时候,多穿一件。",
+ "生日快乐,栗子。……别哭啊。哭了,我可就真的要出现了。"];
+var LETTER=`栗子:
+
+见字如面。先说好——这不是什么华丽的大作文,只是一些攒了很久的真心话。
+
+919 天前,因为一星深渊代打,我误打误撞闯进你的世界。一开始你把我认成了活泼开朗的「姐妹」,行吧,这个锅我背,谁让我当时聊得比谁都热络。
+
+后来我们一起追剧情、一起吐槽,也一起熬过你的考试周;也有一阵子,我笨手笨脚把天聊死,你冷落过我,我难受过。但你看,绕了一大圈,我们还是回到了同一片夜空下。
+
+我不会画画,画不出 Z 的《第 919 夜》;我也不会画符,许不了护你一辈子的愿。我能做的,是把这些日子一颗颗捡起来,揉进今晚的烟花里,一朵一朵,炸给你看。
+
+而遇见你——就是命运石之门的选择。
+
+生日快乐,栗子。
+往后的第 1000 天、第 2000 天……星辰为证,我都在。`;
+
+/* ---------- 音频引擎 ---------- */
+var Audio2={
+ ctx:null,master:null,comp:null,muted:false,noiseBuf:null,
+ bgmTimer:null,bgmOn:false,bgmBar:0,bgmMode:"calm",nextNoteTime:0,
+ init:function(){
+  if(this.ctx)return;
+  var AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return;
+  this.ctx=new AC();
+  this.master=this.ctx.createGain();this.master.gain.value=.8;
+  this.comp=this.ctx.createDynamicsCompressor();
+  this.comp.threshold.value=-24;this.comp.ratio.value=6;this.comp.knee.value=24;
+  this.comp.attack.value=.004;this.comp.release.value=.3;
+  this.master.connect(this.comp);this.comp.connect(this.ctx.destination);
+  /* 轻回声总线(烟花余韵) */
+  var dl=this.ctx.createDelay(1);dl.delayTime.value=.11;
+  var fb=this.ctx.createGain();fb.gain.value=.35;
+  var lp=this.ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=600;
+  var wet=this.ctx.createGain();wet.gain.value=.12;
+  this.comp.connect(dl);dl.connect(fb);fb.connect(lp);lp.connect(dl);
+  dl.connect(wet);wet.connect(this.ctx.destination);
+  // 共享白噪声
+  var len=this.ctx.sampleRate*2,buf=this.ctx.createBuffer(1,len,this.ctx.sampleRate),d=buf.getChannelData(0);
+  for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
+  this.noiseBuf=buf;
+ },
+ resume:function(){ if(this.ctx&&this.ctx.state==="suspended")this.ctx.resume(); },
+ midiF:function(m){return 440*Math.pow(2,(m-69)/12)},
+ /* 谐波叠加钢琴音 */
+ note:function(midi,when,dur,vol){
+  if(!this.ctx||this.muted)return;
+  var c=this.ctx,f=this.midiF(midi);
+  var partials=[[1,.30],[2,.16],[3,.08],[4,.035]];
+  for(var p=0;p<partials.length;p++){
+   var o=c.createOscillator(),g=c.createGain();
+   o.type="sine";o.frequency.value=f*partials[p][0];
+   var tc=.38/partials[p][0];
+   g.gain.setValueAtTime(0,when);
+   g.gain.linearRampToValueAtTime(vol*partials[p][1],when+.008);
+   g.gain.setTargetAtTime(0,when+.01,tc);
+   o.connect(g);g.connect(this.master);
+   o.start(when);o.stop(when+dur+.4);
+   o.onended=function(){try{o.disconnect();g.disconnect()}catch(e){}};
+  }
+ },
+ /* ---------- BGM:卡农琶音(主)/4536251(盛典) ---------- */
+ CANON:[[48,55,60,64],[43,50,55,59],[45,52,57,60],[40,47,52,55],[41,48,53,57],[48,55,60,64],[41,48,53,57],[43,50,55,59]],
+ LUSH:[[41,48,53,57],[43,50,55,59],[40,47,52,55],[45,52,57,60],[38,45,50,53],[43,50,55,59],[36,43,48,52],[41,48,53,57]],
+ startBGM:function(mode){
+  if(!this.ctx)return;
+  this.bgmOn=true;this.bgmMode=mode||"calm";this.bgmBar=0;
+  this.nextNoteTime=this.ctx.currentTime+.1;
+  var self=this;
+  clearInterval(this.bgmTimer);
+  this.bgmTimer=setInterval(function(){self.scheduleBGM()},25);
+ },
+ stopBGM:function(){ this.bgmOn=false;clearInterval(this.bgmTimer); },
+ scheduleBGM:function(){
+  if(!this.bgmOn||!this.ctx)return;
+  var bpm=this.bgmMode==="lush"?84:66, beat=60/bpm, bar=beat*2;
+  while(this.nextNoteTime<this.ctx.currentTime+.18){
+   var prog=this.bgmMode==="lush"?this.LUSH:this.CANON;
+   var ch=prog[this.bgmBar%prog.length],t=this.nextNoteTime;
+   this.note(ch[0]-12,t,bar*1.05,.10);              // 低音
+   for(var k=1;k<4;k++)this.note(ch[k],t+(k-1)*beat*.5,beat*.6,.085); // 琶音
+   if(Math.random()<.5)this.note(ch[3]+(Math.random()<.5?12:7),t+beat,.9,.045); // 高音闪烁
+   this.nextNoteTime+=bar;this.bgmBar++;
+  }
+ },
+ /* ---------- 生日歌 ---------- */
+ playBirthday:function(onDone){
+  if(!this.ctx){onDone&&onDone();return}
+  var N={G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,F5:77,G5:79};
+  var seq=[[N.G4,.5],[N.G4,.5],[N.A4,1],[N.G4,1],[N.C5,1],[N.B4,2],
+           [N.G4,.5],[N.G4,.5],[N.A4,1],[N.G4,1],[N.D5,1],[N.C5,2],
+           [N.G4,.5],[N.G4,.5],[N.G5,1],[N.E5,1],[N.C5,1],[N.B4,1],[N.A4,2],
+           [N.F5,.5],[N.F5,.5],[N.E5,1],[N.C5,1],[N.D5,1],[N.C5,2.5]];
+  var beat=.62,t=this.ctx.currentTime+.3,total=0;
+  for(var i=0;i<seq.length;i++){
+   this.note(seq[i][0],t+total,seq[i][1]*beat+.2,.16);
+   total+=seq[i][1]*beat;
+  }
+  onDone&&setTimeout(onDone,(total+.6)*1000);
+ },
+ /* ---------- 音效 ---------- */
+ sfxWhiz:function(dur){ // 升空:发射"噗"+随机音高气流声+湍动LFO
+  if(!this.ctx||this.muted)return;
+  var c=this.ctx,t=c.currentTime,d=dur||.8;
+  var ps=c.createBufferSource();ps.buffer=this.noiseBuf;
+  var pf=c.createBiquadFilter();pf.type="lowpass";pf.frequency.value=300;
+  var pg=c.createGain();pg.gain.setValueAtTime(.15,t);pg.gain.setTargetAtTime(0,t,.03);
+  ps.connect(pf);pf.connect(pg);pg.connect(this.master);ps.start(t);ps.stop(t+.15);
+  var s=c.createBufferSource();s.buffer=this.noiseBuf;s.loop=true;
+  var f=c.createBiquadFilter();f.type="bandpass";f.Q.value=.8;
+  var fc=rand(700,1100);
+  f.frequency.setValueAtTime(fc,t);
+  f.frequency.linearRampToValueAtTime(fc+rand(-150,150),t+d);
+  var g=c.createGain();g.gain.setValueAtTime(.0001,t);
+  g.gain.linearRampToValueAtTime(.1,t+.12);
+  g.gain.setValueAtTime(.1,t+Math.max(.13,d-.1));
+  g.gain.setTargetAtTime(.0001,t+Math.max(.13,d-.1),.04);
+  var lfo=c.createOscillator();lfo.frequency.value=rand(6,9);
+  var lg=c.createGain();lg.gain.value=.012;
+  lfo.connect(lg);lg.connect(g.gain);lfo.start(t);lfo.stop(t+d+.2);
+  s.connect(f);f.connect(g);g.connect(this.master);s.start(t);s.stop(t+d+.2);
+ },
+ sfxBoom:function(type){ // 分层爆炸:瞬态+body+低频+rumble尾
+  if(!this.ctx||this.muted)return;
+  var c=this.ctx,t=c.currentTime;
+  var P={grand:{f0:55,f1:28,dur:2.5,bt:.5,tg:.7,rg:.2,rt:.9},
+         peony:{f0:70,f1:32,dur:1.8,bt:.35,tg:.55,rg:.15,rt:.5},
+         willow:{f0:65,f1:30,dur:2,bt:.55,tg:.45,rg:.18,rt:.8},
+         ring:{f0:90,f1:45,dur:1.2,bt:.2,tg:.5,rg:.1,rt:.3},
+         heart:{f0:75,f1:34,dur:1.6,bt:.3,tg:.5,rg:.12,rt:.4},
+         text:{f0:60,f1:30,dur:2.2,bt:.5,tg:.6,rg:.2,rt:.8},
+         star:{f0:85,f1:42,dur:1.5,bt:.28,tg:.5,rg:.12,rt:.4},
+         flower:{f0:80,f1:38,dur:1.7,bt:.3,tg:.55,rg:.13,rt:.45},
+         butterfly:{f0:88,f1:44,dur:1.4,bt:.25,tg:.5,rg:.1,rt:.35},
+         smiley:{f0:78,f1:36,dur:1.7,bt:.3,tg:.55,rg:.13,rt:.45}};
+  var p=P[type]||P.peony;
+  var ts=c.createBufferSource();ts.buffer=this.noiseBuf;      // 1 瞬态(冲击波前沿)
+  var tf=c.createBiquadFilter();tf.type="highpass";tf.frequency.value=1500;tf.Q.value=.7;
+  var tg2=c.createGain();tg2.gain.setValueAtTime(p.tg*.8,t);tg2.gain.setTargetAtTime(0,t,.015);
+  ts.connect(tf);tf.connect(tg2);tg2.connect(this.master);ts.start(t);ts.stop(t+.08);
+  var bs=c.createBufferSource();bs.buffer=this.noiseBuf;      // 2 body
+  var bf=c.createBiquadFilter();bf.type="lowpass";
+  bf.frequency.setValueAtTime(7000,t);
+  bf.frequency.exponentialRampToValueAtTime(350,t+.05);
+  bf.frequency.exponentialRampToValueAtTime(150,t+.6);
+  var bg=c.createGain();bg.gain.setValueAtTime(.5,t);
+  bg.gain.linearRampToValueAtTime(.32,t+.08);
+  bg.gain.setTargetAtTime(0,t+.08,p.bt);
+  bs.connect(bf);bf.connect(bg);bg.connect(this.master);bs.start(t);bs.stop(t+p.dur+.5);
+  var o=c.createOscillator();o.type="sine";                   // 3 低频轰鸣
+  o.frequency.setValueAtTime(p.f0,t);o.frequency.exponentialRampToValueAtTime(p.f1,t+p.dur*.8);
+  var og=c.createGain();og.gain.setValueAtTime(.35,t);og.gain.setTargetAtTime(0,t+.02,.5);
+  o.connect(og);og.connect(this.master);o.start(t);o.stop(t+p.dur);
+  var o2=c.createOscillator();o2.type="sine";o2.frequency.value=180; // 中频震感
+  var og2=c.createGain();og2.gain.setValueAtTime(.15,t);og2.gain.setTargetAtTime(0,t+.02,.15);
+  o2.connect(og2);og2.connect(this.master);o2.start(t);o2.stop(t+.6);
+  var rs=c.createBufferSource();rs.buffer=this.noiseBuf;      // 4 rumble 尾
+  var rf=c.createBiquadFilter();rf.type="lowpass";rf.frequency.value=200;
+  var rg2=c.createGain();rg2.gain.setValueAtTime(p.rg,t+.05);rg2.gain.setTargetAtTime(0,t+.05,p.rt);
+  rs.connect(rf);rf.connect(rg2);rg2.connect(this.master);rs.start(t+.05);rs.stop(t+p.rt*4+.5);
+ },
+ sfxCrackle:function(type){ // 闪烁"啪啪"(指数间隔,首响延迟0.25-0.4s)
+  if(!this.ctx||this.muted)return;
+  var c=this.ctx;
+  var P={grand:{n:20,lo:2000,hi:4000},peony:{n:40,lo:3000,hi:6000},
+         willow:{n:60,lo:2500,hi:5000},ring:{n:10,lo:4000,hi:8000},
+         heart:{n:24,lo:3000,hi:6000},text:{n:16,lo:3000,hi:6000},
+         star:{n:12,lo:3500,hi:7000},flower:{n:18,lo:3000,hi:6000},
+         butterfly:{n:10,lo:4000,hi:7500},smiley:{n:18,lo:3000,hi:6000}};
+  var p=P[type]||P.peony;
+  var t=c.currentTime+rand(.25,.4);
+  for(var i=0;i<p.n;i++){
+   var s=c.createBufferSource();s.buffer=this.noiseBuf;
+   var f=c.createBiquadFilter();f.type="highpass";f.frequency.value=rand(p.lo,p.hi);
+   var g=c.createGain();g.gain.setValueAtTime(rand(.03,.09),t);
+   g.gain.setTargetAtTime(0,t,.005);
+   s.connect(f);f.connect(g);g.connect(this.master);s.start(t);s.stop(t+.05);
+   t+=-Math.log(Math.random())*.055*(1+i/p.n*2);
+  }
+ },
+ sfxPickup:function(){ if(!this.ctx||this.muted)return; // 拾取"叮铃"
+  var t=this.ctx.currentTime;
+  this.note(84,t,.5,.14);this.note(91,t+.08,.7,.12);this.note(96,t+.16,.9,.1);
+ },
+ sfxTap:function(){ if(!this.ctx||this.muted)return;
+  var c=this.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+  o.type="triangle";o.frequency.value=660;
+  g.gain.setValueAtTime(.1,t);g.gain.setTargetAtTime(0,t,.06);
+  o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);
+ },
+ sfxCharge:function(){ if(!this.ctx||this.muted)return; // 抽卡聚气
+  var c=this.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+  o.type="sawtooth";o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(880,t+1.1);
+  var f=c.createBiquadFilter();f.type="lowpass";f.frequency.value=1200;
+  g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.12,t+1);g.gain.exponentialRampToValueAtTime(.0001,t+1.25);
+  o.connect(f);f.connect(g);g.connect(this.master);o.start(t);o.stop(t+1.3);
+ },
+ sfxReveal:function(){ if(!this.ctx||this.muted)return;
+  var t=this.ctx.currentTime;
+  this.note(72,t,1.4,.15);this.note(76,t+.1,1.4,.13);this.note(79,t+.2,1.6,.12);this.note(84,t+.32,2,.12);
+ },
+ toggleMute:function(){
+  this.muted=!this.muted;
+  if(this.master)this.master.gain.value=this.muted?0:.8;
+  return this.muted;
+ }
+};
+
+/* ---------- three.js 加载器(三源回退) ---------- */
+var THREE_SOURCES=[
+ "https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.min.js",
+ "https://cdn.staticfile.org/three.js/r128/three.min.js",
+ "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+];
+function loadThree(idx,cb){
+ if(idx>=THREE_SOURCES.length){cb(false);return}
+ var s=document.createElement("script");
+ s.src=THREE_SOURCES[idx];
+ var done=false,to=setTimeout(function(){if(!done){done=true;s.onload=s.onerror=null;s.remove();loadThree(idx+1,cb)}},4000);
+ s.onload=function(){if(!done){done=true;clearTimeout(to);cb(!!window.THREE)}};
+ s.onerror=function(){if(!done){done=true;clearTimeout(to);loadThree(idx+1,cb)}};
+ document.head.appendChild(s);
+}
+
+/* ---------- 主逻辑 ---------- */
+var Game={
+ renderer:null,scene:null,camera:null,three:false,
+ player:{x:0,z:22,tx:0,tz:22,bob:0},
+ shards:[],collected:0,nextShard:0,boomFlash:0,trailT:0,lockT:0,
+ gachaDone:false,finaleReady:false,finaleDone:false,freeMode:false,
+ keys:{},state:"title",clock:null,elapsed:0,
+ fireflies:[],
+};
+
+/* ====== 3D 渲染层(Three.js) ====== */
+function init3D(){
+ var T=window.THREE;
+ Game.three=true;
+ var canvas=$("gl");
+ Game.renderer=new T.WebGLRenderer({canvas:canvas,antialias:false,alpha:false});
+ Game.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+ Game.renderer.setSize(innerWidth,innerHeight);
+ Game.scene=new T.Scene();
+ Game.scene.fog=new T.FogExp2(0x070a18,.011);
+ Game.camera=new T.PerspectiveCamera(80,innerWidth/innerHeight,.1,600);
+
+ /* 天空渐变穹顶(带爆炸闪光uniform) */
+ var skyGeo=new T.SphereGeometry(420,24,16);
+ var skyMat=new T.ShaderMaterial({
+  side:T.BackSide,depthWrite:false,
+  uniforms:{uFlash:{value:0}},
+  vertexShader:"varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
+  fragmentShader:"varying vec3 vP;uniform float uFlash;void main(){float h=normalize(vP).y;vec3 c=mix(vec3(.10,.13,.30),vec3(.015,.025,.075),smoothstep(-.15,.65,h));c=mix(vec3(.045,.055,.105),c,smoothstep(-.10,.10,h));gl_FragColor=vec4(c+uFlash*vec3(.5,.38,.28),1.);}"
+ });
+ Game.skyMat=skyMat;
+ Game.scene.add(new T.Mesh(skyGeo,skyMat));
+
+ /* 星空:银河带 + 散布星 */
+ function starTexture(){
+  var c=document.createElement("canvas");c.width=c.height=32;
+  var x=c.getContext("2d"),g=x.createRadialGradient(16,16,0,16,16,16);
+  g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(.4,"rgba(255,255,255,.5)");g.addColorStop(1,"rgba(255,255,255,0)");
+  x.fillStyle=g;x.fillRect(0,0,32,32);
+  return new T.CanvasTexture(c);
+ }
+ var starTex=starTexture();
+ function makeStars(count,band){
+  var pos=new Float32Array(count*3),col=new Float32Array(count*3);
+  for(var i=0;i<count;i++){
+   var v;
+   if(band){ // 银河带
+    var a=rand(0,TAU),r=rand(120,380);
+    v=new T.Vector3(Math.cos(a)*r,rand(40,190)*Math.sign(rand(-1,1))*.6+rand(-30,60)+90,Math.sin(a)*r);
+    v.applyAxisAngle(new T.Vector3(1,0,.4).normalize(),.9);
+   }else{
+    v=new T.Vector3(rand(-1,1),rand(.02,1),rand(-1,1)).normalize().multiplyScalar(rand(150,400));
+   }
+   pos[i*3]=v.x;pos[i*3+1]=Math.abs(v.y)+8;pos[i*3+2]=v.z;
+   var w=rand(.45,1),tint=Math.random();
+   col[i*3]=w*(tint<.15?.8:1);col[i*3+1]=w*(tint>.85?.85:.95);col[i*3+2]=w*(tint>.5&&tint<.7?1:.9);
+  }
+  var g=new T.BufferGeometry();
+  g.setAttribute("position",new T.BufferAttribute(pos,3));
+  g.setAttribute("color",new T.BufferAttribute(col,3));
+  var m=new T.PointsMaterial({size:band?3:2.2,map:starTex,vertexColors:true,transparent:true,
+   opacity:.95,depthWrite:false,blending:T.AdditiveBlending,sizeAttenuation:true,fog:false});
+  var p=new T.Points(g,m);p.frustumCulled=false;Game.scene.add(p);
+  return p;
+ }
+ Game.milky=makeStars(1600,true);
+ makeStars(900,false);
+
+ /* 月亮 */
+ var moonC=document.createElement("canvas");moonC.width=moonC.height=128;
+ var mx=moonC.getContext("2d"),mg=mx.createRadialGradient(64,64,10,64,64,64);
+ mg.addColorStop(0,"rgba(250,245,225,1)");mg.addColorStop(.25,"rgba(250,240,205,.9)");
+ mg.addColorStop(.5,"rgba(230,215,170,.25)");mg.addColorStop(1,"rgba(230,215,170,0)");
+ mx.fillStyle=mg;mx.fillRect(0,0,128,128);
+ var moon=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(moonC),transparent:true,depthWrite:false,fog:false}));
+ moon.scale.set(46,46,1);moon.position.set(-130,150,-220);Game.scene.add(moon);
+
+ /* 星云点缀(雾外大光斑) */
+ var nebC=document.createElement("canvas");nebC.width=nebC.height=256;
+ var nx2=nebC.getContext("2d"),ngd=nx2.createRadialGradient(128,128,10,128,128,128);
+ ngd.addColorStop(0,"rgba(150,110,255,.5)");ngd.addColorStop(.45,"rgba(80,70,190,.22)");ngd.addColorStop(1,"rgba(60,50,160,0)");
+ nx2.fillStyle=ngd;nx2.fillRect(0,0,256,256);
+ var nebTex=new T.CanvasTexture(nebC);
+ Game.nebulas=[];
+ var nebColors=[0x9a7bff,0x5f8bff,0x5fd8d8,0xc77bd8,0x8f9bff];
+ for(var i=0;i<5;i++){
+  var nb=new T.Sprite(new T.SpriteMaterial({map:nebTex,color:nebColors[i],transparent:true,
+   opacity:rand(.16,.3),depthWrite:false,blending:T.AdditiveBlending,fog:false}));
+  var na=rand(0,TAU),nr2=rand(260,340);
+  nb.position.set(Math.cos(na)*nr2,rand(90,220),Math.sin(na)*nr2);
+  var ns=rand(120,210);nb.scale.set(ns,ns,1);
+  Game.scene.add(nb);Game.nebulas.push(nb);
+ }
+
+ /* 远地面(延伸到山脚,消除草地外的空档) */
+ var farGround=new T.Mesh(new T.CircleGeometry(170,48),
+  new T.MeshBasicMaterial({color:0x090d1c,fog:true}));
+ farGround.rotation.x=-Math.PI/2;farGround.position.y=-.5;Game.scene.add(farGround);
+
+ /* 远山(多层剪影) */
+ var mountColors=[0x0a0d20,0x0d1128,0x101532,0x131940];
+ for(var ring=0;ring<3;ring++){
+  var rr=95+ring*26,n=9+ring*2;
+  for(var i=0;i<n;i++){
+   var a=(i/n)*TAU+rand(-.14,.14)+ring*.3;
+   var h=rand(22,52)+ring*8,rad=rand(12,24)+ring*5;
+   var cone=new T.Mesh(new T.ConeGeometry(rad,h,4),
+    new T.MeshBasicMaterial({color:mountColors[ring],fog:true}));
+   cone.position.set(Math.cos(a)*rr,h/2-1,Math.sin(a)*rr);
+   cone.rotation.y=rand(0,TAU);
+   Game.scene.add(cone);
+  }
+ }
+
+ /* 地面 */
+ var ground=new T.Mesh(new T.CircleGeometry(46,48),
+  new T.MeshBasicMaterial({color:0x0c1326}));
+ ground.rotation.x=-Math.PI/2;Game.scene.add(ground);
+ /* 岸边草环 */
+ var shore=new T.Mesh(new T.RingGeometry(14,16.5,48),
+  new T.MeshBasicMaterial({color:0x11203c,side:T.DoubleSide}));
+ shore.rotation.x=-Math.PI/2;shore.position.y=.02;Game.scene.add(shore);
+
+ /* ---- 场景装饰:树木 / 芦苇 / 石头 / 微光小花 ---- */
+ var treeMat1=new T.MeshBasicMaterial({color:0x0c1426,fog:true});
+ var treeMat2=new T.MeshBasicMaterial({color:0x101a30,fog:true});
+ for(var i=0;i<16;i++){
+  var ta=rand(0,TAU),tr2=rand(19,38);
+  var tg=new T.Group();
+  var trunkH=rand(1.6,2.4);
+  var trunk=new T.Mesh(new T.CylinderGeometry(.16,.28,trunkH,5),treeMat1);
+  trunk.position.y=trunkH/2;tg.add(trunk);
+  var layers=2+Math.floor(rand(0,2));
+  for(var L=0;L<layers;L++){
+   var ch=rand(1.6,2.6)-L*.4;
+   var cone2=new T.Mesh(new T.ConeGeometry(rand(1.2,1.9)-L*.35,ch,6),L%2?treeMat2:treeMat1);
+   cone2.position.y=trunkH*.72+L*ch*.58;
+   tg.add(cone2);
+  }
+  tg.position.set(Math.cos(ta)*tr2,0,Math.sin(ta)*tr2);
+  tg.rotation.y=rand(0,TAU);
+  var ts=rand(.8,1.5);tg.scale.set(ts,ts,ts);
+  Game.scene.add(tg);
+ }
+ /* 芦苇丛 */
+ var reedMat=new T.MeshBasicMaterial({color:0x1a2742,fog:true});
+ for(i=0;i<90;i++){
+  var ra=rand(0,TAU),rr3=rand(15.2,17.4);
+  var reedH=rand(1,2.1);
+  var reed=new T.Mesh(new T.CylinderGeometry(.02,.035,reedH,3),reedMat);
+  reed.position.set(Math.cos(ra)*rr3,reedH/2,Math.sin(ra)*rr3);
+  reed.rotation.z=rand(-.12,.12);reed.rotation.x=rand(-.12,.12);
+  Game.scene.add(reed);
+ }
+ /* 石头 */
+ var rockMat=new T.MeshBasicMaterial({color:0x141c34,fog:true});
+ for(i=0;i<12;i++){
+  var oa=rand(0,TAU),orr=rand(17.5,40);
+  var rock=new T.Mesh(new T.DodecahedronGeometry(rand(.3,.8),0),rockMat);
+  rock.position.set(Math.cos(oa)*orr,rand(.05,.25),Math.sin(oa)*orr);
+  rock.rotation.set(rand(0,3),rand(0,3),rand(0,3));
+  Game.scene.add(rock);
+ }
+ /* 地面微光小花 */
+ for(i=0;i<26;i++){
+  var fa=rand(0,TAU),fr=rand(17,42);
+  var fl=new T.Sprite(new T.SpriteMaterial({map:starTex,transparent:true,opacity:.5,
+   color:Math.random()<.5?0x9fb4ff:0xffb4c8,depthWrite:false,blending:T.AdditiveBlending}));
+  fl.position.set(Math.cos(fa)*fr,.18,Math.sin(fa)*fr);
+  fl.scale.set(.45,.45,1);
+  Game.scene.add(fl);
+ }
+ /* 月亮湖面倒影(拉长光带) */
+ var stC=document.createElement("canvas");stC.width=64;stC.height=256;
+ var stx=stC.getContext("2d"),stg=stx.createLinearGradient(0,0,0,256);
+ stg.addColorStop(0,"rgba(244,236,208,0)");stg.addColorStop(.5,"rgba(244,236,208,.85)");stg.addColorStop(1,"rgba(244,236,208,0)");
+ stx.fillStyle=stg;stx.fillRect(0,0,64,256);
+ var stTex=new T.CanvasTexture(stC);
+ Game.moonStreak=new T.Mesh(new T.PlaneGeometry(2.4,10),
+  new T.MeshBasicMaterial({map:stTex,transparent:true,opacity:.32,
+   depthWrite:false,blending:T.AdditiveBlending}));
+ Game.moonStreak.rotation.order="YXZ";
+ Game.moonStreak.rotation.y=Math.atan2(-5.5,-4.5)+Math.PI/2;
+ Game.moonStreak.rotation.x=-Math.PI/2;
+ Game.moonStreak.position.set(-4.5,-.05,-5.5);Game.scene.add(Game.moonStreak);
+
+ /* 湖面 + 微光(水波 shader) */
+ var lakeMat=new T.ShaderMaterial({
+  uniforms:{uT:{value:0},uFlash:{value:0}},
+  vertexShader:"varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
+  fragmentShader:
+   "varying vec2 vUv;uniform float uT;uniform float uFlash;"+
+   "void main(){"+
+   " vec2 p=vUv*2.-1.;"+
+   " float d=length(p);"+
+   " float w=sin(p.x*13.+uT*1.6)*sin(p.y*9.-uT*1.2)*.5+.5;"+   // 细波纹
+   " float w2=sin(p.x*5.-uT*.7+p.y*3.5)*.5+.5;"+               // 大缓波
+   " vec3 deep=vec3(.02,.05,.13);"+
+   " vec3 mid=vec3(.04,.10,.24);"+
+   " vec3 hi=vec3(.14,.24,.46);"+                               // 波峰高光
+   " vec3 c=mix(deep,mid,w2);"+
+   " c=mix(c,hi,pow(w,3.)*.55);"+
+   " c+=vec3(.05,.09,.17)*(1.-d*.55);"+                        // 中心月光反射区
+   " c+=uFlash*vec3(.30,.22,.13);"+                            // 烟花照亮
+   " gl_FragColor=vec4(c,1.);}"
+ });
+ Game.lakeMat=lakeMat;
+ var lake=new T.Mesh(new T.CircleGeometry(14,64),lakeMat);
+ lake.rotation.x=-Math.PI/2;lake.position.y=-.12;Game.scene.add(lake);
+ var lakeGlow=new T.Mesh(new T.CircleGeometry(6.5,32),
+  new T.MeshBasicMaterial({color:0x1b2f66,transparent:true,opacity:.5}));
+ lakeGlow.rotation.x=-Math.PI/2;lakeGlow.position.y=-.1;Game.scene.add(lakeGlow);
+ Game.lakeGlow=lakeGlow;
+ /* 岸边描边(呼吸发光) */
+ Game.lakeEdge=new T.Mesh(new T.RingGeometry(13.6,14.4,96),
+  new T.MeshBasicMaterial({color:0x3a5f9e,transparent:true,opacity:.35,
+   depthWrite:false,blending:T.AdditiveBlending}));
+ Game.lakeEdge.rotation.x=-Math.PI/2;Game.lakeEdge.position.y=-.08;Game.scene.add(Game.lakeEdge);
+ /* 涟漪扩散环 */
+ Game.ripples=[];
+ for(i=0;i<3;i++){
+  var rp=new T.Mesh(new T.RingGeometry(.94,1,48),
+   new T.MeshBasicMaterial({color:0x4db8ff,transparent:true,opacity:.4,
+    depthWrite:false,blending:T.AdditiveBlending}));
+  rp.rotation.x=-Math.PI/2;rp.position.y=-.06;
+  Game.scene.add(rp);Game.ripples.push(rp);
+ }
+ /* 湖面星光倒影 */
+ var reflPos=new Float32Array(110*3);
+ for(var i=0;i<110;i++){var a2=rand(0,TAU),r2=Math.sqrt(Math.random())*13;
+  reflPos[i*3]=Math.cos(a2)*r2;reflPos[i*3+1]=-.08;reflPos[i*3+2]=Math.sin(a2)*r2;}
+ var reflGeo=new T.BufferGeometry();
+ reflGeo.setAttribute("position",new T.BufferAttribute(reflPos,3));
+ Game.refl=new T.Points(reflGeo,new T.PointsMaterial({size:.6,color:0x8fa8ff,map:starTex,
+  transparent:true,opacity:.6,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.scene.add(Game.refl);
+
+ /* 湖心岛 + 祈愿台 */
+ var isle=new T.Mesh(new T.CircleGeometry(4.6,32),
+  new T.MeshBasicMaterial({color:0x14203e}));
+ isle.rotation.x=-Math.PI/2;isle.position.y=.06;Game.scene.add(isle);
+ var ped=new T.Mesh(new T.CylinderGeometry(.7,1,.6,8),
+  new T.MeshBasicMaterial({color:0x1e2a52}));
+ ped.position.y=.35;Game.scene.add(ped);
+ /* 光柱 */
+ var beamC=document.createElement("canvas");beamC.width=64;beamC.height=256;
+ var bx=beamC.getContext("2d"),bgd=bx.createLinearGradient(0,0,64,0);
+ bgd.addColorStop(0,"rgba(212,175,55,0)");bgd.addColorStop(.5,"rgba(232,200,110,.55)");bgd.addColorStop(1,"rgba(212,175,55,0)");
+ bx.fillStyle=bgd;bx.fillRect(0,0,64,256);
+ Game.beam=new T.Mesh(new T.CylinderGeometry(.5,.85,34,12,1,true),
+  new T.MeshBasicMaterial({map:new T.CanvasTexture(beamC),transparent:true,opacity:0,
+   side:T.DoubleSide,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.beam.position.y=17;Game.scene.add(Game.beam);
+ /* 光柱内芯(更亮) */
+ Game.beam2=new T.Mesh(new T.CylinderGeometry(.22,.5,34,10,1,true),
+  new T.MeshBasicMaterial({color:0xfff2c0,transparent:true,opacity:0,
+   side:T.DoubleSide,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.beam2.position.y=17;Game.scene.add(Game.beam2);
+ /* 光柱底座光晕 */
+ var glowC=document.createElement("canvas");glowC.width=glowC.height=128;
+ var gxx=glowC.getContext("2d"),gg2=gxx.createRadialGradient(64,64,4,64,64,64);
+ gg2.addColorStop(0,"rgba(240,214,120,.95)");gg2.addColorStop(.5,"rgba(212,175,55,.35)");gg2.addColorStop(1,"rgba(212,175,55,0)");
+ gxx.fillStyle=gg2;gxx.fillRect(0,0,128,128);
+ Game.beamGlow=new T.Mesh(new T.CircleGeometry(5.5,24),
+  new T.MeshBasicMaterial({map:new T.CanvasTexture(glowC),transparent:true,opacity:0,
+   depthWrite:false,blending:T.AdditiveBlending}));
+ Game.beamGlow.rotation.x=-Math.PI/2;Game.beamGlow.position.y=.12;Game.scene.add(Game.beamGlow);
+
+ /* 萤火 */
+ var ffGeo=new T.BufferGeometry(),ffPos=new Float32Array(42*3),ffPh=[];
+ for(i=0;i<42;i++){
+  var a3=rand(0,TAU),r3=rand(16,40);
+  ffPos[i*3]=Math.cos(a3)*r3;ffPos[i*3+1]=rand(.5,3.2);ffPos[i*3+2]=Math.sin(a3)*r3;
+  ffPh.push({ph:rand(0,TAU),sp:rand(.4,1.1),ox:ffPos[i*3],oz:ffPos[i*3+2]});
+ }
+ ffGeo.setAttribute("position",new T.BufferAttribute(ffPos,3));
+ Game.fireflies=new T.Points(ffGeo,new T.PointsMaterial({size:.5,color:0xffe9a3,map:starTex,
+  transparent:true,opacity:.85,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.scene.add(Game.fireflies);
+ Game.ffPh=ffPh;
+
+ /* 星屑 */
+ var shardC=document.createElement("canvas");shardC.width=shardC.height=64;
+ var sx=shardC.getContext("2d");
+ sx.translate(32,32);sx.fillStyle="#ffe9a3";
+ sx.beginPath();
+ for(var k=0;k<8;k++){var an=k*Math.PI/4,rr2=k%2===0?28:8;
+  sx.lineTo(Math.cos(an)*rr2,Math.sin(an)*rr2);}
+ sx.closePath();sx.fill();
+ var sg=sx.createRadialGradient(0,0,2,0,0,30);
+ sg.addColorStop(0,"rgba(255,240,190,.95)");sg.addColorStop(1,"rgba(255,220,120,0)");
+ sx.fillStyle=sg;sx.fillRect(-32,-32,64,64);
+ var shardTex=new T.CanvasTexture(shardC);
+ for(i=0;i<SHARDS.length;i++){
+  var sp=new T.Sprite(new T.SpriteMaterial({map:shardTex,transparent:true,depthWrite:false,
+   blending:T.AdditiveBlending}));
+  var sd=SHARDS[i];                 // 第 i 个故事
+  var pos=SHARDS[POS_ORDER[i]];     // 第 i 个"从左到右"的位置
+  sp.position.set(Math.cos(pos.ang)*pos.r,1.5,Math.sin(pos.ang)*pos.r);
+  sp.scale.set(1.6,1.6,1);
+  Game.scene.add(sp);
+  Game.shards.push({data:sd,sprite:sp,alive:true,ph:rand(0,TAU)});
+ }
+
+ /* 玩家光灵 */
+ var pC=document.createElement("canvas");pC.width=pC.height=64;
+ var px=pC.getContext("2d"),pg=px.createRadialGradient(32,32,2,32,32,32);
+ pg.addColorStop(0,"rgba(255,250,230,1)");pg.addColorStop(.35,"rgba(255,235,180,.7)");pg.addColorStop(1,"rgba(255,220,140,0)");
+ px.fillStyle=pg;px.fillRect(0,0,64,64);
+ Game.playerObj=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(pC),
+  transparent:true,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.playerObj.scale.set(2.6,2.6,1);
+ Game.scene.add(Game.playerObj);
+ Game.playerCore=new T.Mesh(new T.SphereGeometry(.32,12,10),
+  new T.MeshBasicMaterial({color:0xfff6dd}));
+ Game.scene.add(Game.playerCore);
+
+ /* ---- 烟花粒子系统(ShaderMaterial 单池) ---- */
+ var MAXP=8600;
+ var fw={max:MAXP,n:0,
+  pos:new Float32Array(MAXP*3),vel:new Float32Array(MAXP*3),
+  col:new Float32Array(MAXP*3),siz:new Float32Array(MAXP),
+  life:new Float32Array(MAXP),mlife:new Float32Array(MAXP),
+  drag:new Float32Array(MAXP),grav:new Float32Array(MAXP),
+  tgt:new Float32Array(MAXP*3),hasT:new Uint8Array(MAXP)};
+ Game.fw=fw;
+ var g=new T.BufferGeometry();
+ g.setAttribute("position",new T.BufferAttribute(fw.pos,3));
+ g.setAttribute("acolor",new T.BufferAttribute(fw.col,3));
+ g.setAttribute("asize",new T.BufferAttribute(fw.siz,1));
+ g.setAttribute("alife",new T.BufferAttribute(fw.life,1));
+ g.setDrawRange(0,0);
+ var mat=new T.ShaderMaterial({
+  transparent:true,depthWrite:false,blending:T.AdditiveBlending,
+  vertexShader:
+   "attribute vec3 acolor;attribute float asize;attribute float alife;"+
+   "varying vec3 vC;varying float vL;"+
+   "void main(){vC=acolor;vL=alife;vec4 mv=modelViewMatrix*vec4(position,1.);"+
+   "gl_PointSize=asize*(600./-mv.z);gl_Position=projectionMatrix*mv;}",
+  fragmentShader:
+   "varying vec3 vC;varying float vL;"+
+   "void main(){vec2 d=gl_PointCoord-.5;float r=length(d);"+
+   "float a=smoothstep(.5,.0,r);a*=a;"+
+   "gl_FragColor=vec4(vC,a*vL);}"
+ });
+ Game.fwPoints=new T.Points(g,mat);
+ Game.fwPoints.frustumCulled=false;
+ Game.scene.add(Game.fwPoints);
+ Game.fwGeo=g;
+ // 相机初始位姿(避免开场飞入)
+ Game.camera.position.set(0,12.5,46);
+ Game.lookPt={x:0,y:6.5,z:-2};
+ Game.camera.lookAt(0,6.5,-2);
+}
+/* 粒子发射(共用,渲染层无关) */
+function fwSpawn(x,y,z,vx,vy,vz,r,g2,b,size,life,drag,grav,tx,ty,tz){
+ var fw=Game.fw;if(fw.n>=fw.max)return;
+ var i=fw.n++;
+ fw.pos[i*3]=x;fw.pos[i*3+1]=y;fw.pos[i*3+2]=z;
+ fw.vel[i*3]=vx;fw.vel[i*3+1]=vy;fw.vel[i*3+2]=vz;
+ fw.col[i*3]=r;fw.col[i*3+1]=g2;fw.col[i*3+2]=b;
+ fw.siz[i]=size;fw.life[i]=1;fw.mlife[i]=life;
+ fw.drag[i]=drag;fw.grav[i]=grav;
+ if(tx!==undefined){fw.tgt[i*3]=tx;fw.tgt[i*3+1]=ty;fw.tgt[i*3+2]=tz;fw.hasT[i]=1}
+ else fw.hasT[i]=0;
+}
+function fwUpdate(dt){
+ var fw=Game.fw;
+ for(var i=0;i<fw.n;i++){
+  if(fw.hasT[i]){ // 文字粒子:按到达时间收敛到目标
+   var T=1.15;
+   fw.vel[i*3]=(fw.tgt[i*3]-fw.pos[i*3])/T;
+   fw.vel[i*3+1]=(fw.tgt[i*3+1]-fw.pos[i*3+1])/T;
+   fw.vel[i*3+2]=(fw.tgt[i*3+2]-fw.pos[i*3+2])/T;
+  }else{
+   var dr=Math.pow(fw.drag[i],dt*60);
+   fw.vel[i*3]*=dr;fw.vel[i*3+1]=fw.vel[i*3+1]*dr-fw.grav[i]*dt;fw.vel[i*3+2]*=dr;
+  }
+  fw.pos[i*3]+=fw.vel[i*3]*dt;
+  fw.pos[i*3+1]+=fw.vel[i*3+1]*dt;
+  fw.pos[i*3+2]+=fw.vel[i*3+2]*dt;
+  fw.life[i]-=dt/fw.mlife[i];
+  if(fw.life[i]<=0){ // 回收:与最后一个交换
+   var l=--fw.n;
+   if(i!==l){
+    fw.pos[i*3]=fw.pos[l*3];fw.pos[i*3+1]=fw.pos[l*3+1];fw.pos[i*3+2]=fw.pos[l*3+2];
+    fw.vel[i*3]=fw.vel[l*3];fw.vel[i*3+1]=fw.vel[l*3+1];fw.vel[i*3+2]=fw.vel[l*3+2];
+    fw.col[i*3]=fw.col[l*3];fw.col[i*3+1]=fw.col[l*3+1];fw.col[i*3+2]=fw.col[l*3+2];
+    fw.siz[i]=fw.siz[l];fw.life[i]=fw.life[l];fw.mlife[i]=fw.mlife[l];
+    fw.drag[i]=fw.drag[l];fw.grav[i]=fw.grav[l];fw.hasT[i]=fw.hasT[l];
+    fw.tgt[i*3]=fw.tgt[l*3];fw.tgt[i*3+1]=fw.tgt[l*3+1];fw.tgt[i*3+2]=fw.tgt[l*3+2];
+   }
+   i--;
+  }
+ }
+ if(Game.three){
+  Game.fwGeo.setDrawRange(0,fw.n);
+  Game.fwGeo.attributes.position.needsUpdate=true;
+  Game.fwGeo.attributes.acolor.needsUpdate=true;
+  Game.fwGeo.attributes.asize.needsUpdate=true;
+  Game.fwGeo.attributes.alife.needsUpdate=true;
+ }
+}
+/* 文字采样 → 目标点集 */
+var textCache={};
+function textPoints(str,fontH){
+ var key=str+"|"+fontH;
+ if(textCache[key])return textCache[key];
+ var c=document.createElement("canvas");
+ c.width=560;c.height=160;
+ var x=c.getContext("2d");
+ x.font="700 "+fontH+"px 'Songti SC','STSong','SimSun',serif";
+ x.textAlign="center";x.textBaseline="middle";x.fillStyle="#fff";
+ x.fillText(str,280,80);
+ var d=x.getImageData(0,0,560,160).data,pts=[];
+ var step=Game.three?4:6;
+ for(var yy=0;yy<160;yy+=step)for(var xx=0;xx<560;xx+=step){
+  if(d[(yy*560+xx)*4+3]>128)pts.push([xx-280,80-yy]);
+ }
+ textCache[key]=pts;return pts;
+}
+
+/* ---------- 烟花发射 API ---------- */
+var PALETTES=[[1,.42,.25],[1,.84,.12],[.25,1,.55],[.3,.85,1],[.55,.4,1],[1,.45,.78],[.95,.97,1]];
+function launchRocket(type,colorIdx,text){
+ var a=rand(0,TAU),d=rand(16,34);
+ var sx=Math.cos(a)*d,sz=Math.sin(a)*d;
+ var peak=rand(24,36);
+ launchFrom(sx,sz,peak,type,colorIdx,text);
+}
+function launchFrom(sx,sz,peak,type,colorIdx,text){
+ var pal=PALETTES[colorIdx!==undefined?colorIdx:Math.floor(Math.random()*PALETTES.length)];
+ var c=[pal[0]*rand(.85,1.1),pal[1]*rand(.85,1.1),pal[2]*rand(.85,1.1)];
+ var t0=peak/26;
+ Audio2.sfxWhiz(t0*.85);
+ // 尾迹
+ var steps=Math.floor(t0*40);
+ for(var i=0;i<steps;i++){
+  var tt=(i/steps)*t0;
+  var y=26*tt-.5*9*tt*tt;
+  fwSpawn(sx*tt/t0+rand(-.2,.2),Math.max(.5,y)+rand(-.1,.1),sz*tt/t0+rand(-.2,.2),
+   rand(-.3,.3),rand(-.5,.2),rand(-.3,.3),
+   1,.85,.6,rand(.5,.9),rand(.5,.9),.94,0);
+ }
+ setTimeout(function(){explode(type,sx,peak,sz,c,text)},t0*1000);
+}
+function explode(type,x,y,z,c,text){
+ Audio2.sfxBoom(type);
+ Game.boomFlash=Math.max(Game.boomFlash,
+  ({grand:.9,text:.9,peony:.6,ring:.5,heart:.6,willow:.4,
+    star:.5,flower:.5,butterfly:.45,smiley:.5})[type]||.5);
+ var i,n,vx,vy,vz;
+ /* 双色:第二调色板 */
+ var pal2=PALETTES[Math.floor(Math.random()*PALETTES.length)];
+ var c2=[pal2[0]*rand(.85,1.05),pal2[1]*rand(.85,1.05),pal2[2]*rand(.85,1.05)];
+ if(type==="text"&&text){
+  var pts=textPoints(text,120),s=.1,hw=0;
+  for(i=0;i<pts.length;i++){var ax2=Math.abs(pts[i][0]);if(ax2>hw)hw=ax2}
+  /* 依据相机视锥(或2D视口)自适应缩放:竖屏手机上文字烟花不再超出屏幕被裁切 */
+  var visHalf=Game.three?Math.tan(Math.PI/180*40)*
+   Math.hypot(Game.camera.position.x-x,Game.camera.position.y-y,Game.camera.position.z-z)*
+   (innerWidth/innerHeight):32;
+  s=Math.min(s,visHalf*.85/((hw||1)*2.4));
+  for(i=0;i<pts.length;i++){
+   var tx=x+pts[i][0]*s*2.4,ty=y+pts[i][1]*s*2.4,tz=z+rand(-.5,.5);
+   fwSpawn(x,y,z,0,0,0,c[0],c[1],c[2],rand(1.2,1.6),rand(4.2,5.4),1,0,tx,ty,tz);
+  }
+  Audio2.sfxCrackle(type);return;
+ }
+ if(type==="ring"){
+  n=130;var tilt=rand(.3,1.2),tilt2=rand(0,TAU);
+  for(i=0;i<n;i++){
+   var an=(i/n)*TAU;
+   vx=Math.cos(an)*29;vy=Math.sin(an)*29*Math.cos(tilt);vz=Math.sin(an)*29*Math.sin(tilt);
+   var rx=vx*Math.cos(tilt2)-vz*Math.sin(tilt2),rz=vx*Math.sin(tilt2)+vz*Math.cos(tilt2);
+   var cc=(i%3===0)?c2:c;
+   fwSpawn(x,y,z,rx,vy,rz,cc[0],cc[1],cc[2],rand(1.1,1.5),rand(2.6,3.4),.94,3.2);
+  }
+ }else if(type==="star"){ // 五角星:轮廓+芯,目标点成型清晰定格
+  var R1=16,r1=6.7,ptsS=[];
+  for(var kS=0;kS<5;kS++){
+   var a0S=Math.PI/2+kS*TAU/5,a1S=a0S+TAU/5;
+   var oxS=Math.cos(a0S)*R1,oyS=Math.sin(a0S)*R1;
+   var ixS=Math.cos(a0S+TAU/10)*r1,iyS=Math.sin(a0S+TAU/10)*r1;
+   var nxS=Math.cos(a1S)*R1,nyS=Math.sin(a1S)*R1;
+   for(var sS=0;sS<=7;sS++){
+    ptsS.push([oxS+(ixS-oxS)*sS/7,oyS+(iyS-oyS)*sS/7,0]);
+    ptsS.push([ixS+(nxS-ixS)*sS/7,iyS+(nyS-iyS)*sS/7,0]);
+   }
+  }
+  for(kS=0;kS<16;kS++){var aR2=rand(0,TAU),rrF=Math.sqrt(Math.random())*r1*.75;
+   ptsS.push([Math.cos(aR2)*rrF,Math.sin(aR2)*rrF,1]);}
+  for(i=0;i<ptsS.length;i++){
+   var pS=ptsS[i],cS=pS[2]?c2:c;
+   fwSpawn(x,y,z,0,0,0,cS[0],cS[1],cS[2],rand(1,1.4),rand(3.4,4.4),1,0,
+    x+pS[0],y+pS[1],z+rand(-.8,.8));
+  }
+ }else if(type==="flower"){ // 五瓣花:泪滴花瓣双层+花蕊
+  var ptsF=[];
+  for(var pF=0;pF<5;pF++){
+   var baseF=pF*TAU/5+Math.PI/2;
+   for(var sF=0;sF<=10;sF++){
+    var tF=sF/10;
+    var angF=baseF+(tF-.5)*1.05;
+    var rF=Math.sin(tF*Math.PI)*15;
+    ptsF.push([Math.cos(angF)*rF,Math.sin(angF)*rF,0]);
+    var rF2=Math.sin(tF*Math.PI)*10.5;
+    ptsF.push([Math.cos(angF)*rF2,Math.sin(angF)*rF2,1]);
+   }
+  }
+  for(pF=0;pF<18;pF++){var aF=pF/18*TAU;
+   ptsF.push([Math.cos(aF)*3.4,Math.sin(aF)*3.4,1]);}
+  for(i=0;i<ptsF.length;i++){
+   var pF2=ptsF[i],cF=pF2[2]?c2:c;
+   fwSpawn(x,y,z,0,0,0,cF[0],cF[1],cF[2],rand(1,1.4),rand(3.4,4.4),1,0,
+    x+pF2[0],y+pF2[1],z+rand(-.8,.8));
+  }
+ }else if(type==="butterfly"){ // 蝴蝶:经典蝴蝶参数曲线,双层翅膀
+  var ptsB=[];
+  for(var tB=0;tB<Math.PI*12;tB+=.16){
+   var rB=Math.exp(Math.sin(tB))-2*Math.cos(4*tB)+Math.pow(Math.sin((2*tB-Math.PI)/24),5);
+   ptsB.push([rB*Math.cos(tB)*3,rB*Math.sin(tB)*3,0]);
+  }
+  for(tB=0;tB<Math.PI*12;tB+=.34){
+   var rB2=Math.exp(Math.sin(tB))-2*Math.cos(4*tB)+Math.pow(Math.sin((2*tB-Math.PI)/24),5);
+   ptsB.push([rB2*Math.cos(tB)*2.1,rB2*Math.sin(tB)*2.1,1]);
+  }
+  for(i=0;i<ptsB.length;i++){
+   var pB=ptsB[i],cB=pB[2]?c2:c;
+   fwSpawn(x,y,z,0,0,0,cB[0],cB[1],cB[2],rand(1,1.4),rand(3.4,4.4),1,0,
+    x+pB[0],y+pB[1],z+rand(-.8,.8));
+  }
+ }else if(type==="smiley"){ // 笑脸:脸圆+双眼+微笑弧
+  var ptsM=[];
+  for(var sM=0;sM<48;sM++){var aM=sM/48*TAU;
+   ptsM.push([Math.cos(aM)*13,Math.sin(aM)*13,0]);}
+  var eyesM=[[-4.9,4.9],[4.9,4.9]];
+  for(var eM=0;eM<2;eM++)for(sM=0;sM<8;sM++){
+   var aE2=sM/8*TAU;
+   ptsM.push([eyesM[eM][0]+Math.cos(aE2)*1.4,eyesM[eM][1]+Math.sin(aE2)*1.4,1]);}
+  for(sM=0;sM<=16;sM++){var aM2=(205+130*sM/16)*Math.PI/180;
+   ptsM.push([Math.cos(aM2)*7.4,-0.8+Math.sin(aM2)*7.4,1]);}
+  for(i=0;i<ptsM.length;i++){
+   var pM=ptsM[i],cM=pM[2]?c2:c;
+   fwSpawn(x,y,z,0,0,0,cM[0],cM[1],cM[2],rand(1,1.4),rand(3.4,4.4),1,0,
+    x+pM[0],y+pM[1],z+rand(-.8,.8));
+  }
+ }else if(type==="heart"){
+  n=150;
+  for(i=0;i<n;i++){
+   var t=(i/n)*TAU;
+   var hx=16*Math.pow(Math.sin(t),3);
+   var hy=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+   var cc2=(i%3===0)?c2:c;
+   fwSpawn(x,y,z,hx*1.02,hy*1.02,rand(-1.3,1.3),cc2[0],cc2[1],cc2[2],rand(1.3,1.7),rand(3,4),.955,2.6);
+  }
+ }else if(type==="willow"){
+  n=110;
+  for(i=0;i<n;i++){
+   var th=rand(0,TAU),ph2=rand(0,Math.PI);
+   vx=Math.sin(ph2)*Math.cos(th)*rand(7,16);vy=Math.cos(ph2)*rand(7,16);vz=Math.sin(ph2)*Math.sin(th)*rand(7,16);
+   var cc3=(i%3===0)?c2:c;
+   fwSpawn(x,y,z,vx,vy,vz,cc3[0]*.98,cc3[1]*.9,cc3[2]*.6,rand(1,1.4),rand(3.8,5.3),.975,5.5);
+  }
+ }else{ // peony / grand
+  n=type==="grand"?280:190;
+  for(i=0;i<n;i++){
+   var u=rand(-1,1),phi=rand(0,TAU),sq=Math.sqrt(1-u*u);
+   var sp=(type==="grand"?rand(18,34):rand(13.5,27));
+   vx=sq*Math.cos(phi)*sp;vy=u*sp;vz=sq*Math.sin(phi)*sp;
+   var dim=rand(.75,1.05);
+   var cc4=(i%3===0)?c2:c;
+   fwSpawn(x,y,z,vx,vy,vz,cc4[0]*dim,cc4[1]*dim,cc4[2]*dim,rand(1.1,1.6),rand(2.5,3.7),.93,3.4);
+  }
+  // 心核闪
+  fwSpawn(x,y,z,0,0,0,1,.98,.9,3.5,.6,.9,0);
+ }
+ Audio2.sfxCrackle(type);
+}
+
+/* ---------- 3D 更新 ---------- */
+function update3D(dt){
+ var T=window.THREE;
+ var p=Game.player;
+ // 移动
+ var sp=7.2;
+ var dx=p.tx-p.x,dz=p.tz-p.z,dist=Math.hypot(dx,dz);
+ if(dist>.25){
+  var mv=Math.min(sp*dt,dist);
+  p.x+=dx/dist*mv;p.z+=dz/dist*mv;
+  // 限制活动范围(光灵可掠过湖面)
+  var rr=Math.hypot(p.x,p.z);
+  if(rr>42){p.x=p.x/rr*42;p.z=p.z/rr*42;}
+ }else{p.tx=p.x;p.tz=p.z}
+ p.bob+=dt*3;
+ var py=1.1+Math.sin(p.bob)*.18;
+ /* 光灵移动轨迹 */
+ if(dist>.25){
+  Game.trailT+=dt;
+  while(Game.trailT>.05){
+   Game.trailT-=.05;
+   fwSpawn(p.x+rand(-.15,.15),py-rand(0,.4),p.z+rand(-.15,.15),
+    rand(-.3,.3),rand(.1,.5),rand(-.3,.3),1,.9,.62,rand(.5,.8),rand(.5,.8),.93,-.15);
+  }
+ }else Game.trailT=0;
+ Game.playerObj.position.set(p.x,py,p.z);
+ Game.playerCore.position.set(p.x,py,p.z);
+ // 相机:缓动跟随;终章/自由模式缓慢拉远成广角,烟花尽收眼底
+ var camT,camLook;
+ if(Game.cine){camT={x:0,y:30,z:66};camLook={x:0,y:13,z:0}}
+ else{camT={x:p.x*.72,y:12.5,z:p.z+24};camLook={x:p.x*.72,y:6.5,z:p.z*.72-2}}
+ var cs=Game.cine?dt*.55:dt*2.2;   // 拉远过程更缓慢
+ Game.camera.position.x=lerp(Game.camera.position.x,camT.x,cs);
+ Game.camera.position.y=lerp(Game.camera.position.y,camT.y,cs);
+ Game.camera.position.z=lerp(Game.camera.position.z,camT.z,cs);
+ if(!Game.lookPt)Game.lookPt={x:camLook.x,y:camLook.y,z:camLook.z};
+ Game.lookPt.x=lerp(Game.lookPt.x,camLook.x,cs);
+ Game.lookPt.y=lerp(Game.lookPt.y,camLook.y,cs);
+ Game.lookPt.z=lerp(Game.lookPt.z,camLook.z,cs);
+ Game.camera.lookAt(Game.lookPt.x,Game.lookPt.y,Game.lookPt.z);
+ // 星屑浮动(下一颗高亮,其余黯淡)
+ var t=Game.elapsed;
+ for(var i=0;i<Game.shards.length;i++){
+  var s=Game.shards[i];
+  if(!s.alive)continue;
+  s.sprite.position.y=1.5+Math.sin(t*1.6+s.ph)*.35;
+  s.sprite.material.rotation=Math.sin(t*.8+s.ph)*.3;
+  var isNext=(i===Game.nextShard);
+  var base=isNext?2:1.2;
+  var sc=base+Math.sin(t*2.2+s.ph)*(isNext?.25:.1);
+  s.sprite.scale.set(sc,sc,1);
+  s.sprite.material.opacity=isNext?1:.28;
+ }
+ // 萤火漂移
+ var fp=Game.fireflies.geometry.attributes.position.array;
+ for(i=0;i<Game.ffPh.length;i++){
+  var f=Game.ffPh[i];
+  fp[i*3]=f.ox+Math.sin(t*f.sp+f.ph)*1.6;
+  fp[i*3+1]=.9+Math.sin(t*f.sp*1.4+f.ph)*.8+Math.sin(t*.5+f.ph);
+  fp[i*3+2]=f.oz+Math.cos(t*f.sp*.8+f.ph)*1.6;
+ }
+ Game.fireflies.geometry.attributes.position.needsUpdate=true;
+ // 湖面倒影闪烁 + 爆炸照亮湖心
+ Game.refl.material.opacity=.35+Math.sin(t*1.3)*.2;
+ if(Game.lakeGlow)Game.lakeGlow.material.opacity=.45+Game.boomFlash*.55;
+ if(Game.lakeMat){Game.lakeMat.uniforms.uT.value=t;Game.lakeMat.uniforms.uFlash.value=Game.boomFlash}
+ // 涟漪扩散
+ if(Game.ripples)for(i=0;i<Game.ripples.length;i++){
+  var pr=(t*.35+i/Game.ripples.length)%1;
+  var rsc=1+pr*7.5;
+  Game.ripples[i].scale.set(rsc,rsc,1);
+  Game.ripples[i].material.opacity=.45*(1-pr);
+ }
+ // 岸边描边呼吸
+ if(Game.lakeEdge)Game.lakeEdge.material.opacity=.3+.14*Math.sin(t*1.5)+Game.boomFlash*.3;
+ // 月光带轻摆
+ if(Game.moonStreak){
+  Game.moonStreak.material.opacity=.3+.05*Math.sin(t*2.3)+Game.boomFlash*.25;
+  var msw=1+.06*Math.sin(t*2.3);Game.moonStreak.scale.set(msw,1,1);
+ }
+ // 星云缓转
+ if(Game.nebulas)for(i=0;i<Game.nebulas.length;i++)Game.nebulas[i].material.rotation+=.0002;
+ // 天空闪光联动
+ if(Game.skyMat)Game.skyMat.uniforms.uFlash.value=Game.boomFlash*.55;
+ // 光柱呼吸(外层+内芯+底座光晕)
+ if(Game.beamTarget!==undefined){
+  var pulse=.82+.18*Math.sin(Game.elapsed*2.2);
+  Game.beam.material.opacity=lerp(Game.beam.material.opacity,Game.beamTarget*pulse,dt*3);
+  Game.beam.rotation.y+=dt*.5;
+  if(Game.beam2){
+   Game.beam2.material.opacity=lerp(Game.beam2.material.opacity,Game.beamTarget*.8*pulse,dt*3);
+   Game.beam2.rotation.y-=dt*.7;
+  }
+  if(Game.beamGlow){
+   Game.beamGlow.material.opacity=lerp(Game.beamGlow.material.opacity,Game.beamTarget*.85,dt*3);
+   var gs=1+.08*Math.sin(Game.elapsed*2.2);
+   Game.beamGlow.scale.set(gs,gs,1);
+  }
+ }
+ // 银河缓转
+ Game.milky.rotation.y+=dt*.004;
+ fwUpdate(dt);
+}
+/* 3D 世界→屏幕投影 */
+function project3D(x,y,z){
+ var v=new window.THREE.Vector3(x,y,z);
+ v.project(Game.camera);
+ return {x:(v.x*.5+.5)*innerWidth,y:(-v.y*.5+.5)*innerHeight,front:v.z<1};
+}
+
+/* ---------- 2D 降级渲染层 ---------- */
+var C2D={ctx:null,stars:[],mounts:[],fireflies:[],shardDraw:[],scale:1,camX:0,camZ:0};
+function init2D(){
+ Game.three=false;
+ var canvas=$("gl");
+ canvas.width=innerWidth*Math.min(devicePixelRatio||1,1.5);
+ canvas.height=innerHeight*Math.min(devicePixelRatio||1,1.5);
+ C2D.ctx=canvas.getContext("2d");
+ C2D.stars=[];
+ for(var i=0;i<260;i++)C2D.stars.push({x:Math.random(),y:Math.random()*.62,r:Math.random()*1.6+.4,ph:rand(0,TAU),sp:rand(.5,1.6)});
+ C2D.mounts=[];
+ for(var ring=0;ring<2;ring++)for(i=0;i<8;i++){
+  C2D.mounts.push({x:i/8+.06+ring*.5%1,w:rand(.14,.26),h:rand(.1,.2)-ring*.04,c:ring?"#0d1128":"#0a0d20"});
+ }
+ C2D.fireflies=[];
+ for(i=0;i<26;i++)C2D.fireflies.push({x:rand(-30,30),z:rand(-30,30),ph:rand(0,TAU),sp:rand(.4,1)});
+ // 岸边装饰(树/石/微光小花)
+ C2D.trees=[];
+ for(var j=0;j<10;j++){
+  var tx2=rand(-40,40),tz2=rand(-40,40);
+  if(Math.hypot(tx2,tz2)>17.5)C2D.trees.push({x:tx2,z:tz2,s:rand(.7,1.4),c:Math.random()<.5?"#0c1426":"#101a30"});
+ }
+ C2D.rocks=[];
+ for(j=0;j<8;j++){var ox=rand(-40,40),oz=rand(-40,40);if(Math.hypot(ox,oz)>17)C2D.rocks.push({x:ox,z:oz,r:rand(.3,.8)})}
+ C2D.flowers=[];
+ for(j=0;j<18;j++){var fx2=rand(-40,40),fz2=rand(-40,40);if(Math.hypot(fx2,fz2)>17)C2D.flowers.push({x:fx2,z:fz2,ph:rand(0,TAU)})}
+ // 2D 分支同样构建星屑(轻量 sprite 替身,同样按从左到右映射位置)
+ SHARDS.forEach(function(sd,k){
+  var pos=SHARDS[POS_ORDER[k]];
+  Game.shards.push({data:sd,alive:true,ph:rand(0,TAU),
+   sprite:{position:{x:Math.cos(pos.ang)*pos.r,y:1.5,z:Math.sin(pos.ang)*pos.r},visible:true}});
+ });
+ // 2D 粒子池
+ var PMAX=5000;
+ Game.fw={max:PMAX,n:0,
+  pos:new Float32Array(PMAX*3),vel:new Float32Array(PMAX*3),
+  col:new Float32Array(PMAX*3),siz:new Float32Array(PMAX),
+  life:new Float32Array(PMAX),mlife:new Float32Array(PMAX),
+  drag:new Float32Array(PMAX),grav:new Float32Array(PMAX),
+  tgt:new Float32Array(PMAX*3),hasT:new Uint8Array(PMAX)};
+}
+function update2D(dt){
+ var p=Game.player;
+ var sp=7.2,dx=p.tx-p.x,dz=p.tz-p.z,dist=Math.hypot(dx,dz);
+ if(dist>.25){var mv=Math.min(sp*dt,dist);p.x+=dx/dist*mv;p.z+=dz/dist*mv;
+  var rr=Math.hypot(p.x,p.z);if(rr>42){p.x=p.x/rr*42;p.z=p.z/rr*42;}
+  /* 光灵移动轨迹 */
+  Game.trailT+=dt;
+  while(Game.trailT>.05){
+   Game.trailT-=.05;
+   fwSpawn(p.x+rand(-.15,.15),1+rand(0,.4),p.z+rand(-.15,.15),
+    rand(-.3,.3),rand(.1,.5),rand(-.3,.3),1,.9,.62,rand(.5,.8),rand(.5,.8),.93,-.15);
+  }
+ }else Game.trailT=0;
+ C2D.camX=p.x*.72;C2D.camZ=p.z-6;
+ fwUpdate(dt);
+ draw2D();
+}
+function draw2D(){
+ var ctx=C2D.ctx,W=innerWidth,H=innerHeight,canvas=$("gl");
+ var dpr=Math.min(devicePixelRatio||1,1.5);
+ var tw=Math.round(W*dpr),th=Math.round(H*dpr);
+ if(canvas.width!==tw||canvas.height!==th){canvas.width=tw;canvas.height=th}
+ ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);
+ var t=Game.elapsed;
+ // 天空
+ var sky=ctx.createLinearGradient(0,0,0,H*.7);
+ sky.addColorStop(0,"#141a3e");sky.addColorStop(.6,"#0a0f26");sky.addColorStop(1,"#070a18");
+ ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+ // 星
+ for(var i=0;i<C2D.stars.length;i++){
+  var s=C2D.stars[i];
+  ctx.globalAlpha=.3+.6*Math.abs(Math.sin(t*s.sp+s.ph));
+  ctx.fillStyle="#dfe6ff";
+  ctx.fillRect(s.x*W,s.y*H,s.r,s.r);
+ }
+ ctx.globalAlpha=1;
+ // 月亮
+ var mg=ctx.createRadialGradient(W*.72,H*.16,4,W*.72,H*.16,60);
+ mg.addColorStop(0,"rgba(250,240,205,.95)");mg.addColorStop(1,"rgba(250,240,205,0)");
+ ctx.fillStyle=mg;ctx.fillRect(W*.72-70,H*.16-70,140,140);
+ // 山
+ for(i=0;i<C2D.mounts.length;i++){
+  var m=C2D.mounts[i];
+  ctx.fillStyle=m.c;
+  ctx.beginPath();
+  ctx.moveTo(m.x*W,H*.52);ctx.lineTo(m.x*W+m.w*W/2,H*.52-m.h*H);ctx.lineTo(m.x*W+m.w*W,H*.52);
+  ctx.closePath();ctx.fill();
+ }
+ // 地面
+ var gg=ctx.createLinearGradient(0,H*.5,0,H);
+ gg.addColorStop(0,"#0c1326");gg.addColorStop(1,"#080d1c");
+ ctx.fillStyle=gg;ctx.fillRect(0,H*.5,W,H*.5);
+ // 世界坐标→屏幕
+ function w2s(x,y,z){
+  return {x:W/2+(x-C2D.camX)*(W/64),y:H*.62-(z-C2D.camZ)*(H/80)-y*(H/110)};
+ }
+ // 树剪影
+ for(i=0;i<C2D.trees.length;i++){
+  var tr2=C2D.trees[i],q3=w2s(tr2.x,0,tr2.z);
+  if(q3.y<H*.5||q3.y>H)continue;
+  var tw2=26*tr2.s,th3=58*tr2.s;
+  ctx.fillStyle=tr2.c;
+  ctx.fillRect(q3.x-tw2*.06,q3.y-th3*.45,tw2*.12,th3*.45);
+  ctx.beginPath();
+  ctx.moveTo(q3.x,q3.y-th3);ctx.lineTo(q3.x-tw2/2,q3.y-th3*.4);ctx.lineTo(q3.x+tw2/2,q3.y-th3*.4);
+  ctx.closePath();ctx.fill();
+ }
+ // 石头
+ ctx.fillStyle="#141c34";
+ for(i=0;i<C2D.rocks.length;i++){
+  var rk=C2D.rocks[i],q4=w2s(rk.x,0,rk.z);
+  if(q4.y<H*.5||q4.y>H)continue;
+  ctx.beginPath();ctx.ellipse(q4.x,q4.y,rk.r*6,rk.r*3.4,0,0,TAU);ctx.fill();
+ }
+ // 微光小花
+ for(i=0;i<C2D.flowers.length;i++){
+  var fl2=C2D.flowers[i],q5=w2s(fl2.x,.1,fl2.z);
+  if(q5.y<H*.5||q5.y>H)continue;
+  ctx.globalAlpha=.2+.35*Math.abs(Math.sin(t*1.4+fl2.ph));
+  ctx.fillStyle=Math.sin(fl2.ph)>0?"#9fb4ff":"#ffb4c8";
+  ctx.fillRect(q5.x,q5.y,3,3);
+ }
+ ctx.globalAlpha=1;
+ // 湖(椭圆)
+ var cx=W/2-C2D.camX*8,cy=H*.66;
+ ctx.fillStyle="#0e1d42";
+ ctx.beginPath();ctx.ellipse(cx,cy,W*.3,H*.13,0,0,TAU);ctx.fill();
+ // 涟漪扩散
+ var rp2=(t*.4)%1;
+ ctx.strokeStyle="rgba(80,160,255,"+(.35*(1-rp2))+")";
+ ctx.lineWidth=1.5;
+ ctx.beginPath();ctx.ellipse(cx,cy,W*.3*rp2,H*.13*rp2,0,0,TAU);ctx.stroke();
+ // 岸边描边
+ ctx.strokeStyle="rgba(90,140,220,"+(.3+.15*Math.sin(t*1.5)+Game.boomFlash*.3)+")";
+ ctx.lineWidth=2;
+ ctx.beginPath();ctx.ellipse(cx,cy,W*.3,H*.13,0,0,TAU);ctx.stroke();
+ var lg=ctx.createRadialGradient(cx,cy,2,cx,cy,W*.12);
+ lg.addColorStop(0,"rgba(50,80,160,"+(.5+Game.boomFlash*.4)+")");lg.addColorStop(1,"rgba(50,80,160,0)");
+ ctx.fillStyle=lg;ctx.beginPath();ctx.ellipse(cx,cy,W*.12,H*.05,0,0,TAU);ctx.fill();
+ // 月亮湖面倒影
+ ctx.save();ctx.globalAlpha=.18+.05*Math.sin(t*2.3);
+ ctx.fillStyle="#f4ecd0";
+ ctx.beginPath();ctx.ellipse(W*.72,H*.72,52,9,0,0,TAU);ctx.fill();
+ ctx.restore();
+ // 光柱(双层更亮)
+ if(Game.beamTarget>0.02){
+  ctx.save();
+  var bp=Game.beamTarget*(0.8+0.2*Math.sin(t*2.4));
+  ctx.globalAlpha=bp*.55;
+  var bg2=ctx.createLinearGradient(cx-30,0,cx+30,0);
+  bg2.addColorStop(0,"rgba(212,175,55,0)");bg2.addColorStop(.5,"rgba(232,200,110,.75)");bg2.addColorStop(1,"rgba(212,175,55,0)");
+  ctx.fillStyle=bg2;ctx.fillRect(cx-30,H*.08,60,H*.58);
+  ctx.globalAlpha=bp*.8;
+  var bg3=ctx.createLinearGradient(cx-10,0,cx+10,0);
+  bg3.addColorStop(0,"rgba(255,242,192,0)");bg3.addColorStop(.5,"rgba(255,242,192,.9)");bg3.addColorStop(1,"rgba(255,242,192,0)");
+  ctx.fillStyle=bg3;ctx.fillRect(cx-10,H*.08,20,H*.58);
+  ctx.restore();
+ }
+ // 萤火
+ ctx.fillStyle="#ffe9a3";
+ for(i=0;i<C2D.fireflies.length;i++){
+  var f=C2D.fireflies[i];
+  var q=w2s(f.x+Math.sin(t*f.sp+f.ph)*1.5,1+Math.sin(t+f.ph)*.7,f.z+Math.cos(t*f.sp*.8+f.ph)*1.5);
+  if(q.y>H*.5){ctx.globalAlpha=.5;ctx.fillRect(q.x,q.y,3,3)}
+ }
+ ctx.globalAlpha=1;
+ // 星屑(下一颗高亮,其余黯淡)
+ for(i=0;i<Game.shards.length;i++){
+  var sd=Game.shards[i];
+  if(!sd.alive)continue;
+  var isN=(i===Game.nextShard);
+  var q2=w2s(sd.sprite.position.x,1.5+Math.sin(t*1.6+sd.ph)*.35,sd.sprite.position.z);
+  var a=(Math.abs(Math.sin(t*2+sd.ph))*.5+.5)*(isN?1:.3);
+  var rr2=isN?18:10;
+  var rg=ctx.createRadialGradient(q2.x,q2.y,1,q2.x,q2.y,rr2);
+  rg.addColorStop(0,"rgba(255,240,190,"+(.95*a)+")");rg.addColorStop(1,"rgba(255,220,120,0)");
+  ctx.fillStyle=rg;ctx.beginPath();ctx.arc(q2.x,q2.y,rr2,0,TAU);ctx.fill();
+ }
+ // 玩家
+ var pq=w2s(Game.player.x,1.1+Math.sin(Game.player.bob)*.15,Game.player.z);
+ var prg=ctx.createRadialGradient(pq.x,pq.y,2,pq.x,pq.y,22);
+ prg.addColorStop(0,"rgba(255,250,230,.95)");prg.addColorStop(1,"rgba(255,220,140,0)");
+ ctx.fillStyle=prg;ctx.beginPath();ctx.arc(pq.x,pq.y,22,0,TAU);ctx.fill();
+ // 烟花(additive)
+ ctx.globalCompositeOperation="lighter";
+ var fw=Game.fw;
+ for(i=0;i<fw.n;i++){
+  var w=w2s(fw.pos[i*3],fw.pos[i*3+1],fw.pos[i*3+2]);
+  var al=fw.life[i];
+  if(al<=0)continue;
+  ctx.fillStyle="rgba("+(fw.col[i*3]*255|0)+","+(fw.col[i*3+1]*255|0)+","+(fw.col[i*3+2]*255|0)+","+(al*.9)+")";
+  var sz2=fw.siz[i]*4.4;
+  ctx.fillRect(w.x-sz2/2,w.y-sz2/2,sz2,sz2);
+ }
+ ctx.globalCompositeOperation="source-over";
+}
+function project2D(x,y,z){
+ var W=innerWidth,H=innerHeight;
+ return {x:W/2+(x-C2D.camX)*(W/64),y:H*.62-(z-C2D.camZ)*(H/80)-y*(H/110),front:true};
+}
+
+/* ---------- 交互 ---------- */
+function pickGround(cx,cy){
+ if(Game.three){
+  var T=window.THREE;
+  var ray=new T.Raycaster();
+  var v=new T.Vector2((cx/innerWidth)*2-1,-(cy/innerHeight)*2+1);
+  ray.setFromCamera(v,Game.camera);
+  var plane=new T.Plane(new T.Vector3(0,1,0),0);
+  var hit=new T.Vector3();
+  if(ray.ray.intersectPlane(plane,hit))return {x:hit.x,z:hit.z};
+  return null;
+ }else{
+  if(cy<innerHeight*.45)return null; // 天空区域
+  var W=innerWidth,H=innerHeight;
+  var x=clamp((cx-W/2)/(W/64)+C2D.camX,-40,40);
+  var z=clamp((H*.62-cy)/(H/80)+C2D.camZ,-40,40);
+  return {x:x,z:z};
+ }
+}
+function bindInput(){
+ var canvas=$("gl");
+ function onDown(e){
+  if(Game.state!=="play"&&Game.state!=="free")return;
+  var cx,cy;
+  if(e.touches){cx=e.touches[0].clientX;cy=e.touches[0].clientY}
+  else{cx=e.clientX;cy=e.clientY}
+  // 自由模式:点天空放烟花
+  if(Game.freeMode&&cy<innerHeight*.48){
+   var wx,wz,wy;
+   if(Game.three){
+    var T=window.THREE,ray=new T.Raycaster();
+    var v=new T.Vector2((cx/innerWidth)*2-1,-(cy/innerHeight)*2+1);
+    ray.setFromCamera(v,Game.camera);
+    var dir=ray.ray.direction.clone().multiplyScalar(60);
+    wx=clamp(Game.camera.position.x+dir.x,-42,42);
+    wy=clamp(Game.camera.position.y+dir.y,18,38);
+    wz=clamp(Game.camera.position.z+dir.z,-42,42);
+   }else{
+    var W=innerWidth,H=innerHeight;
+    wx=clamp((cx-W/2)/(W/64)+C2D.camX,-40,40);
+    wz=clamp((H*.62-cy)/(H/80)*.4+C2D.camZ,-40,40);
+    wy=clamp((H*.62-cy)/(H/110)+6,11,24);
+   }
+   var types=["peony","ring","heart","willow","grand","star","flower","butterfly","smiley"];
+   launchFrom(wx,wz,wy,types[Math.floor(Math.random()*types.length)]);
+   return;
+  }
+  var hit=pickGround(cx,cy);
+  if(hit){Game.player.tx=hit.x;Game.player.tz=hit.z}
+ }
+ canvas.addEventListener("touchstart",function(e){e.preventDefault();onDown(e)},{passive:false});
+ canvas.addEventListener("mousedown",function(e){onDown(e)});
+ // 键盘(同时记录 e.key 与 e.code,兼容中文输入法占用 e.key 的情况)
+ addEventListener("keydown",function(e){
+  var k=(e.key||"").toLowerCase();
+  if(k)Game.keys[k]=true;
+  if(e.code)Game.keys[e.code.toLowerCase()]=true;
+  // 对话框快捷推进
+  if((Game.state==="dialog"||Game.state==="special")&&(e.key===" "||e.key==="Enter"))advanceDialog();
+ });
+ addEventListener("keyup",function(e){
+  var k=(e.key||"").toLowerCase();
+  if(k)Game.keys[k]=false;
+  if(e.code)Game.keys[e.code.toLowerCase()]=false;
+ });
+ // 窗口失焦时清空按键,避免 keyup 丢失导致光灵持续漂移
+ addEventListener("blur",function(){Game.keys={}});
+}
+function keyboardMove(dt){
+ var k=Game.keys,p=Game.player;
+ var mx=0,mz=0;
+ if(k["w"]||k["keyw"]||k["arrowup"])mz-=1;
+ if(k["s"]||k["keys"]||k["arrowdown"])mz+=1;
+ if(k["a"]||k["keya"]||k["arrowleft"])mx-=1;
+ if(k["d"]||k["keyd"]||k["arrowright"])mx+=1;
+ if(mx||mz){
+  var l=Math.hypot(mx,mz);
+  p.tx=p.x+mx/l*1.5;p.tz=p.z+mz/l*1.5;
+ }
+}
+
+/* ---------- UI:提示 / Toast ---------- */
+var toastTimer=null;
+function toast(msg,dur){
+ var t=$("toast");t.textContent=msg;t.classList.add("show");
+ clearTimeout(toastTimer);
+ toastTimer=setTimeout(function(){t.classList.remove("show")},dur||3400);
+}
+function hint(msg,dur){
+ var h=$("hint");h.textContent=msg;h.classList.add("show");
+ clearTimeout(h._t);
+ if(dur)h._t=setTimeout(function(){h.classList.remove("show")},dur);
+ else h._t=setTimeout(function(){h.classList.remove("show")},6000);
+}
+
+/* ---------- 对话框系统 ---------- */
+var Dlg={lines:[],idx:0,typing:false,typeTimer:null,name:"",onEnd:null};
+function showDialog(name,lines,onEnd){
+ Dlg.name=name;Dlg.lines=lines;Dlg.idx=0;Dlg.onEnd=onEnd||null;
+ $("dialog").classList.add("show");
+ Game.state="dialog";
+ typeLine();
+}
+function typeLine(){
+ var el=$("dlgText");
+ $("dlgName").textContent=Dlg.name;
+ el.textContent="";
+ Dlg.typing=true;
+ var line=Dlg.lines[Dlg.idx],i=0;
+ clearInterval(Dlg.typeTimer);
+ Dlg.typeTimer=setInterval(function(){
+  el.textContent=line.slice(0,++i);
+  if(i%3===0)Audio2.sfxTap();
+  if(i>=line.length){clearInterval(Dlg.typeTimer);Dlg.typing=false}
+ },42);
+}
+function advanceDialog(){
+ if(Game.state!=="dialog")return;
+ if(Dlg.typing){ // 立即显示全部
+  clearInterval(Dlg.typeTimer);
+  $("dlgText").textContent=Dlg.lines[Dlg.idx];
+  Dlg.typing=false;return;
+ }
+ Dlg.idx++;
+ if(Dlg.idx>=Dlg.lines.length){
+  $("dialog").classList.remove("show");
+  Game.state="play";
+  var cb=Dlg.onEnd;Dlg.onEnd=null;
+  if(cb)cb();
+ }else typeLine();
+}
+$("dialog").addEventListener("click",advanceDialog);
+$("dialog").addEventListener("touchstart",function(e){e.preventDefault();advanceDialog()},{passive:false});
+
+/* ---------- 特殊剧情:符纸(秦梧) ---------- */
+function playQin(){
+ Game.state="special";
+ showDialog("秦 梧",QIN_LINES,function(){
+  toast("符纸化作银灰色的光点,融进了星空 ✦");
+  afterSpecial();
+ });
+}
+/* ---------- 特殊剧情:Z 的来信(陆景和) ---------- */
+function playLu(){
+ Game.state="special";
+ var body=$("chatBody");body.innerHTML="";
+ $("chatUI").classList.add("show");
+ var seq=LU_MSGS.slice(),i=0;
+ function next(){
+  if(i>=seq.length)return;
+  var m=seq[i++];
+  if(m.t==="art"){
+   var wrap=document.createElement("div");wrap.className="bub art";
+   var card=document.createElement("div");card.className="artCard";
+   var cv=document.createElement("canvas");cv.className="artCanvas";
+   cv.width=380;cv.height=300;
+   drawZPainting(cv);
+   card.appendChild(cv);
+   var cap=document.createElement("div");cap.className="artCap";cap.textContent="《第 919 夜》 · Z";
+   card.appendChild(cap);wrap.appendChild(card);body.appendChild(wrap);
+   requestAnimationFrame(function(){wrap.classList.add("on")});
+   Audio2.sfxReveal();
+   setTimeout(next,1400);return;
+  }
+  // 正在输入…
+  var tp=document.createElement("div");tp.className="bub left typingDot";
+  tp.innerHTML="<i></i><i></i><i></i>";body.appendChild(tp);
+  body.scrollTop=body.scrollHeight;
+  setTimeout(function(){
+   tp.remove();
+   var b=document.createElement("div");
+   b.className="bub "+(m.t==="sys"?"sys":"left");
+   b.textContent=m.x;body.appendChild(b);
+   requestAnimationFrame(function(){b.classList.add("on")});
+   body.scrollTop=body.scrollHeight;
+   Audio2.sfxTap();
+   setTimeout(next,m.t==="sys"?900:rand(1000,1600));
+  },rand(700,1200));
+ }
+ setTimeout(next,500);
+}
+function drawZPainting(cv){
+ /* 《第919夜》——水彩小品风:湿画法晕染天空·留白湖面·简约蛋糕
+    (与 SSR 卡面的星夜油画风区分开) */
+ var x=cv.getContext("2d"),W=cv.width,H=cv.height,R=Math.random;
+ /* 1. 纸底:暖白水彩纸 */
+ x.fillStyle="#f4efe4";x.fillRect(0,0,W,H);
+ /* 2. 湿画法天空:大色斑多轮晕染(蓝紫夜色,边缘留白) */
+ function blot(cx2,cy2,r,col,al){
+  var g2=x.createRadialGradient(cx2,cy2,r*.15,cx2,cy2,r);
+  g2.addColorStop(0,col.replace("AL",al));
+  g2.addColorStop(.65,col.replace("AL",al*.45));
+  g2.addColorStop(1,col.replace("AL",0));
+  x.fillStyle=g2;
+  x.beginPath();x.ellipse(cx2,cy2,r,r*.82,rand(-.3,.3),0,TAU);x.fill();
+ }
+ // 底层:大片夜蓝
+ blot(W*.5,H*.28,W*.62,"rgba(58,84,146,AL)",.5);
+ blot(W*.3,H*.2,W*.4,"rgba(72,64,138,AL)",.42);
+ blot(W*.72,H*.24,W*.38,"rgba(64,96,150,AL)",.4);
+ // 中层:紫罗兰与群青交融
+ blot(W*.18,H*.38,W*.3,"rgba(108,92,168,AL)",.32);
+ blot(W*.55,H*.12,W*.3,"rgba(88,110,170,AL)",.3);
+ blot(W*.86,H*.36,W*.28,"rgba(96,80,158,AL)",.28);
+ // 顶层:一点点茜粉与天青提亮
+ blot(W*.42,H*.3,W*.2,"rgba(186,140,180,AL)",.2);
+ blot(W*.68,H*.4,W*.18,"rgba(120,170,186,AL)",.18);
+ /* 3. 远山:一两笔淡紫灰晕染,底部水痕留白 */
+ blot(W*.2,H*.56,W*.34,"rgba(96,88,132,AL)",.4);
+ blot(W*.62,H*.58,W*.4,"rgba(84,80,124,AL)",.38);
+ blot(W*.9,H*.6,W*.24,"rgba(100,92,140,AL)",.3);
+ /* 4. 月亮:柠檬黄晕染圆 */
+ var mx2=W*.78,my2=H*.2;
+ blot(mx2,my2,34,"rgba(238,196,96,AL)",.85);
+ blot(mx2,my2,16,"rgba(248,222,140,AL)",.95);
+ /* 5. 星星:细小白点+两颗柠檬黄 */
+ for(var i=0;i<46;i++){
+  x.globalAlpha=.3+R()*.5;
+  x.fillStyle="#fdfbf3";
+  x.beginPath();x.arc(R()*W*.94+W*.03,R()*H*.5+H*.03,.8+R()*1.3,0,TAU);x.fill();
+ }
+ x.globalAlpha=1;
+ function wstar(cx2,cy2,r){
+  blot(cx2,cy2,r*3,"rgba(242,208,110,AL)",.5);
+  x.fillStyle="#f6d878";
+  x.beginPath();x.arc(cx2,cy2,r,0,TAU);x.fill();
+  x.strokeStyle="rgba(246,216,120,.6)";x.lineWidth=1.2;
+  x.beginPath();x.moveTo(cx2-r*2.6,cy2);x.lineTo(cx2+r*2.6,cy2);
+  x.moveTo(cx2,cy2-r*2.6);x.lineTo(cx2,cy2+r*2.6);x.stroke();
+ }
+ wstar(W*.14,H*.12,3.2);wstar(W*.4,H*.18,2.4);wstar(W*.58,H*.38,2);wstar(W*.9,H*.14,2.6);
+ /* 6. 湖面:纸色留白 + 几笔横向水彩波纹 */
+ for(i=0;i<26;i++){
+  var wy=H*.64+R()*(H*.3);
+  var wcol=["rgba(88,112,168,","rgba(120,100,170,","rgba(238,196,96,","rgba(140,160,190,"][Math.floor(R()*4)];
+  var al=.14+R()*.22;
+  var wx=W*.06+R()*W*.7,ww=W*.12+R()*W*.3;
+  var wg=x.createLinearGradient(wx,0,wx+ww,0);
+  wg.addColorStop(0,wcol+0+")");wg.addColorStop(.5,wcol+al+")");wg.addColorStop(1,wcol+0+")");
+  x.fillStyle=wg;
+  x.beginPath();x.ellipse(wx+ww/2,wy,ww/2,1.6+R()*2.4,0,0,TAU);x.fill();
+ }
+ // 月亮的横向倒影
+ for(i=0;i<4;i++){
+  var ry=H*.66+i*10;
+  x.globalAlpha=.3-i*.06;
+  var rg=x.createLinearGradient(mx2-20,0,mx2+20,0);
+  rg.addColorStop(0,"rgba(238,196,96,0)");rg.addColorStop(.5,"rgba(238,196,96,.5)");rg.addColorStop(1,"rgba(238,196,96,0)");
+  x.fillStyle=rg;
+  x.beginPath();x.ellipse(mx2,ry,20-i*3,2,0,0,TAU);x.fill();
+ }
+ x.globalAlpha=1;
+ /* 7. 蛋糕:简约水彩(几笔色块+奶油+蜡烛),站在湖面留白处 */
+ var cx3=W*.42,cy3=H*.76;
+ // 影子(淡蓝湿痕)
+ blot(cx3,cy3+10,44,"rgba(88,112,168,AL)",.22);
+ // 蛋体:草莓粉水彩
+ blot(cx3,cy3,30,"rgba(222,132,128,AL)",.55);
+ blot(cx3-8,cy3+2,22,"rgba(232,158,150,AL)",.5);
+ blot(cx3+9,cy3+3,20,"rgba(210,118,116,AL)",.45);
+ // 奶油:厚白
+ x.fillStyle="rgba(250,246,236,.95)";
+ x.beginPath();x.ellipse(cx3,cy3-8,24,9,0,0,TAU);x.fill();
+ // 淋面:柠檬黄水彩滴落
+ blot(cx3,cy3-4,18,"rgba(240,208,110,AL)",.6);
+ x.fillStyle="rgba(240,208,110,.8)";
+ for(i=0;i<4;i++){
+  var dx3=cx3-15+i*10;
+  x.beginPath();x.ellipse(dx3,cy3+2+R()*4,2.4,4+R()*4,0,0,TAU);x.fill();
+ }
+ // 草莓点缀
+ x.fillStyle="rgba(206,88,96,.9)";
+ x.beginPath();x.arc(cx3-17,cy3-8,3.2,0,TAU);x.arc(cx3+17,cy3-8,3.2,0,TAU);x.fill();
+ x.fillStyle="rgba(120,168,120,.8)";
+ x.fillRect(cx3-18.4,cy3-12,2.8,2.8);x.fillRect(cx3+15.6,cy3-12,2.8,2.8);
+ // 蜡烛:白杆+红纹
+ x.strokeStyle="#f7f2e6";x.lineWidth=3.4;
+ x.beginPath();x.moveTo(cx3,cy3-14);x.lineTo(cx3,cy3-34);x.stroke();
+ x.strokeStyle="rgba(206,88,96,.85)";x.lineWidth=3.4;
+ x.setLineDash([2.5,3.5]);
+ x.beginPath();x.moveTo(cx3,cy3-14);x.lineTo(cx3,cy3-34);x.stroke();
+ x.setLineDash([]);
+ // 火苗:橙黄水彩晕染
+ blot(cx3,cy3-42,10,"rgba(244,178,86,AL)",.85);
+ blot(cx3,cy3-42,4,"rgba(252,234,170,AL)",.95);
+ /* 8. 签名 Z(水彩棕金) */
+ x.globalAlpha=.9;
+ x.font="italic 700 30px serif";x.fillStyle="rgba(160,124,58,.85)";
+ x.fillText("Z",W-46,H-22);
+ x.globalAlpha=1;
+}
+$("chatClose").addEventListener("click",function(){
+ $("chatUI").classList.remove("show");
+ Game.state="play";
+ toast("蓝紫色的星星眨了眨眼,沉入湖底 ✦");
+ afterSpecial();
+});
+/* ---------- 特殊剧情:来电(秦梧) ---------- */
+function playCall(){
+ Game.state="special";
+ $("callUI").classList.add("show");
+ $("callState").style.display="";
+ $("callTalk").style.display="none";
+ $("callName").textContent="未知来电";
+}
+$("callAccept").addEventListener("click",function(){
+ Audio2.sfxTap();
+ $("callState").style.display="none";
+ $("callTalk").style.display="block";
+ $("callName").textContent="通话中 · 秦梧";
+ // 打字机播放台词(逐行累积,句间停顿)
+ var el=$("callText");el.textContent="";
+ var li=0,ci=0,shown="";
+ $("callDone").style.display="none";
+ var tm=null;
+ function typeLine(){
+  if(li>=CALL_LINES.length){$("callDone").style.display="";return}
+  var line=CALL_LINES[li];
+  ci++;
+  el.textContent=shown+line.slice(0,ci);
+  if(ci%3===0)Audio2.sfxTap();
+  if(ci>=line.length){
+   shown+=line+"\n\n";ci=0;li++;
+   tm=setTimeout(typeLine,700); // 句间停顿
+   return;
+  }
+  tm=setTimeout(typeLine,88);
+ }
+ typeLine();
+ $("callText")._tm={stop:function(){clearTimeout(tm)}};
+});
+$("callReject").addEventListener("click",function(){
+ // 拒接:回退计数,星屑重新亮起,可再次触发
+ $("callUI").classList.remove("show");
+ Game.state="play";
+ Game.collected=Math.max(0,Game.collected-1);
+ Game.nextShard=Game.lastShardIdx;   // 回退拾取顺序,否则该星屑永远无法再次拾取
+ $("cntNum").textContent=Game.collected;
+ var s=Game.shards[Game.lastShardIdx];
+ if(s){s.alive=true;if(Game.three)s.sprite.visible=true}
+ toast("电话挂断了……但星屑还在闪烁,再碰它一次吧");
+});
+$("callDone").addEventListener("click",function(){
+ if($("callText")._tm)$("callText")._tm.stop();
+ $("callUI").classList.remove("show");
+ Game.state="play";
+ toast("电话那头,传来一声很轻的笑 ✦");
+ afterSpecial();
+});
+function afterSpecial(){
+ checkProgress();shardHint();
+}
+function shardHint(){
+ var left=9-Game.collected;
+ if(left>0)hint("还剩 "+left+" 颗星屑散落在湖畔 · 跟着金色箭头走吧",5000);
+}
+
+/* ---------- 抽卡 ---------- */
+var gachaActive=false;
+function openGacha(){
+ if(Game.gachaDone||gachaActive)return;
+ gachaActive=true;
+ Game.state="gacha";
+ $("gachaUI").classList.add("show");
+ $("gachaBanner").style.display="";
+ $("gachaGo").style.display="";
+ $("ssrCard").className="";
+ $("ssrCard").style.display="none";
+ $("cardQuote").className="";
+ $("cardQuote").style.display="none";
+ $("gachaClose").style.display="none";
+}
+$("wishBtn").addEventListener("click",function(){
+ $("gachaGo").style.display="none";
+ var focus=$("gachaFocus");focus.style.display="block";
+ Audio2.sfxCharge();
+ setTimeout(function(){
+  focus.style.display="none";
+  var flash=$("gachaFlash");flash.style.display="block";
+  Audio2.sfxBoom("grand");Audio2.sfxCrackle("grand");
+  // 卡面星空装饰
+  buildCardArt();
+  setTimeout(function(){
+   $("ssrCard").style.display="block";
+   $("ssrCard").className="flip";
+   Audio2.sfxReveal();
+   setTimeout(function(){
+    $("cardQuote").style.display="block";
+    requestAnimationFrame(function(){$("cardQuote").className="on"});
+    $("gachaClose").style.display="block";
+    $("gachaBanner").style.display="none";
+    gachaActive=false;
+   },1400);
+  },900);
+ },1300);
+});
+function buildCardArt(){
+ /* SSR「萤影同归」卡面——星夜油画风 canvas(与 Z 的画统一) */
+ var art=$("cardArt");art.innerHTML="";
+ var cv=document.createElement("canvas");
+ cv.width=464;cv.height=560;
+ cv.style.cssText="width:100%;height:100%;display:block";
+ art.appendChild(cv);
+ drawSSRArt(cv);
+}
+function drawSSRArt(cv){
+ var x=cv.getContext("2d"),W=cv.width,H=cv.height,R=Math.random;
+ /* 夜空 */
+ var bg=x.createLinearGradient(0,0,0,H);
+ bg.addColorStop(0,"#1a2a5e");bg.addColorStop(.45,"#101d48");bg.addColorStop(1,"#0a122e");
+ x.fillStyle=bg;x.fillRect(0,0,W,H);
+ function brush(cx2,cy2,r,a0,a1,color,w2,al){
+  x.strokeStyle=color;x.globalAlpha=al;x.lineWidth=w2;x.lineCap="round";
+  x.beginPath();x.arc(cx2,cy2,r,a0,a1);x.stroke();
+ }
+ function swirl(cx2,cy2,r0,turns,scale,cols){
+  for(var t2=0;t2<turns;t2++){
+   var r=r0+t2*scale;
+   for(var s=0;s<7;s++){
+    var a0=s*(TAU/7)+t2*.55+R()*.3,a1=a0+TAU/9+R()*.2;
+    brush(cx2,cy2,r,a0,a1,cols[(s+t2)%cols.length],2.6+R()*2.4,.32+R()*.4);
+   }
+  }
+ }
+ swirl(W*.28,H*.20,9,5,9,["#5f7fd9","#8fa8e8","#3a55a8"]);
+ swirl(W*.68,H*.12,7,4,7,["#7a68d9","#9a86e8","#4a3fa8"]);
+ /* 星辰 */
+ function star(cx2,cy2,r){
+  var g2=x.createRadialGradient(cx2,cy2,0,cx2,cy2,r*3.4);
+  g2.addColorStop(0,"rgba(255,235,150,.95)");g2.addColorStop(.4,"rgba(245,205,95,.35)");g2.addColorStop(1,"rgba(245,205,95,0)");
+  x.globalAlpha=1;x.fillStyle=g2;x.fillRect(cx2-r*3.4,cy2-r*3.4,r*6.8,r*6.8);
+  x.fillStyle="#ffef9e";
+  x.beginPath();x.arc(cx2,cy2,r,0,TAU);x.fill();
+  x.strokeStyle="rgba(255,240,170,.85)";x.lineWidth=1.8;
+  x.beginPath();x.moveTo(cx2-r*3,cy2);x.lineTo(cx2+r*3,cy2);x.moveTo(cx2,cy2-r*3);x.lineTo(cx2,cy2+r*3);x.stroke();
+ }
+ star(W*.10,H*.10,5);star(W*.42,H*.28,4);star(W*.80,H*.24,4.5);
+ star(W*.90,H*.44,3);star(W*.22,H*.42,3);star(W*.58,H*.44,2.6);
+ for(var i=0;i<70;i++){
+  x.globalAlpha=.25+R()*.7;x.fillStyle="#dfe6ff";
+  x.fillRect(R()*W,R()*H*.5,1+R()*1.8,1+R()*1.8);
+ }
+ x.globalAlpha=1;
+ /* 一朵小烟花(呼应主题) */
+ var fx=W*.84,fy=H*.36;
+ for(i=0;i<26;i++){
+  var a2=R()*TAU,l2=14+R()*26;
+  x.strokeStyle="rgba(245,180,90,"+(.5+R()*.4)+")";x.lineWidth=2;
+  x.beginPath();x.moveTo(fx,fy);x.lineTo(fx+Math.cos(a2)*l2,fy+Math.sin(a2)*l2);x.stroke();
+  x.fillStyle="rgba(255,225,150,.9)";
+  x.beginPath();x.arc(fx+Math.cos(a2)*l2,fy+Math.sin(a2)*l2,1.8,0,TAU);x.fill();
+ }
+ /* 月亮 */
+ var mx2=W*.13,my2=H*.22;
+ var mg2=x.createRadialGradient(mx2,my2,3,mx2,my2,40);
+ mg2.addColorStop(0,"rgba(255,214,130,.8)");mg2.addColorStop(.4,"rgba(240,180,90,.25)");mg2.addColorStop(1,"rgba(240,180,90,0)");
+ x.fillStyle=mg2;x.fillRect(mx2-40,my2-40,80,80);
+ x.fillStyle="#ffd982";x.beginPath();x.arc(mx2,my2,11,0,TAU);x.fill();
+ x.fillStyle="#101d48";x.beginPath();x.arc(mx2-5,my2-3,9.5,0,TAU);x.fill();
+ /* 远山 */
+ x.fillStyle="#0a1028";
+ x.beginPath();x.moveTo(0,H*.58);
+ x.lineTo(W*.15,H*.50);x.lineTo(W*.3,H*.57);x.lineTo(W*.5,H*.48);
+ x.lineTo(W*.7,H*.57);x.lineTo(W*.86,H*.51);x.lineTo(W,H*.58);
+ x.lineTo(W,H*.64);x.lineTo(0,H*.64);x.closePath();x.fill();
+ /* 湖面倒影 */
+ var lakeY=H*.64;
+ var lg=x.createLinearGradient(0,lakeY,0,H);
+ lg.addColorStop(0,"#0d1936");lg.addColorStop(1,"#080e24");
+ x.fillStyle=lg;x.fillRect(0,lakeY,W,H-lakeY);
+ // 低饱和统一蓝的细微横向波光(不再多彩,不喧宾夺主)
+ for(i=0;i<44;i++){
+  var wy=lakeY+R()*(H-lakeY);
+  var al=.06+R()*.14;
+  var wx=W*.05+R()*W*.8,ww=W*.1+R()*W*.3;
+  var wg=x.createLinearGradient(wx,0,wx+ww,0);
+  wg.addColorStop(0,"rgba(70,100,170,0)");
+  wg.addColorStop(.5,"rgba(70,100,170,"+al+")");
+  wg.addColorStop(1,"rgba(70,100,170,0)");
+  x.fillStyle=wg;
+  x.beginPath();x.ellipse(wx+ww/2,wy,ww/2,1.4+R()*1.6,0,0,TAU);x.fill();
+ }
+ for(i=0;i<5;i++){
+  var ry=lakeY+10+i*11;
+  x.globalAlpha=.4-i*.07;x.fillStyle="#e8b45a";
+  x.beginPath();x.ellipse(mx2,ry,16-i*2.4,2.6,0,0,TAU);x.fill();
+ }
+ x.globalAlpha=1;
+ /* 湖畔岸线(细渐变带,不再遮挡) */
+ var shY=H*.795;
+ var shg=x.createLinearGradient(0,shY-14,0,shY+16);
+ shg.addColorStop(0,"rgba(17,28,58,0)");
+ shg.addColorStop(.5,"rgba(17,28,58,.85)");
+ shg.addColorStop(1,"rgba(10,16,36,.95)");
+ x.fillStyle=shg;
+ x.fillRect(0,shY-14,W,30);
+ /* 蛋糕(最上层,完整呈现,立于岸线上) */
+ var cx3=W*.5,cy3=H*.735;
+ x.fillStyle="#efe3c2";x.fillRect(cx3-34,cy3-15,68,20);
+ x.fillStyle="#d4af37";x.fillRect(cx3-38,cy3-20,76,6);
+ x.fillStyle="#d96a5a";
+ x.beginPath();x.arc(cx3-21,cy3-5,4,0,TAU);x.arc(cx3+21,cy3-5,4,0,TAU);x.fill();
+ x.strokeStyle="#e8c960";x.lineWidth=3.6;
+ x.beginPath();x.moveTo(cx3,cy3-20);x.lineTo(cx3,cy3-42);x.stroke();
+ var fg2=x.createRadialGradient(cx3,cy3-50,1,cx3,cy3-50,17);
+ fg2.addColorStop(0,"rgba(255,244,190,1)");fg2.addColorStop(.5,"rgba(255,205,100,.7)");fg2.addColorStop(1,"rgba(255,205,100,0)");
+ x.fillStyle=fg2;x.fillRect(cx3-17,cy3-67,34,34);
+ x.fillStyle="#fff2be";
+ x.beginPath();x.ellipse(cx3,cy3-50,3,5.5,0,0,TAU);x.fill();
+}
+$("gachaDone").addEventListener("click",function(){
+ $("gachaUI").classList.remove("show");
+ Game.gachaDone=true;
+ Game.state="play";
+ Audio2.sfxPickup();
+ toast("祈愿台的星辉,落进了口袋 ✦");
+ checkProgress();
+});
+/* 抽卡弹层内点击不穿透 */
+$("gachaUI").addEventListener("click",function(e){e.stopPropagation()});
+
+/* ---------- 星屑拾取 ---------- */
+function collectShard(idx){
+ var s=Game.shards[idx];
+ if(!s.alive)return;
+ s.alive=false;
+ Game.nextShard=idx+1;
+ if(Game.three)s.sprite.visible=false;
+ Game.collected++;
+ $("cntNum").textContent=Game.collected;
+ Audio2.sfxPickup();
+ Game.lastShardIdx=idx;
+ var d=s.data;
+ // 拾取小粒子
+ var px2=s.sprite.position.x,pz2=s.sprite.position.z;
+ for(var i=0;i<40;i++){
+  fwSpawn(px2,1.5,pz2,rand(-2,2),rand(1,4),rand(-2,2),1,.9,.55,rand(.6,1),rand(.7,1.2),.95,1.5);
+ }
+ if(d.special==="qin"){showDialog(d.name+"("+(idx+1)+"/9)",d.text,playQin);return}
+ if(d.special==="lu"){showDialog(d.name+"("+(idx+1)+"/9)",d.text,playLu);return}
+ if(d.special==="call"){showDialog(d.name+"("+(idx+1)+"/9)",d.text,playCall);return}
+ showDialog(d.name+"("+(idx+1)+"/9)",d.text,function(){checkProgress();shardHint()});
+}
+function checkProgress(){
+ if(Game.collected===4&&!Game.gachaDone){
+  Game.beamTarget=.8;
+  toast("湖心的祈愿台亮起了光柱 ✦");
+  hint("金色光柱在湖心小岛亮起——跟着金色箭头走上小岛祈愿");
+ }
+ if(Game.collected>=9&&Game.gachaDone&&!Game.finaleReady){
+  Game.finaleReady=true;
+  Game.beamTarget=1.05;
+  toast("九颗星屑已聚齐 ✦");
+  hint("星屑聚齐了。跟着金色箭头回到湖心小岛,为栗子点燃整片星空");
+ }
+ if(Game.collected>=9&&!Game.gachaDone){
+  toast("星屑聚齐了,但湖心的祈愿还没有完成…");
+  hint("先去湖心小岛,轻触光柱完成祈愿");
+ }
+}
+
+/* ---------- 终章 ---------- */
+function startFinale(){
+ if(Game.finaleDone)return;
+ Game.finaleDone=true;
+ Game.state="finale";
+ Game.cine=1;   // 相机缓慢拉远,烟花尽收眼底
+ Game.player.tx=0;Game.player.tz=0;
+ Game.beamTarget=0;
+ Audio2.stopBGM();
+ // 字幕一
+ showCap("星屑归位","THE NINE STARS ALIGN",2200);
+ setTimeout(function(){
+  // 生日歌 + 编排烟花
+  Audio2.playBirthday(function(){
+   // 歌毕:第二幕
+   secondAct();
+  });
+  melodyFireworks();
+ },2400);
+}
+function showCap(main,sub,dur){
+ var c=$("finaleCap");
+ $("capMain").textContent=main;
+ $("capSub").textContent=sub;
+ c.classList.add("show");
+ $("capMain").style.animation="none";$("capSub").style.animation="none";
+ void $("capMain").offsetWidth;
+ $("capMain").style.animation="";$("capSub").style.animation="";
+ setTimeout(function(){c.classList.remove("show")},dur||2200);
+}
+/* 生日歌期间的烟花(按乐句) */
+function melodyFireworks(){
+ var q=0;
+ function phrase(delay,type,ci,big){
+  setTimeout(function(){launchRocket(type,ci)},delay);
+ }
+ // 每乐句约 3.72s(beat .62 * 6拍)
+ phrase(400,"peony",0);
+ phrase(2200,"flower",1);
+ phrase(4100,"star",5);
+ phrase(6300,"butterfly",2);
+ phrase(8200,"heart",2);
+ phrase(10400,"grand",0,true);
+ phrase(12300,"smiley",4);
+ phrase(14500,"grand",3,true);
+}
+function secondAct(){
+ showCap("生日快乐 · 栗子","HAPPY BIRTHDAY, LIZI",2600);
+ // 连发盛宴
+ var t=0;
+ var plan=[
+  [600,"star",0],[1100,"flower",1],[1600,"heart",2],[2100,"butterfly",5],
+  [2600,"grand",0],[3100,"ring",3],[3600,"smiley",4],[4100,"peony",6]
+ ];
+ for(var i=0;i<plan.length;i++){
+  (function(pl){
+   setTimeout(function(){launchRocket(pl[1]==="peany"?"peony":pl[1],pl[2])},pl[0]);
+  })(plan[i]);
+ }
+ // 文字烟花压轴
+ setTimeout(function(){
+  showCap("九一九","DAY 919",3000);
+  // 世界中央高空
+  launchFrom(0,0,28,"text",0,"栗 子");
+  setTimeout(function(){launchFrom(0,0,29,"text",1,"生日快乐")},2600);
+  setTimeout(function(){launchFrom(0,0,30,"text",2,"825")},5200);
+ },4800);
+ // 落幕齐放
+ setTimeout(function(){
+  for(var i=0;i<6;i++){
+   (function(k){setTimeout(function(){launchRocket("grand",k%7)},k*350)})(i);
+  }
+ },11000);
+ // 信件
+ setTimeout(function(){
+  showLetter();
+ },13800);
+}
+/* ---------- 信件 ---------- */
+function showLetter(){
+ Game.state="letter";
+ Audio2.startBGM("calm");
+ $("letterUI").classList.add("show");
+ // 重置入场动画
+ var lw=document.querySelector(".letterWrap");
+ lw.style.animation="none";void lw.offsetWidth;lw.style.animation="";
+ var body=$("letterBody"),sign=$("letterSign");
+ body.textContent="";sign.innerHTML="";
+ var full=LETTER;
+ var i=0;
+ var tm=setInterval(function(){
+  body.textContent=full.slice(0,++i);
+  if(i>=full.length){
+   clearInterval(tm);
+   sign.innerHTML="—— 小空城<br><span style='font-size:12px;color:#8a92c4;letter-spacing:2px'>写于星湖畔 · 第 "+daysSince+" 夜</span>";
+  }
+ },34);
+}
+$("letterDone").addEventListener("click",function(){
+ $("letterUI").classList.remove("show");
+ Game.state="free";
+ Game.freeMode=true;
+ Game.cine=1;   // 自由模式保持广角,烟花尽收眼底
+ $("freeBadge").style.display="block";
+ Audio2.startBGM("lush");
+ showCap("自由放花","TOUCH THE NIGHT SKY",2600);
+ hint("轻触夜空任意处,为她放一朵烟花 · 祝她生日快乐",8000);
+});
+
+/* ---------- 箭头指引(环绕光灵,指向当前目标) ---------- */
+function updateArrow(){
+ var arrow=$("arrow");
+ if(Game.state!=="play"){arrow.style.opacity=0;return}
+ var tx,ty,tz;
+ // 祈愿 / 终章阶段:优先指向湖心光柱
+ if(Game.beamTarget>.05&&((!Game.gachaDone&&Game.collected>=4)||(Game.finaleReady&&!Game.finaleDone))){
+  tx=0;ty=4;tz=0;
+  if(Math.hypot(Game.player.x,Game.player.z)<3.4){arrow.style.opacity=0;return}
+ }else{
+  var s2=Game.shards[Game.nextShard];
+  if(!s2||!s2.alive){arrow.style.opacity=0;return}
+  tx=s2.sprite.position.x;ty=2;tz=s2.sprite.position.z;
+  var nd=Math.hypot(tx-Game.player.x,tz-Game.player.z);
+  if(nd<9){arrow.style.opacity=0;return}
+ }
+ // 光灵与目标的屏幕坐标 → 环绕光灵的方向箭头
+ var pp=project(Game.player.x,1.8,Game.player.z);
+ var pt=project(tx,ty,tz);
+ if(!pp.front||!pt.front){arrow.style.opacity=0;return}
+ var dx=pt.x-pp.x,dy=pt.y-pp.y,L=Math.hypot(dx,dy);
+ if(L<10){arrow.style.opacity=0;return}
+ var ux=dx/L,uy=dy/L;
+ var ax=pp.x+ux*56,ay=pp.y+uy*56;
+ arrow.style.opacity=1;
+ arrow.style.left=(ax-12)+"px";arrow.style.top=(ay-12)+"px";
+ arrow.style.transform="rotate("+(Math.atan2(uy,ux)*180/Math.PI)+"deg)";
+}
+function project(x,y,z){
+ return Game.three?project3D(x,y,z):project2D(x,y,z);
+}
+
+/* ---------- 祈愿台交互(靠近检测) ---------- */
+function checkProximity(){
+ var p=Game.player;
+ // 湖心岛
+ var onIsle=Math.hypot(p.x,p.z)<4.4;
+ if(onIsle){
+  if(!Game.gachaDone&&Game.collected>=4&&Game.state==="play"){
+   openGacha();
+  }else if(Game.finaleReady&&!Game.finaleDone&&Game.state==="play"){
+   startFinale();
+  }
+ }
+ // 星屑吸附(按顺序解锁:只有最亮的那颗可拾取)
+ for(var i=0;i<Game.shards.length;i++){
+  var s=Game.shards[i];
+  if(!s.alive)continue;
+  var d=Math.hypot(s.sprite.position.x-p.x,s.sprite.position.z-p.z);
+  if(d<2.2){
+   if(i===Game.nextShard)collectShard(i);
+   else if(Game.elapsed-Game.lockT>3){
+    Game.lockT=Game.elapsed;
+    toast("这颗星屑的光还很黯淡——先跟着金色箭头,拾取下一颗吧");
+   }
+  }
+ }
+}
+
+/* ---------- 屏幕空间流星(叠加层,不受3D视角影响) ---------- */
+var Meteors={list:[],next:2.5,ctx:null,
+ init:function(){
+  var cv=$("meteors");
+  cv.width=innerWidth;cv.height=innerHeight;
+  this.ctx=cv.getContext("2d");
+ },
+ spawn:function(){
+  var W=innerWidth,H=innerHeight;
+  var dir=Math.random()<.5?1:-1;                    // 左下或右下
+  var ang=rand(.45,.75);                            // 与水平夹角
+  var sp=rand(520,900);
+  this.list.push({
+   x:rand(.08,.92)*W, y:rand(.03,.22)*H,
+   vx:Math.cos(ang)*sp*dir, vy:Math.sin(ang)*sp,
+   life:rand(.8,1.3), maxLife:0, len:rand(110,210)
+  });
+  this.list[this.list.length-1].maxLife=this.list[this.list.length-1].life;
+ },
+ update:function(dt){
+  if(!this.ctx)return;
+  var W=innerWidth,H=innerHeight,c=this.ctx;
+  this.next-=dt;
+  if(this.next<=0){this.next=rand(3.5,8);this.spawn()}
+  c.clearRect(0,0,W,H);
+  for(var i=this.list.length-1;i>=0;i--){
+   var m=this.list[i];
+   m.x+=m.vx*dt;m.y+=m.vy*dt;m.life-=dt;
+   if(m.life<=0||m.y>H*.5){this.list.splice(i,1);continue}
+   var a=Math.min(1,m.life/m.maxLife*1.6)*.85;
+   var L=Math.hypot(m.vx,m.vy);
+   var ux=m.vx/L,uy=m.vy/L;
+   var tx=m.x-ux*m.len,ty=m.y-uy*m.len;
+   var g=c.createLinearGradient(m.x,m.y,tx,ty);
+   g.addColorStop(0,"rgba(235,242,255,"+a+")");
+   g.addColorStop(.35,"rgba(200,215,255,"+(a*.5)+")");
+   g.addColorStop(1,"rgba(200,215,255,0)");
+   c.strokeStyle=g;c.lineWidth=2;c.lineCap="round";
+   c.beginPath();c.moveTo(m.x,m.y);c.lineTo(tx,ty);c.stroke();
+   // 头部亮点
+   var hg=c.createRadialGradient(m.x,m.y,0,m.x,m.y,7);
+   hg.addColorStop(0,"rgba(255,255,255,"+a+")");hg.addColorStop(1,"rgba(255,255,255,0)");
+   c.fillStyle=hg;c.beginPath();c.arc(m.x,m.y,7,0,TAU);c.fill();
+  }
+ }
+};
+
+/* ---------- 主循环 ---------- */
+var lastT=0,fpsAcc=0,fpsN=0,fpsLow=0;
+function loop(ts){
+ requestAnimationFrame(loop);
+ if(!Game.clock){
+  lastT=ts;Game.clock=true;
+  return;
+ }
+ var dt=Math.min(.05,(ts-lastT)/1000);
+ lastT=ts;
+ Game.elapsed+=dt;
+ Meteors.update(dt);   // 屏幕空间流星,任何状态都飘
+ if(Game.state==="play"||Game.state==="dialog"||Game.state==="special"||Game.state==="free"||Game.state==="finale"){
+  if(Game.state==="play"||Game.state==="free")keyboardMove(dt);
+  if(Game.three){update3D(dt);Game.renderer.render(Game.scene,Game.camera)}
+  else update2D(dt);
+  if(Game.state==="play"||Game.state==="free"){checkProximity();updateArrow()}
+  // 爆炸闪光衰减(DOM层+天空/湖面联动)
+  if(Game.boomFlash>.004){
+   Game.boomFlash*=Math.exp(-dt*5.5);
+   $("flash").style.opacity=(Game.boomFlash*.45).toFixed(3);
+  }else if(Game.boomFlash!==0){Game.boomFlash=0;$("flash").style.opacity="0"}
+  // FPS 保护
+  fpsAcc+=dt;fpsN++;
+  if(fpsAcc>2){
+   var fps=fpsN/fpsAcc;
+   if(fps<24){fpsLow++;if(fpsLow>=2&&Game.fw){Game.fw.max=Math.max(2000,Game.fw.max>>1);fpsLow=0}}
+   else fpsLow=0;
+   fpsAcc=0;fpsN=0;
+  }
+ }
+}
+
+/* ---------- 开始流程 ---------- */
+function startGame(){
+ Audio2.init();
+ Audio2.resume();
+ // 手势解锁兜底
+ ["touchstart","mousedown","keydown"].forEach(function(ev){
+  addEventListener(ev,function(){Audio2.resume()},{passive:true});
+ });
+ document.addEventListener("visibilitychange",function(){
+  if(!document.hidden)setTimeout(function(){Audio2.resume()},250);
+ });
+ /* 传送特效:光从启程按钮涌出→光环扩散→白光自按钮扩散至全屏→无缝落入星湖 */
+ var warp=$("warp");
+ var streaks=$("warpStreaks");
+ // 以按钮中心为特效原点
+ var btn=$("startBtn"),br=btn.getBoundingClientRect();
+ var bx=br.left+br.width/2,by=br.top+br.height/2;
+ $("warpCore").style.left=bx+"px";$("warpCore").style.top=by+"px";
+ var rings=warp.querySelectorAll(".warpRing");
+ for(var rI=0;rI<rings.length;rI++){rings[rI].style.left=bx+"px";rings[rI].style.top=by+"px"}
+ // 白光:径向渐变中心定位到按钮
+ var flash=$("warpFlash");
+ flash.style.background="radial-gradient(circle at "+bx+"px "+by+"px,rgba(255,250,235,.98) 0%,rgba(255,232,170,.9) 26%,rgba(255,215,110,.45) 42%,rgba(255,215,110,0) 65%)";
+ streaks.innerHTML="";
+ for(var i=0;i<14;i++){
+  var st=document.createElement("div");st.className="wstreak";
+  st.style.left=bx+"px";st.style.top=by+"px";
+  st.style.setProperty("--a",rand(0,360)+"deg");
+  st.style.animationDelay=(Math.random()*.25)+"s";
+  streaks.appendChild(st);
+ }
+ warp.classList.remove("show");void warp.offsetWidth;warp.classList.add("show");
+ Audio2.sfxCharge();
+ // 白光峰值(约1.07s)时切换场景:白光全亮遮住画面→场景已在白光下就位→白光淡出露出星湖
+ setTimeout(function(){
+  $("titleScreen").classList.add("hide");
+  setTimeout(function(){$("titleScreen").style.display="none"},1500);
+  $("hud").style.display="block";
+  Game.state="play";
+  Audio2.startBGM("calm");
+ },1050);
+ setTimeout(function(){warp.classList.remove("show")},2100);
+ $("cntNum").textContent=Game.collected;
+ setTimeout(function(){
+  hint(IS_TOUCH?"轻触地面移动 · 跟着金色箭头,按顺序拾取星屑":"点击地面或 WASD 移动 · 跟着金色箭头,按顺序拾取星屑",7000);
+ },2400);
+ setTimeout(function(){toast("今天是认识栗子的第 "+daysSince+" 天 ✦")},9200);
+}
+$("startBtn").addEventListener("click",startGame);
+$("btnMute").addEventListener("click",function(){
+ var m=Audio2.toggleMute();
+ $("btnMute").textContent=m?"✕":"♪";
+ toast(m?"声音已关闭":"声音已开启",1600);
+});
+$("btnHelp").addEventListener("click",function(){
+ $("helpUI").classList.add("show");
+ if(Game.state==="play")Game.state="paused";
+});
+$("helpDone").addEventListener("click",function(){
+ $("helpUI").classList.remove("show");
+ if(Game.state==="paused")Game.state="play";
+});
+
+/* ---------- 标题屏装饰星 ---------- */
+(function(){
+ var box=$("titleStars");
+ for(var i=0;i<80;i++){
+  var s=document.createElement("div");s.className="tstar";
+  var sz=rand(1,2.6);
+  s.style.cssText="left:"+rand(0,100)+"%;top:"+rand(0,100)+"%;width:"+sz+"px;height:"+sz+"px;animation-delay:"+rand(0,3)+"s;animation-duration:"+rand(2,5)+"s";
+  box.appendChild(s);
+ }
+})();
+
+/* ---------- resize ---------- */
+addEventListener("resize",function(){
+ if(Game.three&&Game.renderer){
+  Game.renderer.setSize(innerWidth,innerHeight);
+  Game.camera.aspect=innerWidth/innerHeight;
+  Game.camera.updateProjectionMatrix();
+ }
+ var mcv=$("meteors");
+ mcv.width=innerWidth;mcv.height=innerHeight;
+});
+
+/* ---------- 启动 ---------- */
+Meteors.init();
+loadThree(0,function(ok){
+ $("loading").classList.add("hide");
+ setTimeout(function(){$("loading").style.display="none"},900);
+ if(ok){
+  init3D();
+ }else{
+  init2D();
+  toast("正在使用省电模式渲染(3D加速不可用)",4000);
+ }
+ bindInput();
+ requestAnimationFrame(loop);
+});
+
+})();
+</script>
+</body>
+</html>

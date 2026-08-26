@@ -38,6 +38,9 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
   border-radius:999px;font-size:13px;color:#d8d2b8;letter-spacing:.5px;text-align:center;
   opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #hint.show{opacity:1}
+.flyStar{position:absolute;z-index:12;color:#ffe9a3;font-size:20px;pointer-events:none;
+  filter:drop-shadow(0 0 8px rgba(255,220,120,.95));
+  transition:left .72s cubic-bezier(.25,.7,.3,1),top .72s cubic-bezier(.25,.7,.3,1),opacity .72s,transform .72s}
 #arrow{position:absolute;width:24px;height:24px;pointer-events:none;opacity:0;transition:opacity .4s;z-index:11}
 #arrow::before{content:"";position:absolute;inset:0;border-radius:50%;
   background:radial-gradient(circle,rgba(8,11,26,.55) 32%,rgba(8,11,26,.2) 60%,transparent 70%)}
@@ -153,25 +156,74 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
 @keyframes tdot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
 
 /* ============ 来电界面 ============ */
-#callUI{flex-direction:column;background:rgba(4,6,16,.9)}
-.callWrap{width:min(92%,560px);margin:0 auto;text-align:center;animation:callIn .5s ease}
-@keyframes callIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
-#callState{margin-bottom:34px}
-#callName{font-size:26px;letter-spacing:4px;color:#f5e6b8;margin-top:20px}
-#callNum{font-size:13px;color:#7d84ad;margin-top:8px;letter-spacing:2px}
-.callAvatar{width:96px;height:96px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:40px;color:#f0e6d8;background:#221c26;border:2px solid rgba(194,59,59,.6);position:relative}
-.callAvatar::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:1px solid rgba(194,59,59,.4);animation:ripple 1.8s infinite}
-@keyframes ripple{from{transform:scale(.8);opacity:1}to{transform:scale(1.5);opacity:0}}
-.callBtns{display:flex;gap:70px;justify-content:center;margin-top:40px}
-.callBtn{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;transition:.2s}
-.callBtn:active{transform:scale(.9)}
-.callBtn.accept{background:#27c07d;color:#06281a;box-shadow:0 0 26px rgba(39,192,125,.5)}
-.callBtn.reject{background:#d94848;color:#2a0808;box-shadow:0 0 26px rgba(217,72,72,.4)}
-#callTalk{display:none;width:min(88%,560px);text-align:left}
-#callWave{display:block;width:120px;height:36px;margin:0 auto 20px;opacity:.9}
-#callText{min-height:120px;font-size:16px;line-height:2.1;color:#ece9db;text-align:center;letter-spacing:.6px}
-#callEnd{text-align:center;margin-top:26px}
+#callUI{flex-direction:column;background:
+  radial-gradient(circle at 50% 16%,rgba(122,58,58,.22),transparent 55%),
+  radial-gradient(circle at 50% 105%,rgba(22,32,72,.38),transparent 60%),
+  rgba(5,7,18,.94)}
+.callWrap{width:min(94%,560px);margin:0 auto;text-align:center;animation:callIn .5s ease}
+@keyframes callIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.callStatus{display:flex;justify-content:space-between;padding:10px 18px;
+  font-size:11.5px;color:rgba(220,200,180,.5);letter-spacing:2px}
+#callState{padding:12px 0 6px}
+.callAvatar{width:118px;height:118px;margin:18px auto 0;border-radius:50%;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-size:46px;color:#f5e6d8;
+  background:radial-gradient(circle at 35% 30%,#3a2b30,#1d1418 70%);
+  border:2px solid rgba(194,59,59,.65);
+  box-shadow:0 0 44px rgba(194,59,59,.35),inset 0 0 24px rgba(0,0,0,.55)}
+.callAvatar::before,.callAvatar::after{content:"";position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(220,110,110,.5);animation:callRipple 2.2s ease-out infinite}
+.callAvatar::after{animation-delay:1.1s}
+@keyframes callRipple{from{transform:scale(1);opacity:.8}to{transform:scale(1.7);opacity:0}}
+.callTip{margin-top:28px;font-size:12.5px;color:#c98d7a;letter-spacing:5px}
+#callName{font-size:28px;letter-spacing:5px;color:#f5e6b8;margin-top:10px;
+  text-shadow:0 0 18px rgba(212,175,55,.35)}
+#callNum{font-size:13px;color:#8a92c4;margin-top:8px;letter-spacing:3px;font-variant-numeric:tabular-nums}
+.callBtns{display:flex;gap:64px;justify-content:center;margin-top:46px}
+.callAction{display:flex;flex-direction:column;align-items:center;gap:10px}
+.callBtn{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:26px;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
+.callBtn:active{transform:scale(.88)}
+.callBtn.accept{background:linear-gradient(145deg,#3dd98e,#1d9e63);color:#04231a;
+  box-shadow:0 6px 26px rgba(35,190,120,.45),inset 0 2px 3px rgba(255,255,255,.35);
+  animation:acceptPulse 1.7s ease-in-out infinite}
+@keyframes acceptPulse{0%,100%{box-shadow:0 6px 26px rgba(35,190,120,.45),0 0 0 0 rgba(35,190,120,.4)}
+ 60%{box-shadow:0 6px 26px rgba(35,190,120,.45),0 0 0 20px rgba(35,190,120,0)}}
+.callBtn.reject{background:linear-gradient(145deg,#e35d5d,#b23434);color:#2a0808;
+  box-shadow:0 6px 26px rgba(200,70,70,.4),inset 0 2px 3px rgba(255,255,255,.25)}
+.callALabel{font-size:12.5px;color:#aab4e8;letter-spacing:3px}
+#callTalk{display:none;width:min(92%,560px);text-align:left;
+  padding:22px 24px 18px;border-radius:16px;
+  background:linear-gradient(170deg,rgba(22,17,24,.92),rgba(10,10,20,.92));
+  border:1px solid rgba(194,59,59,.4);
+  box-shadow:0 18px 60px rgba(0,0,0,.65);backdrop-filter:blur(8px)}
+.callHead{display:flex;align-items:center;gap:16px;padding-bottom:16px;
+  border-bottom:1px solid rgba(194,59,59,.25)}
+.callAvatar2{width:54px;height:54px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:24px;color:#f5e6d8;
+  background:radial-gradient(circle at 35% 30%,#3a2b30,#1d1418 70%);
+  border:1.5px solid rgba(194,59,59,.55)}
+.callHeadInfo{flex:1;min-width:0}
+#callName2{font-size:19px;color:#f5e6b8;letter-spacing:3px}
+#callTimer{font-size:12.5px;color:#c98d7a;letter-spacing:2px;margin-top:5px;
+  font-variant-numeric:tabular-nums}
+.callWaveBars{display:flex;align-items:center;gap:3px;height:26px;flex:none}
+.callWaveBars i{width:3px;height:40%;border-radius:2px;
+  background:linear-gradient(to top,#b53838,#f0b9a0);
+  animation:callBar 1s ease-in-out infinite;opacity:.85}
+.callWaveBars i:nth-child(odd){animation-duration:.78s}
+.callWaveBars i:nth-child(3n){animation-delay:.15s}
+.callWaveBars i:nth-child(4n){animation-delay:.3s;animation-duration:1.15s}
+@keyframes callBar{0%,100%{height:20%}50%{height:100%}}
+.callSub{padding:18px 4px 4px}
+.callSpeaker{display:inline-block;padding:3px 14px;border-radius:999px;
+  font-size:12.5px;letter-spacing:3px;color:#f7ded6;
+  background:linear-gradient(135deg,#c25a4a,#8e2f2f);margin-bottom:12px}
+#callText{min-height:132px;font-size:16.5px;line-height:2.15;color:#ece9db;
+  text-align:justify;letter-spacing:.6px;white-space:pre-wrap}
+#callEnd{text-align:center;margin-top:14px;padding-top:16px;border-top:1px solid rgba(194,59,59,.2)}
+.callEndBtn{border-color:rgba(217,72,72,.55)!important;color:#e89a8a!important;
+  padding:9px 38px!important;letter-spacing:4px!important}
 
 /* ============ 抽卡界面 ============ */
 #gachaUI{background:rgba(4,6,16,.92)}
@@ -293,6 +345,7 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
     <div id="counter"><span class="star">✦</span><span>星屑</span><b id="cntNum">0</b><span style="color:#7d84ad">/ 9</span></div>
     <div id="topBtns">
       <div class="iconBtn" id="btnMute" title="声音">♪</div>
+      <div class="iconBtn" id="btnLetter" title="重读信件" style="display:none">✉</div>
       <div class="iconBtn" id="btnHelp" title="帮助">?</div>
     </div>
     <div id="freeBadge">自由放花模式</div>
@@ -318,6 +371,7 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
       <div id="titleSub">栗 子 的 生 日 夜</div>
       <div id="titleLine"></div>
       <button class="gbtn" id="startBtn">启&nbsp;程</button>
+      <button class="gbtn ghost" id="continueBtn" style="display:none;margin-top:14px;padding:9px 36px;letter-spacing:4px;font-size:14px">继续旅程</button>
     </div>
   </div>
 
@@ -342,19 +396,40 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
   <!-- 来电界面 -->
   <div id="callUI" class="overlay">
     <div class="callWrap">
+      <div class="callStatus"><span>● 星湖夜</span><span>✦ 92%</span></div>
       <div id="callState">
         <div class="callAvatar">符</div>
+        <div class="callTip">来 自 星 湖 的 来 电</div>
         <div id="callName">未知来电</div>
         <div id="callNum">+86 0219 ****919</div>
         <div class="callBtns">
-          <div class="callBtn reject" id="callReject">✕</div>
-          <div class="callBtn accept" id="callAccept">✆</div>
+          <div class="callAction">
+            <div class="callBtn reject" id="callReject">✕</div>
+            <span class="callALabel">拒 接</span>
+          </div>
+          <div class="callAction">
+            <div class="callBtn accept" id="callAccept">✆</div>
+            <span class="callALabel">接 听</span>
+          </div>
         </div>
       </div>
       <div id="callTalk">
-        <svg id="callWave" viewBox="0 0 120 36"><path d="M0 18 Q10 4 20 18 T40 18 T60 18 T80 18 T100 18 T120 18" fill="none" stroke="#c23b3b" stroke-width="2" opacity=".85"><animate attributeName="d" dur="1.2s" repeatCount="indefinite" values="M0 18 Q10 4 20 18 T40 18 T60 18 T80 18 T100 18 T120 18;M0 18 Q10 32 20 18 T40 18 T60 18 T80 18 T100 18 T120 18;M0 18 Q10 4 20 18 T40 18 T60 18 T80 18 T100 18 T120 18"/></path></svg>
-        <div id="callText"></div>
-        <div id="callEnd"><button class="gbtn ghost" id="callDone" style="padding:9px 38px;letter-spacing:4px">挂 断</button></div>
+        <div class="callHead">
+          <div class="callAvatar2">符</div>
+          <div class="callHeadInfo">
+            <div id="callName2">秦梧</div>
+            <div id="callTimer">通话中 00:00</div>
+          </div>
+          <div class="callWaveBars">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            <i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+        <div class="callSub">
+          <div class="callSpeaker">秦 梧</div>
+          <div id="callText"></div>
+        </div>
+        <div id="callEnd"><button class="gbtn ghost callEndBtn" id="callDone">挂 断</button></div>
       </div>
     </div>
   </div>
@@ -408,6 +483,8 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
       <p><b>祈愿台</b> — 收集 4 颗星屑后,湖心小岛会亮起光柱</p>
       <div class="sep"></div>
       <p><b>终章</b> — 集齐 9 颗星屑并完成祈愿后,回到湖心,为栗子点燃整片星空</p>
+      <div class="sep"></div>
+      <p><b>存档</b> — 进度自动保存;中途关掉也不怕,回来点「继续旅程」</p>
       <div id="helpClose"><button class="gbtn ghost" id="helpDone" style="padding:8px 36px;letter-spacing:4px">明 白 了</button></div>
     </div>
   </div>
@@ -434,7 +511,7 @@ var TAU=Math.PI*2;
 
 /* ---------- 配置 ---------- */
 var FRIEND_DATE=new Date(2024,1,19);          // 加好友日 2024-02-19
-var daysSince=Math.max(1,Math.floor((Date.now()-FRIEND_DATE.getTime())/864e5)); // 动态天数
+var daysSince=Math.min(919,Math.max(1,Math.floor((Date.now()-FRIEND_DATE.getTime())/864e5))); // 纪念日数字:生日(第919天)后打开恒为919
 var IS_TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 
 /* ---------- 剧情数据:9 颗星屑 ---------- */
@@ -513,6 +590,40 @@ var LETTER=`栗子:
 生日快乐,栗子。
 往后的第 1000 天、第 2000 天……星辰为证,我都在。`;
 
+/* ---------- 存档 ---------- */
+var SAVE_KEY="starlake_save_v1";
+function saveGame(){
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify({
+  collected:Game.collected,nextShard:Game.nextShard,
+  gachaDone:Game.gachaDone,finaleDone:Game.finaleDone}))}catch(e){}
+}
+function loadSave(){
+ try{var s=JSON.parse(localStorage.getItem(SAVE_KEY));
+  return (s&&typeof s.collected==="number")?s:null}catch(e){return null}
+}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
+
+/* 拾取星屑 → 飞向计数器 */
+function flyStarToCounter(pos3){
+ try{
+  var scr=project(pos3.x,1.5,pos3.z);
+  if(!scr||!scr.front){$("cntNum").textContent=Game.collected;return}
+  var el=document.createElement("div");
+  el.className="flyStar";el.textContent="✦";
+  el.style.left=scr.x+"px";el.style.top=scr.y+"px";
+  $("app").appendChild(el);
+  void el.offsetWidth;
+  var cr=$("counter").getBoundingClientRect();
+  el.style.left=(cr.left+cr.width/2-6)+"px";
+  el.style.top=(cr.top+cr.height/2-10)+"px";
+  el.style.opacity="0";
+  setTimeout(function(){
+   el.remove();
+   $("cntNum").textContent=Game.collected;
+  },740);
+ }catch(e){$("cntNum").textContent=Game.collected}
+}
+
 /* ---------- 音频引擎 ---------- */
 var Audio2={
  ctx:null,master:null,comp:null,muted:false,noiseBuf:null,
@@ -522,7 +633,8 @@ var Audio2={
   var AC=window.AudioContext||window.webkitAudioContext;
   if(!AC)return;
   this.ctx=new AC();
-  this.master=this.ctx.createGain();this.master.gain.value=.8;
+  try{this.muted=localStorage.getItem("starlake_mute")==="1"}catch(e){}
+  this.master=this.ctx.createGain();this.master.gain.value=this.muted?0:.8;
   this.comp=this.ctx.createDynamicsCompressor();
   this.comp.threshold.value=-24;this.comp.ratio.value=6;this.comp.knee.value=24;
   this.comp.attack.value=.004;this.comp.release.value=.3;
@@ -701,6 +813,7 @@ var Audio2={
  toggleMute:function(){
   this.muted=!this.muted;
   if(this.master)this.master.gain.value=this.muted?0:.8;
+  try{localStorage.setItem("starlake_mute",this.muted?"1":"0")}catch(e){}
   return this.muted;
  }
 };
@@ -732,6 +845,13 @@ var Game={
 };
 
 /* ====== 3D 渲染层(Three.js) ====== */
+function glowTex2(){
+ var c=document.createElement("canvas");c.width=c.height=128;
+ var x=c.getContext("2d"),g=x.createRadialGradient(64,64,2,64,64,64);
+ g.addColorStop(0,"rgba(255,232,170,.9)");g.addColorStop(.5,"rgba(255,215,120,.3)");g.addColorStop(1,"rgba(255,215,120,0)");
+ x.fillStyle=g;x.fillRect(0,0,128,128);
+ return c;
+}
 function init3D(){
  var T=window.THREE;
  Game.three=true;
@@ -815,6 +935,34 @@ function init3D(){
   Game.scene.add(nb);Game.nebulas.push(nb);
  }
 
+ /* 孔明灯:缓缓升空的暖光 */
+ var lanC=document.createElement("canvas");lanC.width=64;lanC.height=96;
+ var lnx=lanC.getContext("2d");
+ var lglow=lnx.createRadialGradient(32,48,4,32,48,46);
+ lglow.addColorStop(0,"rgba(255,185,105,.85)");lglow.addColorStop(.5,"rgba(255,170,90,.28)");lglow.addColorStop(1,"rgba(255,170,90,0)");
+ lnx.fillStyle=lglow;lnx.fillRect(0,0,64,96);
+ var lbody=lnx.createLinearGradient(0,28,0,84);
+ lbody.addColorStop(0,"rgba(255,236,180,.95)");lbody.addColorStop(.55,"rgba(255,196,120,.85)");lbody.addColorStop(1,"rgba(226,140,66,.75)");
+ lnx.fillStyle=lbody;
+ lnx.beginPath();
+ lnx.moveTo(32,26);lnx.quadraticCurveTo(48,40,46,64);lnx.quadraticCurveTo(44,84,32,86);
+ lnx.quadraticCurveTo(20,84,18,64);lnx.quadraticCurveTo(16,40,32,26);
+ lnx.closePath();lnx.fill();
+ lnx.strokeStyle="rgba(150,84,36,.8)";lnx.lineWidth=1.5;lnx.stroke();
+ var lanTex=new T.CanvasTexture(lanC);
+ Game.lanterns=[];
+ for(i=0;i<9;i++){
+  var lb=new T.Sprite(new T.SpriteMaterial({map:lanTex,transparent:true,
+   opacity:rand(.5,.85),depthWrite:false,blending:T.AdditiveBlending}));
+  var la2=rand(0,TAU),lr2=rand(18,40);
+  var ls2=rand(.9,1.6);
+  lb.scale.set(ls2*.7,ls2,1);
+  lb.position.set(Math.cos(la2)*lr2,rand(2,26),Math.sin(la2)*lr2);
+  lb.renderOrder=6;
+  Game.scene.add(lb);
+  Game.lanterns.push({s:lb,vy:rand(.35,.8),sw:rand(0,TAU),sp:rand(.3,.8),ox:lb.position.x,ph:rand(0,TAU)});
+ }
+
  /* 远地面(延伸到山脚,消除草地外的空档) */
  var farGround=new T.Mesh(new T.CircleGeometry(170,48),
   new T.MeshBasicMaterial({color:0x090d1c,fog:true}));
@@ -835,8 +983,8 @@ function init3D(){
   }
  }
 
- /* 地面 */
- var ground=new T.Mesh(new T.CircleGeometry(46,48),
+ /* 地面(环形:中心留给湖,使湖面/倒影层次正确) */
+ var ground=new T.Mesh(new T.RingGeometry(16.5,46,64),
   new T.MeshBasicMaterial({color:0x0c1326}));
  ground.rotation.x=-Math.PI/2;Game.scene.add(ground);
  /* 岸边草环 */
@@ -865,15 +1013,18 @@ function init3D(){
   var ts=rand(.8,1.5);tg.scale.set(ts,ts,ts);
   Game.scene.add(tg);
  }
- /* 芦苇丛 */
+ /* 芦苇丛(随风摇摆) */
  var reedMat=new T.MeshBasicMaterial({color:0x1a2742,fog:true});
+ Game.reeds=[];
  for(i=0;i<90;i++){
   var ra=rand(0,TAU),rr3=rand(15.2,17.4);
   var reedH=rand(1,2.1);
   var reed=new T.Mesh(new T.CylinderGeometry(.02,.035,reedH,3),reedMat);
   reed.position.set(Math.cos(ra)*rr3,reedH/2,Math.sin(ra)*rr3);
-  reed.rotation.z=rand(-.12,.12);reed.rotation.x=rand(-.12,.12);
+  var rBz=rand(-.12,.12),rBx=rand(-.12,.12);
+  reed.rotation.z=rBz;reed.rotation.x=rBx;
   Game.scene.add(reed);
+  Game.reeds.push({m:reed,bz:rBz,bx:rBx,ph:rand(0,TAU),sp:rand(.5,1.2)});
  }
  /* 石头 */
  var rockMat=new T.MeshBasicMaterial({color:0x141c34,fog:true});
@@ -905,11 +1056,13 @@ function init3D(){
  Game.moonStreak.rotation.order="YXZ";
  Game.moonStreak.rotation.y=Math.atan2(-5.5,-4.5)+Math.PI/2;
  Game.moonStreak.rotation.x=-Math.PI/2;
- Game.moonStreak.position.set(-4.5,-.05,-5.5);Game.scene.add(Game.moonStreak);
+ Game.moonStreak.position.set(-4.5,-.05,-5.5);Game.moonStreak.renderOrder=3;
+ Game.scene.add(Game.moonStreak);
 
  /* 湖面 + 微光(水波 shader) */
  var lakeMat=new T.ShaderMaterial({
   uniforms:{uT:{value:0},uFlash:{value:0}},
+  depthWrite:false,
   vertexShader:"varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
   fragmentShader:
    "varying vec2 vUv;uniform float uT;uniform float uFlash;"+
@@ -929,23 +1082,27 @@ function init3D(){
  });
  Game.lakeMat=lakeMat;
  var lake=new T.Mesh(new T.CircleGeometry(14,64),lakeMat);
- lake.rotation.x=-Math.PI/2;lake.position.y=-.12;Game.scene.add(lake);
+ lake.rotation.x=-Math.PI/2;lake.position.y=-.12;
+ lake.material.transparent=true;lake.renderOrder=1;
+ Game.scene.add(lake);
  var lakeGlow=new T.Mesh(new T.CircleGeometry(6.5,32),
-  new T.MeshBasicMaterial({color:0x1b2f66,transparent:true,opacity:.5}));
- lakeGlow.rotation.x=-Math.PI/2;lakeGlow.position.y=-.1;Game.scene.add(lakeGlow);
+  new T.MeshBasicMaterial({color:0x1b2f66,transparent:true,opacity:.5,depthWrite:false}));
+ lakeGlow.rotation.x=-Math.PI/2;lakeGlow.position.y=-.1;lakeGlow.renderOrder=2;
+ Game.scene.add(lakeGlow);
  Game.lakeGlow=lakeGlow;
  /* 岸边描边(呼吸发光) */
  Game.lakeEdge=new T.Mesh(new T.RingGeometry(13.6,14.4,96),
   new T.MeshBasicMaterial({color:0x3a5f9e,transparent:true,opacity:.35,
    depthWrite:false,blending:T.AdditiveBlending}));
- Game.lakeEdge.rotation.x=-Math.PI/2;Game.lakeEdge.position.y=-.08;Game.scene.add(Game.lakeEdge);
+ Game.lakeEdge.rotation.x=-Math.PI/2;Game.lakeEdge.position.y=-.08;Game.lakeEdge.renderOrder=3;
+ Game.scene.add(Game.lakeEdge);
  /* 涟漪扩散环 */
  Game.ripples=[];
  for(i=0;i<3;i++){
   var rp=new T.Mesh(new T.RingGeometry(.94,1,48),
    new T.MeshBasicMaterial({color:0x4db8ff,transparent:true,opacity:.4,
     depthWrite:false,blending:T.AdditiveBlending}));
-  rp.rotation.x=-Math.PI/2;rp.position.y=-.06;
+  rp.rotation.x=-Math.PI/2;rp.position.y=-.06;rp.renderOrder=3;
   Game.scene.add(rp);Game.ripples.push(rp);
  }
  /* 湖面星光倒影 */
@@ -956,6 +1113,7 @@ function init3D(){
  reflGeo.setAttribute("position",new T.BufferAttribute(reflPos,3));
  Game.refl=new T.Points(reflGeo,new T.PointsMaterial({size:.6,color:0x8fa8ff,map:starTex,
   transparent:true,opacity:.6,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.refl.renderOrder=2;
  Game.scene.add(Game.refl);
 
  /* 湖心岛 + 祈愿台 */
@@ -973,12 +1131,12 @@ function init3D(){
  Game.beam=new T.Mesh(new T.CylinderGeometry(.5,.85,34,12,1,true),
   new T.MeshBasicMaterial({map:new T.CanvasTexture(beamC),transparent:true,opacity:0,
    side:T.DoubleSide,depthWrite:false,blending:T.AdditiveBlending}));
- Game.beam.position.y=17;Game.scene.add(Game.beam);
+ Game.beam.position.y=17;Game.beam.renderOrder=6;Game.scene.add(Game.beam);
  /* 光柱内芯(更亮) */
  Game.beam2=new T.Mesh(new T.CylinderGeometry(.22,.5,34,10,1,true),
   new T.MeshBasicMaterial({color:0xfff2c0,transparent:true,opacity:0,
    side:T.DoubleSide,depthWrite:false,blending:T.AdditiveBlending}));
- Game.beam2.position.y=17;Game.scene.add(Game.beam2);
+ Game.beam2.position.y=17;Game.beam2.renderOrder=6;Game.scene.add(Game.beam2);
  /* 光柱底座光晕 */
  var glowC=document.createElement("canvas");glowC.width=glowC.height=128;
  var gxx=glowC.getContext("2d"),gg2=gxx.createRadialGradient(64,64,4,64,64,64);
@@ -987,7 +1145,8 @@ function init3D(){
  Game.beamGlow=new T.Mesh(new T.CircleGeometry(5.5,24),
   new T.MeshBasicMaterial({map:new T.CanvasTexture(glowC),transparent:true,opacity:0,
    depthWrite:false,blending:T.AdditiveBlending}));
- Game.beamGlow.rotation.x=-Math.PI/2;Game.beamGlow.position.y=.12;Game.scene.add(Game.beamGlow);
+ Game.beamGlow.rotation.x=-Math.PI/2;Game.beamGlow.position.y=.12;
+ Game.beamGlow.renderOrder=7;Game.scene.add(Game.beamGlow);
 
  /* 萤火 */
  var ffGeo=new T.BufferGeometry(),ffPos=new Float32Array(42*3),ffPh=[];
@@ -999,6 +1158,7 @@ function init3D(){
  ffGeo.setAttribute("position",new T.BufferAttribute(ffPos,3));
  Game.fireflies=new T.Points(ffGeo,new T.PointsMaterial({size:.5,color:0xffe9a3,map:starTex,
   transparent:true,opacity:.85,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.fireflies.renderOrder=6;
  Game.scene.add(Game.fireflies);
  Game.ffPh=ffPh;
 
@@ -1021,6 +1181,7 @@ function init3D(){
   var pos=SHARDS[POS_ORDER[i]];     // 第 i 个"从左到右"的位置
   sp.position.set(Math.cos(pos.ang)*pos.r,1.5,Math.sin(pos.ang)*pos.r);
   sp.scale.set(1.6,1.6,1);
+  sp.renderOrder=6;
   Game.scene.add(sp);
   Game.shards.push({data:sd,sprite:sp,alive:true,ph:rand(0,TAU)});
  }
@@ -1033,10 +1194,18 @@ function init3D(){
  Game.playerObj=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(pC),
   transparent:true,depthWrite:false,blending:T.AdditiveBlending}));
  Game.playerObj.scale.set(2.6,2.6,1);
+ Game.playerObj.renderOrder=6;
  Game.scene.add(Game.playerObj);
  Game.playerCore=new T.Mesh(new T.SphereGeometry(.32,12,10),
   new T.MeshBasicMaterial({color:0xfff6dd}));
  Game.scene.add(Game.playerCore);
+ /* 光灵脚下光晕 */
+ Game.playerGlow=new T.Mesh(new T.CircleGeometry(1.9,24),
+  new T.MeshBasicMaterial({map:new T.CanvasTexture(glowTex2()),transparent:true,
+   opacity:.16,depthWrite:false,blending:T.AdditiveBlending}));
+ Game.playerGlow.rotation.x=-Math.PI/2;Game.playerGlow.position.y=.04;
+ Game.playerGlow.renderOrder=3;
+ Game.scene.add(Game.playerGlow);
 
  /* ---- 烟花粒子系统(ShaderMaterial 单池) ---- */
  var MAXP=8600;
@@ -1068,7 +1237,27 @@ function init3D(){
  });
  Game.fwPoints=new T.Points(g,mat);
  Game.fwPoints.frustumCulled=false;
+ Game.fwPoints.renderOrder=5;
  Game.scene.add(Game.fwPoints);
+ /* 烟花湖面倒影:共享粒子池,Y镜像 + 水色滤镜,被湖面环形地面天然裁剪 */
+ var rmat=new T.ShaderMaterial({
+  transparent:true,depthWrite:false,blending:T.AdditiveBlending,
+  vertexShader:
+   "attribute vec3 acolor;attribute float asize;attribute float alife;"+
+   "varying vec3 vC;varying float vL;"+
+   "void main(){vC=acolor;vL=alife;vec4 mv=modelViewMatrix*vec4(position,1.);"+
+   "gl_PointSize=asize*(600./-mv.z);gl_Position=projectionMatrix*mv;}",
+  fragmentShader:
+   "varying vec3 vC;varying float vL;"+
+   "void main(){vec2 d=gl_PointCoord-.5;float r=length(d);"+
+   "float a=smoothstep(.5,.0,r);a*=a;"+
+   "gl_FragColor=vec4(vC*vec3(.72,.84,1.05),a*vL*.32);}"
+ });
+ Game.fwRefl=new T.Points(g,rmat);   // 同一 BufferGeometry,免费同步
+ Game.fwRefl.frustumCulled=false;
+ Game.fwRefl.renderOrder=4;
+ Game.fwRefl.scale.y=-1;             // 关于水面(y=0)镜像
+ Game.scene.add(Game.fwRefl);
  Game.fwGeo=g;
  // 相机初始位姿(避免开场飞入)
  Game.camera.position.set(0,12.5,46);
@@ -1328,6 +1517,28 @@ function update3D(dt){
  }else Game.trailT=0;
  Game.playerObj.position.set(p.x,py,p.z);
  Game.playerCore.position.set(p.x,py,p.z);
+ // 光灵脚下光晕跟随
+ if(Game.playerGlow){
+  Game.playerGlow.position.x=p.x;Game.playerGlow.position.z=p.z;
+  var pg3=1+.12*Math.sin(Game.elapsed*2.6);
+  Game.playerGlow.scale.set(pg3,pg3,1);
+  Game.playerGlow.material.opacity=.13+.05*Math.sin(Game.elapsed*2.6);
+ }
+ // 芦苇随风摇摆
+ if(Game.reeds)for(var rI2=0;rI2<Game.reeds.length;rI2++){
+  var rd=Game.reeds[rI2];
+  rd.m.rotation.z=rd.bz+Math.sin(Game.elapsed*rd.sp+rd.ph)*.075;
+  rd.m.rotation.x=rd.bx+Math.cos(Game.elapsed*rd.sp*.8+rd.ph)*.05;
+ }
+ // 孔明灯缓缓升空
+ if(Game.lanterns)for(rI2=0;rI2<Game.lanterns.length;rI2++){
+  var ln=Game.lanterns[rI2];
+  ln.s.position.y+=ln.vy*dt;
+  ln.s.position.x=ln.ox+Math.sin(Game.elapsed*ln.sp+ln.sw)*1.4;
+  ln.s.material.opacity=.5+.3*Math.abs(Math.sin(Game.elapsed*.7+ln.ph));
+  if(ln.s.position.y>48){ln.s.position.y=-3;var laN=rand(0,TAU),lrN=rand(18,40);
+   ln.ox=Math.cos(laN)*lrN;ln.s.position.z=Math.sin(laN)*lrN}
+ }
  // 相机:缓动跟随;终章/自由模式缓慢拉远成广角,烟花尽收眼底
  var camT,camLook;
  if(Game.cine){camT={x:0,y:30,z:66};camLook={x:0,y:13,z:0}}
@@ -1606,6 +1817,20 @@ function draw2D(){
   var sz2=fw.siz[i]*4.4;
   ctx.fillRect(w.x-sz2/2,w.y-sz2/2,sz2,sz2);
  }
+ // 烟花湖面倒影(2D:沿湖心镜像,椭圆裁剪)
+ ctx.save();
+ ctx.beginPath();ctx.ellipse(cx,cy,W*.3,H*.13,0,0,TAU);ctx.clip();
+ for(i=0;i<fw.n;i++){
+  var wR=w2s(fw.pos[i*3],fw.pos[i*3+1],fw.pos[i*3+2]);
+  if(wR.y>=cy)continue;
+  var alR=fw.life[i];
+  if(alR<=0)continue;
+  var ry3=2*cy-wR.y;
+  ctx.fillStyle="rgba("+(fw.col[i*3]*184|0)+","+(fw.col[i*3+1]*214|0)+","+(Math.min(255,fw.col[i*3+2]*255*1.05)|0)+","+(alR*.26)+")";
+  var sz3=fw.siz[i]*4;
+  ctx.fillRect(wR.x-sz3/2,ry3-sz3/2,sz3,sz3);
+ }
+ ctx.restore();
  ctx.globalCompositeOperation="source-over";
 }
 function project2D(x,y,z){
@@ -1635,6 +1860,7 @@ function pickGround(cx,cy){
 function bindInput(){
  var canvas=$("gl");
  function onDown(e){
+  if(Game.state==="dialog"){advanceDialog();return}
   if(Game.state!=="play"&&Game.state!=="free")return;
   var cx,cy;
   if(e.touches){cx=e.touches[0].clientX;cy=e.touches[0].clientY}
@@ -1712,6 +1938,11 @@ function hint(msg,dur){
 var Dlg={lines:[],idx:0,typing:false,typeTimer:null,name:"",onEnd:null};
 function showDialog(name,lines,onEnd){
  Dlg.name=name;Dlg.lines=lines;Dlg.idx=0;Dlg.onEnd=onEnd||null;
+ /* 名牌按角色配色:秦梧朱砂 / 其余星金 */
+ var nm=$("dlgName");
+ nm.style.background=(name.indexOf("秦")>=0)?
+  "linear-gradient(135deg,#e8957c,#b53838)":
+  "linear-gradient(135deg,#f7e9bd,#d4af37)";
  $("dialog").classList.add("show");
  Game.state="dialog";
  typeLine();
@@ -1918,11 +2149,24 @@ function playCall(){
  $("callTalk").style.display="none";
  $("callName").textContent="未知来电";
 }
+/* 通话计时器 */
+var callTm=null;
+function startCallTimer(){
+ clearInterval(callTm);
+ var t0=Date.now();
+ function upd(){
+  var s=Math.floor((Date.now()-t0)/1000);
+  var mm=Math.floor(s/60),ss=s%60;
+  $("callTimer").textContent="通话中 "+(mm<10?"0"+mm:mm)+":"+(ss<10?"0"+ss:ss);
+ }
+ upd();callTm=setInterval(upd,1000);
+}
+function stopCallTimer(){clearInterval(callTm);callTm=null}
 $("callAccept").addEventListener("click",function(){
  Audio2.sfxTap();
  $("callState").style.display="none";
  $("callTalk").style.display="block";
- $("callName").textContent="通话中 · 秦梧";
+ startCallTimer();
  // 打字机播放台词(逐行累积,句间停顿)
  var el=$("callText");el.textContent="";
  var li=0,ci=0,shown="";
@@ -1957,6 +2201,7 @@ $("callReject").addEventListener("click",function(){
 });
 $("callDone").addEventListener("click",function(){
  if($("callText")._tm)$("callText")._tm.stop();
+ stopCallTimer();
  $("callUI").classList.remove("show");
  Game.state="play";
  toast("电话那头,传来一声很轻的笑 ✦");
@@ -2126,6 +2371,7 @@ function drawSSRArt(cv){
 $("gachaDone").addEventListener("click",function(){
  $("gachaUI").classList.remove("show");
  Game.gachaDone=true;
+ saveGame();
  Game.state="play";
  Audio2.sfxPickup();
  toast("祈愿台的星辉,落进了口袋 ✦");
@@ -2142,7 +2388,8 @@ function collectShard(idx){
  Game.nextShard=idx+1;
  if(Game.three)s.sprite.visible=false;
  Game.collected++;
- $("cntNum").textContent=Game.collected;
+ flyStarToCounter(s.sprite.position);
+ saveGame();
  Audio2.sfxPickup();
  Game.lastShardIdx=idx;
  var d=s.data;
@@ -2253,31 +2500,40 @@ function secondAct(){
  },13800);
 }
 /* ---------- 信件 ---------- */
-function showLetter(){
+function showLetter(replay){
  Game.state="letter";
- Audio2.startBGM("calm");
+ Game._letterReplay=!!replay;
+ if(!replay)Audio2.startBGM("calm");
  $("letterUI").classList.add("show");
  // 重置入场动画
  var lw=document.querySelector(".letterWrap");
  lw.style.animation="none";void lw.offsetWidth;lw.style.animation="";
  var body=$("letterBody"),sign=$("letterSign");
  body.textContent="";sign.innerHTML="";
+ var signHTML="—— 小空城<br><span style='font-size:12px;color:#8a92c4;letter-spacing:2px'>写于星湖畔 · 第 "+daysSince+" 夜</span>";
+ if(replay){body.textContent=LETTER;sign.innerHTML=signHTML;return}
  var full=LETTER;
  var i=0;
  var tm=setInterval(function(){
   body.textContent=full.slice(0,++i);
   if(i>=full.length){
    clearInterval(tm);
-   sign.innerHTML="—— 小空城<br><span style='font-size:12px;color:#8a92c4;letter-spacing:2px'>写于星湖畔 · 第 "+daysSince+" 夜</span>";
+   sign.innerHTML=signHTML;
   }
  },34);
 }
+$("btnLetter").addEventListener("click",function(){
+ if(Game.state==="free")showLetter(true);
+});
 $("letterDone").addEventListener("click",function(){
  $("letterUI").classList.remove("show");
+ if(Game._letterReplay){Game.state="free";return}
  Game.state="free";
  Game.freeMode=true;
  Game.cine=1;   // 自由模式保持广角,烟花尽收眼底
+ saveGame();
  $("freeBadge").style.display="block";
+ $("btnLetter").style.display="flex";
  Audio2.startBGM("lush");
  showCap("自由放花","TOUCH THE NIGHT SKY",2600);
  hint("轻触夜空任意处,为她放一朵烟花 · 祝她生日快乐",8000);
@@ -2367,11 +2623,15 @@ var Meteors={list:[],next:2.5,ctx:null,
   this.next-=dt;
   if(this.next<=0){this.next=rand(3.5,8);this.spawn()}
   c.clearRect(0,0,W,H);
+  /* 流星只在天空中活动:普通视角山峰会到约38%屏高,广角视角约57% */
+  var killY=Game.cine?H*.40:H*.28;
+  var fadeH=H*.12;
   for(var i=this.list.length-1;i>=0;i--){
    var m=this.list[i];
    m.x+=m.vx*dt;m.y+=m.vy*dt;m.life-=dt;
-   if(m.life<=0||m.y>H*.5){this.list.splice(i,1);continue}
-   var a=Math.min(1,m.life/m.maxLife*1.6)*.85;
+   if(m.life<=0||m.y>killY){this.list.splice(i,1);continue}
+   var fade=clamp((killY-m.y)/fadeH,0,1);
+   var a=Math.min(1,m.life/m.maxLife*1.6)*.85*fade;
    var L=Math.hypot(m.vx,m.vy);
    var ux=m.vx/L,uy=m.vy/L;
    var tx=m.x-ux*m.len,ty=m.y-uy*m.len;
@@ -2423,9 +2683,11 @@ function loop(ts){
 }
 
 /* ---------- 开始流程 ---------- */
-function startGame(){
+var SAVED=null;
+function enterWorld(btn,applyFn){
  Audio2.init();
  Audio2.resume();
+ $("btnMute").textContent=Audio2.muted?"✕":"♪";
  // 手势解锁兜底
  ["touchstart","mousedown","keydown"].forEach(function(ev){
   addEventListener(ev,function(){Audio2.resume()},{passive:true});
@@ -2433,16 +2695,14 @@ function startGame(){
  document.addEventListener("visibilitychange",function(){
   if(!document.hidden)setTimeout(function(){Audio2.resume()},250);
  });
- /* 传送特效:光从启程按钮涌出→光环扩散→白光自按钮扩散至全屏→无缝落入星湖 */
+ /* 传送特效:光从按钮涌出→光环扩散→白光扩散至全屏→无缝落入星湖 */
  var warp=$("warp");
  var streaks=$("warpStreaks");
- // 以按钮中心为特效原点
- var btn=$("startBtn"),br=btn.getBoundingClientRect();
+ var br=btn.getBoundingClientRect();
  var bx=br.left+br.width/2,by=br.top+br.height/2;
  $("warpCore").style.left=bx+"px";$("warpCore").style.top=by+"px";
  var rings=warp.querySelectorAll(".warpRing");
  for(var rI=0;rI<rings.length;rI++){rings[rI].style.left=bx+"px";rings[rI].style.top=by+"px"}
- // 白光:径向渐变中心定位到按钮
  var flash=$("warpFlash");
  flash.style.background="radial-gradient(circle at "+bx+"px "+by+"px,rgba(255,250,235,.98) 0%,rgba(255,232,170,.9) 26%,rgba(255,215,110,.45) 42%,rgba(255,215,110,0) 65%)";
  streaks.innerHTML="";
@@ -2455,22 +2715,72 @@ function startGame(){
  }
  warp.classList.remove("show");void warp.offsetWidth;warp.classList.add("show");
  Audio2.sfxCharge();
- // 白光峰值(约1.07s)时切换场景:白光全亮遮住画面→场景已在白光下就位→白光淡出露出星湖
- setTimeout(function(){
-  $("titleScreen").classList.add("hide");
-  setTimeout(function(){$("titleScreen").style.display="none"},1500);
-  $("hud").style.display="block";
+ setTimeout(function(){applyFn()},1050);
+ setTimeout(function(){warp.classList.remove("show")},2100);
+}
+function hideTitle(){
+ $("titleScreen").classList.add("hide");
+ setTimeout(function(){$("titleScreen").style.display="none"},1500);
+ $("hud").style.display="block";
+}
+function startGame(){
+ // 重新开始:清档重置
+ clearSave();
+ Game.collected=0;Game.nextShard=0;
+ Game.gachaDone=false;Game.finaleDone=false;Game.freeMode=false;Game.cine=0;
+ Game.beamTarget=0;
+ for(var i=0;i<Game.shards.length;i++){
+  Game.shards[i].alive=true;
+  if(Game.three)Game.shards[i].sprite.visible=true;
+ }
+ enterWorld($("startBtn"),function(){
+  hideTitle();
+  $("cntNum").textContent=Game.collected;
   Game.state="play";
   Audio2.startBGM("calm");
- },1050);
- setTimeout(function(){warp.classList.remove("show")},2100);
- $("cntNum").textContent=Game.collected;
- setTimeout(function(){
-  hint(IS_TOUCH?"轻触地面移动 · 跟着金色箭头,按顺序拾取星屑":"点击地面或 WASD 移动 · 跟着金色箭头,按顺序拾取星屑",7000);
- },2400);
- setTimeout(function(){toast("今天是认识栗子的第 "+daysSince+" 天 ✦")},9200);
+  setTimeout(function(){
+   hint(IS_TOUCH?"轻触地面移动 · 跟着金色箭头,按顺序拾取星屑":"点击地面或 WASD 移动 · 跟着金色箭头,按顺序拾取星屑",7000);
+  },2400);
+  setTimeout(function(){toast("今天是认识栗子的第 "+daysSince+" 天 ✦")},9200);
+  // 首次游玩:自动弹出指南
+  if(!SAVED)setTimeout(function(){
+   if(Game.state==="play"){
+    $("helpUI").classList.add("show");
+    Game.state="paused";
+   }
+  },3000);
+ });
 }
 $("startBtn").addEventListener("click",startGame);
+$("continueBtn").addEventListener("click",function(){
+ if(!SAVED)return;
+ enterWorld($("continueBtn"),function(){
+  var sv=SAVED;
+  Game.collected=sv.collected||0;
+  Game.nextShard=Math.min(sv.nextShard||Game.collected,Game.shards.length);
+  Game.gachaDone=!!sv.gachaDone;
+  Game.finaleDone=!!sv.finaleDone;
+  for(var i=0;i<Game.nextShard;i++){
+   Game.shards[i].alive=false;
+   if(Game.three)Game.shards[i].sprite.visible=false;
+  }
+  hideTitle();
+  $("cntNum").textContent=Game.collected;
+  if(Game.finaleDone){
+   Game.state="free";Game.freeMode=true;Game.cine=1;
+   $("freeBadge").style.display="block";
+   $("btnLetter").style.display="flex";
+   Audio2.startBGM("lush");
+   toast("回到星湖 · 想看烟花就点夜空 ✦");
+  }else{
+   Game.state="play";
+   Audio2.startBGM("calm");
+   checkProgress();
+   toast("旅程已接续 · 已拾 "+Game.collected+"/9 ✦");
+   setTimeout(function(){hint("跟着金色箭头,继续收集星屑吧",6000)},1800);
+  }
+ });
+});
 $("btnMute").addEventListener("click",function(){
  var m=Audio2.toggleMute();
  $("btnMute").textContent=m?"✕":"♪";
@@ -2508,6 +2818,12 @@ addEventListener("resize",function(){
 });
 
 /* ---------- 启动 ---------- */
+SAVED=loadSave();
+if(SAVED&&(SAVED.collected>0||SAVED.finaleDone)){
+ $("continueBtn").style.display="inline-block";
+ $("continueBtn").textContent="继续旅程 · 已拾 "+(SAVED.collected||0)+"/9";
+ $("startBtn").textContent="重新开始";
+}
 Meteors.init();
 loadThree(0,function(ok){
  $("loading").classList.add("hide");

@@ -35,8 +35,8 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
 .iconBtn:active{transform:scale(.92)}
 #hint{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);
   max-width:86%;padding:9px 18px;background:rgba(10,13,32,.78);border:1px solid rgba(212,175,55,.35);
-  border-radius:999px;font-size:13px;color:#d8d2b8;letter-spacing:.5px;text-align:center;
-  opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  border-radius:14px;font-size:13px;color:#d8d2b8;letter-spacing:.5px;text-align:center;
+  opacity:0;transition:opacity .5s;pointer-events:none;white-space:normal;line-height:1.7}
 #hint.show{opacity:1}
 .flyStar{position:absolute;z-index:12;color:#ffe9a3;font-size:20px;pointer-events:none;
   filter:drop-shadow(0 0 8px rgba(255,220,120,.95));
@@ -304,9 +304,9 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
 
 /* ============ Toast / 帮助 ============ */
 #toast{position:absolute;top:calc(16% + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-8px);
-  z-index:40;padding:10px 24px;background:rgba(10,13,32,.88);border:1px solid rgba(212,175,55,.5);border-radius:999px;
-  font-size:13.5px;color:#f0e6c8;letter-spacing:1px;opacity:0;transition:.5s;pointer-events:none;white-space:nowrap;max-width:92%;
-  overflow:hidden;text-overflow:ellipsis}
+  z-index:40;padding:10px 24px;background:rgba(10,13,32,.88);border:1px solid rgba(212,175,55,.5);border-radius:14px;
+  font-size:13.5px;color:#f0e6c8;letter-spacing:1px;opacity:0;transition:.5s;pointer-events:none;max-width:92%;
+  white-space:normal;line-height:1.7;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #helpUI .helpBox{width:min(88%,420px);padding:30px 28px;background:linear-gradient(170deg,#10153a,#0a0e24);
   border:1px solid rgba(212,175,55,.5);border-radius:14px}
@@ -1991,11 +1991,15 @@ function playQin(){
  });
 }
 /* ---------- 特殊剧情:Z 的来信(陆景和) ---------- */
+var ChatSkip={typingTimer:null,lineTimer:null,curBub:null,curFull:null,nextFn:null};
 function playLu(){
  Game.state="special";
  var body=$("chatBody");body.innerHTML="";
  $("chatUI").classList.add("show");
  var seq=LU_MSGS.slice(),i=0;
+ ChatSkip.typingTimer=null;ChatSkip.lineTimer=null;ChatSkip.curBub=null;ChatSkip.curFull=null;
+ function cancelTimers(){clearTimeout(ChatSkip.typingTimer);clearTimeout(ChatSkip.lineTimer);
+  ChatSkip.typingTimer=null;ChatSkip.lineTimer=null}
  function next(){
   if(i>=seq.length)return;
   var m=seq[i++];
@@ -2010,25 +2014,54 @@ function playLu(){
    card.appendChild(cap);wrap.appendChild(card);body.appendChild(wrap);
    requestAnimationFrame(function(){wrap.classList.add("on")});
    Audio2.sfxReveal();
-   setTimeout(next,1400);return;
+   ChatSkip.lineTimer=setTimeout(next,1400);return;
   }
   // 正在输入…
   var tp=document.createElement("div");tp.className="bub left typingDot";
   tp.innerHTML="<i></i><i></i><i></i>";body.appendChild(tp);
   body.scrollTop=body.scrollHeight;
-  setTimeout(function(){
+  ChatSkip.typingTimer=setTimeout(function(){
    tp.remove();
    var b=document.createElement("div");
    b.className="bub "+(m.t==="sys"?"sys":"left");
-   b.textContent=m.x;body.appendChild(b);
+   b.textContent="";body.appendChild(b);
    requestAnimationFrame(function(){b.classList.add("on")});
-   body.scrollTop=body.scrollHeight;
-   Audio2.sfxTap();
-   setTimeout(next,m.t==="sys"?900:rand(1000,1600));
+   ChatSkip.curBub=b;ChatSkip.curFull=m.x;
+   // 逐字打字机
+   var ci=0;
+   (function typeCh(){
+    if(ChatSkip.curBub!==b)return;      // 已被点击快进
+    ci++;
+    b.textContent=m.x.slice(0,ci);
+    body.scrollTop=body.scrollHeight;
+    if(ci%3===0)Audio2.sfxTap();
+    if(ci>=m.x.length){
+     ChatSkip.curBub=null;
+     ChatSkip.lineTimer=setTimeout(next,m.t==="sys"?900:rand(1000,1600));
+     return;
+    }
+    ChatSkip.lineTimer=setTimeout(typeCh,42);
+   })();
   },rand(700,1200));
  }
+ ChatSkip.nextFn=next;
  setTimeout(next,500);
 }
+/* 点击聊天界面:打字中→立即完整显示本句;句间空闲→提前下一句(一次性绑定) */
+$("chatUI").addEventListener("click",function(e){
+ if(e.target.closest("#chatClose"))return;
+ if(Game.state!=="special"||!ChatSkip.nextFn)return;
+ if(ChatSkip.curBub){                       // 打字中:完成本句,不跳句
+  clearTimeout(ChatSkip.typingTimer);clearTimeout(ChatSkip.lineTimer);
+  ChatSkip.curBub.textContent=ChatSkip.curFull;
+  $("chatBody").scrollTop=$("chatBody").scrollHeight;
+  ChatSkip.curBub=null;
+  ChatSkip.lineTimer=setTimeout(ChatSkip.nextFn,900);
+ }else{                                     // 句间等待:直接下一句
+  clearTimeout(ChatSkip.typingTimer);clearTimeout(ChatSkip.lineTimer);
+  ChatSkip.nextFn();
+ }
+});
 function drawZPainting(cv){
  /* 《第919夜》——水彩小品风:湿画法晕染天空·留白湖面·简约蛋糕
     (与 SSR 卡面的星夜油画风区分开) */

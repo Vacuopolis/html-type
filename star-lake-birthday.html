@@ -196,8 +196,10 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
   padding:22px 24px 18px;border-radius:16px;
   background:linear-gradient(170deg,rgba(22,17,24,.92),rgba(10,10,20,.92));
   border:1px solid rgba(194,59,59,.4);
-  box-shadow:0 18px 60px rgba(0,0,0,.65);backdrop-filter:blur(8px)}
-.callHead{display:flex;align-items:center;gap:16px;padding-bottom:16px;
+  box-shadow:0 18px 60px rgba(0,0,0,.65);backdrop-filter:blur(8px);
+  max-height:min(86vh,680px);
+  display:flex;flex-direction:column;overflow:hidden}
+.callHead{display:flex;align-items:center;gap:16px;padding-bottom:16px;flex:none;
   border-bottom:1px solid rgba(194,59,59,.25)}
 .callAvatar2{width:54px;height:54px;border-radius:50%;flex:none;
   display:flex;align-items:center;justify-content:center;font-size:24px;color:#f5e6d8;
@@ -215,13 +217,15 @@ canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:
 .callWaveBars i:nth-child(3n){animation-delay:.15s}
 .callWaveBars i:nth-child(4n){animation-delay:.3s;animation-duration:1.15s}
 @keyframes callBar{0%,100%{height:20%}50%{height:100%}}
-.callSub{padding:18px 4px 4px}
+.callSub{padding:18px 4px 4px;flex:1;min-height:0;display:flex;flex-direction:column}
 .callSpeaker{display:inline-block;padding:3px 14px;border-radius:999px;
   font-size:12.5px;letter-spacing:3px;color:#f7ded6;
-  background:linear-gradient(135deg,#c25a4a,#8e2f2f);margin-bottom:12px}
-#callText{min-height:132px;font-size:16.5px;line-height:2.15;color:#ece9db;
+  background:linear-gradient(135deg,#c25a4a,#8e2f2f);margin-bottom:12px;flex:none;align-self:flex-start}
+#callText{flex:1;min-height:96px;max-height:44vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  font-size:16.5px;line-height:2.15;color:#ece9db;
   text-align:justify;letter-spacing:.6px;white-space:pre-wrap}
-#callEnd{text-align:center;margin-top:14px;padding-top:16px;border-top:1px solid rgba(194,59,59,.2)}
+#callEnd{text-align:center;margin-top:14px;padding-top:16px;flex:none;
+  border-top:1px solid rgba(194,59,59,.2)}
 .callEndBtn{border-color:rgba(217,72,72,.55)!important;color:#e89a8a!important;
   padding:9px 38px!important;letter-spacing:4px!important}
 
@@ -2165,9 +2169,9 @@ function stopCallTimer(){clearInterval(callTm);callTm=null}
 $("callAccept").addEventListener("click",function(){
  Audio2.sfxTap();
  $("callState").style.display="none";
- $("callTalk").style.display="block";
+ $("callTalk").style.display="flex";
  startCallTimer();
- // 打字机播放台词(逐行累积,句间停顿)
+ // 打字机播放台词(逐行累积,句间停顿,自动滚动至最新)
  var el=$("callText");el.textContent="";
  var li=0,ci=0,shown="";
  $("callDone").style.display="none";
@@ -2177,6 +2181,7 @@ $("callAccept").addEventListener("click",function(){
   var line=CALL_LINES[li];
   ci++;
   el.textContent=shown+line.slice(0,ci);
+  el.scrollTop=el.scrollHeight;
   if(ci%3===0)Audio2.sfxTap();
   if(ci>=line.length){
    shown+=line+"\n\n";ci=0;li++;

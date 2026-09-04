@@ -69,6 +69,7 @@
             --muted-circle-bg: #f1f5f9;
             --scrollbar-thumb: #d1d5db;
             --noise-opacity: 0.03;
+            --modal-overlay: rgba(15, 23, 42, 0.45);
         }
 
         /* ================= 深色主题 =================
@@ -120,6 +121,7 @@
             --muted-circle-bg: #334155;
             --scrollbar-thumb: #475569;
             --noise-opacity: 0.06;
+            --modal-overlay: rgba(0, 0, 0, 0.6);
         }
 
         /* ================= 基础重置 ================= */
@@ -2550,7 +2552,9 @@
         .wrong-modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.45);
+            background: var(--modal-overlay);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
             z-index: 10000;
             display: flex;
             align-items: center;
@@ -2561,6 +2565,34 @@
         @keyframes wrongModalFadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
+        }
+
+        /* 关闭淡出（closeWrongModal 加 .closing 类后播放，180ms 后容器被清空） */
+        @keyframes wrongModalFadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .wrong-modal-overlay.closing {
+            animation: wrongModalFadeOut 0.18s ease forwards;
+            pointer-events: none;
+        }
+
+        .wrong-modal-overlay.closing .wrong-modal {
+            animation: wrongModalSlideOut 0.18s ease forwards;
+        }
+
+        @keyframes wrongModalSlideOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(16px); opacity: 0; }
+        }
+
+        /* 弹窗打开时锁定背景滚动（由 _syncModalScrollLock 给 <html> 加 .modal-scroll-lock）：
+           桌面端滚动容器是 main，≤900px 时是 html/body，全部锁住防止滚动穿透 */
+        html.modal-scroll-lock,
+        html.modal-scroll-lock body,
+        html.modal-scroll-lock main {
+            overflow: hidden;
         }
 
         .wrong-modal {
@@ -3475,7 +3507,7 @@
             <div style="display:flex;gap:6px;align-items:center;">
                 <button class="btn-manage" onclick="viewWrongBook()" title="跨题库累积的错题档案，支持专项刷题"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>错题本</button>
                 <button class="btn-manage" onclick="viewLearningStats()" title="跨历史记录的学习统计与高频错题"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect width="4" height="10" x="7" y="7" rx="0.5"/><rect width="4" height="14" x="13" y="3" rx="0.5"/><rect width="4" height="7" x="19" y="10" rx="0.5"/></svg></span>统计</button>
-                <button class="btn-manage" id="btnBatchManage" onclick="toggleBatchMode()"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="5" rx="1"/><rect width="7" height="7" x="3" y="12" rx="1"/><path d="m9 6 1 0"/><path d="m9 13 1 0"/><path d="m14 6 7 0"/><path d="m14 13 7 0"/></svg></span>管理</button>
+                <button class="btn-manage" id="btnBatchManage" onclick="toggleBatchMode()"><span class="icon-svg" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="5" rx="1"/><rect width="7" height="7" x="3" y="12" rx="1"/><path d="m9 6 1 0"/><path d="m9 13 1 0"/><path d="m14 6 7 0"/><path d="m14 13 7 0"/></svg></span><span id="btnBatchManageLabel">管理</span></button>
                 <button class="btn btn-sm btn-danger" onclick="clearAllHistory()" style="padding:3px 10px;font-size:0.75rem;">清空全部</button>
             </div>
         </div>
@@ -7237,7 +7269,10 @@
         state.batchSelected = new Set();
         document.getElementById('batchToolbar').classList.add('visible');
         document.getElementById('btnBatchManage').classList.add('active');
-        document.getElementById('btnBatchManage').innerHTML = icon('listChecks') + '取消管理';
+        // 只更新文字 span，不整体替换 innerHTML：
+        // 整体替换会销毁点击时的事件目标（图标/文字节点），使其脱离 DOM，
+        // 导致 document 级点击监听器判定点击在历史面板外而误关下拉
+        document.getElementById('btnBatchManageLabel').textContent = '取消管理';
         document.getElementById('batchSelectAll').checked = false;
         updateBatchCount();
         renderHistory();
@@ -7248,7 +7283,8 @@
         state.batchSelected = new Set();
         document.getElementById('batchToolbar').classList.remove('visible');
         document.getElementById('btnBatchManage').classList.remove('active');
-        document.getElementById('btnBatchManage').innerHTML = icon('listChecks') + '管理';
+        // 同上：只更新文字 span，避免销毁事件目标节点
+        document.getElementById('btnBatchManageLabel').textContent = '管理';
         renderHistory();
     }
 
@@ -9045,11 +9081,56 @@ ${listText}
         document.getElementById('wrongModalContainer').innerHTML = modalHtml;
     }
 
-    /** 关闭错题弹窗 */
+    /** 关闭错题弹窗（带关闭淡出动画，动画结束才清空容器） */
+    let _wrongModalCloseTimer = null;
     function closeWrongModal(event) {
         if (event && event.target !== event.currentTarget) return;
-        document.getElementById('wrongModalContainer').innerHTML = '';
+        // 阻止事件冒泡到 document：避免点击遮罩关闭弹窗时，
+        // 被"点击外部关闭历史面板"的监听器误判为外部点击而连带关闭历史记录下拉
+        if (event) event.stopPropagation();
+        const container = document.getElementById('wrongModalContainer');
+        const overlay = container.firstElementChild;
+        if (!overlay || overlay.classList.contains('closing')) return;
+        overlay.classList.add('closing');
+        clearTimeout(_wrongModalCloseTimer);
+        _wrongModalCloseTimer = setTimeout(() => {
+            // 动画期间容器可能已被新弹窗替换（如 closeWrongModal();viewCurrentWrongQuestions()），
+            // 只清空仍是本次正在关闭的那个弹窗
+            if (container.firstElementChild === overlay) container.innerHTML = '';
+        }, 180);
     }
+
+    /** 弹窗滚动锁：#wrongModalContainer 内有弹窗时锁定背景（html/body/main）滚动，
+     *  并按滚动条宽度做 padding 补偿，避免锁滚动时背景内容横向跳动。
+     *  用 MutationObserver 统一接管，所有复用该容器的弹窗
+     *  （错题本/统计/错题回顾/成绩总结/批量补答案/题目编辑器）自动生效 */
+    let _modalScrollLocked = false;
+    function _syncModalScrollLock() {
+        const locked = !!document.getElementById('wrongModalContainer').firstElementChild;
+        if (locked === _modalScrollLocked) return;  // 弹窗替换重渲染（如删除错题本条目）不重复处理
+        _modalScrollLocked = locked;
+        const root = document.documentElement;
+        const main = document.querySelector('main');
+        if (locked) {
+            // 补偿宽度须在加锁（滚动条消失）之前测量
+            const sw = window.innerWidth - root.clientWidth;
+            document.body.style.paddingRight = sw > 0 ? sw + 'px' : '';
+            if (main) {
+                const msw = main.offsetWidth - main.clientWidth;
+                const base = parseFloat(getComputedStyle(main).paddingRight) || 0;
+                main.style.paddingRight = msw > 0 ? (base + msw) + 'px' : '';
+            }
+            root.classList.add('modal-scroll-lock');
+            // 焦点可能残留在背景输入框（如解析模式 textarea），移走避免弹窗打开时还能输入背景内容
+            if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+        } else {
+            root.classList.remove('modal-scroll-lock');
+            document.body.style.paddingRight = '';
+            if (main) main.style.paddingRight = '';
+        }
+    }
+    new MutationObserver(_syncModalScrollLock)
+        .observe(document.getElementById('wrongModalContainer'), { childList: true });
 
     /** 复制单道错题文本 */
     function copyWrongItem(realIdx) {

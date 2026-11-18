@@ -8086,18 +8086,16 @@ _generateRegionBoard(row, col) {
     const localCol = col - c1;
 
     let localBoard = null;
-    let solvable = false;
-    // 每轮限时 800ms；失败则降低 3 颗雷重试。低密度下必然能在几轮内得到可解盘，
-    // 避免退回"必然需要猜测"的随机盘
-    for (let attempt = 0; attempt < 4 && !localBoard; attempt++) {
+    // 最多 8 轮 GSR：首轮 800ms、之后 500ms；失败就降低 3 颗雷继续
+    for (let attempt = 0; attempt < 8 && !localBoard; attempt++) {
+        const budget = attempt === 0 ? 800 : 500;
         try {
             const result = MinesweeperSolver.generateSolvableBoardGSR(
                 regionRows, regionCols, regionMines, localRow, localCol, localFn,
-                { deadline: Date.now() + 800, maxRegenAttempts: 10, maxRepairs: 60, solveTimeout: 300 }
+                { deadline: Date.now() + budget, maxRegenAttempts: 10, maxRepairs: 60, solveTimeout: 300 }
             );
             if (result && result.solvable && Array.isArray(result.board)) {
                 localBoard = result.board;
-                solvable = true;
             }
         } catch (err) {
             console.warn('可解区生成失败:', err);
@@ -8105,11 +8103,17 @@ _generateRegionBoard(row, col) {
         if (!localBoard) regionMines = Math.max(1, regionMines - 3);
     }
 
+    // GSR 全部失败：随机布雷 + 可解性复验，逐步降雷直到确认可解（0 雷必然可解）
     if (!localBoard) {
-        // 极端兜底：区域内随机盘（不保证可解），至少让玩家能玩
-        localBoard = MinesweeperSolver.generateRandomBoard(regionRows, regionCols, regionMines, localRow, localCol, localFn);
+        for (let m = regionMines; m >= 0 && !localBoard; m--) {
+            const candidate = MinesweeperSolver.generateRandomBoard(regionRows, regionCols, m, localRow, localCol, localFn);
+            if (!candidate) continue;
+            if (m === 0 || MinesweeperSolver.canSolveLogically(candidate, regionRows, regionCols, localRow, localCol, m, localFn)) {
+                localBoard = candidate;
+                regionMines = m;
+            }
+        }
         if (!localBoard) return false;
-        MinesweeperSolver.recalculateNumbers(localBoard, regionRows, regionCols, localFn);
     }
 
     // 拼成整盘；区外写 0，由 activeRegion 标记为"未开放"
@@ -8133,10 +8137,6 @@ _generateRegionBoard(row, col) {
     // 首点后立即把"剩余地雷"刷新为区域内雷数（revealCell 不会调用 updateDisplay）
     this.updateDisplay();
     this.updateProgress();
-
-    if (!solvable) {
-        this.showFloatingMessage('本区域可能有个别需要猜测的位置');
-    }
     return true;
 }
 
@@ -8158,8 +8158,12 @@ _checkRectSolvable(r1, c1, r2, c2, board = this.board, timeout = 500) {
     for (let r = 0; r < R; r++) {
         for (let c = 0; c < C; c++) {
             const br = r1 + r, bc = c1 + c;
-            if (this.flags[br][bc]) seedFlagged.push(r * C + c);
-            else if (this.revealed[br][bc]) seedRevealed.push(r * C + c);
+            // 只把"插在真雷上"的旗当作已知雷；玩家插错的旗不能阻塞生成
+            if (this.flags[br][bc]) {
+                if (board[br][bc] === -1) seedFlagged.push(r * C + c);
+            } else if (this.revealed[br][bc]) {
+                seedRevealed.push(r * C + c);
+            }
         }
     }
     let startR = 0, startC = 0;
@@ -8320,37 +8324,44 @@ async _expandRegion(options = {}) {
         MinesweeperSolver.recalculateNumbers(workBoard, rows, cols, this._solverForEachNeighbor());
     };
 
+    // 只接受"确认可解"的布点：从目标密度开始，失败就降 1 颗雷重试，
+    // 后台有充足时间；0 雷的新区域必然可解。绝不保留需要猜测的结果。
     let solvable = false;
     let placedMines = 0;
-    // 优先保留目标密度：目标 / -2 / -4 三档，每档多试几种排布
-    const tryCounts = [targetMines, Math.max(1, targetMines - 2), Math.max(1, targetMines - 4)];
-    const checksPerCount = background ? 6 : 4;
-    const totalChecks = Math.max(1, tryCounts.length * checksPerCount);
-    const solveTimeout = background ? 350 : 500;
+    let count = targetMines;
+    let attemptsAtCount = 0;
+    let zeroFailures = 0;
     let checkNo = 0;
-    outer: for (const count of tryCounts) {
-        for (let k = 0; k < checksPerCount; k++) {
-            placeMines(count);
-            checkNo++;
-            const pct = this._generationProgressPercent() +
-                Math.round(newCells.length / Math.max(1, totalCells - (this._initialRegionCells || 0)) * 100 * (checkNo / totalChecks));
-            this._showBoardGenerating(true, '剩余棋盘生成中', pct, false);
-            await this._yieldFrame();
-            if (this._checkRectSolvable(nr1, nc1, nr2, nc2, workBoard, solveTimeout)) {
-                solvable = true;
-                placedMines = count;
-                break outer;
-            }
+    const basePct = this._generationProgressPercent();
+    const chunkShare = newCells.length / Math.max(1, totalCells - (this._initialRegionCells || 0)) * 100;
+    while (!solvable) {
+        placeMines(count);
+        checkNo++;
+        const pct = Math.min(99, Math.round(basePct + chunkShare * (1 - Math.pow(0.9, checkNo))));
+        this._showBoardGenerating(true, '剩余棋盘生成中', pct, false);
+        await this._yieldFrame();
+        const timeout = count === 0 ? 1200 : (background ? 350 : 500);
+        if (this._checkRectSolvable(nr1, nc1, nr2, nc2, workBoard, timeout)) {
+            solvable = true;
+            placedMines = count;
+            break;
         }
-        if (targetMines <= 4) break;
-    }
-    if (!solvable) {
-        // 窄区域很难保证可解：保留目标密度并明确提示可能需猜，而不是挖成空白
-        placeMines(targetMines);
-        placedMines = targetMines;
+        if (count > 0) {
+            attemptsAtCount++;
+            if (attemptsAtCount >= 3) {
+                attemptsAtCount = 0;
+                count--;
+            }
+        } else if (++zeroFailures >= 6) {
+            // 0 雷区域本身不可能有歧义；校验超时/种子异常时允许直接采用
+            solvable = true;
+            placedMines = 0;
+            break;
+        }
     }
     this._lastExpandInfo.placed = placedMines;
     this._lastExpandInfo.solvable = solvable;
+    this._lastExpandInfo.checks = checkNo;
 
     // 提交前校验：生成期间玩家又揭开了格子，若已显示数字会被改动则放弃本次，稍后重试
     let conflict = false;
@@ -8384,9 +8395,6 @@ async _expandRegion(options = {}) {
     this._updateBackgroundBadge();
 
     this.showFloatingMessage(`新区域已解锁（${newRegion.regionRows}×${newRegion.regionCols}），继续扫雷吧`);
-    if (!solvable) {
-        this.showFloatingMessage('新区域可能有个别需要猜测的位置');
-    }
     return true;
 }
 

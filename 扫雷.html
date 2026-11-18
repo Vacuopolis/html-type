@@ -926,6 +926,7 @@
             min-width: min-content;
             border-radius: 15px;
             contain: layout style;
+            touch-action: manipulation;
         }
         /* ========== 格子样式 ========== */
         .cell {
@@ -946,6 +947,11 @@
             box-shadow: 0 3px 6px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.3);
             transform: translateZ(0);
             contain: layout style paint;
+            /* 手机端：允许单指拖动滚动，禁止双击缩放/长按选中 */
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
         /* 悬停反馈只在有精确指针的设备启用，避免移动端点击后残留 hover 态 */
         @media (hover: hover) and (pointer: fine) {
@@ -6340,6 +6346,8 @@ decompressBoardData(compressed) {
                     }
 
                     this._delegatedClick = (e) => {
+                        // 触摸已经处理过这次轻点：忽略随后浏览器补发的 click
+                        if (this._touchSuppressClickUntil && Date.now() < this._touchSuppressClickUntil) return;
                         const cell = e.target.closest('.cell');
                         if (!cell) return;
                         const row = parseInt(cell.dataset.row);
@@ -6352,6 +6360,13 @@ decompressBoardData(compressed) {
                     };
 
                     this._delegatedContextMenu = (e) => {
+                        // 手机端长按由自己的定时器处理，屏蔽浏览器自带菜单与重复的右键逻辑
+                        const touchRecent = (this._lastTouchAt && Date.now() - this._lastTouchAt < 1200) ||
+                            (this._touchInfo && this._touchInfo.size > 0);
+                        if (touchRecent) {
+                            e.preventDefault();
+                            return;
+                        }
                         const cell = e.target.closest('.cell');
                         if (!cell) return;
                         const row = parseInt(cell.dataset.row);
@@ -6360,6 +6375,8 @@ decompressBoardData(compressed) {
                     };
 
                     this._delegatedMousedown = (e) => {
+                        // 触摸后的兼容 mousedown 不参与双击计数
+                        if (this._touchSuppressClickUntil && Date.now() < this._touchSuppressClickUntil) return;
                         if (e.button !== 0) return;
                         const cell = e.target.closest('.cell');
                         if (!cell) return;
@@ -6416,64 +6433,85 @@ decompressBoardData(compressed) {
                         }
                     };
 
+                    // ===== 手机端触摸：轻点=操作，拖动=滚动棋盘，长按=插旗/展开 =====
+                    // touchstart/touchmove 不再 preventDefault，让棋盘容器可以原生拖动滚动；
+                    // 触摸后的兼容鼠标事件用 _touchSuppressClickUntil 抑制，避免一次轻点触发两次操作。
+                    this._cancelTouchInfos = () => {
+                        if (!this._touchInfo) return;
+                        this._touchInfo.forEach(info => {
+                            if (info.timer) clearTimeout(info.timer);
+                        });
+                        this._touchInfo.clear();
+                    };
+
                     this._delegatedTouchStart = (e) => {
+                        this._lastTouchAt = Date.now();
+                        if (e.touches && e.touches.length > 1) {
+                            // 多指操作（缩放/双指拖动）：取消待处理的点击与长按
+                            this._cancelTouchInfos();
+                            return;
+                        }
                         const cell = e.target.closest('.cell');
                         if (!cell) return;
                         const row = parseInt(cell.dataset.row);
                         const col = parseInt(cell.dataset.col);
-
+                        const t = e.touches && e.touches[0];
                         if (!this._touchInfo) this._touchInfo = new Map();
-                        const info = { startTime: Date.now(), hasMoved: false, longPressTriggered: false, timer: null };
-
+                        const info = {
+                            cell, row, col,
+                            startTime: Date.now(),
+                            startX: t ? t.clientX : 0,
+                            startY: t ? t.clientY : 0,
+                            hasMoved: false,
+                            longPressTriggered: false,
+                            timer: null
+                        };
                         info.timer = setTimeout(() => {
-                            if (!info.hasMoved && !info.longPressTriggered) {
-                                info.longPressTriggered = true;
-                                this.handleLongPress(row, col, e);
-                            }
+                            if (info.hasMoved || info.longPressTriggered) return;
+                            info.longPressTriggered = true;
+                            this._touchSuppressClickUntil = Date.now() + 700;
+                            this.handleLongPress(row, col, e);
                         }, 500);
-
                         this._touchInfo.set(cell, info);
-                        e.preventDefault();
                     };
 
                     this._delegatedTouchMove = (e) => {
-                        const cell = e.target.closest('.cell');
-                        if (!cell) return;
-                        const info = this._touchInfo && this._touchInfo.get(cell);
-                        if (info) {
-                            info.hasMoved = true;
-                            if (info.timer) { clearTimeout(info.timer); info.timer = null; }
-                        }
-                        e.preventDefault();
+                        this._lastTouchAt = Date.now();
+                        if (!this._touchInfo || this._touchInfo.size === 0) return;
+                        const t = e.touches && e.touches[0];
+                        this._touchInfo.forEach(info => {
+                            if (!t) { info.hasMoved = true; return; }
+                            const dx = t.clientX - info.startX;
+                            const dy = t.clientY - info.startY;
+                            // 超过 8px 视为拖动：取消长按，且松手不执行操作
+                            if (!info.hasMoved && Math.sqrt(dx * dx + dy * dy) > 8) {
+                                info.hasMoved = true;
+                            }
+                            if (info.hasMoved && info.timer) {
+                                clearTimeout(info.timer);
+                                info.timer = null;
+                            }
+                        });
                     };
 
                     this._delegatedTouchEnd = (e) => {
-                        const cell = e.target.closest('.cell');
-                        if (!cell) return;
-                        const row = parseInt(cell.dataset.row);
-                        const col = parseInt(cell.dataset.col);
-                        const info = this._touchInfo && this._touchInfo.get(cell);
-
-                        if (info) {
+                        this._lastTouchAt = Date.now();
+                        if (!this._touchInfo || this._touchInfo.size === 0) return;
+                        const infos = Array.from(this._touchInfo.values());
+                        this._touchInfo.clear();
+                        infos.forEach(info => {
                             if (info.timer) { clearTimeout(info.timer); info.timer = null; }
                             const duration = Date.now() - info.startTime;
                             if (!info.hasMoved && !info.longPressTriggered && duration < 500) {
-                                this.handleTouch(row, col, e);
+                                this._touchSuppressClickUntil = Date.now() + 700;
+                                this.handleTouch(info.row, info.col, e);
                             }
-                            this._touchInfo.delete(cell);
-                        }
-                        e.preventDefault();
+                        });
                     };
 
                     this._delegatedTouchCancel = (e) => {
-                        const cell = e.target.closest('.cell');
-                        if (!cell) return;
-                        const info = this._touchInfo && this._touchInfo.get(cell);
-                        if (info) {
-                            if (info.timer) { clearTimeout(info.timer); info.timer = null; }
-                            this._touchInfo.delete(cell);
-                        }
-                        e.preventDefault();
+                        this._lastTouchAt = Date.now();
+                        this._cancelTouchInfos();
                     };
 
                     boardElement.addEventListener('click', this._delegatedClick);
